@@ -1,0 +1,7 @@
+.env
+data/
+server.log
+node_modules/
+supabase/.temp/
+.DS_Store
+*.log
