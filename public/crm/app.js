@@ -5,6 +5,7 @@ let tplId = null, tplDraft = null;
 
 async function api(method, url, body) {
   const r = await fetch('/api' + url, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 401) { location.href = '/login'; throw new Error('Connexion requise'); }
   const j = await r.json();
   if (!r.ok) throw new Error(j.error || 'Erreur');
   return j;
@@ -16,6 +17,7 @@ function toast(msg, err) {
 async function load() {
   S = await api('GET', '/state');
   try { S.diffusion = await api('GET', '/diffusion'); } catch { S.diffusion = []; }
+  try { S.users = await api('GET', '/users'); } catch { S.users = []; }
   try { load.hol = load.hol || await api('GET', '/holidays?all=1'); } catch { load.hol = []; }
   S.holidaysAll = load.hol || []; S.holidays = S.holidaysAll.slice(0, 8);
   const { sent, limit } = S.today;
@@ -199,6 +201,13 @@ const views = {
     </div>
     <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px"><img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block"><div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
   },
+
+  users: () => `
+    <div class="head"><div><h1>Utilisateurs</h1><p class="sub">Les super administrateurs du CRM. Chacun crée son propre mot de passe via un lien reçu par email.</p></div></div>
+    <div class="card"><b>Inviter un administrateur</b>
+      <div class="row" style="margin-top:12px;align-items:flex-end;flex-wrap:wrap"><div class="grow" style="min-width:260px"><label style="margin-top:0">Email</label><input id="u_email" type="email" placeholder="prenom@exemple.com"></div><button class="btn pri" onclick="inviteUser()">Envoyer l'invitation</button></div>
+      <div class="hint">Le lien est valable 7 jours. Un nouvel envoi remplace l'ancien lien.</div></div>
+    <div class="card" style="margin-top:16px;padding:0">${(S.users || []).length ? `<table><thead><tr><th>Email</th><th>Rôle</th><th>Statut</th><th></th></tr></thead><tbody>${S.users.map(u => `<tr><td><b>${esc(u.email)}</b></td><td>Super admin</td><td>${u.pending ? '<span class="pill warn">Invitation envoyée</span>' : '<span class="pill ok">Actif</span>'}</td><td class="row r"><button class="btn sm" onclick="inviteUser('${esc(u.email)}')">${u.pending ? 'Renvoyer' : 'Réinitialiser'}</button><button class="btn sm bad" onclick="delUser('${u.id}')">✕</button></td></tr>`).join('')}</tbody></table>` : '<div class="empty"><big>☺</big>Aucun utilisateur.</div>'}</div>`,
 
   settings: () => {
     const s = S.settings;
@@ -394,6 +403,13 @@ async function addDiffusion() {
   catch (e) { toast(e.message, true); }
 }
 async function delDiffusion(id) { if (!confirm('Supprimer cette diffusion ?')) return; await api('DELETE', '/diffusion/' + id); await render(); }
+
+async function inviteUser(email) {
+  email = typeof email === 'string' ? email : $('#u_email').value.trim();
+  if (!email) return toast('Entrez un email', true);
+  try { await api('POST', '/users/invite', { email }); toast('Invitation envoyée à ' + email); await render(); } catch (e) { toast(e.message, true); }
+}
+async function delUser(id) { if (!confirm('Supprimer cet utilisateur ?')) return; try { await api('DELETE', '/users/' + id); await render(); } catch (e) { toast(e.message, true); } }
 
 // ---------- Router ----------
 function bindTpl() {

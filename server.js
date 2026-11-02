@@ -473,6 +473,24 @@ async function api(req, res, url) {
     }
     if (m === 'DELETE' && parts[1]) { await pool.query('delete from public.diffusion where id = $1', [parts[1]]); return send(res, 200, { ok: true }); }
   }
+  if (parts[0] === 'users') {
+    if (!pool) return send(res, 400, { error: 'Base de données requise' });
+    if (m === 'GET') { const r = await pool.query("select id, email, role, created_at, (password_hash is null) as pending from public.crm_users order by created_at"); return send(res, 200, r.rows); }
+    if (m === 'POST' && parts[1] === 'invite') {
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Email invalide' });
+      const token = crypto.randomBytes(24).toString('hex');
+      await pool.query("insert into public.crm_users (id, email, invite_hash, invite_expires) values ($1, $2, $3, now() + interval '7 days') on conflict (lower(email)) do update set invite_hash = excluded.invite_hash, invite_expires = excluded.invite_expires", [uid(), email, sha(token)]);
+      const base = (db.settings.publicUrl || '').replace(/\/$/, '') || ((SERVERLESS ? 'https://' : 'http://') + req.headers.host);
+      try { await sendInvite(base, email, token); } catch (e) { return send(res, 502, { error: 'Invitation créée mais email non envoyé : ' + e.message }); }
+      return send(res, 200, { ok: true, email });
+    }
+    if (m === 'DELETE' && parts[1]) {
+      const left = +(await pool.query('select count(*) n from public.crm_users where password_hash is not null and id <> $1', [parts[1]])).rows[0].n;
+      if (!left && !envVar('CRM_PASSWORD')) return send(res, 400, { error: 'Impossible de supprimer le dernier administrateur' });
+      await pool.query('delete from public.crm_users where id = $1', [parts[1]]); return send(res, 200, { ok: true });
+    }
+  }
   if (parts[0] === 'tick' && m === 'POST') return send(res, 200, await tick(true));
 
   if (parts[0] === 'contacts' && parts[1] === 'import' && m === 'POST') {
@@ -535,6 +553,60 @@ async function api(req, res, url) {
   send(res, 404, { error: 'not found' });
 }
 
+
+// ---------- Authentification : comptes + invitation par email ----------
+const SESSION_SECRET = envVar('SESSION_SECRET') || envVar('CRON_SECRET') || crypto.createHash('sha256').update(String(DATABASE_URL || 'local')).digest('hex');
+const sha = x => crypto.createHash('sha256').update(x).digest('hex');
+const hmac = x => crypto.createHmac('sha256', SESSION_SECRET).update(x).digest('base64url');
+function hashPw(pw) { const salt = crypto.randomBytes(16); return salt.toString('hex') + ':' + crypto.scryptSync(pw, salt, 64).toString('hex'); }
+function checkPw(pw, stored) { try { const [s, k] = String(stored).split(':'); const a = crypto.scryptSync(pw, Buffer.from(s, 'hex'), 64), b = Buffer.from(k, 'hex'); return a.length === b.length && crypto.timingSafeEqual(a, b); } catch { return false; } }
+function makeSession(email) { const p = Buffer.from(email + '|' + (Date.now() + 30 * 864e5)).toString('base64url'); return p + '.' + hmac(p); }
+function readSession(req) {
+  const m = /(?:^|;\s*)crm_session=([^;]+)/.exec(req.headers.cookie || ''); if (!m) return null;
+  const [p, sig] = m[1].split('.'); if (!p || sig !== hmac(p)) return null;
+  const [email, exp] = Buffer.from(p, 'base64url').toString().split('|'); return +exp > Date.now() ? email : null;
+}
+const cookie = (v, maxAge, secure) => `crm_session=${v}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure ? '; Secure' : ''}`;
+const isHttps = req => (req.headers['x-forwarded-proto'] || '').includes('https');
+async function usersCount() { return pool ? +(await pool.query('select count(*) n from public.crm_users where password_hash is not null')).rows[0].n : 0; }
+async function authorized(req) {
+  if (readSession(req)) return true;
+  const pw = envVar('CRM_PASSWORD');
+  if (pw && Buffer.from((req.headers.authorization || '').replace(/^Basic /, ''), 'base64').toString().split(':').slice(1).join(':') === pw) return true;
+  return !SERVERLESS && !pw && (await usersCount()) === 0; // en local, sans compte ni mot de passe : ouvert
+}
+function reply(res, code, body, type = 'text/html; charset=utf-8', extra = {}) { res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store', ...extra }); res.end(body); }
+function authPage(title, inner) {
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)} — Émounatéha</title>
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Inter:wght@400;600&display=swap" rel="stylesheet"><link rel="icon" href="/logo.png">
+<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;font-family:Inter,system-ui,sans-serif;color:#14272a;background:#1f6a72 url(/header.jpg) center/cover}
+.box{background:#fff;border-radius:20px;padding:30px 26px;width:100%;max-width:390px;box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center}
+.box img{width:84px;height:84px;border-radius:50%;margin-bottom:8px}h1{font-family:'Bree Serif',serif;font-weight:400;font-size:24px;margin:0 0 4px;color:#1f6a72}p{color:#5d7276;font-size:14px;margin:0 0 18px}
+label{display:block;text-align:left;font-size:12px;font-weight:600;color:#5d7276;margin:12px 0 5px;text-transform:uppercase;letter-spacing:.4px}
+input{width:100%;padding:12px;border:1px solid #e3eaea;border-radius:10px;font:inherit;outline:none}input:focus{border-color:#1f6a72;box-shadow:0 0 0 3px rgba(31,106,114,.15)}
+button{width:100%;margin-top:20px;padding:12px;border:0;border-radius:10px;background:#1f6a72;color:#fff;font:inherit;font-weight:600;cursor:pointer}button:hover{background:#164c52}
+.err{color:#b91c1c;font-size:13px;margin-top:12px;min-height:18px}</style></head><body><div class="box"><img src="/logo.png" alt="">${inner}</div></body></html>`;
+}
+const loginPage = () => authPage('Connexion', `<h1>Connexion au CRM</h1><p>Réservé aux administrateurs.</p>
+<form id="f"><label>Email</label><input id="e" type="email" autocomplete="username" required><label>Mot de passe</label><input id="p" type="password" autocomplete="current-password" required><button>Se connecter</button><div class="err" id="m"></div><p style="margin:14px 0 0"><a href="/forgot" style="color:#1f6a72">Mot de passe oublié ?</a></p></form>
+<script>f.onsubmit=async ev=>{ev.preventDefault();m.textContent='';const r=await fetch('/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:e.value,password:p.value})});if(r.ok)location.href='/crm/';else m.textContent=(await r.json()).error||'Erreur'}</script>`);
+const forgotPage = () => authPage('Mot de passe oublié', `<h1>Mot de passe oublié</h1><p>Entrez votre email : si un compte existe, vous recevrez un lien pour choisir un nouveau mot de passe (valable 1 heure).</p>
+<form id="f"><label>Email</label><input id="e" type="email" autocomplete="username" required><button>Envoyer le lien</button><div class="err" id="m" style="color:#1f6a72"></div><p style="margin:14px 0 0"><a href="/login" style="color:#1f6a72">← Retour à la connexion</a></p></form>
+<script>f.onsubmit=async ev=>{ev.preventDefault();await fetch('/auth/forgot',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:e.value})});m.textContent='Si ce compte existe, un email vient d\\'être envoyé.'}</script>`);
+const invitePage = (email, token) => authPage('Créer mon mot de passe', `<h1>Bienvenue</h1><p>Créez votre mot de passe pour <b>${esc(email)}</b>.</p>
+<form id="f"><label>Mot de passe (10 caractères minimum)</label><input id="p" type="password" minlength="10" autocomplete="new-password" required><label>Confirmer</label><input id="q" type="password" minlength="10" autocomplete="new-password" required><button>Créer mon mot de passe</button><div class="err" id="m"></div></form>
+<script>f.onsubmit=async ev=>{ev.preventDefault();m.textContent='';if(p.value!==q.value){m.textContent='Les deux mots de passe sont différents';return}const r=await fetch('/auth/set-password',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:${JSON.stringify(token)},password:p.value})});if(r.ok)location.href='/crm/';else m.textContent=(await r.json()).error||'Erreur'}</script>`);
+async function sendReset(base, email, token) {
+  const link = `${base}/invite/${token}`, org = db.settings.orgName || 'Émounatéha';
+  const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#eef2f1;font-family:Arial,sans-serif;"><table width="100%" style="padding:24px 12px"><tr><td align="center"><table width="560" style="max-width:560px;background:#fff;border-radius:16px;overflow:hidden"><tr><td style="background:#1f6a72;padding:22px;text-align:center;color:#e4cd8a;font-family:Georgia,serif;font-size:26px;font-weight:bold">${esc(org)}</td></tr><tr><td style="padding:32px 30px;color:#111827;font-size:16px;line-height:1.6"><h2 style="font-family:Georgia,serif;color:#1f6a72;margin:0 0 12px">Réinitialiser votre mot de passe</h2><p>Une demande de réinitialisation a été faite pour votre accès au CRM. Ce lien est valable 1 heure.</p><p style="text-align:center;margin:26px 0"><a href="${link}" style="background:#c4a24a;color:#1b2b2d;text-decoration:none;font-weight:bold;padding:13px 28px;border-radius:99px;display:inline-block">Choisir un nouveau mot de passe</a></p><p style="font-size:13px;color:#6b7280">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe ne change pas.</p></td></tr></table></td></tr></table></body></html>`;
+  return brevoSend({ to: email, subject: `Réinitialisation de votre mot de passe — ${org}`, html });
+}
+async function sendInvite(base, email, token) {
+  const link = `${base}/invite/${token}`, org = db.settings.orgName || 'Émounatéha';
+  const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#eef2f1;font-family:Arial,sans-serif;"><table width="100%" style="padding:24px 12px"><tr><td align="center"><table width="560" style="max-width:560px;background:#fff;border-radius:16px;overflow:hidden"><tr><td style="background:#1f6a72;padding:22px;text-align:center;color:#e4cd8a;font-family:Georgia,serif;font-size:26px;font-weight:bold">${esc(org)}</td></tr><tr><td style="padding:32px 30px;color:#111827;font-size:16px;line-height:1.6"><h2 style="font-family:Georgia,serif;color:#1f6a72;margin:0 0 12px">Créez votre accès au CRM</h2><p>Vous avez été invité comme <b>super administrateur</b> du CRM d'${esc(org)}.</p><p>Cliquez sur le bouton pour choisir votre mot de passe. Ce lien est valable 7 jours.</p><p style="text-align:center;margin:26px 0"><a href="${link}" style="background:#c4a24a;color:#1b2b2d;text-decoration:none;font-weight:bold;padding:13px 28px;border-radius:99px;display:inline-block">Créer mon mot de passe</a></p><p style="font-size:13px;color:#6b7280">Si le bouton ne marche pas, copiez ce lien : ${link}</p></td></tr></table></td></tr></table></body></html>`;
+  return brevoSend({ to: email, subject: `Créez votre accès au CRM ${org}`, html });
+}
+
 async function handle(req, res) {
   let url = new URL(req.url, 'http://x');
   const forced = url.searchParams.get('__path'); // réécritures Vercel : on retrouve le chemin d'origine
@@ -564,11 +636,40 @@ async function handle(req, res) {
       return res.end(r.rows[0].data);
     }
     if (url.pathname === '/holidays.json') return await api(req, res, new URL('/api/holidays?all=1', 'http://x')); // public : fêtes à venir pour le site
-    const pw = envVar('CRM_PASSWORD');
-    if (SERVERLESS && !pw && url.pathname.startsWith('/api/')) return send(res, 503, { error: 'CRM_PASSWORD non défini sur le serveur' });
-    if (pw && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/crm'))) {
-      const got = Buffer.from((req.headers.authorization || '').replace(/^Basic /, ''), 'base64').toString();
-      if (got.split(':').slice(1).join(':') !== pw) { res.writeHead(401, { 'www-authenticate': 'Basic realm="CRM Emounateha"' }); return res.end('Authentification requise'); }
+    // --- pages et routes de connexion (publiques)
+    if (url.pathname === '/login') return reply(res, 200, loginPage());
+    if (url.pathname === '/forgot') return reply(res, 200, forgotPage());
+    if (url.pathname === '/auth/forgot' && req.method === 'POST') {
+      const b = await readBody(req), email = String(b.email || '').trim().toLowerCase();
+      if (pool && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        const token = crypto.randomBytes(24).toString('hex');
+        const r = await pool.query("update public.crm_users set invite_hash = $1, invite_expires = now() + interval '1 hour' where lower(email) = $2 and password_hash is not null returning email", [sha(token), email]);
+        if (r.rows.length) { const base = (db.settings.publicUrl || '').replace(/\/$/, '') || ((SERVERLESS ? 'https://' : 'http://') + req.headers.host); try { await sendReset(base, email, token); } catch (e) { console.error('reset mail', e.message); } }
+      }
+      return reply(res, 200, '{"ok":true}', 'application/json'); // même réponse, que le compte existe ou non
+    }
+    if (url.pathname === '/auth/logout') return reply(res, 302, '', 'text/plain', { location: '/login', 'set-cookie': cookie('', 0, isHttps(req)) });
+    if (url.pathname === '/auth/login' && req.method === 'POST') {
+      const b = await readBody(req); await new Promise(r => setTimeout(r, 400));
+      const r = pool ? await pool.query('select email, password_hash from public.crm_users where lower(email) = lower($1) and password_hash is not null', [String(b.email || '').trim()]) : { rows: [] };
+      if (!r.rows.length || !checkPw(String(b.password || ''), r.rows[0].password_hash)) return reply(res, 401, JSON.stringify({ error: 'Email ou mot de passe incorrect' }), 'application/json');
+      return reply(res, 200, '{"ok":true}', 'application/json', { 'set-cookie': cookie(makeSession(r.rows[0].email), 30 * 86400, isHttps(req)) });
+    }
+    if (url.pathname.startsWith('/invite/') && req.method === 'GET') {
+      const r = pool ? await pool.query('select email from public.crm_users where invite_hash = $1 and invite_expires > now()', [sha(url.pathname.slice(8))]) : { rows: [] };
+      return r.rows.length ? reply(res, 200, invitePage(r.rows[0].email, url.pathname.slice(8))) : reply(res, 410, authPage('Lien expiré', '<h1>Lien expiré</h1><p>Ce lien d\'invitation n\'est plus valable. Demandez une nouvelle invitation.</p>'));
+    }
+    if (url.pathname === '/auth/set-password' && req.method === 'POST') {
+      const b = await readBody(req), pw1 = String(b.password || '');
+      if (pw1.length < 10) return reply(res, 400, JSON.stringify({ error: '10 caractères minimum' }), 'application/json');
+      const r = pool ? await pool.query('update public.crm_users set password_hash = $1, invite_hash = null, invite_expires = null where invite_hash = $2 and invite_expires > now() returning email', [hashPw(pw1), sha(String(b.token || ''))]) : { rows: [] };
+      if (!r.rows.length) return reply(res, 410, JSON.stringify({ error: 'Lien expiré' }), 'application/json');
+      return reply(res, 200, '{"ok":true}', 'application/json', { 'set-cookie': cookie(makeSession(r.rows[0].email), 30 * 86400, isHttps(req)) });
+    }
+    // --- zones protégées : session, ou mot de passe de secours (CRM_PASSWORD)
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/crm')) {
+      if (SERVERLESS && !envVar('CRM_PASSWORD') && (await usersCount()) === 0) return send(res, 503, { error: 'Aucun compte : définissez CRM_PASSWORD ou invitez un administrateur' });
+      if (!(await authorized(req))) return url.pathname.startsWith('/api/') ? send(res, 401, { error: 'Connexion requise' }) : reply(res, 302, '', 'text/plain', { location: '/login' });
     }
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname.startsWith('/u/')) {

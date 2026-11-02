@@ -88,3 +88,16 @@ create index if not exists diffusion_day_idx on public.diffusion (day desc);
 alter table public.diffusion enable row level security;
 
 alter table public.diffusion add column if not exists youtube text not null default '';
+
+-- Utilisateurs du CRM (connexion par mot de passe, invitation par email)
+create table if not exists public.crm_users (
+  id text primary key,
+  email text not null,
+  role text not null default 'admin',
+  password_hash text,
+  invite_hash text,
+  invite_expires timestamptz,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists crm_users_email_uidx on public.crm_users (lower(email));
+alter table public.crm_users enable row level security;
