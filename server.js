@@ -10,7 +10,8 @@ const DATA_DIR = path.join(ROOT, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const PUBLIC = path.join(ROOT, 'public');
 
-fs.mkdirSync(DATA_DIR, { recursive: true });
+const SERVERLESS = !!process.env.VERCEL; // sur Vercel : pas de disque, pas de timers, base rechargée à chaque requête
+if (!SERVERLESS) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // ---------- DB ----------
 const uid = () => crypto.randomBytes(6).toString('hex');
@@ -71,8 +72,7 @@ const fromRow = (t, r) => { const o = { id: r.id }; for (const [k, c] of Object.
 async function loadDb() {
   let loaded = null;
   if (pool) {
-    const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261102230000_crm_schema.sql'), 'utf8');
-    await pool.query(sql);
+    if (!loadDb.migrated) { await pool.query(fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261102230000_crm_schema.sql'), 'utf8')); loadDb.migrated = true; }
     const st = await pool.query('select data from public.settings where id = 1');
     const any = await pool.query('select (select count(*) from public.templates) t, (select count(*) from public.contacts) c');
     if (st.rows.length || +any.rows[0].t || +any.rows[0].c) {
@@ -89,12 +89,16 @@ async function loadDb() {
   }
   if (!loaded) { try { loaded = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch { loaded = defaultDb(); } }
   db = { ...defaultDb(), ...loaded, settings: { ...defaultDb().settings, ...(loaded.settings || {}) } };
-  await persist();
+  loadedAt = Date.now();
+  if (!SERVERLESS) await persist();
 }
+let loadedAt = 0, dirty = false;
+async function ensureDb() { if (!db || (SERVERLESS && Date.now() - loadedAt > 2000)) await loadDb(); }
+async function flush() { if (dirty) { dirty = false; await persist(); } }
 let persisting = Promise.resolve();
 function persist() {
   const snap = JSON.stringify(db);
-  fs.writeFileSync(DB_FILE + '.tmp', snap); fs.renameSync(DB_FILE + '.tmp', DB_FILE); // copie locale de secours
+  if (!SERVERLESS) { fs.writeFileSync(DB_FILE + '.tmp', snap); fs.renameSync(DB_FILE + '.tmp', DB_FILE); } // copie locale de secours
   if (!pool) return Promise.resolve();
   persisting = persisting.then(async () => {
     await pool.query("insert into public.settings (id, data) values (1, $1::jsonb) on conflict (id) do update set data = excluded.data, updated_at = now()", [JSON.stringify(db.settings)]);
@@ -115,7 +119,7 @@ function persist() {
   return persisting;
 }
 let saveTimer;
-function save() { clearTimeout(saveTimer); saveTimer = setTimeout(persist, 150); }
+function save() { dirty = true; if (SERVERLESS) return; clearTimeout(saveTimer); saveTimer = setTimeout(() => { dirty = false; persist(); }, 150); }
 
 // ---------- Email rendering ----------
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -224,7 +228,9 @@ async function brevoSend({ to, toName, subject, html }) {
 }
 
 // ---------- Scheduler ----------
-const dayKey = d => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`; };
+const parisDay = d => new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+const parisHour = () => +new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
+const dayKey = parisDay;
 // Quota réel côté Brevo (tous usages du compte confondus : tests, autres envois…)
 let brevoCache = { at: 0, n: 0 };
 async function brevoToday(force) {
@@ -238,7 +244,7 @@ async function brevoToday(force) {
   return brevoCache.n;
 }
 const usedToday = () => Math.max(sentToday(), brevoCache.n);
-const nextMidnight = () => { const d = new Date(); d.setHours(24, 0, 5, 0); return d.toISOString(); };
+const nextMidnight = () => new Date(parisDay(Date.now() + 86400000) + 'T00:00:05+02:00').toISOString(); // minuit heure de Paris (le quota Brevo est de toute façon revérifié)
 const sentToday = () => db.sends.filter(x => x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
 
 function dueSends(campaign) {
@@ -288,7 +294,7 @@ async function tick(force = false) {
   ticking = true;
   try {
     const s = db.settings;
-    const h = new Date().getHours();
+    const h = parisHour();
     if (!force && (h < s.hourFrom || h >= s.hourTo)) return { skipped: 'hors plage horaire' };
     if (s.pausedUntil && Date.now() < +new Date(s.pausedUntil)) return { skipped: 'limite Brevo atteinte, reprise demain' };
     await brevoToday(force);
@@ -296,7 +302,7 @@ async function tick(force = false) {
     await brevoToday(force);
     if (s.dailyLimit - usedToday() <= 0) { s.pausedUntil = nextMidnight(); save(); return { skipped: 'limite du jour atteinte, reprise demain' }; }
     let n = 0, errors = 0;
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = parisDay(Date.now());
     for (const c of db.campaigns) if (c.status === 'scheduled' && (!c.startDate || c.startDate <= todayStr)) c.status = 'running';
     for (const c of db.campaigns) if (c.status === 'running' && c.endDate && c.endDate < todayStr) c.status = 'done'; // période terminée
     for (const camp of db.campaigns.filter(c => c.status === 'running')) {
@@ -529,9 +535,22 @@ async function api(req, res, url) {
   send(res, 404, { error: 'not found' });
 }
 
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://x');
+async function handle(req, res) {
+  let url = new URL(req.url, 'http://x');
+  const forced = url.searchParams.get('__path'); // réécritures Vercel : on retrouve le chemin d'origine
+  if (forced) { url.searchParams.delete('__path'); url = new URL(forced + (url.search || ''), 'http://x'); req.url = url.pathname + url.search; }
+  if (SERVERLESS) { // l'envoi de la réponse attend l'enregistrement en base
+    const end = res.end.bind(res);
+    res.end = (...a) => { flush().catch(e => console.error('flush', e.message)).finally(() => end(...a)); return res; };
+  }
   try {
+    await ensureDb();
+    if (url.pathname === '/api/cron') { // déclenché toutes les minutes (pg_cron / planificateur externe)
+      const key = envVar('CRON_SECRET');
+      const got = (req.headers.authorization || '').replace(/^Bearer /, '') || url.searchParams.get('key');
+      if (!key || got !== key) return send(res, 401, { error: 'non autorisé' });
+      return send(res, 200, await tick());
+    }
     if (url.pathname === '/diffusion.json') { // public : dernières diffusions publiées
       if (!pool) return send(res, 200, []);
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
@@ -546,6 +565,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/holidays.json') return await api(req, res, new URL('/api/holidays?all=1', 'http://x')); // public : fêtes à venir pour le site
     const pw = envVar('CRM_PASSWORD');
+    if (SERVERLESS && !pw && url.pathname.startsWith('/api/')) return send(res, 503, { error: 'CRM_PASSWORD non défini sur le serveur' });
     if (pw && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/crm'))) {
       const got = Buffer.from((req.headers.authorization || '').replace(/^Basic /, ''), 'base64').toString();
       if (got.split(':').slice(1).join(':') !== pw) { res.writeHead(401, { 'www-authenticate': 'Basic realm="CRM Emounateha"' }); return res.end('Authentification requise'); }
@@ -562,8 +582,13 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(PUBLIC) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return send(res, 404, 'Not found', 'text/plain');
     send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream');
   } catch (e) { console.error(e); send(res, 500, { error: e.message }); }
-});
-loadDb().then(() => {
-  server.listen(PORT, '127.0.0.1', () => console.log(`CRM Emounateha → http://localhost:${PORT} (${pool ? 'Supabase' : 'fichier local'})`));
-  setInterval(() => tick().catch(console.error), 60000);
-}).catch(e => { console.error('Démarrage impossible :', e.message); process.exit(1); });
+}
+
+if (require.main === module) {
+  const server = http.createServer(handle);
+  loadDb().then(() => {
+    server.listen(PORT, '127.0.0.1', () => console.log(`CRM Emounateha → http://localhost:${PORT} (${pool ? 'Supabase' : 'fichier local'})`));
+    setInterval(() => tick().catch(console.error), 60000);
+  }).catch(e => { console.error('Démarrage impossible :', e.message); process.exit(1); });
+}
+module.exports = handle;
