@@ -70,9 +70,10 @@ a{color:inherit}
 
 /* carrousel nos actions / diffusion : pleine largeur, défilement à la main, sans rebords */
 .slider{position:relative;width:100vw;margin-left:calc(50% - 50vw);overflow:hidden}
-.slides{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;gap:0;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;transition:height .35s ease}
+.slides{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;gap:0;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;transition:height .6s cubic-bezier(.4,0,.2,1)}
 .slides::-webkit-scrollbar{display:none}
 .slide{flex:0 0 100%;min-width:100%;scroll-snap-align:start;scroll-snap-stop:always;padding:0}
+.sbtn{display:none}
 .slide>.wrap{padding-top:6px;padding-bottom:6px}
 .sbtn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--teal);font-size:26px;line-height:1;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.22);z-index:3}
 .sbtn:hover{background:var(--teal);color:#fff}
@@ -248,7 +249,7 @@ body{overflow-x:hidden}
       <div class="card"><div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></div><h3>Soutien moral &amp; financier</h3><p>Une écoute, un accompagnement et une aide matérielle quand c'est le plus difficile.</p></div>
     </div></div></div>
       </div>
-      <button class="sbtn prev" id="sPrev" aria-label="Précédent">‹</button><button class="sbtn next" id="sNext" aria-label="Suivant">›</button>
+      
       <div class="dots" id="sDots"></div>
     </div>
   </div>
@@ -360,15 +361,23 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   function slideCount(){return box.querySelectorAll('.slide').length}
   function cur(){return Math.round(box.scrollLeft/box.clientWidth)}
   function go(i){box.scrollTo({left:i*box.clientWidth,behavior:'smooth'})}
-  function drawDots(){dots.innerHTML='';const n=slideCount();const few=n<2;dots.style.display=few?'none':'';document.querySelectorAll('.sbtn').forEach(b=>b.style.display=few?'none':'');if(few)return;
+  function drawDots(){dots.innerHTML='';const n=slideCount();const few=n<2;dots.style.display=few?'none':'';if(few)return;
     for(let i=0;i<n;i++){const b=document.createElement('button');b.setAttribute('aria-label','Diapositive '+(i+1));b.onclick=()=>go(i);dots.appendChild(b)}upd()}
   function fit(){const s=box.querySelectorAll('.slide')[cur()];if(s)box.style.height=s.scrollHeight+'px'}
   function upd(){const c=cur();[...dots.children].forEach((d,i)=>d.classList.toggle('on',i===c));const s=box.querySelectorAll('.slide')[c];if(s){document.getElementById('actTitle').textContent=s.dataset.t;document.getElementById('actSub').textContent=s.dataset.s||''}fit()}
   window.addEventListener('resize',fit);window.addEventListener('load',fit);
   box.addEventListener('scroll',()=>{clearTimeout(box._t);box._t=setTimeout(upd,60)});
-  document.getElementById('sPrev').onclick=()=>go(Math.max(0,cur()-1));
-  document.getElementById('sNext').onclick=()=>go(Math.min(slideCount()-1,cur()+1));
   document.getElementById('navDif').addEventListener('click',()=>{setTimeout(()=>go(1),50)});
+  // défilement automatique toutes les 7 s ; pause au survol, au toucher, pendant la vidéo ou la visionneuse
+  let hold=0;const pause=ms=>{hold=Date.now()+ms};
+  ['mouseenter','touchstart','pointerdown','focusin'].forEach(e=>box.parentNode.addEventListener(e,()=>pause(15000),{passive:true}));
+  box.parentNode.addEventListener('mouseleave',()=>pause(3000));
+  box.addEventListener('scroll',()=>pause(10000),{passive:true});
+  function autoTick(){if(slideCount()<2||document.hidden||Date.now()<hold)return;const lb=document.getElementById('lb');if(lb&&lb.classList.contains('on'))return;
+    if(document.activeElement&&document.activeElement.tagName==='IFRAME')return;
+    const r=box.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight)return; // hors écran : on ne bouge pas
+    const n=slideCount(),c=cur();go(c+1>=n?0:c+1)}
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)setInterval(autoTick,7000);
   const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   fetch('/diffusion.json').then(r=>r.json()).then(list=>{
     list.forEach(d=>{
