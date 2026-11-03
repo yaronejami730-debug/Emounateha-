@@ -11,7 +11,7 @@
 </head>
 <body>
 <aside class="side">
-  <div class="brand"><img class="logo" src="/logo.png" alt="Émounatéha"><div><b>Émounatéha</b><small>Redonner dignité et espoir à chaque famille, toute l'année</small></div></div>
+  <div class="brand"><img class="logo" src="/logo.png" alt="Émounatéha"><div><b>Émounatéha</b><small>Redonner dignité et espoir à chaque famille, toute l'année</small></div><button class="mburger" id="mburger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
   <nav id="nav">
     <a href="#/" data-r=""><span class="i">▦</span>Tableau de bord</a>
     <a href="#/contacts" data-r="contacts"><span class="i">☺</span>Contacts</a>
@@ -28,5 +28,6 @@
 <div id="modal" class="modal hidden"></div>
 <div id="toast" class="toast"></div>
 <script src="/crm/app.js"></script>
+<script>(function(){const s=document.querySelector(".side"),b=document.getElementById("mburger");b.onclick=()=>{const o=s.classList.toggle("open");b.setAttribute("aria-expanded",o)};document.querySelectorAll("#nav a").forEach(a=>a.addEventListener("click",()=>{s.classList.remove("open");b.setAttribute("aria-expanded",false)}))})()</script>
 </body>
 </html>

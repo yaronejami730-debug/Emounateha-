@@ -47,5 +47,25 @@
   ],
   "regions": [
     "fra1"
+  ],
+  "headers": [
+    {
+      "source": "/(.*)\\.(png|jpg|jpeg|svg|webp|ico)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/crm/(.*)\\.(js|css)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, stale-while-revalidate=86400"
+        }
+      ]
+    }
   ]
 }

@@ -188,7 +188,7 @@ body,table,td{background-color:inherit}
 <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(fill(t.preheader, c))}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f1;padding:24px 12px;"><tr><td align="center">
  <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
-  <tr><td class="hdr" background="${abase}/header.jpg" bgcolor="#1f6a72" style="background:#1f6a72 url('${abase}/header.jpg') center top/cover no-repeat;padding:26px 24px 30px;text-align:center;">
+  <tr><td class="hdr" background="${abase}/header2.jpg" bgcolor="#1f6a72" style="background:#1f6a72 url('${abase}/header2.jpg') center top/cover no-repeat;padding:26px 24px 30px;text-align:center;">
     <div style="text-align:right;color:${accent};font-size:13px;margin-bottom:6px;">בס״ד</div>
     ${logo}
     <div style="font-family:Georgia,serif;font-size:30px;font-weight:bold;color:${accent};letter-spacing:1px;margin-top:14px;">${esc(s.orgName.toUpperCase())}</div>
