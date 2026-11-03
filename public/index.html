@@ -266,6 +266,15 @@ body{overflow-x:hidden}
 .parcard b{font-family:'Bree Serif',serif;font-weight:400;font-size:22px;color:var(--teal);line-height:1.15;margin-top:2px}
 .parcard small{color:var(--mut);font-size:12px;margin-top:2px}
 @media(max-width:800px){.parsec{margin-top:0;padding:12px 12px 0}.parcard{grid-template-columns:1fr 1fr}.parcard>div{padding:12px 14px;border-left:0;border-top:1px solid #eef3f3}.parcard>div:nth-child(1),.parcard>div:nth-child(2){border-top:0}.parcard>div:nth-child(2),.parcard>div:nth-child(4){border-left:1px solid #eef3f3}.parcard b{font-size:18px}}
+
+/* barre transparente par-dessus l'en-tête ; fond vert uni seulement une fois la page défilée */
+.sec-nav{background:transparent;box-shadow:none;margin-bottom:-52px;transition:background .25s,box-shadow .25s}
+.sec-nav.scrolled{background:#1f6a72;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.hero,.pagehead{padding-top:58px}
+@media(max-width:800px){.sec-nav{background:transparent;margin-bottom:-50px}.sec-nav.scrolled,.sec-nav.open{background:#1f6a72}.sec-nav .links{background:#1f6a72}.hero,.pagehead{padding-top:56px}.hero .top{display:none}}
+/* carte paracha : sous l'en-tête, sans chevauchement */
+.parsec{margin-top:0;padding:26px 0 0}
+@media(max-width:800px){.parsec{padding:14px 12px 0}}
 </style>
 </head>
 <body>
@@ -365,6 +374,8 @@ body{overflow-x:hidden}
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YV Solution</b> (contacter le développeur)</a></p>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();
+(function(){const n=document.querySelector('.sec-nav');if(!n)return;const f=()=>n.classList.toggle('scrolled',scrollY>40);addEventListener('scroll',f,{passive:true});f()})();
+
 
 // ---- paracha de la semaine + horaires de Chabbat à Paris (Hebcal)
 (function(){const c=document.getElementById('parcard');if(!c)return;const k='par'+new Date().toDateString();
