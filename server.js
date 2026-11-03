@@ -705,8 +705,15 @@ async function api(req, res, url) {
     const fake = { id: 'test', firstName: body.firstName || 'Test', lastName: '', email: body.to };
     try {
       const r = await brevoSend({ to: body.to, toName: fake.firstName, subject: '[TEST] ' + fill(t.subject, fake), html: renderEmail(t, fake) });
+      // trace dans l'historique : même table que les campagnes (campagne « Test depuis Templates »)
+      db.sends.push({ id: uid(), at: now(), campaignId: 'test-templates', contactId: '', email: body.to, stepIndex: 0, templateId: t.id || '', status: r.simulated ? 'simulated' : 'sent', messageId: r.messageId || '' });
+      save();
       return send(res, 200, r);
-    } catch (e) { return send(res, 400, { error: e.message }); }
+    } catch (e) {
+      db.sends.push({ id: uid(), at: now(), campaignId: 'test-templates', contactId: '', email: body.to, stepIndex: 0, templateId: t.id || '', status: 'error', error: e.message });
+      save();
+      return send(res, 400, { error: e.message });
+    }
   }
   if (parts[0] === 'holidays' && m === 'GET') {
     if (holCache.at && Date.now() - holCache.at < 12 * 3600e3 && holCache.q === url.search) return send(res, 200, holCache.v);
