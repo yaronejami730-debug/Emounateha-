@@ -181,6 +181,11 @@ footer .dev{margin-top:10px;padding-top:8px}
 .rebbe{margin:0 auto 20px;max-width:720px;font-family:'Bree Serif',serif;font-style:italic;font-size:clamp(13px,1.6vw,16px);line-height:1.5;color:#fff;opacity:.95;padding:0 10px}
 .rebbe cite{display:block;margin-top:6px;font-style:normal;font-family:Inter,sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold-l)}
 @media(max-width:600px){.rebbe{font-size:12.5px;margin-bottom:14px}}
+
+/* date du jour (civile + hébraïque, Hebcal) en haut de l'en-tête */
+.hdate{font-size:13px;color:#fff;opacity:.92;text-align:left;line-height:1.3}
+.hdate b{display:block;font-weight:600;color:var(--gold-l);font-size:14px}
+@media(max-width:600px){.hdate{font-size:11px}.hdate b{font-size:12.5px}}
 /* nav sticky */
 .sec-nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid #e3ecec}
 .sec-nav .wrap{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;justify-content:center}
@@ -237,7 +242,7 @@ body{overflow-x:hidden}
 <body>
 <header class="hero">
   <div class="wrap">
-    <div class="top"><span></span><span>בס״ד</span></div>
+    <div class="top"><span class="hdate" id="hdate"></span><span>בס״ד</span></div>
     <img src="/logo.png" alt="Logo Émounatéha — Sensibiliser, Aider, Lutter, Distribuer, Favoriser">
     <h1>ÉMOUNATÉHA</h1>
     <div class="he">אמונתך</div>
@@ -323,6 +328,14 @@ body{overflow-x:hidden}
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YV Solution</b> (contacter le développeur)</a></p>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();
+// ---- date du jour : civile + hébraïque (Hebcal), mise à jour chaque jour
+(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),k='hd'+d.toDateString();
+ const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const show=heb=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)};
+ try{const c=sessionStorage.getItem(k);if(c){show(c);return}}catch(e){}
+ fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()).then(j=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'');show(heb);try{sessionStorage.setItem(k,heb)}catch(e){}}).catch(()=>{el.textContent=civ});
+})();
+
 
 
 
