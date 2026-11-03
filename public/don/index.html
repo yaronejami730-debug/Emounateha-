@@ -279,10 +279,45 @@ body{overflow-x:hidden}
 #parname{display:block}
 #parheb{display:block;font-family:'Bree Serif',serif;font-size:20px;line-height:1.15;color:var(--teal);opacity:1;direction:rtl;text-align:left;margin:0}
 @media(max-width:800px){#parheb{font-size:17px}}
+
+/* barre transparente : date à gauche, menu au centre, Faire un don, בס״ד à droite ; plus de petit logo */
+.nbrand{display:none!important}
+.sec-nav .wrap{position:relative;min-height:56px}
+.ndate{display:block;margin:0;text-align:left;line-height:1.2;direction:ltr;flex-shrink:0;min-width:150px}
+.ndate b{display:block;font-size:13px;font-weight:700;color:var(--gold-l);direction:rtl;text-align:left}
+.ndate small{display:block;font-size:11px;font-weight:500;color:#fff;opacity:.95}
+.sec-nav.scrolled .ndate b{color:var(--gold)}.sec-nav.scrolled .ndate small{color:var(--teal)}
+.nbsd{font-size:24px;font-weight:600;color:var(--gold-l);text-shadow:0 1px 6px rgba(0,0,0,.3);line-height:1;margin-left:10px;flex-shrink:0}
+.sec-nav.scrolled .nbsd{color:var(--gold);text-shadow:none}
+.hero .top{display:none}
+.hero{padding-top:62px}
+.hero img{margin-top:0}
+@media(max-width:800px){
+  .sec-nav .wrap{justify-content:space-between;padding:0 6px 0 10px}
+  .nbsd{font-size:18px;margin:0;order:0}
+  .ndate{text-align:center;min-width:0;order:1;position:absolute;left:50%;transform:translateX(-50%)}
+  .ndate b{text-align:center;font-size:14px}.ndate small{font-size:11.5px}
+  .burger{order:2;position:static;transform:none}
+  .hero{padding-top:58px}
+}
+
+/* barre : plus large, liens compacts, בס״ד tout à droite */
+.sec-nav .wrap{max-width:1280px;gap:8px}
+.sec-nav .links{overflow:visible;flex:1;justify-content:center;gap:0;min-width:0}
+.sec-nav .links a{font-size:13.5px;padding:14px 9px}
+.sec-nav .links a.ndon{margin-left:10px;padding:8px 14px}
+.nbsd{margin-left:6px}
+.ndate{min-width:140px}
+@media(max-width:1100px){.sec-nav .links a{font-size:12.5px;padding:14px 7px}.ndate{min-width:120px}.ndate b{font-size:12px}.ndate small{font-size:10px}}
+
+/* barre : date | liens | בס״ד | ≡ ; plus de bouton Faire un don dans la barre */
+.ndate{order:0}.sec-nav .links{order:1}.nbsd{order:2;margin-left:auto}.burger{order:3}
+.sec-nav .links a.ndon{display:none}
+@media(max-width:800px){.nbsd{order:0;margin:0}.ndate{order:1}.burger{order:3}.sec-nav .links{order:4}}
 </style>
 </head>
 <body>
-<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/#actions" id="navDif">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/#contact">Contact</a><a class="ndon" href="/don/">Faire un don</a></div></div></nav>
+<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/#actions" id="navDif">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/#contact">Contact</a></div></div></nav>
 <header class="pagehead"><div class="wrap"><div class="top"><span class="hdate" id="hdate"></span><span class="bsd">בס״ד</span></div><h1>Faire un don</h1><p>Paiement sécurisé par carte · reçu fiscal envoyé par email</p></div></header>
 <style>.pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:10px 0 22px;position:relative}
 .pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
