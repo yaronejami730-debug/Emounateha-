@@ -189,3 +189,9 @@ table{border-radius:16px;overflow:hidden}
   .dev.phone .scr{height:620px}
   table{min-width:520px}
 }
+
+/* téléphone : aucune barre de défilement visible */
+@media(max-width:800px){
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  *::-webkit-scrollbar{display:none;width:0;height:0}
+}

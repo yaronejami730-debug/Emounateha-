@@ -51,6 +51,10 @@
     {
       "source": "/crm/(.*)",
       "destination": "/api/index.js?__path=/crm/$1"
+    },
+    {
+      "source": "/diffusion-archives.json",
+      "destination": "/api/index.js?__path=/diffusion-archives.json"
     }
   ],
   "regions": [

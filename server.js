@@ -628,6 +628,14 @@ async function handle(req, res) {
       if (!key || got !== key) return send(res, 401, { error: 'non autorisé' });
       return send(res, 200, await tick());
     }
+    if (url.pathname === '/diffusion-archives.json') { // public : toutes les diffusions publiées, groupées par mois
+      if (!pool) return send(res, 200, { months: [] });
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+      const r = await pool.query('select id, day::text as day, name, youtube from public.diffusion where day <= $1 order by day desc, created_at desc limit 400', [today]);
+      const months = [];
+      for (const x of r.rows) { const k = x.day.slice(0, 7); let m = months.find(y => y.key === k); if (!m) { m = { key: k, items: [] }; months.push(m); } m.items.push(x); }
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' }); return res.end(JSON.stringify({ months }));
+    }
     if (url.pathname === '/diffusion.json') { // public : dernières diffusions publiées
       if (!pool) return send(res, 200, []);
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });

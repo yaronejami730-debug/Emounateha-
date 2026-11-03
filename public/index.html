@@ -87,6 +87,7 @@ a{color:inherit}
 .dkick{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
 .dhead h3{font-family:'Bree Serif',serif;font-weight:400;font-size:28px;color:var(--teal);margin:0 0 4px;line-height:1.2}
 .dhead .when{color:var(--mut);font-size:14px;text-transform:capitalize}
+.dall{margin-top:12px;font-size:13px;padding:8px 16px}
 .dbody{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;justify-content:center;align-items:start}
 .dbody.solo{grid-template-columns:minmax(0,620px)}
 .dlab{font-weight:700;color:var(--teal);font-size:14px;margin-bottom:8px}
@@ -399,10 +400,16 @@ body{overflow-x:hidden}
   .hero{padding-bottom:84px}
 }
 @media(max-width:420px){.hero img{width:170px}.hero h1{font-size:30px}}
+
+/* téléphone : aucune barre de défilement visible */
+@media(max-width:800px){
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  *::-webkit-scrollbar{display:none;width:0;height:0}
+}
 </style>
 </head>
 <body>
-<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="#actions" id="navDif">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="#contact">Contact</a></div></div></nav>
+<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="#contact">Contact</a></div></div></nav>
 <header class="hero">
   <div class="wrap">
     <div class="top"><span class="hdate" id="hdate"></span><span class="bsd">בס״ד</span></div>
@@ -587,7 +594,6 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   function upd(){const c=cur();[...dots.children].forEach((d,i)=>d.classList.toggle('on',i===c));const s=box.querySelectorAll('.slide')[c];if(s){document.getElementById('actTitle').textContent=s.dataset.t;document.getElementById('actSub').textContent=s.dataset.s||''}fit()}
   window.addEventListener('resize',fit);window.addEventListener('load',fit);
   box.addEventListener('scroll',()=>{fit();clearTimeout(box._t);box._t=setTimeout(upd,40)},{passive:true});
-  document.getElementById('navDif').addEventListener('click',()=>{setTimeout(()=>go(1),50)});
   // défilement automatique toutes les 5 s ; pause au survol, au toucher, pendant la vidéo ou la visionneuse
   let hold=0;const pause=ms=>{hold=Date.now()+ms};
   ['mouseenter','touchstart','pointerdown','focusin'].forEach(e=>box.parentNode.addEventListener(e,()=>pause(15000),{passive:true}));
