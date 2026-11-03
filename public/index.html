@@ -374,7 +374,7 @@ body{overflow-x:hidden}
    const it=j.items||[];const p=it.find(x=>x.category==='parashat'),ca=it.find(x=>x.category==='candles'),ha=it.find(x=>x.category==='havdalah'),hol=it.find(x=>x.category==='holiday'&&x.yomtov);
    const hm=s=>new Date(s).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'}).replace(':',' h ');
    const dj=s=>new Date(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'});
-   const d={p:p?p.title.replace(/^Parachat?\s*/i,'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H'):(hol?hol.title:'—'),ci:ca?hm(ca.date):'—',cid:ca?dj(ca.date):'',ho:ha?hm(ha.date):'—',hod:ha?dj(ha.date):''};
+   const d={p:p?p.title.replace(/^Parachah?\s*/i,'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H'):(hol?hol.title:'—'),ci:ca?hm(ca.date):'—',cid:ca?dj(ca.date):'',ho:ha?hm(ha.date):'—',hod:ha?dj(ha.date):''};
    fill(d);try{sessionStorage.setItem(k,JSON.stringify(d))}catch(e){}
  }).catch(()=>{fill({p:'—',ci:'—',cid:'',ho:'—',hod:''})});
 })();
