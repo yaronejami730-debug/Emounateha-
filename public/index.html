@@ -442,6 +442,11 @@ body{overflow-x:hidden}
 .sec-nav.scrolled .ndate b,.sec-nav.scrolled .nbsd{color:var(--gold)}
 .sec-nav.scrolled .ndate small{color:var(--teal)}
 @media(max-width:800px){.sec-nav.scrolled{background:rgba(255,255,255,.94)}.sec-nav.scrolled.open,.sec-nav.open{background:#1f6a72}.sec-nav.open .ndate b,.sec-nav.open .nbsd{color:var(--gold-l)}.sec-nav.open .ndate small{color:#fff}.sec-nav.open .burger span{background:#fff}}
+
+/* carrousel : le doigt fait défiler la page, le glissement horizontal ne se déclenche que latéralement ; hauteur jamais coupée */
+.slides{touch-action:pan-y pan-x;overscroll-behavior:auto;overflow-y:visible}
+.slide{height:auto}
+@media(max-width:800px){.slides{scroll-snap-type:x proximity}}
 </style>
 </head>
 <body>
@@ -627,6 +632,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   function drawDots(){dots.innerHTML='';const n=slideCount();const few=n<2;dots.style.display=few?'none':'';if(few)return;
     for(let i=0;i<n;i++){const b=document.createElement('button');b.setAttribute('aria-label','Diapositive '+(i+1));b.onclick=()=>go(i);dots.appendChild(b)}upd()}
   function fit(){const s=box.querySelectorAll('.slide')[cur()];if(s)box.style.height=s.scrollHeight+'px'}
+  new ResizeObserver(fit).observe(box);box.querySelectorAll('.slide').forEach(s=>new ResizeObserver(fit).observe(s));
   function upd(){const c=cur();[...dots.children].forEach((d,i)=>d.classList.toggle('on',i===c));const s=box.querySelectorAll('.slide')[c];if(s){document.getElementById('actTitle').textContent=s.dataset.t;document.getElementById('actSub').textContent=s.dataset.s||''}fit()}
   window.addEventListener('resize',fit);window.addEventListener('load',fit);
   box.addEventListener('scroll',()=>{fit();clearTimeout(box._t);box._t=setTimeout(upd,40)},{passive:true});
@@ -650,7 +656,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
         '<div class="dbody'+(d.youtube?'':' solo')+'"><div class="dcol"><div class="dlab">📄 Le document</div><div class="dprev"><img src="'+src+'" alt="Diffusion du '+esc(dt)+'" loading="lazy"><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
         (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tania du jour</div><div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/'+id+'" title="Vidéo YouTube" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tania du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div></div>';
       el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));
-      box.appendChild(el);
+      box.appendChild(el);new ResizeObserver(fit).observe(el);
     });
     drawDots();fit();box.querySelectorAll('img').forEach(i=>i.addEventListener('load',fit));
   }).catch(drawDots);
