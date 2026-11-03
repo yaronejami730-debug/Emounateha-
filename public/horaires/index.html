@@ -487,18 +487,24 @@ td .rm{margin-left:6px;color:#b9c7c9;cursor:pointer;font-size:12px}td .rm:hover{
 
 td small{font-size:11px;color:var(--mut);font-weight:500}
 @media(max-width:820px){td small{display:none}}
+
+.hdays{margin:18px 0 26px}
+.cityadd select{font:inherit;padding:10px 12px;border:1.5px solid #cfe0e1;border-radius:99px;background:#fff;color:var(--teal);font-weight:600;max-width:220px}
+.cityadd{max-width:560px}
+.hnote .loc{color:var(--teal);font-weight:600}.hnote .loc a{color:var(--gold2,#c4a24a);font-weight:600}
+@media(max-width:820px){.hdays{margin:14px 0 20px}.cityadd{flex-wrap:wrap}.cityadd select,.cityadd input{flex:1 1 100%;max-width:100%}}
 </style>
 <section><div class="hw">
   <div class="hbar">
     <div class="range"><span id="hrange">…</span><small id="hrange2"></small></div>
-    <div class="cityadd"><input id="cityq" placeholder="Ajouter une ville (ex. Strasbourg, Netanya…)" autocomplete="off"><div class="sugg" id="sugg"></div></div>
+    <div class="cityadd"><select id="citysel"><option value="">+ Ajouter une ville…</option></select><input id="cityq" placeholder="ou chercher n'importe quelle ville" autocomplete="off"><div class="sugg" id="sugg"></div></div>
     <div class="hnav"><button id="prev" aria-label="Semaine précédente">‹</button><button id="today">Cette semaine</button><button id="next" aria-label="Semaine suivante">›</button></div>
   </div>
   <div class="hdays" id="hdays"></div>
   <div class="htable"><div class="cap" id="hcap">Du … au …</div>
     <table><thead><tr><th>Ville</th><th>Pose<br>Téfilin</th><th>Limite<br>Chéma</th><th>Min'ha<br>Guédola</th><th>Chkia</th><th>Tset<br>Ko'havim</th></tr></thead><tbody id="hbody"></tbody></table>
   </div>
-  <p class="hnote">Horaires exacts calculés par Hebcal, à la seconde (méthode du Baal HaTanya pour le Chéma, Min'ha et Tset ; pose des téfilin = michéyakir strict). Consultez votre Rav pour l'usage de votre communauté.</p>
+  <p class="hnote" id="hnote">Horaires exacts calculés par Hebcal, à la seconde (méthode du Baal HaTanya pour le Chéma, Min'ha et Tset ; pose des téfilin = michéyakir strict). Consultez votre Rav pour l'usage de votre communauté.</p>
 </div></section>
 <footer>
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
@@ -545,6 +551,15 @@ document.getElementById('y').textContent=new Date().getFullYear();
  nav.querySelectorAll('.links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');b.setAttribute('aria-expanded',false)}));})();
 // ---- horaires de la semaine (Hebcal)
 (function(){
+  // [nom, geonameid Hebcal, lat, lon, groupe]
+  const ALL=[
+    ['Yérouchalayim',281184,31.77,35.22,'Israël'],['Tel Aviv-Netanya',293397,32.08,34.78,'Israël'],['Haïfa',294801,32.82,34.99,'Israël'],['Ashdod',295629,31.79,34.65,'Israël'],['Netanya',294071,32.33,34.86,'Israël'],['Beer-Sheva',295530,31.25,34.79,'Israël'],['Eilat',295277,29.56,34.95,'Israël'],['Tsfat',293100,32.96,35.50,'Israël'],['Tibériade',293322,32.79,35.53,'Israël'],
+    ['Paris',2988507,48.85,2.35,'France'],['Sarcelles',2976043,48.99,2.38,'France'],['Créteil',3022530,48.79,2.46,'France'],['Boulogne-Billancourt',3031137,48.83,2.24,'France'],['Versailles',2969679,48.80,2.13,'France'],['Lyon',2996944,45.76,4.84,'France'],['Marseille',2995469,43.30,5.37,'France'],['Nice',2990440,43.70,7.27,'France'],['Cannes',3028808,43.55,7.01,'France'],['Aix-en-Provence',3038354,43.53,5.45,'France'],['Montpellier',2992166,43.61,3.88,'France'],['Toulouse',2972315,43.60,1.44,'France'],['Bordeaux',3031582,44.84,-0.58,'France'],['Nantes',2990969,47.22,-1.55,'France'],['Lille',2998324,50.63,3.06,'France'],['Strasbourg',2973783,48.57,7.75,'France'],['Metz',2994160,49.12,6.18,'France'],['Nancy',2990999,48.69,6.18,'France'],['Grenoble',3014728,45.17,5.72,'France'],
+    ['Genève',2660646,46.20,6.14,'Europe'],['Zurich',2657896,47.37,8.54,'Europe'],['Bruxelles',2800866,50.85,4.35,'Europe'],['Anvers',2803138,51.22,4.40,'Europe'],['Londres',2643743,51.51,-0.13,'Europe'],['Manchester',2643123,53.48,-2.24,'Europe'],['Milan',3173435,45.46,9.19,'Europe'],['Rome',3169070,41.90,12.50,'Europe'],['Madrid',3117735,40.42,-3.70,'Europe'],['Barcelone',3128760,41.39,2.17,'Europe'],
+    ['Casablanca',2553604,33.59,-7.62,'Afrique'],['Tunis',2464470,36.82,10.17,'Afrique'],['Johannesburg',993800,-26.20,28.05,'Afrique'],
+    ['New York',5128581,40.71,-74.01,'Amériques'],['Miami',4164138,25.77,-80.19,'Amériques'],['Los Angeles',5368361,34.05,-118.24,'Amériques'],['Boston',4930956,42.36,-71.06,'Amériques'],['Montréal',6077243,45.51,-73.59,'Amériques'],['Toronto',6167865,43.70,-79.42,'Amériques'],['Mexico',3530597,19.43,-99.13,'Amériques'],['Buenos Aires',3435910,-34.61,-58.38,'Amériques'],['São Paulo',3448439,-23.55,-46.63,'Amériques'],
+    ['Sydney',2147714,-33.87,151.21,'Océanie'],['Melbourne',2158177,-37.81,144.96,'Océanie']
+  ];
   const DEF=[['Yérouchalayim',281184],['Tel Aviv-Netanya',293397],['Paris',2988507],['Lyon',2996944],['Marseille',2995469],['Genève',2660646],['New York',5128581],['Montréal',6077243]];
   const KEYS=['misheyakirMachmir','sofZmanShmaBaalHatanya','minchaGedolaBaalHatanya','sunset','tzaisBaalHatanya'];
   let cities=(()=>{try{const c=JSON.parse(localStorage.getItem('hcities')||'null');if(Array.isArray(c)&&c.length)return c}catch(e){}return DEF.slice()})();
@@ -579,6 +594,21 @@ document.getElementById('y').textContent=new Date().getFullYear();
     body.classList.remove('loading');
     body.querySelectorAll('.rm').forEach(x=>x.onclick=()=>{cities=cities.filter(c=>String(c[1])!==x.dataset.id);save();render()});
   }
+  // menu des villes proposées (groupées)
+  (function(){const sel=document.getElementById('citysel');const groups={};ALL.forEach(c=>{(groups[c[4]]=groups[c[4]]||[]).push(c)});
+    for(const g of ['Israël','France','Europe','Afrique','Amériques','Océanie']){if(!groups[g])continue;const og=document.createElement('optgroup');og.label=g;groups[g].forEach(c=>{const o=document.createElement('option');o.value=c[1];o.textContent=c[0];og.appendChild(o)});sel.appendChild(og)}
+    sel.onchange=()=>{const id=+sel.value;if(!id)return;const c=ALL.find(x=>x[1]===id);if(c&&!cities.some(x=>x[1]===id))cities.push([c[0],id]);save();sel.value='';render()}})();
+  // ville du visiteur : géolocalisation par IP (sans permission), Paris par défaut
+  (function(){let has=null;try{has=localStorage.getItem('parcity')}catch(e){}if(has)return;
+    const done=(id,name)=>{try{localStorage.setItem('parcity',String(id))}catch(e){}if(!cities.some(c=>c[1]===id)){cities.push([name,id]);save()}const n=document.getElementById('hnote');if(n)n.insertAdjacentHTML('afterbegin','<span class="loc">📍 Ville détectée : <b>'+name+'</b> · <a href="#" id="locno">ce n\'est pas ma ville</a></span><br>');render();
+      const a=document.getElementById('locno');if(a)a.onclick=e=>{e.preventDefault();try{localStorage.setItem('parcity','2988507')}catch(e){}document.getElementById('cityq').focus();render()}};
+    fetch('https://ipwho.is/').then(r=>r.json()).then(j=>{if(!j||!j.success||typeof j.latitude!=='number'){done(2988507,'Paris');return}
+      const d2=(a,b)=>(a[2]-j.latitude)**2+((a[3]-j.longitude)*Math.cos(j.latitude*Math.PI/180))**2;
+      let best=null,bd=1e9;for(const c of ALL){const d=d2(c);if(d<bd){bd=d;best=c}}
+      // plus proche à moins de ~150 km, sinon Paris
+      if(best&&Math.sqrt(bd)*111<150)done(best[1],best[0]);else done(2988507,'Paris');
+    }).catch(()=>done(2988507,'Paris'));
+  })();
   document.getElementById('prev').onclick=()=>{base.setDate(base.getDate()-7);dayIdx=0;render()};
   document.getElementById('next').onclick=()=>{base.setDate(base.getDate()+7);dayIdx=0;render()};
   document.getElementById('today').onclick=()=>{base=new Date();base.setHours(12,0,0,0);dayIdx=Math.min(6,new Date().getDay());render()};
