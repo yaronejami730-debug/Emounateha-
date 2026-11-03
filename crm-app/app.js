@@ -204,9 +204,9 @@ const views = {
         <div class="grow" style="min-width:260px"><label style="margin-top:0">Lien YouTube (facultatif)</label><input id="df_yt" placeholder="https://youtube.com/watch?v=…"></div>
         <button class="btn pri" onclick="addDiffusion()">Publier</button>
       </div>
-      <div class="hint">Les 3 dernières diffusions dont la date est atteinte s'affichent sur le site. Une image programmée à une date future apparaîtra ce jour-là.</div>
+      <div class="hint">Seule la diffusion du jour s'affiche sur l'accueil (bouton « Voir plus » vers les archives). Cliquez sur un jour pour y ajouter le lien vidéo. Une image programmée à une date future apparaîtra ce jour-là.</div>
     </div>
-    <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px">${d.has_image===false?`<div style="height:220px;border-radius:10px;background:#111 url(https://i.ytimg.com/vi/${(String(d.youtube||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/)||[])[1]||''}/hqdefault.jpg) center/auto 100%"></div>`:`<img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block">`}<div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
+    <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px;cursor:pointer" onclick="editDiffusion('${d.id}')" title="Cliquer pour ajouter ou changer le lien vidéo">${d.has_image===false?`<div style="height:220px;border-radius:10px;background:#111 url(https://i.ytimg.com/vi/${(String(d.youtube||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/)||[])[1]||''}/hqdefault.jpg) center/auto 100%"></div>`:`<img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block">`}<div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="event.stopPropagation();delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
   },
 
   users: () => `
@@ -410,6 +410,19 @@ async function addDiffusion() {
   catch (e) { toast(e.message, true); }
 }
 async function ytSync() { try { const r = await api('POST', '/youtube-sync'); toast(r.added ? r.added + ' nouvelle(s) vidéo(s) ajoutée(s)' : 'Aucune nouvelle vidéo (' + r.checked + ' vérifiées)'); await render(); } catch (e) { toast(e.message, true); } }
+function editDiffusion(id) {
+  const d = (S.diffusion || []).find(x => x.id === id); if (!d) return;
+  const dt = new Date(d.day + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  modal(`<h2 style="margin-top:0">Diffusion du ${esc(dt)}</h2>
+    <label>Lien de la vidéo YouTube</label>
+    <input id="de_yt" value="${esc(d.youtube || '')}" placeholder="https://youtube.com/watch?v=…" autofocus>
+    <div class="hint">Dès l'enregistrement, la vidéo apparaît sur le site pour ce jour, sans recharger la page. Laissez vide pour retirer la vidéo.</div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn pri" onclick="saveDiffusionYt('${id}')">Enregistrer</button></div>`);
+}
+async function saveDiffusionYt(id) {
+  try { await api('PATCH', '/diffusion/' + id, { youtube: $('#de_yt').value.trim() }); closeModal(); toast('Vidéo enregistrée ✓ — visible sur le site'); await render(); }
+  catch (e) { toast(e.message || 'Lien invalide'); }
+}
 async function delDiffusion(id) { if (!confirm('Supprimer cette diffusion ?')) return; await api('DELETE', '/diffusion/' + id); await render(); }
 
 async function inviteUser(email) {

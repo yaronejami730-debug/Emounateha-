@@ -447,6 +447,7 @@ body{overflow-x:hidden}
 .slides{touch-action:pan-y pan-x;overscroll-behavior:auto;overflow-y:visible}
 .slide{height:auto}
 @media(max-width:800px){.slides{scroll-snap-type:x proximity}}
+.dmore{text-align:center;padding:4px 16px 20px}.dmore .btn{display:inline-block}
 </style>
 </head>
 <body>
@@ -647,19 +648,29 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
     const n=slideCount(),c=cur();go(c+1>=n?0:c+1)}
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches)setInterval(autoTick,5000);
   const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  fetch('/diffusion.json').then(r=>r.json()).then(list=>{
-    list.forEach(d=>{
-      const dt=new Date(d.day+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-      const id=ytId(d.youtube), src='/diffusion/'+d.id+'.jpg';
-      const el=document.createElement('div');el.className='slide dslide';el.dataset.t='Diffusion de la Torah';el.dataset.s='Une nouvelle diffusion chaque jour';
-      el.innerHTML='<div class="dcard"><div class="dhead"><div class="dkick">Diffusion du jour</div><h3>'+esc(d.name||"Machia'h Now")+'</h3><div class="when">'+esc(dt)+'</div></div>'+
-        '<div class="dbody'+(d.youtube?'':' solo')+'"><div class="dcol"><div class="dlab">📄 Le document</div><div class="dprev"><img src="'+src+'" alt="Diffusion du '+esc(dt)+'" loading="lazy"><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
-        (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tania du jour</div><div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/'+id+'" title="Vidéo YouTube" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tania du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div></div>';
-      el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));
-      box.appendChild(el);new ResizeObserver(fit).observe(el);
-    });
-    drawDots();fit();box.querySelectorAll('img').forEach(i=>i.addEventListener('load',fit));
-  }).catch(drawDots);
+  // diffusion du jour : une seule diapositive, mise à jour automatique (sans recharger la page)
+  let dEl=null,dSig='';
+  function dBuild(d){
+    const dt=new Date(d.day+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const id=ytId(d.youtube), src='/diffusion/'+d.id+'.jpg';
+    const el=document.createElement('div');el.className='slide dslide';el.dataset.t='Diffusion de la Torah';el.dataset.s='Une nouvelle diffusion chaque jour';
+    const hasDoc=d.has_image!==false;
+    el.innerHTML='<div class="dcard"><div class="dhead"><div class="dkick">Diffusion du jour</div><h3>'+esc(d.name||"Machia'h Now")+'</h3><div class="when">'+esc(dt)+'</div></div>'+
+      '<div class="dbody'+(hasDoc&&d.youtube?'':' solo')+'">'+(hasDoc?'<div class="dcol"><div class="dlab">📄 Le document</div><div class="dprev"><img src="'+src+'" alt="Diffusion du '+esc(dt)+'" loading="lazy"><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>':'')+
+      (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/'+id+'" title="Vidéo YouTube" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>'+
+      '<div class="dmore"><a class="btn gold" href="/torah/">Voir plus de diffusions</a></div></div>';
+    el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));
+    return el}
+  function dLoad(){
+    fetch('/diffusion.json',{cache:'no-store'}).then(r=>r.json()).then(list=>{
+      const d=list[0],sig=d?[d.id,d.day,d.youtube,d.has_image].join('|'):'';
+      if(sig===dSig)return;dSig=sig;
+      const playing=document.activeElement&&document.activeElement.tagName==='IFRAME';
+      if(dEl){dEl.remove();dEl=null}
+      if(d){dEl=dBuild(d);box.appendChild(dEl);new ResizeObserver(fit).observe(dEl);dEl.querySelectorAll('img').forEach(i=>i.addEventListener('load',fit))}
+      drawDots();fit();
+    }).catch(()=>{})}
+  dLoad();setInterval(dLoad,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)dLoad()});
   drawDots();
 })();
 </script>

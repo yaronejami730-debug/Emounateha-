@@ -506,6 +506,12 @@ async function api(req, res, url) {
       await pool.query('insert into public.diffusion (id, day, name, youtube, data) values ($1, $2, $3, $4, $5)', [id, day, String(body.name || '').slice(0, 120), /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(body.youtube || '') ? String(body.youtube).slice(0, 300) : '', buf]);
       return send(res, 200, { id, day });
     }
+    if (m === 'PATCH' && parts[1]) { // ajouter / changer le lien YouTube d'un jour
+      const yt = String(body.youtube || '').trim();
+      if (yt && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(yt)) return send(res, 400, { error: 'Lien YouTube invalide' });
+      await pool.query('update public.diffusion set youtube = $1 where id = $2', [yt.slice(0, 300), parts[1]]);
+      return send(res, 200, { ok: true });
+    }
     if (m === 'DELETE' && parts[1]) { await pool.query('delete from public.diffusion where id = $1', [parts[1]]); return send(res, 200, { ok: true }); }
   }
   if (parts[0] === 'users') {
@@ -692,11 +698,14 @@ async function handle(req, res) {
       for (const x of r.rows) { const k = x.day.slice(0, 7); let m = months.find(y => y.key === k); if (!m) { m = { key: k, items: [] }; months.push(m); } m.items.push(x); }
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' }); return res.end(JSON.stringify({ months }));
     }
-    if (url.pathname === '/diffusion.json') { // public : dernières diffusions publiées
+    if (url.pathname === '/diffusion.json') { // public : UNIQUEMENT la diffusion du jour (document + vidéo du même jour)
       if (!pool) return send(res, 200, []);
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
-      const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day <= $1 and data is not null order by day desc, created_at desc limit 3', [today]);
-      return send(res, 200, r.rows);
+      const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day = (select max(day) from public.diffusion where day <= $1) order by created_at desc', [today]);
+      const doc = r.rows.find(x => x.has_image), vid = r.rows.find(x => x.youtube);
+      if (!doc && !vid) return send(res, 200, []);
+      const item = { id: (doc || vid).id, day: r.rows[0].day, name: (doc || vid).name, youtube: vid ? vid.youtube : '', has_image: !!doc };
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify([item]));
     }
     if (/^\/diffusion\/[a-f0-9]+\.jpg$/.test(url.pathname) && pool) { // public : l'image
       const r = await pool.query('select data from public.diffusion where id = $1', [url.pathname.slice(11, -4)]);
