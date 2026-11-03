@@ -482,6 +482,9 @@ body{overflow-x:hidden}
   .sec-nav .links{order:1;flex:1}
   .nbsd{order:2;margin:0 0 0 12px;min-width:60px;text-align:right}
 }
+
+/* ordinateur : côtés de même largeur pour que les liens soient centrés sur la page */
+@media(min-width:801px){.ndate,.nbsd{flex:0 0 190px;min-width:190px}.nbsd{text-align:right}}
 </style>
 <section><div class="tw">
   <div class="today" id="today"><div class="empty">Chargement de la diffusion du jour…</div></div>

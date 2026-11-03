@@ -406,6 +406,9 @@ body{overflow-x:hidden}
   .sec-nav .links{order:1;flex:1}
   .nbsd{order:2;margin:0 0 0 12px;min-width:60px;text-align:right}
 }
+
+/* ordinateur : côtés de même largeur pour que les liens soient centrés sur la page */
+@media(min-width:801px){.ndate,.nbsd{flex:0 0 190px;min-width:190px}.nbsd{text-align:right}}
 </style>
 <section><div class="donwrap"><div class="title"><h2>Faire un don</h2><p>Paiement sécurisé par carte, reçu fiscal envoyé par email instantanément.</p></div>
   <div class="thanks" id="thanks">Merci de tout cœur pour votre don 🙏 Votre reçu arrive par email.</div>
