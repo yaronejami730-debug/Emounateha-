@@ -527,6 +527,13 @@ body{overflow-x:hidden}
 .it .cap{height:62px;min-height:0;padding:9px 12px;overflow:hidden}
 .it .cap b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .it .cap small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* documents : format page (3/4), vidéos : format vertical (9/16) ; chaque type identique entre eux */
+.it .th{aspect-ratio:3/4}
+.it .th.v{aspect-ratio:9/16}
+.it .th img{object-fit:cover;object-position:top center}
+.grid4{align-items:start}
+.it .cap{height:auto;min-height:62px}
 </style>
 <section><div class="tw">
   <div class="today" id="today"><div class="empty">Chargement de la diffusion du jour…</div></div>
