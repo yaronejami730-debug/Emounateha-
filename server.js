@@ -235,7 +235,7 @@ const YT_CHANNEL = 'UCoKYPjSFFtZ4LmO2ceHTU8g'; // @Tanya26770
 let ytLast = 0;
 async function syncYoutube(force = false) {
   if (!pool) return { skipped: 'pas de base' };
-  if (!force && Date.now() - ytLast < 10 * 60000) return { skipped: 'déjà vérifié récemment' };
+  if (!force && Date.now() - ytLast < 60 * 60000) return { skipped: 'vérifié il y a moins d’une heure' };
   ytLast = Date.now();
   const r = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=' + YT_CHANNEL);
   if (!r.ok) throw new Error('YouTube ' + r.status);
@@ -653,6 +653,12 @@ async function handle(req, res) {
   }
   try {
     await ensureDb();
+    if (url.pathname === '/api/cron-youtube') { // déclenché toutes les heures : nouvelles vidéos de Tanya
+      const key = envVar('CRON_SECRET');
+      const got = (req.headers.authorization || '').replace(/^Bearer /, '') || url.searchParams.get('key');
+      if (!key || got !== key) return send(res, 401, { error: 'non autorisé' });
+      try { return send(res, 200, await syncYoutube(true)); } catch (e) { return send(res, 500, { error: e.message }); }
+    }
     if (url.pathname === '/api/cron') { // déclenché toutes les minutes (pg_cron / planificateur externe)
       const key = envVar('CRON_SECRET');
       const got = (req.headers.authorization || '').replace(/^Bearer /, '') || url.searchParams.get('key');
@@ -738,6 +744,7 @@ if (require.main === module) {
   loadDb().then(() => {
     server.listen(PORT, '127.0.0.1', () => console.log(`CRM Emounateha → http://localhost:${PORT} (${pool ? 'Supabase' : 'fichier local'})`));
     setInterval(() => tick().catch(console.error), 60000);
+    setInterval(() => syncYoutube().catch(e => console.error('YouTube', e.message)), 10 * 60000);
   }).catch(e => { console.error('Démarrage impossible :', e.message); process.exit(1); });
 }
 module.exports = handle;
