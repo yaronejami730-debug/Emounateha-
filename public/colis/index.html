@@ -243,7 +243,7 @@ body{overflow-x:hidden}
     <p class="quote">Accueillons Mashia'h avec des actes de bonté et de bienveillance&nbsp;!</p>
     <blockquote class="rebbe">« Rien n'est jamais perdu. On peut toujours réparer. Celui qui est impur ou éloigné, même s'il est responsable d'un tel état de fait, même s'il l'a voulu, peut, malgré tout, réparer. »<cite>Rabbi de Loubavitch</cite></blockquote>
     <div class="btns">
-      <a class="btn gold" href="https://www.allodons.fr/emounateha" target="_blank" rel="noopener">Aidez-nous à les aider</a>
+      <a class="btn gold" href="/don/">Aidez-nous à les aider</a>
       <a class="btn line" href="/#actions">Nos actions</a>
     </div>
   </div>
@@ -287,7 +287,7 @@ const COLIS={
 };
 function showColis(k){const c=COLIS[k];if(!c)return;
  document.querySelectorAll('.ctab').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
- document.getElementById('colisPanel').innerHTML=`<img src="${c.img}" alt="${c.t}" loading="lazy"><div><h3>${c.t}</h3><p>${c.p}</p><ul>${c.l.map(x=>`<li>${x}</li>`).join('')}</ul>${c.price?'<div class="price"><b>'+c.price+' €</b><span>un colis livré par '+UBER+'</span></div><br>':''}<a class="btn gold" href="https://www.allodons.fr/emounateha" target="_blank" rel="noopener">Participer à un colis</a></div>`}
+ document.getElementById('colisPanel').innerHTML=`<img src="${c.img}" alt="${c.t}" loading="lazy"><div><h3>${c.t}</h3><p>${c.p}</p><ul>${c.l.map(x=>`<li>${x}</li>`).join('')}</ul>${c.price?'<div class="price"><b>'+c.price+' €</b><span>un colis livré par '+UBER+'</span></div><br>':''}<a class="btn gold" href="/don/">Participer à un colis</a></div>`}
 document.querySelectorAll('.ctab').forEach(b=>b.addEventListener('click',()=>showColis(b.dataset.k)));
 showColis('chabbat');
 // pré-sélection : la prochaine fête (dates Hebcal, mises à jour automatiquement)
