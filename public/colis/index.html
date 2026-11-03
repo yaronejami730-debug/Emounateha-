@@ -310,6 +310,25 @@ body{overflow-x:hidden}
 .ndate{order:0}.sec-nav .links{order:1}.nbsd{order:2;margin-left:auto}.burger{order:3}
 .sec-nav .links a.ndon{display:none}
 @media(max-width:800px){.nbsd{order:0;margin:0}.ndate{order:1}.burger{order:3}.sec-nav .links{order:4}}
+
+/* menu déroulant (≡) sur toutes les tailles, y compris ordinateur */
+.burger{display:flex;order:3;position:static;transform:none;margin-left:6px}
+.sec-nav .links{display:none;position:absolute;top:100%;right:0;left:auto;width:min(360px,100%);background:#1f6a72;flex-direction:column;gap:0;max-height:calc(100vh - 56px);overflow:auto;box-shadow:0 14px 30px rgba(0,0,0,.28);border-radius:0 0 16px 16px;padding:6px 10px 12px;order:4}
+.sec-nav.open .links{display:flex}
+.sec-nav .links a{color:#fff!important;text-shadow:none;padding:13px 12px;font-size:15px;border-bottom:1px solid rgba(255,255,255,.14);border-left:0}
+.sec-nav .links a:last-child{border-bottom:0}
+.sec-nav .links a:hover{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.08);border-radius:8px}
+.sec-nav.open .burger span:nth-child(1){transform:translateY(8.5px) rotate(45deg)}
+.sec-nav.open .burger span:nth-child(2){opacity:0}
+.sec-nav.open .burger span:nth-child(3){transform:translateY(-8.5px) rotate(-45deg)}
+.sec-nav .wrap{justify-content:space-between}
+.nbsd{margin-left:0;order:2}
+.sec-nav.scrolled .burger span{background:var(--teal)}
+@media(max-width:800px){.sec-nav .links{left:0;right:0;width:100%;border-radius:0}}
+/* en-tête : plus de boutons */
+.hero .btns{display:none}
+.hero{padding-bottom:96px}
+@media(max-width:800px){.hero{padding-bottom:72px}}
 </style>
 </head>
 <body>
