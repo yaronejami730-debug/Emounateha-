@@ -665,6 +665,25 @@ async function handle(req, res) {
       if (!key || got !== key) return send(res, 401, { error: 'non autorisé' });
       return send(res, 200, await tick());
     }
+    if (url.pathname === '/api/pay-session' && req.method === 'POST') { // public : ouvre une session de paiement AlloDons et renvoie son adresse
+      const key = envVar('ALLODONS_KEY');
+      if (!key) return send(res, 503, { error: 'Paiement direct non activé', fallback: '/don/' });
+      const b = await readBody(req);
+      const euros = Number(b.amount);
+      if (!Number.isFinite(euros) || euros < 1 || euros > 5000) return send(res, 400, { error: 'Montant invalide (1 à 5000 €)' });
+      const ref = String(b.reference || 'don-site').replace(/[^\w.\- ]/g, '').slice(0, 60) || 'don-site';
+      const base = (db.settings.publicUrl || '').replace(/\/$/, '') || ((SERVERLESS ? 'https://' : 'http://') + req.headers.host);
+      const payload = { amount: Math.round(euros * 100), locale: 'fr', reference: ref, metadata: { source: 'site-emounateha', page: String(b.page || '').slice(0, 40) },
+        success_url: base + '/don/?merci=1', cancel_url: base + '/don/?annule=1' };
+      if (b.monthly) payload.subscription = true;
+      const em = String(b.email || '').trim(); if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) payload.donor = { email: em, first_name: String(b.firstName || '').slice(0, 60), last_name: String(b.lastName || '').slice(0, 60) };
+      try {
+        const r = await fetch('https://www.allodons.fr/api/pay/sessions', { method: 'POST', headers: { authorization: 'Bearer ' + key, 'idempotency-key': crypto.randomUUID(), 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.url) return send(res, 502, { error: 'AlloDons a refusé la session', detail: j.error || r.status, fallback: '/don/' });
+        return send(res, 200, { url: j.url, id: j.id });
+      } catch (e) { return send(res, 502, { error: 'AlloDons injoignable', fallback: '/don/' }); }
+    }
     if (url.pathname === '/diffusion-archives.json') { // public : toutes les diffusions publiées, groupées par mois
       if (!pool) return send(res, 200, { months: [] });
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });

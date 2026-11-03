@@ -495,9 +495,10 @@ const COLIS={
 };
 function showColis(k){const c=COLIS[k];if(!c)return;
  document.querySelectorAll('.ctab').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
- document.getElementById('colisPanel').innerHTML=`<img src="${c.img}" alt="${c.t}" loading="lazy"><div><h3>${c.t}</h3><p>${c.p}</p><ul>${c.l.map(x=>`<li>${x}</li>`).join('')}</ul>${c.price?'<div class="price"><b>'+c.price+' €</b><span>un colis livré par '+UBER+'</span></div><br>':''}<a class="btn gold" href="/don/">Participer à un colis</a></div>`}
+ document.getElementById('colisPanel').innerHTML=`<img src="${c.img}" alt="${c.t}" loading="lazy"><div><h3>${c.t}</h3><p>${c.p}</p><ul>${c.l.map(x=>`<li>${x}</li>`).join('')}</ul>${c.price?'<div class="price"><b>'+c.price+' €</b><span>un colis livré par '+UBER+'</span></div><br>':''}<a class="btn gold" href="/don/" onclick="return payColis(this)" data-ref="${k}" data-amount="${c.price||80}">Participer à un colis</a></div>`}
 document.querySelectorAll('.ctab').forEach(b=>b.addEventListener('click',()=>showColis(b.dataset.k)));
 showColis('chabbat');
+async function payColis(a){a.textContent='Ouverture du paiement…';try{const r=await fetch('/api/pay-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amount:+a.dataset.amount,reference:'colis-'+a.dataset.ref,page:'colis'})});const j=await r.json();if(j.url){location.href=j.url;return false}}catch(e){}a.textContent='Participer à un colis';location.href='/don/';return false}
 // pré-sélection : la prochaine fête (dates Hebcal, mises à jour automatiquement)
 const FETE_RE={'roch-hachana':/^Roch Hachanah 5/i,'hanouka':/^Hanoukah$/i,'simhat-torah':/Simh/i,'pourim':/^Pourim$/i,'pessah':/^Pessah I$/i};
 fetch('/holidays.json').then(r=>r.json()).then(list=>{
