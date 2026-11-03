@@ -417,6 +417,13 @@ body{overflow-x:hidden}
   .nbsd{font-size:28px}
   .hero img{width:clamp(150px,15vw,250px)}
 }
+
+/* au défilement : fond blanc translucide pour rester lisible sur la page */
+.sec-nav.scrolled{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 14px rgba(20,60,66,.14)}
+.sec-nav.scrolled .links a{color:var(--teal)!important}
+.sec-nav.scrolled .ndate b,.sec-nav.scrolled .nbsd{color:var(--gold)}
+.sec-nav.scrolled .ndate small{color:var(--teal)}
+@media(max-width:800px){.sec-nav.scrolled{background:rgba(255,255,255,.94)}.sec-nav.scrolled.open,.sec-nav.open{background:#1f6a72}.sec-nav.open .ndate b,.sec-nav.open .nbsd{color:var(--gold-l)}.sec-nav.open .ndate small{color:#fff}.sec-nav.open .burger span{background:#fff}}
 </style>
 <section><div class="donwrap"><div class="title"><h2>Faire un don</h2><p>Paiement sécurisé par carte, reçu fiscal envoyé par email instantanément.</p></div>
   <div class="thanks" id="thanks">Merci de tout cœur pour votre don 🙏 Votre reçu arrive par email.</div>
