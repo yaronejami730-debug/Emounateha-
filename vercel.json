@@ -4,7 +4,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
-      "includeFiles": "supabase/migrations/**"
+      "includeFiles": "{supabase/migrations/**,crm-app/**}"
     }
   },
   "rewrites": [
@@ -43,6 +43,14 @@
     {
       "source": "/forgot",
       "destination": "/api/index.js?__path=/forgot"
+    },
+    {
+      "source": "/crm",
+      "destination": "/api/index.js?__path=/crm"
+    },
+    {
+      "source": "/crm/(.*)",
+      "destination": "/api/index.js?__path=/crm/$1"
     }
   ],
   "regions": [
@@ -55,15 +63,6 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=86400, stale-while-revalidate=604800"
-        }
-      ]
-    },
-    {
-      "source": "/crm/(.*)\\.(js|css)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=300, stale-while-revalidate=86400"
         }
       ]
     }

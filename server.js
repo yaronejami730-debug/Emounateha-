@@ -9,6 +9,7 @@ const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const PUBLIC = path.join(ROOT, 'public');
+const CRM_DIR = path.join(ROOT, 'crm-app'); // l'interface du CRM n'est servie qu'aux personnes connectées
 
 const SERVERLESS = !!process.env.VERCEL; // sur Vercel : pas de disque, pas de timers, base rechargée à chaque requête
 if (!SERVERLESS) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -681,10 +682,14 @@ async function handle(req, res) {
       if (c) { c.status = 'unsubscribed'; save(); }
       return send(res, 200, `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><body style="font-family:Arial;text-align:center;padding:80px 20px;color:#374151"><h2>Désinscription confirmée</h2><p>Vous ne recevrez plus d'emails de ${esc(db.settings.orgName)}.</p>`, 'text/html; charset=utf-8');
     }
-    let p = url.pathname === '/' ? '/index.html' : (url.pathname === '/crm' || url.pathname === '/crm/') ? '/crm/index.html' : url.pathname;
-    let file = path.join(PUBLIC, path.normalize(p));
-    if (file.startsWith(PUBLIC) && fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-    if (!file.startsWith(PUBLIC) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return send(res, 404, 'Not found', 'text/plain');
+    const isCrm = url.pathname === '/crm' || url.pathname.startsWith('/crm/');
+    const base = isCrm ? CRM_DIR : PUBLIC;
+    let rel = isCrm ? (url.pathname.slice(4) || '/') : url.pathname;
+    if (rel.endsWith('/')) rel += 'index.html';
+    let file = path.join(base, path.normalize(rel));
+    if (file.startsWith(base) && fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+    if (!file.startsWith(base) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return send(res, 404, 'Not found', 'text/plain');
+    if (isCrm) return reply(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream', { 'cache-control': 'private, max-age=120' });
     send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream');
   } catch (e) { console.error(e); send(res, 500, { error: e.message }); }
 }
