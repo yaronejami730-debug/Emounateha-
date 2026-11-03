@@ -233,6 +233,19 @@ footer .dev{margin-top:14px;font-size:12px;color:#b9d3d4;padding-top:12px;border
 @media(max-width:600px){section{padding:40px 0}.wrap{padding:0 16px}.he{letter-spacing:5px;font-size:17px}.btns{flex-direction:column;align-items:stretch}.btn{text-align:center}.card{padding:22px 18px}.about{font-size:16px}.don{padding:38px 18px;border-radius:20px}}
 img{max-width:100%;height:auto}
 body{overflow-x:hidden}
+
+/* iPhone : barre fondue dans l'en-tête (même fond), date au centre, menu à droite */
+@media(max-width:800px){
+  .sec-nav{background:#1f6a72 url(/header.jpg) center top/cover;border-bottom:0;box-shadow:none}
+  .sec-nav .wrap{position:relative;justify-content:center;min-height:50px;padding:0 6px}
+  .nbrand{display:none}
+  .ndate{display:block;margin:0;font-size:14px;font-weight:600;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+  .burger{position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+  .burger span{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .sec-nav.open .burger span{background:#fff}
+  .hero .top .hdate,.pagehead .top .hdate{visibility:hidden}
+  .hero{padding-top:0}.hero .top{margin-bottom:0}
+}
 </style>
 </head>
 <body>
