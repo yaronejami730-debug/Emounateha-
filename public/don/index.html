@@ -333,6 +333,24 @@ body{overflow-x:hidden}
 .hero .btns{display:none}
 .hero{padding-bottom:96px}
 @media(max-width:800px){.hero{padding-bottom:72px}}
+
+/* téléphone : ≡ à gauche, date au centre, בס״ד à droite ; en-tête plus grand et plus lisible */
+@media(max-width:800px){
+  .sec-nav .wrap{justify-content:space-between;min-height:54px}
+  .burger{order:0;margin:0}
+  .ndate{order:1;position:absolute;left:50%;transform:translateX(-50%);text-align:center}
+  .nbsd{order:2;margin:0;font-size:20px}
+  .sec-nav .links{order:4;left:0;right:0;width:100%;border-radius:0}
+  .hero{padding-top:64px;padding-bottom:78px}
+  .hero img{width:150px;margin-bottom:8px}
+  .hero h1{font-size:28px;letter-spacing:1.5px}
+  .he{font-size:17px;letter-spacing:5px}
+  .slogan{font-size:13px}
+  .quote{font-size:16px;margin:14px auto 10px}
+  .rebbe{font-size:13.5px;line-height:1.5}
+  .rebbe cite{font-size:11px}
+}
+@media(max-width:420px){.hero img{width:136px}.hero h1{font-size:26px}}
 </style>
 </head>
 <body>
