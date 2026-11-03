@@ -275,6 +275,44 @@ body{overflow-x:hidden}
 /* carte paracha : sous l'en-tête, sans chevauchement */
 .parsec{margin-top:0;padding:26px 0 0}
 @media(max-width:800px){.parsec{padding:14px 12px 0}}
+
+/* carte paracha à cheval sur la ligne dorée */
+.hero{padding-bottom:86px}
+.parsec{margin-top:-58px;padding:0}
+.parcard{max-width:960px;margin:0 auto;border:1px solid #e3ecec;box-shadow:0 14px 40px rgba(20,60,66,.22)}
+.pk{flex-direction:row!important;align-items:center;gap:14px}
+.torah{width:46px;height:46px;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.12))}
+#parheb{font-family:'Bree Serif',serif;font-size:15px;color:var(--teal);opacity:.85;direction:rtl;text-align:left}
+@media(max-width:800px){.hero{padding-bottom:70px}.parsec{margin-top:-46px;padding:0 12px}.torah{width:34px;height:34px}#parheb{font-size:13px}}
+.pk>div{display:flex;flex-direction:column;min-width:0}
+#parheb{margin-top:1px}
+
+/* barre toujours transparente ; au défilement, les liens passent en vert foncé pour rester lisibles */
+.sec-nav.scrolled{background:transparent;box-shadow:none}
+.sec-nav.scrolled .links a{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .links a.ndon{color:#1b2b2d}
+.sec-nav.scrolled .nbrand{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .burger span{background:var(--teal);box-shadow:none}
+.sec-nav.scrolled .ndate{color:var(--teal);text-shadow:none}.sec-nav.scrolled .ndate b{color:var(--teal)}
+@media(max-width:800px){.sec-nav.scrolled{background:transparent}.sec-nav.open,.sec-nav.scrolled.open{background:#1f6a72}}
+/* paracha : trois lignes nettes */
+.pk>div{display:flex;flex-direction:column;gap:2px}
+#parname{display:block}
+#parheb{display:block;font-family:'Bree Serif',serif;font-size:20px;line-height:1.15;color:var(--teal);opacity:1;direction:rtl;text-align:left;margin:0}
+@media(max-width:800px){#parheb{font-size:17px}}
+
+.citysel{position:relative;display:inline-flex;align-items:center;margin-top:2px}
+.citysel select{appearance:none;-webkit-appearance:none;border:0;background:transparent;font-family:'Bree Serif',serif;font-size:22px;color:var(--teal);padding:0 22px 0 0;cursor:pointer;line-height:1.15;max-width:100%}
+.citysel .chev{position:absolute;right:2px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:14px;pointer-events:none}
+.citysel select:focus{outline:none;text-decoration:underline;text-decoration-color:var(--gold)}
+@media(max-width:800px){.citysel select{font-size:18px}}
+
+.hero{padding-bottom:112px}
+.parsec{margin-top:-62px}
+.citysel{border:1.5px dashed var(--gold);border-radius:10px;padding:2px 8px 2px 10px;margin-top:4px;background:#fffdf5}
+.citysel select{padding-right:18px}
+.citysel .chev{right:8px}
+@media(max-width:800px){.hero{padding-bottom:84px}.parsec{margin-top:-48px}}
 </style>
 </head>
 <body>
@@ -297,10 +335,10 @@ body{overflow-x:hidden}
 </header>
 
 <section class="parsec" id="paracha"><div class="wrap"><div class="parcard" id="parcard">
-  <div class="pk"><span class="plab">Paracha de la semaine</span><b id="parname">…</b></div>
+  <div class="pk"><svg class="torah" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#c4a24a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><rect x="45" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><path d="M14.5 12V7M14.5 52v5M49.5 12V7M49.5 52v5"/><path d="M19 16h26v32H19z" fill="#fff"/><path d="M25 24h14M25 30h14M25 36h10" stroke="#1f6a72"/></g><circle cx="14.5" cy="6" r="2.6" fill="#e4cd8a"/><circle cx="49.5" cy="6" r="2.6" fill="#e4cd8a"/></svg><div><span class="plab">Paracha de la semaine</span><b id="parname">…</b><small id="parheb" dir="rtl"></small></div></div>
   <div class="pt"><span class="plab">Entrée du Chabbat</span><b id="parin">…</b><small id="parinday"></small></div>
   <div class="pt"><span class="plab">Sortie du Chabbat</span><b id="parout">…</b><small id="paroutday"></small></div>
-  <div class="pc"><span class="plab">Horaires</span><b>Paris</b><small>Hebcal · allumage 18 min avant la chkia</small></div>
+  <div class="pc"><span class="plab">Votre ville</span><label class="citysel" title="Cliquez pour changer de ville"><select id="parcity" aria-label="Choisir votre ville"></select><span class="chev">▾</span></label><small id="parnote"></small></div>
 </div></div></section>
 
 
@@ -377,17 +415,27 @@ body{overflow-x:hidden}
 (function(){const n=document.querySelector('.sec-nav');if(!n)return;const f=()=>n.classList.toggle('scrolled',scrollY>40);addEventListener('scroll',f,{passive:true});f()})();
 
 
-// ---- paracha de la semaine + horaires de Chabbat à Paris (Hebcal)
-(function(){const c=document.getElementById('parcard');if(!c)return;const k='par'+new Date().toDateString();
- const fill=d=>{const f=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};f('parname',d.p);f('parin',d.ci);f('parinday',d.cid);f('parout',d.ho);f('paroutday',d.hod)};
- try{const s=sessionStorage.getItem(k);if(s){fill(JSON.parse(s));return}}catch(e){}
- fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid=2988507&M=on&b=18&lg=fr').then(r=>r.json()).then(j=>{
-   const it=j.items||[];const p=it.find(x=>x.category==='parashat'),ca=it.find(x=>x.category==='candles'),ha=it.find(x=>x.category==='havdalah'),hol=it.find(x=>x.category==='holiday'&&x.yomtov);
-   const hm=s=>new Date(s).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'}).replace(':',' h ');
-   const dj=s=>new Date(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'});
-   const d={p:p?p.title.replace(/^Parachah?\s*/i,'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H'):(hol?hol.title:'—'),ci:ca?hm(ca.date):'—',cid:ca?dj(ca.date):'',ho:ha?hm(ha.date):'—',hod:ha?dj(ha.date):''};
-   fill(d);try{sessionStorage.setItem(k,JSON.stringify(d))}catch(e){}
- }).catch(()=>{fill({p:'—',ci:'—',cid:'',ho:'—',hod:''})});
+// ---- paracha de la semaine + horaires de Chabbat (Hebcal), ville au choix
+(function(){const c=document.getElementById('parcard');if(!c)return;
+ const villes=[['Paris',2988507,18],['Lyon',2996944,18],['Marseille',2995469,18],['Nice',2990440,18],['Strasbourg',2973783,18],['Toulouse',2972315,18],['Bordeaux',3031582,18],['Lille',2998324,18],['Genève',2660646,18],['Bruxelles',2800866,18],['Yérouchalayim',281184,40],['Tel Aviv-Netanya',293397,18],['New York',5128581,18],['Montréal',6077243,18],['Miami',4164138,18],['Los Angeles',5368361,18],['Londres',2643743,18]];
+ const sel=document.getElementById('parcity');villes.forEach(v=>{const o=document.createElement('option');o.value=v[1];o.textContent=v[0];sel.appendChild(o)});
+ let cur=(()=>{try{return localStorage.getItem('parcity')}catch(e){return null}})();if(!villes.some(v=>String(v[1])===cur))cur='2988507';sel.value=cur;
+ const f=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+ const fill=d=>{f('parname',d.p);f('parheb',d.ph||'');f('parin',d.ci);f('parinday',d.cid);f('parout',d.ho);f('paroutday',d.hod);f('parnote',d.note||'')};
+ function load(){const v=villes.find(x=>String(x[1])===sel.value)||villes[0];const k='par'+v[1]+new Date().toDateString();
+   try{const s=sessionStorage.getItem(k);if(s){fill(JSON.parse(s));return}}catch(e){}
+   ['parin','parout'].forEach(id=>f(id,'…'));
+   fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid='+v[1]+'&M=on&b='+v[2]+'&lg=fr').then(r=>r.json()).then(j=>{
+     const tz=(j.location&&j.location.tzid)||'Europe/Paris';const it=j.items||[];
+     const p=it.find(x=>x.category==='parashat'),ca=it.find(x=>x.category==='candles'),ha=it.find(x=>x.category==='havdalah'),hol=it.find(x=>x.category==='holiday'&&x.yomtov);
+     const hm=s=>new Date(s).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:tz}).replace(':',' h ');
+     const dj=s=>new Date(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:tz});
+     const d={ph:((p?p.hebrew:(hol?hol.hebrew:''))||'').replace(/^פרשת\s*/,''),p:p?p.title.replace(/^Parachah?\s*/i,'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H'):(hol?hol.title:'—'),ci:ca?hm(ca.date):'—',cid:ca?dj(ca.date):'',ho:ha?hm(ha.date):'—',hod:ha?dj(ha.date):'',note:'Cliquez pour changer de ville · allumage '+v[2]+' min avant le coucher'};
+     fill(d);try{sessionStorage.setItem(k,JSON.stringify(d))}catch(e){}
+   }).catch(()=>fill({p:'—',ph:'',ci:'—',cid:'',ho:'—',hod:'',note:''}));
+ }
+ sel.addEventListener('change',()=>{try{localStorage.setItem('parcity',sel.value)}catch(e){};load()});
+ load();
 })();
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
 (function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd3'+ymd;

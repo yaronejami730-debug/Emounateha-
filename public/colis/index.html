@@ -261,6 +261,20 @@ body{overflow-x:hidden}
 /* carte paracha : sous l'en-tête, sans chevauchement */
 .parsec{margin-top:0;padding:26px 0 0}
 @media(max-width:800px){.parsec{padding:14px 12px 0}}
+
+/* barre toujours transparente ; au défilement, les liens passent en vert foncé pour rester lisibles */
+.sec-nav.scrolled{background:transparent;box-shadow:none}
+.sec-nav.scrolled .links a{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .links a.ndon{color:#1b2b2d}
+.sec-nav.scrolled .nbrand{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .burger span{background:var(--teal);box-shadow:none}
+.sec-nav.scrolled .ndate{color:var(--teal);text-shadow:none}.sec-nav.scrolled .ndate b{color:var(--teal)}
+@media(max-width:800px){.sec-nav.scrolled{background:transparent}.sec-nav.open,.sec-nav.scrolled.open{background:#1f6a72}}
+/* paracha : trois lignes nettes */
+.pk>div{display:flex;flex-direction:column;gap:2px}
+#parname{display:block}
+#parheb{display:block;font-family:'Bree Serif',serif;font-size:20px;line-height:1.15;color:var(--teal);opacity:1;direction:rtl;text-align:left;margin:0}
+@media(max-width:800px){#parheb{font-size:17px}}
 </style>
 </head>
 <body>
