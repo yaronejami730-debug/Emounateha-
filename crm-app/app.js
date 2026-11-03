@@ -142,6 +142,8 @@ const views = {
       : `<div class="empty"><big>☺</big>Aucun contact. Importez une liste (prénom, nom, email) ou ajoutez-en un.</div>`}</div>`;
   },
 
+  historique: () => `<div class="head"><div><h1>Historique</h1><p class="sub">Envois réels et dons reçus (lecture seule)</p></div><button class="btn" onclick="render(true)">↻ Actualiser</button></div>
+    <div id="hist"><div class="card empty">Chargement…</div></div>`,
   campaigns: () => `
     <div class="head"><div><h1>Campagnes</h1><p class="sub">Séquences de mails envoyées au fil de l'eau (max ${S.today.limit}/jour) · <b style="color:${S.settings.hasKey ? 'var(--ok)' : 'var(--warn)'}">${S.settings.hasKey ? '● Brevo connecté' : '⚠ Mode simulation (Brevo non connecté)'}</b></p></div>
       <button class="btn pri" onclick="campModal()">+ Nouvelle campagne</button></div>
@@ -471,6 +473,7 @@ async function render(skipLoad) {
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.r === route));
   $('#main').innerHTML = (views[route] || views[''])();
   if (route === 'templates') bindTpl();
+  if (route === 'historique') loadHistorique();
 }
 function renderKeepFocus() {
   const pos = $('#q')?.selectionStart; render(true).then(() => { const q = $('#q'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } });
@@ -492,4 +495,16 @@ function campDetail(id){
   const days=(st.daily||[]).length?`<h3 style="margin:12px 0 6px">Envois par jour</h3><table style="width:100%;font-size:14px">${st.daily.map(d=>`<tr><td>${new Date(d.day+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</td><td align="right"><b>${d.n}</b></td></tr>`).join('')}</table>`:'<p class="hint">Aucun envoi pour le moment.</p>';
   const period=`<p class="hint">Période : ${c.startDate?new Date(c.startDate).toLocaleDateString('fr-FR'):'—'} → ${c.endDate?new Date(c.endDate).toLocaleDateString('fr-FR'):'sans fin'} · statut : ${esc(c.status)}</p>`;
   modal(`<h2>${esc(c.name)}</h2>${period}${grid}${next}${perStep}${days}<div class="row" style="margin-top:14px"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
+}
+
+// historique : chargé après affichage de la page
+(function(){ const oldRender = window.render; })();
+async function loadHistorique(){
+  const el=document.getElementById('hist'); if(!el) return;
+  try{ const h=await api('GET','/historique');
+    const dons=(h.dons||[]).map(d=>`<tr><td>${new Date(d.at).toLocaleString('fr-FR')}</td><td>${esc(d.donateur)}</td><td>${esc(d.email)}</td><td align="right"><b>${d.montant} €</b></td><td>${esc(d.campagne)}</td></tr>`).join('');
+    const envs=(h.envois||[]).map(x=>`<tr><td>${new Date(x.at).toLocaleString('fr-FR')}</td><td>${esc(x.email)}</td><td>${esc(x.campagne)}</td><td>${x.status==='error'?'<span style="color:var(--bad)">erreur</span>':esc(x.status)}</td></tr>`).join('');
+    el.innerHTML=`<h3 style="margin:14px 0 6px">Dons reçus (AlloDons)</h3>${dons?`<table style="width:100%;font-size:14px"><tr><th align="left">Date</th><th align="left">Donateur</th><th align="left">Email</th><th align="right">Montant</th><th align="left">Campagne</th></tr>${dons}</table>`:'<div class="card empty">Aucun don reçu pour le moment.</div>'}
+    <h3 style="margin:18px 0 6px">Envois (200 derniers)</h3>${envs?`<table style="width:100%;font-size:14px"><tr><th align="left">Date</th><th align="left">Email</th><th align="left">Campagne</th><th align="left">Statut</th></tr>${envs}</table>`:'<div class="card empty">Aucun envoi.</div>'}`;
+  }catch(e){ el.innerHTML='<div class="card empty">Historique indisponible.</div>'; }
 }

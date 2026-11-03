@@ -689,6 +689,17 @@ async function api(req, res, url) {
     const t = body.template || {};
     return send(res, 200, { html: renderEmail(t, c), subject: fill(t.subject, c || { firstName: 'Prénom', lastName: 'Nom', email: 'email@exemple.com' }), preheader: fill(t.preheader, c || { firstName: 'Prénom', lastName: 'Nom' }) });
   }
+  if (parts[0] === 'historique' && m === 'GET') { // lecture seule : envois réels + dons reçus (webhook AlloDons)
+    const sends = db.sends.slice().sort((a, b) => (b.at > a.at ? 1 : -1)).slice(0, 200).map(x => {
+      const c = db.contacts.find(k => k.id === x.contactId);
+      const camp = db.campaigns.find(k => k.id === x.campaignId);
+      return { at: x.at, email: x.email, campagne: camp ? camp.name : '', status: x.status, erreur: x.error || '' };
+    });
+    let dons = [];
+    try { dons = fs.readFileSync(path.join(DATA_DIR, 'allodons-webhook.log'), 'utf8').trim().split('\n').filter(Boolean).slice(-100).map(l => JSON.parse(l)).reverse(); } catch (e) {}
+    dons = dons.map(x => ({ at: x.at, donateur: (x.data && x.data.donateur) || '', email: (x.data && x.data.email) || '', montant: (x.data && x.data.montant) || '', transaction: (x.data && x.data.transaction) || '', campagne: (x.data && x.data.category) || '' }));
+    return send(res, 200, { envois: sends, dons });
+  }
   if (parts[0] === 'test-send' && m === 'POST') {
     const t = body.template; if (!t || !body.to) return send(res, 400, { error: 'template + to requis' });
     const fake = { id: 'test', firstName: body.firstName || 'Test', lastName: '', email: body.to };
