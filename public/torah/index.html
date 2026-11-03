@@ -500,6 +500,19 @@ body{overflow-x:hidden}
 .sec-nav.scrolled .ndate b,.sec-nav.scrolled .nbsd{color:var(--gold)}
 .sec-nav.scrolled .ndate small{color:var(--teal)}
 @media(max-width:800px){.sec-nav.scrolled{background:rgba(255,255,255,.94)}.sec-nav.scrolled.open,.sec-nav.open{background:#1f6a72}.sec-nav.open .ndate b,.sec-nav.open .nbsd{color:var(--gold-l)}.sec-nav.open .ndate small{color:#fff}.sec-nav.open .burger span{background:#fff}}
+
+/* vidéos verticales : vignettes recadrées sur la partie centrale (plus de bandes noires) */
+.it .th.v{background:#000;position:relative;overflow:hidden}
+.it .th.v img{position:absolute;left:50%;top:0;height:100%;width:auto;max-width:none;transform:translateX(-50%);opacity:1}
+.it .th.v::after{z-index:1}
+#vm .frame{background:transparent}
+
+/* cartes vidéo au format portrait : la vignette recadrée remplit tout, sans bord noir */
+.grid4{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));align-items:start}
+.it .th{height:auto;aspect-ratio:3/4}
+.it .th.v{aspect-ratio:9/16}
+.it .th.v img{height:100%;width:auto;max-width:none;left:50%;transform:translateX(-50%) scale(1.02)}
+@media(max-width:820px){.grid4{grid-template-columns:repeat(2,1fr)}.it .th{height:auto}}
 </style>
 <section><div class="tw">
   <div class="today" id="today"><div class="empty">Chargement de la diffusion du jour…</div></div>
@@ -585,7 +598,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     for(const m of months){if(mois&&m.key!==mois)continue;let cards='';
       for(const x of m.items){const id=ytId(x.youtube),src='/diffusion/'+x.id+'.jpg',cap=dj(x.day);
         if(filter!=='video'&&x.has_image!==false)cards+='<div class="it" onclick="openLb(\''+src+'\',\''+esc(cap)+'\')"><div class="th"><img src="'+src+'" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.name||"Machia'h Now")+'</small></div></div>';
-        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.has_image===false&&x.name?x.name:'Vidéo de Tanya')+'</small></div></div>';}
+        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg\'"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.has_image===false&&x.name?x.name:'Vidéo de Tanya')+'</small></div></div>';}
       if(cards){n++;out+='<div class="month">'+esc(dm(m.key))+'</div><div class="grid4">'+cards+'</div>';}}
     el.innerHTML=out||'<div class="empty">Rien dans cette sélection.</div>';}
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');filter=b.dataset.f;renderArch()}));
