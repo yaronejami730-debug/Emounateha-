@@ -15,10 +15,17 @@ function toast(msg, err) {
   clearTimeout(toast.t); toast.t = setTimeout(() => t.className = 'toast', 2600);
 }
 async function load() {
-  S = await api('GET', '/state');
-  try { S.diffusion = await api('GET', '/diffusion'); } catch { S.diffusion = []; }
-  try { S.users = await api('GET', '/users'); } catch { S.users = []; }
-  try { load.hol = load.hol || await api('GET', '/holidays?all=1'); } catch { load.hol = []; }
+  const route = (location.hash.replace(/^#\/?/, '') || '');
+  const need = n => route === n; // on ne charge que ce que la page affiche
+  const cached = (() => { try { return JSON.parse(sessionStorage.hol || 'null'); } catch { return null; } })();
+  const [st, dif, usr, hol] = await Promise.all([
+    api('GET', '/state'),
+    need('diffusion') ? api('GET', '/diffusion').catch(() => []) : Promise.resolve(S?.diffusion || []),
+    need('users') ? api('GET', '/users').catch(() => []) : Promise.resolve(S?.users || []),
+    load.hol || cached ? Promise.resolve(load.hol || cached) : api('GET', '/holidays?all=1').catch(() => [])
+  ]);
+  S = st; S.diffusion = dif; S.users = usr;
+  load.hol = hol; try { if (hol && hol.length) sessionStorage.hol = JSON.stringify(hol); } catch {}
   S.holidaysAll = load.hol || []; S.holidays = S.holidaysAll.slice(0, 8);
   const { sent, limit } = S.today;
   $('#quota').innerHTML = `Envois aujourd'hui<br><b>${sent}</b> / ${limit}<div class="bar"><i style="width:${Math.min(100, sent / limit * 100)}%"></i></div>`;
