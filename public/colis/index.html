@@ -423,8 +423,13 @@ body{overflow-x:hidden}
 .sec-nav.scrolled .ndate b,.sec-nav.scrolled .nbsd{color:var(--gold)}
 .sec-nav.scrolled .ndate small{color:var(--teal)}
 @media(max-width:800px){.sec-nav.scrolled{background:rgba(255,255,255,.94)}.sec-nav.scrolled.open,.sec-nav.open{background:#1f6a72}.sec-nav.open .ndate b,.sec-nav.open .nbsd{color:var(--gold-l)}.sec-nav.open .ndate small{color:#fff}.sec-nav.open .burger span{background:#fff}}
+
+/* air entre la ligne dorée et les onglets */
+#colis{padding-top:64px}
+.ctabs{margin-bottom:36px}
+@media(max-width:800px){#colis{padding-top:40px}.ctabs{margin-bottom:26px}}
 </style>
-<section id="colis" style="padding-top:0">
+<section id="colis">
   <div class="wrap">
     <div class="title"><h2>Les colis</h2><p>Aider au quotidien : choisissez le colis auquel vous souhaitez participer.</p></div>
     <div class="ctabs" role="tablist">
