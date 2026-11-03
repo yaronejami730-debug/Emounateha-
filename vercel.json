@@ -44,5 +44,8 @@
       "source": "/forgot",
       "destination": "/api/index.js?__path=/forgot"
     }
+  ],
+  "regions": [
+    "fra1"
   ]
 }

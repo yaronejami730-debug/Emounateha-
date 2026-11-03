@@ -56,7 +56,7 @@ function envVar(k) {
 }
 const DATABASE_URL = envVar('DATABASE_URL');
 let pool = null;
-if (DATABASE_URL) { const { Pool } = require('pg'); pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3 }); }
+if (DATABASE_URL) { const { Pool } = require('pg'); pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: process.env.VERCEL ? 1 : 3, idleTimeoutMillis: 20000 }); }
 
 const TABLES = {
   contacts: { email: 'email', firstName: 'first_name', lastName: 'last_name', phone: 'phone', tags: 'tags', status: 'status', notes: 'notes', createdAt: 'created_at' },
@@ -73,15 +73,16 @@ async function loadDb() {
   let loaded = null;
   if (pool) {
     if (!loadDb.migrated) { await pool.query(fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261102230000_crm_schema.sql'), 'utf8')); loadDb.migrated = true; }
-    const st = await pool.query('select data from public.settings where id = 1');
-    const any = await pool.query('select (select count(*) from public.templates) t, (select count(*) from public.contacts) c');
-    if (st.rows.length || +any.rows[0].t || +any.rows[0].c) {
+    const [st, ...rows] = await Promise.all([
+      pool.query('select data from public.settings where id = 1'),
+      ...Object.keys(TABLES).map(t => pool.query(`select * from public.${t}` + (t === 'sends' ? ' order by at' : ' order by created_at')))
+    ]);
+    if (st.rows.length || rows[0].rows.length || rows[1].rows.length) {
       loaded = { settings: st.rows[0]?.data || {} };
-      for (const t of Object.keys(TABLES)) {
-        const r = await pool.query(`select * from public.${t}` + (t === 'sends' ? ' order by at' : ' order by created_at'));
-        loaded[t] = r.rows.map(x => fromRow(t, x));
+      Object.keys(TABLES).forEach((t, i) => {
+        loaded[t] = rows[i].rows.map(x => fromRow(t, x));
         lastSnap[t] = new Map(loaded[t].map(o => [o.id, JSON.stringify(o)]));
-      }
+      });
     } else { // migration de l'ancien stockage clé/valeur, si présent
       const old = await pool.query("select to_regclass('public.crm_kv') as r");
       if (old.rows[0].r) { const r = await pool.query('select key, value from public.crm_kv'); if (r.rows.length) { loaded = {}; for (const x of r.rows) loaded[x.key] = x.value; } }
@@ -93,8 +94,8 @@ async function loadDb() {
   if (!SERVERLESS) await persist();
 }
 let loadedAt = 0, dirty = false;
-async function ensureDb() { if (!db || (SERVERLESS && Date.now() - loadedAt > 2000)) await loadDb(); }
-async function flush() { if (dirty) { dirty = false; await persist(); } }
+async function ensureDb() { if (!db || (SERVERLESS && Date.now() - loadedAt > 4000)) await loadDb(); }
+async function flush() { if (dirty) { dirty = false; await persist(); loadedAt = Date.now(); } }
 let persisting = Promise.resolve();
 function persist() {
   const snap = JSON.stringify(db);
@@ -400,6 +401,7 @@ async function chabadDates() {
   chabadCache = { at: Date.now(), list: (await Promise.all(jobs)).filter(Boolean) };
   return chabadCache.list;
 }
+let holCache = {};
 const COLL = ['contacts', 'templates', 'campaigns'];
 const PICK = {
   contacts: ['email', 'firstName', 'lastName', 'phone', 'tags', 'status', 'notes'],
@@ -442,6 +444,7 @@ async function api(req, res, url) {
     } catch (e) { return send(res, 400, { error: e.message }); }
   }
   if (parts[0] === 'holidays' && m === 'GET') {
+    if (holCache.at && Date.now() - holCache.at < 12 * 3600e3 && holCache.q === url.search) return send(res, 200, holCache.v);
     try {
       const y = new Date().getFullYear(), out = [];
       for (const yr of [y, y + 1]) {
@@ -457,12 +460,13 @@ async function api(req, res, url) {
       }
       let merged = list;
       try { const today2 = new Date().toISOString().slice(0, 10); merged = [...list, ...(await chabadDates()).filter(x => x.date >= today2)].sort((a, b) => a.date.localeCompare(b.date)); } catch {}
-      return send(res, 200, merged.slice(0, url.searchParams.get('all') ? 80 : 8));
+      const outList = merged.slice(0, url.searchParams.get('all') ? 80 : 8); holCache = { at: Date.now(), q: url.search, v: outList };
+      return send(res, 200, outList);
     } catch (e) { return send(res, 200, []); }
   }
   if (parts[0] === 'diffusion') {
     if (!pool) return send(res, 400, { error: 'Base de données requise' });
-    if (m === 'GET') { const r = await pool.query('select id, day::text as day, name, youtube, length(data) as size from public.diffusion order by day desc, created_at desc limit 200'); return send(res, 200, r.rows); }
+    if (m === 'GET') { const r = await pool.query('select id, day::text as day, name, youtube from public.diffusion order by day desc, created_at desc limit 200'); return send(res, 200, r.rows); }
     if (m === 'POST') {
       const buf = Buffer.from(String(body.data || '').replace(/^data:[^,]+,/, ''), 'base64');
       if (buf.length < 1000 || buf.length > 6e6 || buf[0] !== 0xff || buf[1] !== 0xd8) return send(res, 400, { error: 'Image JPEG requise (6 Mo max)' });
