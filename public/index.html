@@ -427,6 +427,14 @@ body{overflow-x:hidden}
 
 /* ordinateur : côtés de même largeur pour que les liens soient centrés sur la page */
 @media(min-width:801px){.ndate,.nbsd{flex:0 0 190px;min-width:190px}.nbsd{text-align:right}}
+
+/* ordinateur : date plus lisible, logo plus grand */
+@media(min-width:801px){
+  .ndate b{font-size:16px}.ndate small{font-size:13px}
+  .ndate,.nbsd{flex:0 0 230px;min-width:230px}
+  .nbsd{font-size:28px}
+  .hero img{width:clamp(150px,15vw,250px)}
+}
 </style>
 </head>
 <body>
