@@ -484,6 +484,9 @@ td .rm{margin-left:6px;color:#b9c7c9;cursor:pointer;font-size:12px}td .rm:hover{
 .hnote{color:var(--mut);font-size:13px;margin-top:14px;line-height:1.5}
 .loading{opacity:.5}
 @media(max-width:820px){.hw{padding:18px 10px 40px}.htable{border-radius:12px}th{font-size:12px;padding:10px 4px}td{font-size:14px;padding:9px 4px}td:first-child{font-size:14px;padding-left:10px}th:first-child{padding-left:10px}.hbar{gap:10px}}
+
+td small{font-size:11px;color:var(--mut);font-weight:500}
+@media(max-width:820px){td small{display:none}}
 </style>
 <section><div class="hw">
   <div class="hbar">
@@ -495,7 +498,7 @@ td .rm{margin-left:6px;color:#b9c7c9;cursor:pointer;font-size:12px}td .rm:hover{
   <div class="htable"><div class="cap" id="hcap">Du … au …</div>
     <table><thead><tr><th>Ville</th><th>Pose<br>Téfilin</th><th>Limite<br>Chéma</th><th>Min'ha<br>Guédola</th><th>Chkia</th><th>Tset<br>Ko'havim</th></tr></thead><tbody id="hbody"></tbody></table>
   </div>
-  <p class="hnote">Horaires calculés par Hebcal (méthode du Baal HaTanya pour le Chéma, Min'ha et Tset ; pose des téfilin = michéyakir strict), arrondis à la minute la plus proche. Consultez votre Rav pour l'usage de votre communauté.</p>
+  <p class="hnote">Horaires exacts calculés par Hebcal, à la seconde (méthode du Baal HaTanya pour le Chéma, Min'ha et Tset ; pose des téfilin = michéyakir strict). Consultez votre Rav pour l'usage de votre communauté.</p>
 </div></section>
 <footer>
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
@@ -503,7 +506,7 @@ td .rm{margin-left:6px;color:#b9c7c9;cursor:pointer;font-size:12px}td .rm:hover{
   <p class="sir">SIRET 930 755 558 00010 · RNA W931028738</p>
   <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
-  <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YV Solution</b> (contacter le développeur)</a></p>
+  <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
 <script>
 document.getElementById('y').textContent=new Date().getFullYear();
@@ -560,7 +563,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
     const r=(x.hm===y.hm?x.hd+' au '+y.hd+' '+x.hm:x.hd+' '+x.hm+' au '+y.hd+' '+y.hm)+' '+y.hy; cache[k]=r; return r;}
   async function zman(id,a,b){const k='z'+id+ymd(a)+ymd(b);if(cache[k])return cache[k];
     const j=await (await fetch('https://www.hebcal.com/zmanim?cfg=json&geonameid='+id+'&start='+ymd(a)+'&end='+ymd(b)+'&sec=1')).json();cache[k]=j;return j;}
-  const fmt=(iso,tz)=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('fr-FR',{timeZone:tz,hour:'numeric',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(d);const g=t=>+p.find(x=>x.type===t).value;let h=g('hour'),m=g('minute');if(g('second')>=30){m++;if(m===60){m=0;h=(h+1)%24}}return h+':'+String(m).padStart(2,'0')};
+  const fmt=(iso,tz)=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('fr-FR',{timeZone:tz,hour:'numeric',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(d);const g=t=>p.find(x=>x.type===t).value;return (+g('hour'))+':'+g('minute')+'<small>:'+g('second')+'</small>'};
   function drawDays(a){const el=document.getElementById('hdays');el.innerHTML='';for(let i=0;i<7;i++){const d=new Date(a);d.setDate(a.getDate()+i);const b=document.createElement('button');b.textContent=fr(d,{weekday:'short',day:'numeric'});b.className=i===dayIdx?'on':'';b.onclick=()=>{dayIdx=i;render()};el.appendChild(b)}}
   async function render(){
     const a=sunday(base),b=new Date(a);b.setDate(a.getDate()+6);
