@@ -20,18 +20,18 @@ h1,h2,h3{font-family:'Bree Serif',Georgia,serif;font-weight:400}
 a{color:inherit}
 .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
 /* hero */
-.hero{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:14px 0 36px;position:relative}
+.hero{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:10px 0 24px;position:relative}
 .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
 .top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:4px}
 .top a{text-decoration:none;font-weight:700;background:var(--gold);border:1.5px solid var(--gold);color:#1b2b2d;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:10px 22px;border-radius:99px;font-size:15px}
 .top a:hover{background:var(--gold-l);border-color:var(--gold-l)}
 .top span{font-size:26px;font-weight:600;color:var(--gold-l);text-shadow:0 1px 6px rgba(0,0,0,.3);line-height:1}
-.hero img{width:clamp(110px,15vw,270px);display:block;margin:0 auto 8px;animation:logoIn 1.1s cubic-bezier(.2,.8,.2,1) both,spin 40s linear 1.1s infinite;filter:drop-shadow(0 6px 18px rgba(0,0,0,.25))}
-.hero h1{font-size:clamp(22px,4vw,36px);line-height:1.15;color:var(--gold);letter-spacing:1.5px;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.hero img{width:clamp(100px,11vw,190px);display:block;margin:0 auto 4px;animation:logoIn 1.1s cubic-bezier(.2,.8,.2,1) both,spin 40s linear 1.1s infinite;filter:drop-shadow(0 6px 18px rgba(0,0,0,.25))}
+.hero h1{font-size:clamp(22px,3.4vw,32px);line-height:1.15;color:var(--gold);letter-spacing:1.5px;text-shadow:0 2px 10px rgba(0,0,0,.25)}
 .he{font-size:clamp(15px,2.2vw,19px);letter-spacing:6px;margin:0 0 6px}
-.rule{width:110px;height:2px;background:var(--gold);margin:0 auto 8px}
+.rule{width:90px;height:2px;background:var(--gold);margin:0 auto 6px}
 .slogan{font-size:clamp(12px,2.4vw,15px);opacity:.95}
-.quote{font-family:'Bree Serif',serif;font-size:clamp(14px,2.4vw,19px);max-width:640px;margin:16px auto 16px;line-height:1.35}
+.quote{font-family:'Bree Serif',serif;font-size:clamp(14px,2.2vw,18px);max-width:640px;margin:10px auto 8px;line-height:1.35}
 .btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 .btn{display:inline-block;text-decoration:none;font-weight:600;padding:9px 20px;border-radius:99px;font-size:14px;transition:.2s}
 .btn.gold{background:var(--gold);color:#1b2b2d}
@@ -181,6 +181,7 @@ footer .dev{margin-top:10px;padding-top:8px}
 /* date du jour (civile + hébraïque, Hebcal) en haut de l'en-tête */
 .hdate{font-size:13px;color:#fff;opacity:.92;text-align:left;line-height:1.3}
 .hdate b{display:block;font-weight:600;color:var(--gold-l);font-size:14px}
+.hdate i{display:block;font-style:normal;font-weight:700;color:var(--gold-l);font-size:12.5px;margin-top:2px}
 @media(max-width:600px){.hdate{font-size:11px}.hdate b{font-size:12.5px}}
 /* nav sticky */
 .sec-nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid #e3ecec}
@@ -257,7 +258,7 @@ body{overflow-x:hidden}
 
 
 <style>#colis{padding-top:46px}
-.rebbe{margin:0 auto 20px;max-width:720px;font-family:'Bree Serif',serif;font-style:italic;font-size:clamp(13px,1.6vw,16px);line-height:1.5;color:#fff;opacity:.95;padding:0 10px}
+.rebbe{margin:0 auto 14px;max-width:680px;font-family:'Bree Serif',serif;font-style:italic;font-size:clamp(12.5px,1.4vw,14.5px);line-height:1.5;color:#fff;opacity:.95;padding:0 10px}
 .rebbe cite{display:block;margin-top:6px;font-style:normal;font-family:Inter,sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold-l)}
 @media(max-width:600px){.rebbe{font-size:12.5px;margin-bottom:14px}}
 </style>
@@ -284,12 +285,34 @@ body{overflow-x:hidden}
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YV Solution</b> (contacter le développeur)</a></p>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();
-// ---- date du jour : civile + hébraïque (Hebcal), mise à jour chaque jour
-(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),k='hd'+d.toDateString();
+// ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
+(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd3'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
- const show=heb=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)};
- try{const c=sessionStorage.getItem(k);if(c){show(c);return}}catch(e){}
- fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()).then(j=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'');show(heb);try{sessionStorage.setItem(k,heb)}catch(e){}}).catch(()=>{el.textContent=civ});
+ const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'')};
+ const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
+ const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+ function label(items){ // transforme les intitulés Hebcal du jour en « Xe jour de … »
+   const out=[];
+   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');
+     if(it.category==='parashat'){out.push('Chabbat · '+t.replace(/^Parachat?\s*/i,'Parachat '));continue}
+     if(it.category==='roshchodesh'){out.push(t);continue}
+     if(it.category!=='holiday')continue;
+     let m;
+     if(m=t.match(/^Hanoukah:\s*(\d)\s*Bougie/i)){const n=+m[1];out.push(n===1?'Veille de Hanouka · 1<sup>re</sup> bougie ce soir':ord(n-1)+' jour de Hanouka · '+n+' bougies ce soir');continue}
+     if(/^Hanoukah:\s*8/i.test(t)){out.push('8<sup>e</sup> jour de Hanouka');continue}
+     if(m=t.match(/^Erev\s+(.+)$/i)){out.push('Veille de '+m[1]);continue}
+     if(m=t.match(/^(Pessah|Soukkot|Chavou.?ot|Roch Hachanah)\s+(I{1,3}|IV|V|VI{0,3})(\s*\(.*\))?$/i)){const n=roman[m[2].toUpperCase()];out.push(ord(n)+' jour de '+m[1].replace(/Roch Hachanah/i,'Roch Hachana').replace(/Soukkot/i,'Souccot')+(/H.?.?M/i.test(m[3]||'')?' · Hol Hamoed':'')+(/Hochanah Rabbah/i.test(m[3]||'')?' · Hochana Rabba':''));continue}
+     if(m=t.match(/^Roch Hachanah\s+\d{4}$/i)){out.push('1<sup>er</sup> jour de Roch Hachana');continue}
+     if(/^(Hag HaBanot|Roch Hachanah LaBehemot|Lel Selihot|Yom HaAliyah|Family Day|Sigd)/i.test(t))continue;
+     out.push(t);
+   }
+   return out.join(' · ');
+ }
+ try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
+ Promise.all([
+   fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]}))
+ ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
 })();
 
 const UBER="<svg class=\"uber\" viewBox=\"0 7.2 24 9.6\" role=\"img\" aria-label=\"Uber\"><path fill=\"#000\" d=\"M0 7.97v4.958c0 1.867 1.302 3.101 3 3.101.826 0 1.562-.316 2.094-.87v.736H6.27V7.97H5.082v4.888c0 1.257-.85 2.106-1.947 2.106-1.11 0-1.946-.827-1.946-2.106V7.971H0zm7.44 0v7.925h1.13v-.725c.521.532 1.257.86 2.06.86a3.006 3.006 0 0 0 3.034-3.01 3.01 3.01 0 0 0-3.033-3.024 2.86 2.86 0 0 0-2.049.861V7.971H7.439zm9.869 2.038c-1.687 0-2.965 1.37-2.965 3 0 1.72 1.334 3.01 3.066 3.01 1.053 0 1.913-.463 2.49-1.233l-.826-.611c-.43.577-.996.847-1.664.847-.973 0-1.753-.7-1.912-1.64h4.697v-.373c0-1.72-1.222-3-2.886-3zm6.295.068c-.634 0-1.098.294-1.381.758v-.713h-1.131v5.774h1.142V12.61c0-.894.544-1.47 1.291-1.47H24v-1.065h-.396zm-6.319.928c.85 0 1.564.588 1.756 1.47H15.52c.203-.882.916-1.47 1.765-1.47zm-6.732.012c1.086 0 1.98.883 1.98 2.004a1.993 1.993 0 0 1-1.98 2.001A1.989 1.989 0 0 1 8.56 13.02a1.99 1.99 0 0 1 1.992-2.004z\"/></svg>";
