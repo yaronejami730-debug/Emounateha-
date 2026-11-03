@@ -70,7 +70,7 @@ a{color:inherit}
 
 /* carrousel nos actions / diffusion : pleine largeur, défilement à la main, sans rebords */
 .slider{position:relative;width:100vw;margin-left:calc(50% - 50vw);overflow:hidden}
-.slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;gap:0;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.slides{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;gap:0;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;transition:height .35s ease}
 .slides::-webkit-scrollbar{display:none}
 .slide{flex:0 0 100%;min-width:100%;scroll-snap-align:start;scroll-snap-stop:always;padding:0}
 .slide>.wrap{padding-top:6px;padding-bottom:6px}
@@ -362,7 +362,9 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   function go(i){box.scrollTo({left:i*box.clientWidth,behavior:'smooth'})}
   function drawDots(){dots.innerHTML='';const n=slideCount();const few=n<2;dots.style.display=few?'none':'';document.querySelectorAll('.sbtn').forEach(b=>b.style.display=few?'none':'');if(few)return;
     for(let i=0;i<n;i++){const b=document.createElement('button');b.setAttribute('aria-label','Diapositive '+(i+1));b.onclick=()=>go(i);dots.appendChild(b)}upd()}
-  function upd(){const c=cur();[...dots.children].forEach((d,i)=>d.classList.toggle('on',i===c));const s=box.querySelectorAll('.slide')[c];if(s){document.getElementById('actTitle').textContent=s.dataset.t;document.getElementById('actSub').textContent=s.dataset.s||''}}
+  function fit(){const s=box.querySelectorAll('.slide')[cur()];if(s)box.style.height=s.scrollHeight+'px'}
+  function upd(){const c=cur();[...dots.children].forEach((d,i)=>d.classList.toggle('on',i===c));const s=box.querySelectorAll('.slide')[c];if(s){document.getElementById('actTitle').textContent=s.dataset.t;document.getElementById('actSub').textContent=s.dataset.s||''}fit()}
+  window.addEventListener('resize',fit);window.addEventListener('load',fit);
   box.addEventListener('scroll',()=>{clearTimeout(box._t);box._t=setTimeout(upd,60)});
   document.getElementById('sPrev').onclick=()=>go(Math.max(0,cur()-1));
   document.getElementById('sNext').onclick=()=>go(Math.min(slideCount()-1,cur()+1));
@@ -379,7 +381,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
       el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));
       box.appendChild(el);
     });
-    drawDots();
+    drawDots();fit();box.querySelectorAll('img').forEach(i=>i.addEventListener('load',fit));
   }).catch(drawDots);
   drawDots();
 })();
