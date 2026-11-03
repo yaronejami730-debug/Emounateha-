@@ -538,7 +538,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
   const dj=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const dm=k=>new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
   let months=[],filter='all',mois='';
-  function renderToday(d){const el=document.getElementById('today');if(!d){el.innerHTML='<div class="empty">Aucune diffusion publiée pour le moment.</div>';return}
+  function renderToday(d){const el=document.getElementById('today');if(d&&d.has_image===false){ // vidéo seule : on la montre avec le dernier document disponible
+      const doc=months.flatMap(m=>m.items).find(x=>x.has_image!==false);if(doc)d={...doc,youtube:d.youtube,day:d.day,name:doc.name};}
+    if(!d){el.innerHTML='<div class="empty">Aucune diffusion publiée pour le moment.</div>';return}
     const id=ytId(d.youtube),src='/diffusion/'+d.id+'.jpg';
     el.innerHTML='<div class="dkick">Diffusion du jour</div><h2>'+esc(d.name||"Machia'h Now")+'</h2><div class="when">'+esc(dj(d.day))+'</div>'+
       '<div class="tbody'+(d.youtube?'':' solo')+'"><div><div class="dlab">📄 Le document</div><div class="dprev" onclick="openLb(\''+src+'\',\''+esc(dj(d.day))+'\')"><img src="'+src+'" alt=""><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
@@ -546,8 +548,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
   function renderArch(){const el=document.getElementById('archives');let out='';let n=0;
     for(const m of months){if(mois&&m.key!==mois)continue;let cards='';
       for(const x of m.items){const id=ytId(x.youtube),src='/diffusion/'+x.id+'.jpg',cap=dj(x.day);
-        if(filter!=='video')cards+='<div class="it" onclick="openLb(\''+src+'\',\''+esc(cap)+'\')"><div class="th"><img src="'+src+'" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.name||"Machia'h Now")+'</small></div></div>';
-        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>Vidéo de Tanya</small></div></div>';}
+        if(filter!=='video'&&x.has_image!==false)cards+='<div class="it" onclick="openLb(\''+src+'\',\''+esc(cap)+'\')"><div class="th"><img src="'+src+'" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.name||"Machia'h Now")+'</small></div></div>';
+        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.has_image===false&&x.name?x.name:'Vidéo de Tanya')+'</small></div></div>';}
       if(cards){n++;out+='<div class="month">'+esc(dm(m.key))+'</div><div class="grid4">'+cards+'</div>';}}
     el.innerHTML=out||'<div class="empty">Rien dans cette sélection.</div>';}
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');filter=b.dataset.f;renderArch()}));

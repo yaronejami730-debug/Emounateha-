@@ -101,3 +101,6 @@ create table if not exists public.crm_users (
 );
 create unique index if not exists crm_users_email_uidx on public.crm_users (lower(email));
 alter table public.crm_users enable row level security;
+
+-- Diffusion : l'image devient facultative (entrées « vidéo de Tanya seule » importées des archives)
+alter table public.diffusion alter column data drop not null;

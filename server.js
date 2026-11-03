@@ -229,6 +229,32 @@ async function brevoSend({ to, toName, subject, html }) {
   return { messageId: j.messageId };
 }
 
+
+// ---------- Robot YouTube : nouvelle vidéo sur la chaîne Tanya => entrée dans la diffusion du jour ----------
+const YT_CHANNEL = 'UCoKYPjSFFtZ4LmO2ceHTU8g'; // @Tanya26770
+let ytLast = 0;
+async function syncYoutube(force = false) {
+  if (!pool) return { skipped: 'pas de base' };
+  if (!force && Date.now() - ytLast < 10 * 60000) return { skipped: 'déjà vérifié récemment' };
+  ytLast = Date.now();
+  const r = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=' + YT_CHANNEL);
+  if (!r.ok) throw new Error('YouTube ' + r.status);
+  const xml = await r.text();
+  const items = [...xml.matchAll(/<entry>[\s\S]*?<yt:videoId>(.*?)<\/yt:videoId>[\s\S]*?<title>(.*?)<\/title>[\s\S]*?<published>(.*?)<\/published>/g)].map(m => ({ id: m[1], title: m[2].replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'), day: new Date(m[3]).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }) }));
+  const known = (await pool.query('select youtube from public.diffusion where youtube <> \'\'')).rows.map(x => (String(x.youtube).match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/) || [])[1]).filter(Boolean);
+  let added = 0;
+  for (const v of items) {
+    if (known.includes(v.id)) continue;
+    const name = v.title.replace(/^@Tanya\S*\s*/, '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    // si une image (Machia'h Now) existe déjà ce jour-là sans vidéo, on lui rattache la vidéo ; sinon nouvelle entrée vidéo
+    const same = await pool.query("select id from public.diffusion where day = $1 and data is not null and youtube = '' limit 1", [v.day]);
+    if (same.rows.length) await pool.query('update public.diffusion set youtube = $1 where id = $2', ['https://www.youtube.com/watch?v=' + v.id, same.rows[0].id]);
+    else await pool.query('insert into public.diffusion (id, day, name, youtube, data) values ($1,$2,$3,$4,null)', [uid(), v.day, name, 'https://www.youtube.com/watch?v=' + v.id]);
+    added++;
+  }
+  return { checked: items.length, added };
+}
+
 // ---------- Scheduler ----------
 const parisDay = d => new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
 const parisHour = () => +new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
@@ -295,6 +321,7 @@ async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
   ticking = true;
   try {
+    let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
     const s = db.settings;
     const h = parisHour();
     if (!force && (h < s.hourFrom || h >= s.hourTo)) return { skipped: 'hors plage horaire' };
@@ -326,7 +353,7 @@ async function tick(force = false) {
       }
     }
     save();
-    return { sent: n, errors };
+    return { sent: n, errors, youtube: yt };
   } finally { ticking = false; }
 }
 
@@ -467,10 +494,13 @@ async function api(req, res, url) {
   }
   if (parts[0] === 'diffusion') {
     if (!pool) return send(res, 400, { error: 'Base de données requise' });
-    if (m === 'GET') { const r = await pool.query('select id, day::text as day, name, youtube from public.diffusion order by day desc, created_at desc limit 200'); return send(res, 200, r.rows); }
+    if (m === 'GET') { const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion order by day desc, created_at desc limit 200'); return send(res, 200, r.rows); }
     if (m === 'POST') {
-      const buf = Buffer.from(String(body.data || '').replace(/^data:[^,]+,/, ''), 'base64');
-      if (buf.length < 1000 || buf.length > 6e6 || buf[0] !== 0xff || buf[1] !== 0xd8) return send(res, 400, { error: 'Image JPEG requise (6 Mo max)' });
+      const raw = String(body.data || '').replace(/^data:[^,]+,/, '');
+      const buf = raw ? Buffer.from(raw, 'base64') : null;
+      const ytOk = /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(body.youtube || '');
+      if (buf && (buf.length < 1000 || buf.length > 6e6 || buf[0] !== 0xff || buf[1] !== 0xd8)) return send(res, 400, { error: 'Image JPEG requise (6 Mo max)' });
+      if (!buf && !ytOk) return send(res, 400, { error: 'Ajoutez une image ou un lien YouTube' });
       const day = /^\d{4}-\d{2}-\d{2}$/.test(body.day || '') ? body.day : new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
       const id = uid();
       await pool.query('insert into public.diffusion (id, day, name, youtube, data) values ($1, $2, $3, $4, $5)', [id, day, String(body.name || '').slice(0, 120), /^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(body.youtube || '') ? String(body.youtube).slice(0, 300) : '', buf]);
@@ -496,6 +526,7 @@ async function api(req, res, url) {
       await pool.query('delete from public.crm_users where id = $1', [parts[1]]); return send(res, 200, { ok: true });
     }
   }
+  if (parts[0] === 'youtube-sync' && m === 'POST') { try { return send(res, 200, await syncYoutube(true)); } catch (e) { return send(res, 500, { error: e.message }); } }
   if (parts[0] === 'tick' && m === 'POST') return send(res, 200, await tick(true));
 
   if (parts[0] === 'contacts' && parts[1] === 'import' && m === 'POST') {
@@ -631,7 +662,7 @@ async function handle(req, res) {
     if (url.pathname === '/diffusion-archives.json') { // public : toutes les diffusions publiées, groupées par mois
       if (!pool) return send(res, 200, { months: [] });
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
-      const r = await pool.query('select id, day::text as day, name, youtube from public.diffusion where day <= $1 order by day desc, created_at desc limit 400', [today]);
+      const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day <= $1 order by day desc, created_at desc limit 400', [today]);
       const months = [];
       for (const x of r.rows) { const k = x.day.slice(0, 7); let m = months.find(y => y.key === k); if (!m) { m = { key: k, items: [] }; months.push(m); } m.items.push(x); }
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' }); return res.end(JSON.stringify({ months }));
@@ -639,7 +670,7 @@ async function handle(req, res) {
     if (url.pathname === '/diffusion.json') { // public : dernières diffusions publiées
       if (!pool) return send(res, 200, []);
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
-      const r = await pool.query('select id, day::text as day, name, youtube from public.diffusion where day <= $1 order by day desc, created_at desc limit 3', [today]);
+      const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day <= $1 and data is not null order by day desc, created_at desc limit 3', [today]);
       return send(res, 200, r.rows);
     }
     if (/^\/diffusion\/[a-f0-9]+\.jpg$/.test(url.pathname) && pool) { // public : l'image

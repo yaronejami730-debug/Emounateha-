@@ -363,22 +363,16 @@ body{overflow-x:hidden}
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/#contact">Contact</a></div></div></nav>
-<header class="hero">
-  <div class="wrap">
-    <div class="top"><span class="hdate" id="hdate"></span><span class="bsd">בס״ד</span></div>
-    <a href="/"><img src="/logo.png" alt="Logo Émounatéha — Sensibiliser, Aider, Lutter, Distribuer, Favoriser"></a>
-    <h1>ÉMOUNATÉHA</h1>
-    <div class="he">אמונתך</div>
-    <div class="rule"></div>
-    <p class="slogan">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</p>
-    <p class="quote">Accueillons Mashia'h avec des actes de bonté et de bienveillance&nbsp;!</p>
-    <blockquote class="rebbe">« Rien n'est jamais perdu. On peut toujours réparer. Celui qui est impur ou éloigné, même s'il est responsable d'un tel état de fait, même s'il l'a voulu, peut, malgré tout, réparer. »<cite>Rabbi de Loubavitch</cite></blockquote>
-    <div class="btns">
-      <a class="btn gold" href="/don/">Aidez-nous à les aider</a>
-      <a class="btn line" href="/#actions">Nos actions</a>
-    </div>
-  </div>
-</header>
+<header class="pagehead"><div class="wrap"><h1>Les colis</h1><p>Aider au quotidien : choisissez le colis auquel vous souhaitez participer.</p></div></header>
+<style>
+.pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:76px 0 34px;position:relative}
+.pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+.pagehead h1{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(28px,4.5vw,42px);color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.25)}.pagehead p{opacity:.95;margin-top:6px}
+#colis{padding-top:34px}#colis .title{display:none}
+.ctabs{margin-bottom:26px}
+.colis{grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:34px}
+@media(max-width:820px){.pagehead{padding-top:70px;padding-bottom:26px}#colis{padding-top:18px}.colis{grid-template-columns:1fr;gap:16px}.colis img{max-width:100%}}
+</style>
 
 <style>#colis{padding-top:46px}#colis .title{display:none}</style>
 

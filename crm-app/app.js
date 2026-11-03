@@ -198,7 +198,7 @@ const views = {
     <div class="card">
       <b>Ajouter la diffusion du jour</b>
       <div class="row" style="margin-top:12px;align-items:flex-end;flex-wrap:wrap">
-        <div class="grow" style="min-width:240px"><label style="margin-top:0">Image (JPEG)</label><input id="df_file" type="file" accept="image/jpeg,image/png"></div>
+        <div class="grow" style="min-width:240px"><label style="margin-top:0">Image (JPEG) — facultative si lien YouTube</label><input id="df_file" type="file" accept="image/jpeg,image/png"></div>
         <div><label style="margin-top:0">Date de publication</label><input id="df_day" type="date" value="${today}"></div>
         <div class="grow" style="min-width:200px"><label style="margin-top:0">Titre (facultatif)</label><input id="df_name" placeholder="Machia'h Now — Lundi"></div>
         <div class="grow" style="min-width:260px"><label style="margin-top:0">Lien YouTube (facultatif)</label><input id="df_yt" placeholder="https://youtube.com/watch?v=…"></div>
@@ -206,7 +206,7 @@ const views = {
       </div>
       <div class="hint">Les 3 dernières diffusions dont la date est atteinte s'affichent sur le site. Une image programmée à une date future apparaîtra ce jour-là.</div>
     </div>
-    <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px"><img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block"><div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
+    <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px">${d.has_image===false?`<div style="height:220px;border-radius:10px;background:#111 url(https://i.ytimg.com/vi/${(String(d.youtube||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/)||[])[1]||''}/hqdefault.jpg) center/cover"></div>`:`<img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block">`}<div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
   },
 
   users: () => `
@@ -405,10 +405,11 @@ function resizeImage(file, maxW = 1400) {
   });
 }
 async function addDiffusion() {
-  const f = $('#df_file').files[0]; if (!f) return toast('Choisissez une image', true);
-  try { const data = await resizeImage(f); await api('POST', '/diffusion', { data, day: $('#df_day').value, name: $('#df_name').value, youtube: $('#df_yt').value.trim() }); toast('Diffusion publiée ✓'); await render(); }
+  const f = $('#df_file').files[0]; if (!f && !$('#df_yt').value.trim()) return toast('Choisissez une image ou un lien YouTube', true);
+  try { const data = f ? await resizeImage(f) : ''; await api('POST', '/diffusion', { data, day: $('#df_day').value, name: $('#df_name').value, youtube: $('#df_yt').value.trim() }); toast('Diffusion publiée ✓'); await render(); }
   catch (e) { toast(e.message, true); }
 }
+async function ytSync() { try { const r = await api('POST', '/youtube-sync'); toast(r.added ? r.added + ' nouvelle(s) vidéo(s) ajoutée(s)' : 'Aucune nouvelle vidéo (' + r.checked + ' vérifiées)'); await render(); } catch (e) { toast(e.message, true); } }
 async function delDiffusion(id) { if (!confirm('Supprimer cette diffusion ?')) return; await api('DELETE', '/diffusion/' + id); await render(); }
 
 async function inviteUser(email) {
