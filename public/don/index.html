@@ -235,19 +235,29 @@ body{overflow-x:hidden}
 </style>
 </head>
 <body>
+<header class="hero">
+  <div class="wrap">
+    <div class="top"><span></span><span>בס״ד</span></div>
+    <img src="/logo.png" alt="Logo Émounatéha — Sensibiliser, Aider, Lutter, Distribuer, Favoriser">
+    <h1>ÉMOUNATÉHA</h1>
+    <div class="he">אמונתך</div>
+    <div class="rule"></div>
+    <p class="slogan">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</p>
+    <p class="quote">Accueillons Mashia'h avec des actes de bonté et de bienveillance&nbsp;!</p>
+    <blockquote class="rebbe">« Rien n'est jamais perdu. On peut toujours réparer. Celui qui est impur ou éloigné, même s'il est responsable d'un tel état de fait, même s'il l'a voulu, peut, malgré tout, réparer. »<cite>Rabbi de Loubavitch</cite></blockquote>
+    <div class="btns">
+      <a class="btn gold" href="/don/">Aidez-nous à les aider</a>
+      <a class="btn line" href="/#actions">Nos actions</a>
+    </div>
+  </div>
+</header>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt=""><span>Émounatéha</span></a><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/#actions" id="navDif">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/#contact">Contact</a></div></div></nav>
-<header class="pagehead"><div class="wrap"><div class="top"><span></span><span>בס״ד</span></div><h1>Faire un don</h1><p>Paiement sécurisé par carte, reçu fiscal envoyé par email instantanément.</p></div></header>
-<style>.pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:14px 0 30px;position:relative}
-.pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
-.pagehead h1{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(30px,5vw,44px);color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.25);margin-top:8px}.pagehead p{opacity:.95;margin-top:6px}
-.donwrap{max-width:760px;margin:0 auto;padding:34px 16px 60px}
-.donbox{background:#fff;border:1px solid #e3ecec;border-radius:20px;box-shadow:0 14px 40px rgba(20,60,66,.12);padding:10px;overflow:hidden}
-.donalt{text-align:center;color:var(--mut);font-size:14px;margin-top:18px}.donalt a{color:var(--teal)}
-.thanks{display:none;text-align:center;background:#e9f4f4;border:1px solid #c5e0e1;border-radius:14px;padding:18px;margin-bottom:16px;color:var(--teal);font-weight:600}
-@media(max-width:600px){.donwrap{padding:18px 10px 40px}.donbox{border-radius:14px;padding:4px}}</style>
-<section><div class="donwrap">
+
+
+
+<section><div class="donwrap"><div class="title"><h2>Faire un don</h2><p>Paiement sécurisé par carte, reçu fiscal envoyé par email instantanément.</p></div>
   <div class="thanks" id="thanks">Merci de tout cœur pour votre don 🙏 Votre reçu arrive par email.</div>
-  <div class="donbox"><div id="allodons-don"></div></div>
+  <div class="donbox"><div id="allodons-don"></div><div id="donfb" style="display:none;text-align:center;padding:26px 16px"><p style="color:var(--mut);margin-bottom:14px">Le formulaire ne s'affiche pas ici.</p><a class="btn gold" href="https://www.allodons.fr/emounateha" target="_blank" rel="noopener">Faire un don sur AlloDons</a></div></div>
   <p class="donalt">Vous préférez PayPal ou un virement ? <a href="https://www.allodons.fr/emounateha" target="_blank" rel="noopener">Ouvrir notre page AlloDons</a></p>
 </div></section>
 <footer>
@@ -267,9 +277,10 @@ body{overflow-x:hidden}
   f.title = "Faire un don";
   f.allow = "payment *";
   document.getElementById("allodons-don").appendChild(f);
+  setTimeout(function(){ if(!f.dataset.ok){ document.getElementById('donfb').style.display='block'; } }, 7000);
   addEventListener("message", function (e) {
     if (e.origin !== "https://www.allodons.fr") return;
-    if (e.data && e.data.type === "allodons:embed-height") { f.style.height = e.data.height + "px"; }
+    if (e.data && e.data.type === "allodons:embed-height") { f.style.height = e.data.height + "px"; f.dataset.ok = 1; }
     if (e.data && e.data.type === "allodons:payment-result" && e.data.status === "succeeded") { document.getElementById("thanks").style.display = "block"; }
   });
 })();
