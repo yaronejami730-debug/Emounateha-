@@ -64,6 +64,23 @@ const FETES = [
   { k: 'tamouz12', g: 'hassid', n: 'Youd-Beth / Youd-Guimel Tamouz', he: 'י״ב–י״ג תמוז', re: /^Youd-Beth/i, title: 'Youd-Beth / Youd-Guimel Tamouz (י״ב–י״ג תמוז) : la liberté de faire le bien', subject: '{{prenom}}, Youd-Beth / Youd-Guimel Tamouz (י״ב–י״ג תמוז) : un geste de liberté', pre: 'Libérer, soutenir, accompagner.', body: 'Bonjour {{prenom}},\n\nYoud-Beth / Youd-Guimel Tamouz (י״ב–י״ג תמוז) rappelle la force de la persévérance.\n\nAvec Émounatéha, votre don contribue à redonner à des familles et à des personnes sans-abri les moyens de se relever.', btn: 'Faire un don' },
   { k: 'elloul18', g: 'hassid', n: 'Chaï Elloul', he: 'י״ח אלול', re: /^Cha. Elloul/i, title: "Chaï Elloul (י״ח אלול) : l'amour du prochain en actes", subject: '{{prenom}}, Chaï Elloul (י״ח אלול) : un don avant la nouvelle année', pre: 'Se préparer à la nouvelle année par le bien.', body: "Bonjour {{prenom}},\n\nChaï Elloul (י״ח אלול), à l'approche de la nouvelle année, est un moment pour se tourner vers les autres.\n\nVotre don à Émounatéha aide des familles dans le besoin à aborder la nouvelle année dans la dignité.", btn: 'Faire un don' },
 ];
+// prochain envoi : heure de Paris, plage horaire, quota du jour
+function nextWave(){
+  const st=S.settings||{}, from=+st.hourFrom||8, to=+st.hourTo||21, pm=+st.perMinute||5;
+  const p=Object.fromEntries(new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',hour:'numeric',minute:'numeric',hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  const h=+p.hour%24, mi=+p.minute, nowMin=h*60+mi;
+  const left=Math.max(0,(S.today.limit||300)-(S.today.sent||0));
+  const paused=S.today.pausedUntil && new Date(S.today.pausedUntil)>new Date();
+  const q=S.today.queue||0;
+  let wait, label;
+  if(q===0){ return {txt:'File vide : rien à envoyer'}; }
+  if(!paused && left>0 && h>=from && h<to){ wait=0; label='maintenant'; }
+  else if(h<from && !paused && left>0){ wait=from*60-nowMin; label='dans '+fmtWait(wait); }
+  else { wait=(24*60-nowMin)+from*60; label='demain à '+String(from).padStart(2,'0')+' h'; }
+  const n=Math.min(pm,left,q);
+  return {txt:`Prochain envoi : ${label} · ${n} mail(s) à la première minute (${pm} par minute, ${q} en attente)`};
+}
+function fmtWait(min){ const hh=Math.floor(min/60), mm=min%60; return hh? hh+' h '+String(mm).padStart(2,'0')+' min' : mm+' min'; }
 const feteNext = f => { const h = f.re && (S.holidaysAll || []).find(x => f.re.test(x.title)); return h ? new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
 const feteDays = f => { const h = f.re && (S.holidaysAll || []).find(x => f.re.test(x.title)); if (!h) return null; return Math.round((new Date(h.date) - new Date(new Date().toDateString())) / 86400000); };
 const FETES_SORTED = () => { const key = f => (f.k === 'annee' ? -1 : feteDays(f) ?? 99999); const cls = f => f.g === 'hassid' ? 1 : 0; return [...FETES].sort((x, y) => cls(x) - cls(y) || key(x) - key(y)); };
@@ -87,13 +104,14 @@ const views = {
     const pct = Math.min(100, S.today.sent / S.today.limit * 100);
     const q = S.today.queue, left = Math.max(0, S.today.limit - S.today.sent), days = q > left ? 1 + Math.ceil((q - left) / S.today.limit) : (q ? 1 : 0);
     const queueTxt = q ? `${q} mail(s) en attente · fin estimée ${days <= 1 ? "aujourd'hui" : 'dans ' + days + ' jours'}` : 'File vide';
+    const nextTxt = nextWave().txt;
     return `
     <div class="head"><div><h1>Tableau de bord</h1><p class="sub">Vue d'ensemble de vos relances</p></div>
       <button class="btn pri" onclick="runTick()">Envoyer maintenant le prochain lot</button></div>
     <div class="grid g4">
       <div class="card stat"><small>Contacts actifs</small><b>${active}</b><em>${S.contacts.length} au total</em></div>
       <div class="card stat"><small>Envoyés aujourd'hui${S.today.pausedUntil && new Date(S.today.pausedUntil) > new Date() ? ' · <b style="display:inline;font-size:12px;color:var(--warn)">limite atteinte, reprise demain</b>' : ''}</small><b>${S.today.sent}<span style="font-size:16px;color:var(--mut)"> / ${S.today.limit}</span></b><div class="pbar"><i style="width:${pct}%"></i></div></div>
-      <div class="card stat"><small>Campagnes en cours</small><b>${running}</b><em>${queueTxt}</em></div>
+      <div class="card stat"><small>Campagnes en cours</small><b>${running}</b><em>${queueTxt}</em><em style="display:block;margin-top:6px;color:var(--teal);font-weight:600">${nextTxt}</em></div>
       <div class="card stat"><small>Emails envoyés (total)</small><b>${totalSent}</b><em>${S.settings.hasKey ? 'Brevo connecté' : '⚠ Mode simulation (pas de clé Brevo)'}</em></div>
     </div>
     <div class="card" style="margin-top:16px">
@@ -125,18 +143,20 @@ const views = {
   },
 
   campaigns: () => `
-    <div class="head"><div><h1>Campagnes</h1><p class="sub">Séquences de mails envoyées au fil de l'eau (max ${S.today.limit}/jour)</p></div>
+    <div class="head"><div><h1>Campagnes</h1><p class="sub">Séquences de mails envoyées au fil de l'eau (max ${S.today.limit}/jour) · <b style="color:${S.settings.hasKey ? 'var(--ok)' : 'var(--warn)'}">${S.settings.hasKey ? '● Brevo connecté' : '⚠ Mode simulation (Brevo non connecté)'}</b></p></div>
       <button class="btn pri" onclick="campModal()">+ Nouvelle campagne</button></div>
     ${S.campaigns.length ? S.campaigns.map(c => {
       const total = (c.stats.sent + 0), steps = c.steps.length;
       return `<div class="card camp" style="margin-bottom:12px">
         <div class="grow"><b style="font-size:16px">${esc(c.name)}</b> ${campPill(c.status)}
-          <div class="hint">${steps} étape${steps > 1 ? 's' : ''}${c.startDate ? ' · démarre le ' + new Date(c.startDate).toLocaleDateString('fr-FR') : ''} · Audience : ${c.audienceTag ? '#' + esc(c.audienceTag) : 'tous les contacts actifs'} · ${c.stats.pending} contact(s) en cours de séquence</div></div>
+          ${c.plan ? `<div class="plan" style="margin:8px 0;padding:10px 12px;border-radius:10px;background:#eef6f6;font-size:13.5px"><b>Prochaine rafale : ${c.plan.nextLabel}</b> · <b>${c.plan.nextCount}</b> mail(s)<br><small>Aujourd'hui : ${c.plan.sentToday} / ${c.plan.dayQuota} · reste ${c.plan.remaining} à envoyer · ≈ <b>${c.plan.perHour}</b> mails/heure programmés</small></div>` : ''}
+          <div class="hint">${steps} étape${steps > 1 ? 's' : ''}${c.startDate ? ' · démarre le ' + new Date(c.startDate).toLocaleDateString('fr-FR') : ''} · Audience : ${c.audienceTag ? '#' + esc(c.audienceTag) : 'tous les contacts actifs'} · ${c.stats.pending} contact(s) en cours de séquence</div>
+          ${c.stats.excluded ? `<div class="hint" style="color:var(--warn)">⚠ ${c.stats.excluded} contact(s) exclu(s) : ont déjà reçu ce mail dans une autre campagne</div>` : ''}</div>
         <div class="stat"><b style="font-size:22px">${total}</b><em>envoyés</em></div>
         <div class="stat"><b style="font-size:22px;color:${c.stats.errors ? 'var(--bad)' : 'inherit'}">${c.stats.errors}</b><em>erreurs</em></div>
         <div class="row">
           ${c.status === 'running' || c.status === 'scheduled' ? `<button class="btn" onclick="campAct('${c.id}','pause')">⏸ Pause</button>` : c.status !== 'done' ? `<button class="btn pri" onclick="campAct('${c.id}','start')">▶ Démarrer</button>` : ''}
-          <button class="btn" onclick="campModal('${c.id}')">Modifier</button><button class="btn bad" onclick="del('campaigns','${c.id}')">✕</button></div></div>`;
+          <button class="btn" onclick="campDetail('${c.id}')">📊 Statistiques</button><button class="btn" onclick="campModal('${c.id}')">Modifier</button><button class="btn bad" onclick="del('campaigns','${c.id}')">✕</button></div></div>`;
     }).join('') : `<div class="card empty"><big>➤</big>Aucune campagne. Créez « Hanouka » avec une séquence de relances.</div>`}`,
 
   templates: () => {
@@ -144,12 +164,19 @@ const views = {
     const t = tplDraft, open = fetesOpen(), sorted = FETES_SORTED();
     const cur = t && FETES.find(f => f.k === t.holiday);
     const dayTxt = f => { const d = feteDays(f); return d === null ? '' : `<span class="jx ${d <= 14 ? 'soon' : d <= 45 ? 'mid' : ''}">${d <= 0 ? "Aujourd'hui" : 'J-' + d}</span>`; };
-    const card = f => { const has = S.templates.some(x => x.holiday === f.k); return `<a href="#" class="fcard ${t && t.holiday === f.k ? 'on' : ''}" onclick="openFete('${f.k}');return false"><div class="fl"><b>${f.n}</b><span>${dayTxt(f)}<span class="st" style="color:${has ? 'var(--ok)' : 'var(--mut)'}">${has ? '✓ prêt' : '+ créer'}</span></span></div><small>${feteNext(f) || ''}${f.he ? ` · <bdi>${f.he}</bdi>` : ''}</small></a>`; };
+    const card = f => { const has = S.templates.some(x => x.holiday === f.k); return `<a href="#" class="fcard ${t && t.holiday === f.k ? 'on' : ''}" onclick="openFete('${f.k}');return false"><div class="fl"><b>${f.n}</b><span>${dayTxt(f)}<span class="st" style="color:${has ? (f.k === 'hanouka' ? 'var(--ok)' : '#b0902f') : 'var(--mut)'}">${has ? (f.k === 'hanouka' ? '✓ prêt' : '✎ exemple') : '+ créer'}</span></span></div><small>${feteNext(f) || ''}${f.he ? ` · <bdi>${f.he}</bdi>` : ''}</small></a>`; };
     const others = S.templates.filter(x => !FETES.some(f => f.k === x.holiday));
     const chips = sorted.filter(f => feteDays(f) !== null).slice(0, 4).map(f => `<a href="#" class="chip" onclick="openFete('${f.k}');return false">${f.n} ${dayTxt(f)}</a>`).join('');
     return `
     <div class="head"><div><h1>Templates</h1><p class="sub">Variables : <code>{{prenom}}</code> <code>{{nom}}</code> <code>{{email}}</code></p></div>
       <button class="btn pri" onclick="newTpl()">+ Nouveau template</button></div>
+
+    <div class="card" style="margin:0 0 14px;padding:14px 16px;border-left:4px solid var(--gold,#c4a24a);background:#fffbef">
+      <b>ℹ️ À savoir :</b> les templates de fêtes (Roch Hachana, Pessah, Pourim…) sont des <b>modèles d'exemple</b> : changez le titre, le texte et le bouton pour qu'ils correspondent à votre message avant de les utiliser dans une campagne.
+      Seul <b>Hanoukah</b> est finalisé (même esprit que la page <code>/hanouka-lp/</code>).
+      <br><span class="hint" style="margin:0">Pour aller vite : choisissez une fête dans « Fêtes et calendrier », ou cliquez sur « + Nouveau template » pour partir d'une page vierge.
+      Le mail hebdomadaire des horaires de Chabbat est automatique : il n'a pas besoin de template.</span>
+    </div>
 
     <div class="card fetes">
       <button class="fetes-head" onclick="toggleFetes()"><span>📅 Fêtes et calendrier</span><span class="hint" style="margin:0">${cur ? 'Template ouvert : <b>' + cur.n + '</b>' : 'Choisir une fête pour créer son template'}</span><span class="chev">${open ? '▾ Replier' : '▸ Déplier'}</span></button>
@@ -451,3 +478,18 @@ function renderKeepFocus() {
 window.addEventListener('hashchange', () => { tplDraft = null; render(); });
 render();
 setInterval(() => { if (!document.hidden && $('#modal').classList.contains('hidden') && !location.hash.includes('templates') && !location.hash.includes('settings')) render(); }, 30000);
+
+// fiche statistiques d'une campagne
+function campDetail(id){
+  const c=S.campaigns.find(x=>x.id===id); if(!c) return;
+  const st=c.stats||{}, p=c.plan, steps=c.steps||[];
+  const cell=(l,v,col)=>`<div class="card" style="padding:12px 14px;text-align:center"><small style="display:block;color:var(--mut);font-size:12px">${l}</small><b style="font-size:22px;color:${col||'inherit'}">${v}</b></div>`;
+  const grid=`<div class="grid g4" style="gap:10px;margin:12px 0">
+    ${cell('Audience',st.audience||0)}${cell('Déjà envoyés',st.sent||0,'var(--ok)')}${cell('Aujourd\'hui',p?p.sentToday+' / '+p.dayQuota:'—')}${cell('Restant à envoyer',p?p.remaining:(st.pending||0))}
+    ${cell('En séquence',st.pending||0)}${cell('Exclus (autre campagne)',st.excluded||0,st.excluded?'var(--warn)':'inherit')}${cell('Erreurs',st.errors||0,st.errors?'var(--bad)':'inherit')}${cell('Mails / heure',p?p.perHour:'—')}</div>`;
+  const next=p?`<div class="card" style="padding:12px 14px;margin-bottom:12px"><b>Prochaine rafale</b> : ${p.nextLabel} · <b>${p.nextCount}</b> mail(s)<br><small class="hint">Quota du jour ${p.dayQuota} · ${p.dayLeft} restant aujourd'hui · moyenne ≈ ${p.perHour} mails/heure programmés</small></div>`:'';
+  const perStep=steps.length?`<table style="width:100%;font-size:14px;margin-bottom:12px"><tr><th align="left">Étape</th><th align="right">Envois</th><th align="right">Délai</th></tr>${steps.map((x,i)=>`<tr><td>Étape ${i+1}</td><td align="right"><b>${(st.steps||[])[i]||0}</b></td><td align="right">${i?'+'+(x.delayDays||0)+' j':'immédiat'}</td></tr>`).join('')}</table>`:'';
+  const days=(st.daily||[]).length?`<h3 style="margin:12px 0 6px">Envois par jour</h3><table style="width:100%;font-size:14px">${st.daily.map(d=>`<tr><td>${new Date(d.day+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</td><td align="right"><b>${d.n}</b></td></tr>`).join('')}</table>`:'<p class="hint">Aucun envoi pour le moment.</p>';
+  const period=`<p class="hint">Période : ${c.startDate?new Date(c.startDate).toLocaleDateString('fr-FR'):'—'} → ${c.endDate?new Date(c.endDate).toLocaleDateString('fr-FR'):'sans fin'} · statut : ${esc(c.status)}</p>`;
+  modal(`<h2>${esc(c.name)}</h2>${period}${grid}${next}${perStep}${days}<div class="row" style="margin-top:14px"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
+}

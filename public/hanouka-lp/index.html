@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hanouka 5787 — Offrir un colis de fête · Émounatéha</title>
+<meta name="description" content="Cette année, des familles n'auront ni bougies, ni beignets, ni repas de fête. Pour 130 €, Émounatéha leur livre un colis de Hanouka complet. On compte sur vous.">
+<meta name="theme-color" content="#141414">
+<meta property="og:title" content="Hanouka 5787 — On compte sur vous">
+<meta property="og:description" content="Pour 130 €, un colis de fête complet (beignets, bougies, hallot, poulet, huile) est livré à une famille avant la première bougie.">
+<meta property="og:image" content="/hanouka-lp/hero.jpg">
+<link rel="icon" href="/logo.png">
+<link rel="preload" as="image" href="/hanouka-lp/hero.jpg?v=5" fetchpriority="high" media="(max-width:899px)">
+<link rel="preload" as="image" href="/hanouka-lp/hero-wide.jpg?v=5" fetchpriority="high" media="(min-width:900px)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#1f6a72;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--night:#141414}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+html,body{height:100%}
+body{font-family:Manrope,system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;color:#fff;background:#0c0c0c;-webkit-font-smoothing:antialiased;overflow:hidden}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold-l);outline-offset:3px;border-radius:8px}
+
+/* ---------- l'image EST l'écran ---------- */
+.stage{position:fixed;inset:0;display:flex;flex-direction:column;isolation:isolate;background:transparent}
+.stage>img{position:absolute;top:-10svh;left:0;width:100%;height:calc(100svh + 10svh);object-fit:cover;object-position:50% 22%;z-index:-2}
+.stage>img.d{display:none}
+.stage::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,18,18,0) 0%,rgba(18,18,18,0) 50%,rgba(18,18,18,.25) 100%)}
+
+/* ---------- marques, en haut ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 18px 0}
+.partners{display:inline-flex;align-items:center;text-decoration:none}
+.partners img{display:block;height:92px;width:auto;filter:drop-shadow(0 2px 12px rgba(0,0,0,.5))}
+.partners .x{font-size:34px;font-weight:700;color:var(--gold-l);opacity:.9;line-height:1}
+.partners img.allo{height:58px;width:58px;border-radius:50%}
+.bsd{font-size:16px;font-weight:700;color:var(--gold-l);text-shadow:0 1px 8px rgba(0,0,0,.55)}
+
+
+@keyframes tick{0%{transform:translateY(-4px);opacity:.3}100%{transform:none;opacity:1}}
+
+
+/* curseur de déverrouillage */
+.unlock{position:relative;height:68px;margin:0 auto;border-radius:99px;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;max-width:460px}
+.unlock .lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;padding-left:70px;font-weight:700;font-size:16px;color:#fff;transition:opacity .2s;pointer-events:none;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+.unlock .lbl em{font-style:normal;font-weight:800;color:var(--gold-l)}
+.unlock .shine{background:linear-gradient(90deg,#fff 35%,#e4cd8a 50%,#fff 65%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 2.8s linear infinite}
+@keyframes shine{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.unlock .thumb{position:absolute;left:6px;top:6px;width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ecd98f,#c4a24a);display:grid;place-items:center;box-shadow:0 6px 16px rgba(0,0,0,.4);cursor:grab;transition:transform .35s cubic-bezier(.2,.7,.2,1);z-index:2;outline:none}
+.unlock .thumb:focus-visible{box-shadow:0 0 0 3px rgba(228,205,138,.7)}
+.unlock .thumb svg{width:22px;height:22px;color:#1b2b2d}
+.unlock.done{background:rgba(228,205,138,.35)}
+.unlock.done .lbl{opacity:0}
+
+/* ---------- texte + bouton, en bas ---------- */
+.firstc{font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-l);margin-bottom:8px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.firstc .cnt{display:inline-block;margin-left:10px;font-size:11.5px;font-weight:600;letter-spacing:.4px;text-transform:none;color:#cfd9db;opacity:.85}
+.firstc .cnt b{font-weight:700;color:#fff}
+.foot{margin-top:auto;padding:46px 22px calc(26px + env(safe-area-inset-bottom));max-width:640px;margin-left:auto;margin-right:auto;width:100%;background:linear-gradient(to bottom,rgba(18,18,18,0) 0,rgba(18,18,18,.22) 90px,rgba(18,18,18,.3) 100%);-webkit-backdrop-filter:blur(6px) saturate(115%);backdrop-filter:blur(6px) saturate(115%);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 90px);mask-image:linear-gradient(to bottom,transparent 0,#000 90px)}
+.when{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:99px;background:rgba(18,18,18,.55);border:1px solid rgba(228,205,138,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:12.5px;font-weight:600;color:#f1e7c9;margin-bottom:8px}
+.when i{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 rgba(196,162,74,.6);animation:glow 2.4s ease-out infinite}
+.when b{font-weight:800;color:#fff}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(196,162,74,.65)}100%{box-shadow:0 0 0 9px rgba(196,162,74,0)}}
+h1{font-weight:800;font-size:clamp(21px,5.8vw,26px);line-height:1.05;letter-spacing:-.8px;color:#fff;text-wrap:balance;text-shadow:0 2px 18px rgba(0,0,0,.5)}
+h1 em{font-style:normal;color:var(--gold-l)}
+.lead{margin-top:5px;font-size:13px;line-height:1.38;font-weight:500;color:#dfe9ea;max-width:34em;text-shadow:0 1px 10px rgba(0,0,0,.6)}
+.lead b{font-weight:800;color:#fff}
+
+.cta{margin-top:22px}
+.btn{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;height:52px;padding:0 8px 0 22px;border-radius:99px;text-decoration:none;background:linear-gradient(180deg,#ecd98f,#d6b862 55%,#c4a24a);color:#1b2b2d;font-weight:700;font-size:16px;letter-spacing:-.2px;max-width:460px;box-shadow:0 14px 30px -14px rgba(196,162,74,.8);transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .2s;animation:breathe 3.2s ease-in-out infinite}
+.btn .price{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 15px;border-radius:99px;background:rgba(27,43,45,.14);color:#1b2b2d;font-weight:800;font-size:15px;letter-spacing:0;transition:transform .2s}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.btn:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 26px 50px -16px rgba(0,0,0,.8)}
+.btn:hover .price{transform:scale(1.05)}
+.btn:active{transform:scale(.98)}
+.uberline{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#c9d9db;margin-top:9px;padding-left:4px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.uberline svg{height:11px;width:auto;color:#fff}
+.ubrand svg{height:.9em;width:auto;color:#fff;vertical-align:-.08em;margin:0 -3px 0 2px}
+
+.legal{position:absolute;left:0;right:0;bottom:0;padding:0 18px calc(8px + env(safe-area-inset-bottom));font-size:10px;color:rgba(255,255,255,.4);text-align:center}
+.legal a{color:rgba(255,255,255,.55);text-decoration:none}
+.legal span{margin:0 4px}
+
+/* ---------- apparition ---------- */
+.stage>img{opacity:0;transform:scale(1.04);animation:photo 1.2s cubic-bezier(.2,.7,.2,1) forwards}
+.rv{opacity:0;transform:translateY(10px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+.d1{animation-delay:.3s}.d2{animation-delay:.42s}.d3{animation-delay:.54s}.d4{animation-delay:.68s}
+@keyframes photo{to{opacity:1;transform:none}}
+@keyframes rise{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.stage>img,.rv{opacity:1;transform:none;animation:none}.btn,.btn::after,.when i{animation:none}}
+
+/* ---------- petits écrans en hauteur ---------- */
+@media (max-height:680px){h1{font-size:clamp(24px,7vw,30px)}.lead{font-size:14px;margin-top:8px}.cta{margin-top:22px}}
+
+/* ---------- ordinateur : même principe, image paysage, texte à gauche ---------- */
+@media (min-width:900px){
+  .stage>img.m{display:none}.stage>img.d{display:block;top:0;height:100%;object-position:62% 50%}
+  .stage::before{background:linear-gradient(90deg,rgba(18,18,18,.82) 0%,rgba(18,18,18,.55) 34%,rgba(18,18,18,0) 56%),linear-gradient(180deg,rgba(18,18,18,.35),rgba(18,18,18,0) 26%)}
+  .top{padding:26px 44px 0}
+  .partners img{height:110px}
+  .foot{margin:auto 0;padding:0 44px 70px;max-width:640px}
+  .legal{text-align:right}
+  .when{font-size:13px}
+  h1{font-size:clamp(40px,4.4vw,56px);letter-spacing:-1.8px}
+  .lead{font-size:17.5px;margin-top:16px}
+  .cta{margin-top:26px}
+  .btn{width:auto;min-width:380px;height:62px}
+  .legal{padding:0 44px 16px;font-size:11px}
+}
+</style>
+</head>
+<body>
+<main class="stage">
+  <img class="m" src="/hanouka-lp/hero.jpg?v=5" width="752" height="1344" alt="Une famille hassidique allume la hanoukia, entourée de beignets, de bougies et de toupies" fetchpriority="high">
+  <img class="d" src="/hanouka-lp/hero-wide.jpg?v=5" width="1344" height="752" alt="" aria-hidden="true">
+
+  <header class="top rv">
+    <a class="partners" href="/" aria-label="Émounatéha, retour au site"><img src="/logo.png" alt="Émounatéha"></a>
+    <span class="bsd" aria-hidden="true">בס״ד</span>
+  </header>
+
+  <section class="foot">
+    <p class="firstc rv d1">Première bougie <span class="cnt" id="cnt"></span></p>
+    <h1 class="rv d2">Offrez la lumière <em>à une famille.</em></h1>
+    <p class="lead rv d3">Pour <b>130&nbsp;€</b>, un colis de fête complet est livré à une famille avant la première bougie, directement par <span class="ubrand"><svg viewBox="0 7.2 24 9.6" role="img" aria-label="Uber"><path fill="currentColor" d="M0 7.97v4.958c0 1.867 1.302 3.101 3 3.101.826 0 1.562-.316 2.094-.87v.736H6.27V7.97H5.082v4.888c0 1.257-.85 2.106-1.947 2.106s-1.946-.85-1.946-2.106V7.97zm7.44 0v7.925h1.13v-.725a2.6 2.6 0 0 0 1.9.8c1.676 0 2.995-1.33 2.995-3.03 0-1.7-1.319-3.03-2.994-3.03a2.6 2.6 0 0 0-1.885.792V7.97zm13.07 2.137c-.816 0-1.483.32-1.942.927v-.86H17.42v5.72h1.193v-3.244c0-.907.588-1.489 1.395-1.489h.52v-1.054zm-10.164.916c1.056 0 1.902.853 1.902 1.964 0 1.112-.846 1.964-1.902 1.964-1.057 0-1.902-.852-1.902-1.964 0-1.11.845-1.964 1.902-1.964m4.24-.962c-1.675 0-2.93 1.33-2.93 3.03 0 1.717 1.313 3.03 3.034 3.03.998 0 1.839-.44 2.37-1.17l-.864-.627c-.408.513-.916.776-1.506.776-.93 0-1.65-.67-1.796-1.54h4.448c.01-.106.015-.213.015-.32.004-1.797-1.233-3.18-2.771-3.18m0 .98c.788 0 1.468.567 1.64 1.372h-3.337c.18-.805.86-1.372 1.697-1.372"/></svg></span>. Chaque don allume une lumière de plus.</p>
+    <div class="cta rv d4">
+      <div class="unlock" id="unlock" role="button" aria-label="Glisser pour offrir un colis de fête, 130 euros">
+        <span class="lbl"><span class="shine">Glisser pour offrir un colis</span><em>130&nbsp;€</em></span>
+        <span class="thumb" id="thumb" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+  </section>
+</main>
+
+
+<script>
+(function(){
+  var LINK='https://hannouka.allodons.fr/emounateha';
+  var u=document.getElementById('unlock'), t=document.getElementById('thumb'), lbl=u.querySelector('.lbl');
+  var drag=false, startX=0, x=0;
+  function maxX(){return u.clientWidth-t.offsetWidth-10;}
+  function set(v){x=Math.max(0,Math.min(maxX(),v));t.style.transform='translateX('+x+'px)';lbl.style.opacity=String(1-(x/maxX())*0.85);}
+  function go(){u.classList.add('done');set(maxX());setTimeout(function(){location.href=LINK;},380);}
+  t.addEventListener('pointerdown',function(e){drag=true;startX=e.clientX-x;t.setPointerCapture(e.pointerId);t.style.transition='none';});
+  t.addEventListener('pointermove',function(e){if(drag)set(e.clientX-startX);});
+  function end(){if(!drag)return;drag=false;t.style.transition='';if(x>maxX()*0.82){go();}else{set(0);}}
+  t.addEventListener('pointerup',end);
+  t.addEventListener('pointercancel',end);
+  t.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+})();
+</script>
+<script>
+(function(){
+  var el=document.getElementById('cnt'); if(!el) return;
+  var target=new Date('2026-12-04T17:00:00+01:00').getTime();
+  function tick(){
+    var d=Math.ceil((target-Date.now())/86400000);
+    if(d>1) el.innerHTML='· dans <b>'+d+' jours</b>';
+    else if(d===1) el.innerHTML='· <b>demain soir</b>';
+    else if(d===0) el.innerHTML='· <b>ce soir</b>';
+    else el.innerHTML='· <b>C’est Hanouka</b>';
+  }
+  tick(); setInterval(tick,60000);
+})();
+</script>
+</body>
+</html>

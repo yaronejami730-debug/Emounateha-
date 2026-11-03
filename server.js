@@ -67,7 +67,7 @@ const TABLES = {
 };
 const JSONCOLS = new Set(['steps']);
 const lastSnap = {}; // table -> Map(id -> json)
-const toRow = (t, o) => Object.entries(TABLES[t]).map(([k, c]) => o[k] === undefined ? null : (JSONCOLS.has(c) ? JSON.stringify(o[k]) : o[k]));
+const toRow = (t, o) => Object.entries(TABLES[t]).map(([k, c]) => o[k] === undefined ? (c === 'quota' ? false : null) : (JSONCOLS.has(c) ? JSON.stringify(o[k]) : o[k])); // quota : jamais null (contrainte not null)
 const fromRow = (t, r) => { const o = { id: r.id }; for (const [k, c] of Object.entries(TABLES[t])) { let v = r[c]; if (v instanceof Date) v = v.toISOString(); if (v === null && !['messageId', 'error', 'templateId', 'campaignId', 'contactId'].includes(k)) v = k === 'quota' ? false : ''; if (v !== null) o[k] = v; } return o; };
 
 async function loadDb() {
@@ -154,11 +154,11 @@ function renderEmail(t, contact) {
     : '';
   const button = t.buttonText && t.buttonUrl
     ? `<table role="presentation" align="center" style="margin:28px auto 8px;"><tr><td style="background:${accent};border-radius:999px;">
-        <a href="${esc(fill(t.buttonUrl, c))}" style="display:inline-block;padding:16px 38px;font-size:17px;font-weight:bold;color:#1f2937;text-decoration:none;font-family:Arial,sans-serif;">${esc(t.buttonText)}</a>
+        <a href="${esc(fill(t.buttonUrl, c))}" style="display:inline-block;padding:${t.buttonSmall ? '11px 26px' : '16px 38px'};font-size:${t.buttonSmall ? '14px' : '17px'};font-weight:bold;color:#1f2937;text-decoration:none;font-family:Arial,sans-serif;">${esc(t.buttonText)}</a>
        </td></tr></table>` : '';
   const wa = (s.phone || '').replace(/\D/g, '').replace(/^0/, '33');
   const pill = (href, label) => `<a href="${esc(href)}" style="display:inline-block;margin:4px 3px;padding:10px 22px;background:#7b8a8d;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;border-radius:999px;">${label}</a>`;
-  const ico = (href, name, alt) => `<a href="${esc(href)}" style="display:inline-block;margin:0 5px;text-decoration:none;"><img src="${abase}/icon-${name}.png" width="34" height="34" alt="${alt}" style="display:block;width:34px;height:34px;border:0;border-radius:17px;background:#7b8a8d;color:#ffffff;font-size:11px;"></a>`;
+  const ico = (href, name, alt) => `<a href="${esc(href)}" style="display:inline-block;margin:0 4px;text-decoration:none;"><img src="${abase}/icon-${name}.png" width="26" height="26" alt="${alt}" style="display:block;width:26px;height:26px;border:0;border-radius:17px;background:#7b8a8d;color:#ffffff;font-size:11px;"></a>`;
   const contactLine = '<div>' + [
     s.instagramUrl ? ico(s.instagramUrl, 'instagram', 'Instagram') : '',
     s.facebookUrl ? ico(s.facebookUrl, 'facebook', 'Facebook') : '',
@@ -184,11 +184,18 @@ body,table,td{background-color:inherit}
 [data-ogsc] .ink,[data-ogsc] .ink *{color:#111827 !important}
 [data-ogsb] .bgp{background-color:#ffffff !important}
 [data-ogsb] body,[data-ogsb] .wrap-out{background-color:#eef2f1 !important}
+@media only screen and (max-width:620px){
+  .outer{padding:0 !important}
+  .card{border-radius:0 !important;box-shadow:none !important;max-width:100% !important}
+  .pad{padding-left:18px !important;padding-right:18px !important}
+  .cb-time{font-size:30px !important}
+}
+${t.extraCss || ''}
 </style></head>
 <body class="wrap-out" bgcolor="#eef2f1" style="margin:0;padding:0;background:#eef2f1;font-family:Arial,Helvetica,sans-serif;">
 <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(fill(t.preheader, c))}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f1;padding:24px 12px;"><tr><td align="center">
- <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f1;"><tr><td align="center" class="outer" style="padding:24px 12px;">
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:600px;width:100%;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
   <tr><td class="hdr" background="${abase}/header2.jpg" bgcolor="#1f6a72" style="background:#1f6a72 url('${abase}/header2.jpg') center top/cover no-repeat;padding:26px 24px 30px;text-align:center;">
     <div style="text-align:right;color:${accent};font-size:13px;margin-bottom:6px;">בס״ד</div>
     ${logo}
@@ -196,11 +203,11 @@ body,table,td{background-color:inherit}
     <div style="font-size:22px;color:#fff;letter-spacing:6px;margin-top:2px;">אמונתך</div>
     <div style="height:2px;width:90px;background:${accent};margin:14px auto 12px;"></div>
     <div style="font-size:13px;color:#d8ecea;">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</div></td></tr>
-  <tr><td class="bgp" ${patAttr} style="${pat}padding:40px 36px 12px;">
+  <tr><td class="bgp pad" ${patAttr} style="${pat}padding:${t.extraHtml ? '30px 24px 10px' : '40px 36px 12px'};">
     <h1 class="ttl" style="margin:0 0 22px;font-family:Georgia,serif;font-size:28px;line-height:1.25;color:${color};text-align:center;">${esc(fill(t.title, c))}</h1>
-    ${paras}${button}
+    ${paras}${t.extraHtml || ''}${button}
   </td></tr>
-  <tr><td class="bgp" ${patAttr} style="${pat}padding:24px 36px 30px;text-align:center;border-top:1px solid #eef0f3;">
+  <tr><td class="bgp pad" ${patAttr} style="${pat}padding:24px 36px 30px;text-align:center;border-top:1px solid #eef0f3;">
     <div style="margin:0 0 14px;text-align:center;">${contactLine}</div>
     <p style="margin:0 0 6px;font-size:12px;color:#6b7280;">${esc(s.orgName)} · Association à but non lucratif${s.address ? ' · ' + esc(s.address) : ''}</p>
     <p style="margin:0;font-size:12px;color:#9ca3af;">Vous recevez cet email car vous êtes en contact avec ${esc(s.orgName)}.<br>
@@ -275,12 +282,18 @@ const usedToday = () => Math.max(sentToday(), brevoCache.n);
 const nextMidnight = () => new Date(parisDay(Date.now() + 86400000) + 'T00:00:05+02:00').toISOString(); // minuit heure de Paris (le quota Brevo est de toute façon revérifié)
 const sentToday = () => db.sends.filter(x => x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
 
+// envois qui comptent pour une campagne : on ne compte pas les envois d'une campagne portant le MÊME nom
+// (une campagne recréée avec le même nom et le même CSV repart du début). Les autres campagnes restent prises en compte.
+function relevantSends(camp) {
+  const names = new Map(db.campaigns.map(c => [c.id, c.name]));
+  return db.sends.filter(x => x.status !== 'error' && (x.campaignId === camp.id || names.get(x.campaignId) !== camp.name));
+}
 function dueSends(campaign) {
   const steps = campaign.steps || [];
   if (!steps.length) return [];
   const out = [];
   const tag = (campaign.audienceTag || '').trim().toLowerCase();
-  const ok = db.sends.filter(x => x.status !== 'error');
+  const ok = relevantSends(campaign);
   const byContact = new Map();
   for (const x of ok) { if (!byContact.has(x.contactId)) byContact.set(x.contactId, []); byContact.get(x.contactId).push(x); }
   const gapMs = (db.settings.minGapHours || 0) * 3600000;
@@ -334,13 +347,21 @@ async function tick(force = false) {
     const todayStr = parisDay(Date.now());
     for (const c of db.campaigns) if (c.status === 'scheduled' && (!c.startDate || c.startDate <= todayStr)) c.status = 'running';
     for (const c of db.campaigns) if (c.status === 'running' && c.endDate && c.endDate < todayStr) c.status = 'done'; // période terminée
+    try { budget -= await chabbatJob(budget); } catch (e) { console.error('Chabbat', e.message); }
     for (const camp of db.campaigns.filter(c => c.status === 'running')) {
-      // répartition sur la période : quota du jour = (restant + déjà envoyé aujourd'hui) / jours restants
+      // moteur de répartition : total de la campagne (déjà envoyé + restant) ÷ jours restants = quota du jour (max dailyLimit),
+      // puis le quota du jour est étalé minute par minute sur la plage horaire (hourFrom → hourTo)
       let campCap = Infinity;
       if (camp.endDate) {
         const daysLeft = Math.max(1, Math.round((new Date(camp.endDate) - new Date(todayStr)) / 86400000) + 1);
         const sentC = db.sends.filter(x => x.campaignId === camp.id && x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
-        campCap = Math.ceil((remaining(camp) + sentC) / daysLeft) - sentC;
+        const sentTot = db.sends.filter(x => x.campaignId === camp.id && x.status !== 'error').length;
+        const dayQuota = Math.min(db.settings.dailyLimit, Math.ceil((remaining(camp) + sentTot) / daysLeft));
+        const winMin = Math.max(1, (db.settings.hourTo - db.settings.hourFrom) * 60);
+        const nowMin = (+new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24) * 60 + (+new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', minute: 'numeric' }));
+        const elapsed = Math.min(winMin, Math.max(0, nowMin - db.settings.hourFrom * 60));
+        const allowedSoFar = Math.ceil(dayQuota * elapsed / winMin);
+        campCap = Math.max(0, allowedSoFar - sentC);
       }
       const due = dueSends(camp);
       if (!due.length && !pendingCount(camp)) camp.status = 'done'; // plus rien à envoyer ni en attente de délai
@@ -363,7 +384,7 @@ function remaining(camp) { // nombre de mails encore à envoyer
   for (const c of db.contacts) {
     if (c.status !== 'active') continue;
     if (tag && !(c.tags || []).map(t => t.toLowerCase()).includes(tag)) continue;
-    const got = new Set(db.sends.filter(x => x.contactId === c.id && x.status !== 'error').map(x => x.templateId));
+    const got = new Set(relevantSends(camp).filter(x => x.contactId === c.id).map(x => x.templateId));
     n += (camp.steps || []).filter(st => !got.has(st.templateId)).length;
   }
   return n;
@@ -375,10 +396,175 @@ function pendingCount(camp) {
   for (const c of db.contacts) {
     if (c.status !== 'active') continue;
     if (tag && !(c.tags || []).map(t => t.toLowerCase()).includes(tag)) continue;
-    const got = new Set(db.sends.filter(x => x.contactId === c.id && x.status !== 'error').map(x => x.templateId));
+    const got = new Set(relevantSends(camp).filter(x => x.contactId === c.id).map(x => x.templateId));
     if (steps.some(st => !got.has(st.templateId))) p++;
   }
   return p;
+}
+
+
+// ---------- Horaires de Chabbat et des fêtes par email ----------
+const CITIES = [['Yérouchalayim', 281184, 40], ['Tel Aviv-Netanya', 293397, 18], ['Haïfa', 294801, 30], ['Ashdod', 295629, 18], ['Netanya', 294071, 18], ['Beer-Sheva', 295530, 18], ['Eilat', 295277, 18], ['Tsfat', 293100, 18], ['Tibériade', 293322, 18], ['Paris', 2988507, 18], ['Sarcelles', 2976043, 18], ['Créteil', 3022530, 18], ['Boulogne-Billancourt', 3031137, 18], ['Versailles', 2969679, 18], ['Lyon', 2996944, 18], ['Marseille', 2995469, 18], ['Nice', 2990440, 18], ['Cannes', 3028808, 18], ['Aix-en-Provence', 3038354, 18], ['Montpellier', 2992166, 18], ['Toulouse', 2972315, 18], ['Bordeaux', 3031582, 18], ['Nantes', 2990969, 18], ['Lille', 2998324, 18], ['Strasbourg', 2973783, 18], ['Metz', 2994160, 18], ['Nancy', 2990999, 18], ['Grenoble', 3014728, 18], ['Genève', 2660646, 18], ['Zurich', 2657896, 18], ['Bruxelles', 2800866, 18], ['Anvers', 2803138, 18], ['Londres', 2643743, 18], ['Manchester', 2643123, 18], ['Milan', 3173435, 18], ['Rome', 3169070, 18], ['Madrid', 3117735, 18], ['Barcelone', 3128760, 18], ['Casablanca', 2553604, 18], ['Tunis', 2464470, 18], ['Johannesburg', 993800, 18], ['New York', 5128581, 18], ['Miami', 4164138, 18], ['Los Angeles', 5368361, 18], ['Boston', 4930956, 18], ['Montréal', 6077243, 18], ['Toronto', 6167865, 18], ['Mexico', 3530597, 18], ['Buenos Aires', 3435910, 18], ['São Paulo', 3448439, 18], ['Sydney', 2147714, 18], ['Melbourne', 2158177, 18]];
+const ISRAEL = new Set([281184, 293397, 294801, 295629, 294071, 295530, 295277, 293100, 293322]);
+const cityById = id => CITIES.find(c => String(c[1]) === String(id)) || CITIES[0];
+const cityOfContact = c => { const t = (c.tags || []).find(x => /^ville:\d+$/.test(x)); return cityById(t ? t.slice(6) : 2988507); };
+const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
+const clean = t => String(t || '').replace(/[̀-ͯ]/g, '').replace(/H̲/g, 'H').replace(/Hechvan/g, "Mar'Hechvan").replace(/Kislav/g, 'Kislev');
+const fmtH = (iso, tz) => new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: tz }).replace(':', ' h ');
+const fmtD = (iso, tz) => cap1(new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz }));
+const ymdTz = (iso, tz) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: tz });
+const SKIP_FETE = /^(Hag HaBanot|Roch Hachanah LaBehemot|Lel Selihot|Yom HaAliyah|Family Day|Sigd|Yom HaShoah VeHaGevurah)/i;
+
+// horaires + fêtes des `days` prochains jours pour une ville (API Hebcal)
+async function hebcalWeek(city, days = 8) {
+  const start = parisDay(Date.now()), end = parisDay(Date.now() + days * 86400000);
+  const u = `https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=on&geonameid=${city[1]}&M=on&b=${city[2]}&lg=fr&i=${ISRAEL.has(city[1]) ? 'on' : 'off'}&start=${start}&end=${end}`;
+  const r = await fetch(u); if (!r.ok) throw new Error('Hebcal ' + r.status);
+  const j = await r.json(); const tz = (j.location && j.location.tzid) || 'Europe/Paris';
+  const ev = [];
+  for (const it of j.items || []) {
+    const day = String(it.date).slice(0, 10);
+    if (it.category === 'candles') ev.push({ day, kind: 'candles', at: it.date });
+    else if (it.category === 'havdalah') ev.push({ day, kind: 'havdalah', at: it.date });
+    else if (it.category === 'parashat') ev.push({ day, kind: 'parasha', title: clean(it.title).replace(/^Parachah?\s*/i, 'Parachat ') });
+    else if (it.category === 'roshchodesh') ev.push({ day, kind: 'rh', title: clean(it.title).replace(/^Roch Hodech\s*/i, '') });
+    else if (it.category === 'mevarchim') ev.push({ day, kind: 'mevarchim', title: clean(it.title).replace(/^Mevarchim Chodesh\s*/i, '') });
+    else if (it.category === 'holiday' && !SKIP_FETE.test(it.title)) {
+      let t = clean(it.title).split(':')[0].replace(/\s*\(.*\)$/, '').trim();
+      t = t.replace(/^Erev\s+(.+)$/i, 'Veille de $1');
+      if (!ev.some(e => e.kind === 'fete' && e.day === day && e.title === t)) ev.push({ day, kind: 'fete', title: t, yomtov: !!it.yomtov });
+    }
+  }
+  ev.sort((a, b) => (a.day + (a.at || '')).localeCompare(b.day + (b.at || '')));
+  return { tz, ev };
+}
+
+// email « horaires de la semaine » : carte propre avec allumage des bougies, sortie, parachat, fêtes
+function salutation(c) {
+  const civ = ((c && c.tags) || []).find(x => /^civ:/.test(x)); const nom = (c && c.lastName || '').trim(), pre = (c && c.firstName || '').trim();
+  if (civ === 'civ:M') return 'Bonjour Monsieur' + (nom ? ' ' + nom : '') + ',';
+  if (civ === 'civ:Mme') return 'Bonjour Madame' + (nom ? ' ' + nom : '') + ',';
+  return 'Bonjour' + (pre ? ' ' + pre : '') + ',';
+}
+
+// email « horaires de la semaine » : tout à plat, filets dorés, deux colonnes entrée / sortie, Roch Hodech mis en avant
+function chabbatTemplate(city, wk, mode, contact) {
+  const { tz, ev } = wk;
+  const can = ev.filter(e => e.kind === 'candles'), hav = ev.filter(e => e.kind === 'havdalah');
+  const par = ev.find(e => e.kind === 'parasha'), fetes = ev.filter(e => e.kind === 'fete'), mev = ev.find(e => e.kind === 'mevarchim');
+  const rhs = ev.filter(e => e.kind === 'rh');
+  const firstCandle = can[0];
+  const G = '#d6b862', T = '#1f6a72';
+  const hr = `<div style="height:1px;background:${G};margin:16px 0;line-height:1px;font-size:1px;">&nbsp;</div>`;
+  const cell = (kind, e, border) => `<td width="50%" valign="top" class="${kind === 'in' ? 'cb-in' : 'cb-in2'}" style="padding:4px 10px;text-align:center;${border ? 'border-left:1px solid ' + G + ';' : ''}">
+      <div style="font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:#8a9a9d;">${kind === 'in' ? '<span class="cb-flame">🕯️</span> Entrée' : '<span class="cb-flame">✨</span> Sortie'}</div>
+      ${e ? `<div class="cb-time" style="font-family:Georgia,serif;font-size:36px;line-height:1.1;font-weight:bold;color:${T};margin:6px 0 3px;white-space:nowrap;">${esc(fmtH(e.at, tz)).replace(/ /g, '&nbsp;')}</div><div style="font-size:13.5px;color:#51666a;">${esc(fmtD(e.at, tz))}</div>` : '<div style="font-size:22px;color:#c3cfd1;margin-top:10px;">—</div>'}</td>`;
+  const pairs = []; let open = null;
+  for (const e of ev) { if (e.kind === 'candles') { if (open) pairs.push({ i: open }); open = e; } else if (e.kind === 'havdalah') { pairs.push({ i: open, o: e }); open = null; } }
+  if (open) pairs.push({ i: open });
+  const sched = pairs.map((p, k) => (k ? hr : '') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cell('in', p.i, false)}${cell('out', p.o, true)}</tr></table>`).join('')
+    || '<p style="text-align:center;color:#8a9a9d;">Horaires indisponibles pour le moment.</p>';
+  const head = `<div style="text-align:center;margin:4px 0 14px;"><div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:#b0902f;">${esc(city[0])}</div>${par ? `<div style="font-family:Georgia,serif;font-size:19px;color:${T};margin-top:3px;">${esc(par.title)}</div>` : ''}${mev ? `<div style="font-size:13px;color:#51666a;margin-top:2px;">Chabbat Mévarkhim ${esc(mev.title)}</div>` : ''}</div>`;
+  let rh = '';
+  if (rhs.length) {
+    const nm = rhs[0].title, days = rhs.map(r => r.day);
+    const dline = days.length === 1 ? fmtD(days[0] + 'T12:00:00', tz) : cap1(new Date(days[0] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', timeZone: tz })) + ' et ' + new Date(days[days.length - 1] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
+    rh = hr + `<div class="cb-rh" style="text-align:center;padding:2px 10px;"><div style="font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:#8a9a9d;">🌙 Nouveau mois</div><div style="font-family:Georgia,serif;font-size:24px;line-height:1.2;font-weight:bold;color:#b0902f;margin:5px 0 3px;">Roch Hodech ${esc(nm)}</div><div style="font-size:14.5px;color:#2b4044;">${esc(dline)}</div><div style="font-size:13px;color:#8a9a9d;margin-top:4px;">Hodech tov !</div></div>`;
+  }
+  const grp = [];
+  for (const f of fetes) { const g = grp.find(x => x.title === f.title && (new Date(f.day) - new Date(x.days[x.days.length - 1])) <= 86400000 * 1.5); if (g) g.days.push(f.day); else grp.push({ title: f.title, days: [f.day] }); }
+  const dTxt = g => g.days.length === 1 ? fmtD(g.days[0] + 'T12:00:00', tz) : cap1(new Date(g.days[0] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', timeZone: tz })) + ' et ' + new Date(g.days[g.days.length - 1] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
+  const fl = grp.length ? hr + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + grp.map(f => `<tr><td style="padding:5px 8px;font-size:14px;color:#51666a;">${esc(dTxt(f))}</td><td style="padding:5px 8px;font-size:15px;font-weight:bold;color:${T};text-align:right;">🕎 ${esc(f.title)}</td></tr>`).join('') + '</table>' : '';
+  const card = head + sched + rh + fl + hr +
+    `<p class="ink" style="margin:0 0 4px;font-size:12px;line-height:1.5;color:#8a9a9d;text-align:center;">Horaires Hebcal (Baal HaTanya) pour ${esc(city[0])}. Consultez votre Rav pour l'usage de votre communauté.</p>`;
+  const ytNow = mode === 'yomtov';
+  const subject = ytNow ? `🕯️ Ce soir : allumage des bougies à ${firstCandle ? fmtH(firstCandle.at, tz) : ''} — ${city[0]}`
+    : `Horaires de Chabbat — ${city[0]}${par ? ' · ' + par.title : ''}`;
+  const intro = ytNow ? 'Ce soir, nous entrons dans la fête. Voici les horaires pour ' + city[0] + ' :'
+    : `Voici les horaires de Chabbat${grp.length ? ' et des fêtes' : ''} de cette semaine pour ${city[0]} :`;
+  return { subject, preheader: firstCandle ? `Allumage des bougies : ${fmtD(firstCandle.at, tz)} à ${fmtH(firstCandle.at, tz)}` : 'Les horaires de la semaine',
+    title: ytNow ? 'Bonne fête !' : 'Chabbat Chalom !', body: salutation(contact) + '\n\n' + intro, extraHtml: card,
+    extraCss: '@keyframes cb-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes cb-flame{0%{opacity:.72;transform:scale(.94)}100%{opacity:1;transform:scale(1.1)}}@keyframes cb-glow{0%,100%{opacity:.85}50%{opacity:1}}.cb-in{animation:cb-rise .8s ease both}.cb-in2{animation:cb-rise .8s .3s ease both}.cb-flame{display:inline-block;animation:cb-flame 1.3s ease-in-out infinite alternate}.cb-rh{animation:cb-glow 3s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.cb-in,.cb-in2,.cb-flame,.cb-rh{animation:none}}',
+    buttonText: 'Toutes les villes', buttonSmall: true, buttonUrl: (db.settings.publicUrl || '').replace(/\/$/, '') + '/horaires/', color: '#1f6a72', accent: '#c4a24a' };
+}
+
+async function sendChabbat(contact, key, mode, cache) {
+  const city = cityOfContact(contact);
+  const ck = city[1]; if (!cache[ck]) cache[ck] = await hebcalWeek(city);
+  const t = chabbatTemplate(city, cache[ck], mode, contact);
+  const rec = { id: uid(), at: now(), campaignId: 'chabbat', contactId: contact.id, email: contact.email, stepIndex: 0, templateId: key };
+  try {
+    const r = await brevoSend({ to: contact.email, toName: contact.firstName, subject: fill(t.subject, contact), html: renderEmail(t, contact) });
+    rec.status = r.simulated ? 'simulated' : 'sent'; rec.messageId = r.messageId;
+  } catch (e) { rec.status = 'error'; rec.error = e.message; if (e.quota) { rec.quota = true; db.settings.pausedUntil = nextMidnight(); } }
+  db.sends.push(rec); save(); return rec;
+}
+
+// appelé à chaque tick : jeudi dès 10 h (Chabbat + fêtes de la semaine) ; veille d'une fête en semaine (allumage des bougies)
+async function chabbatJob(budget) {
+  if (budget <= 0) return 0;
+  const today = parisDay(Date.now()), h = parisHour();
+  const wd = new Date(today + 'T12:00:00Z').getUTCDay(); // 0 = dimanche … 4 = jeudi
+  if (h < 10) return 0;
+  const subs = db.contacts.filter(c => c.status === 'active' && (c.tags || []).map(x => x.toLowerCase()).includes('chabbat'));
+  if (!subs.length) return 0;
+  const got = new Set(db.sends.filter(x => x.status !== 'error').map(x => x.contactId + '|' + x.templateId));
+  const cache = {}; let n = 0, errors = 0;
+  const jobs = [];
+  // mail de la semaine : jeudi dès 10 h ; s'il reste des inscrits (quota Brevo atteint), il reprend vendredi matin jusqu'à 14 h
+  const weeklyDate = wd === 4 ? today : (wd === 5 && h < 14 ? parisDay(Date.now() - 86400000) : null);
+  if (weeklyDate) jobs.push({ key: 'chabbat-' + weeklyDate, mode: 'weekly' });
+  jobs.push({ key: 'chabbat-fete-' + today, mode: 'yomtov', onlyIfEveToday: true });
+  for (const job of jobs) {
+    for (const c of subs) {
+      if (n >= budget || errors >= 3) return n;
+      if (got.has(c.id + '|' + job.key)) continue;
+      if (job.onlyIfEveToday && got.has(c.id + '|chabbat-' + today)) continue; // déjà reçu le mail de la semaine aujourd'hui
+      if (job.onlyIfEveToday) { // allumage de bougies aujourd'hui, un jour qui n'est pas vendredi (fête en semaine)
+        const city = cityOfContact(c); if (!cache[city[1]]) cache[city[1]] = await hebcalWeek(city);
+        const wk = cache[city[1]];
+        if (!wk.ev.some(e => e.kind === 'candles' && e.day === today && wd !== 5)) continue;
+        wk.ev = wk.ev.filter(e => e.day >= today && e.day <= parisDay(Date.now() + 3 * 86400000));
+      }
+      let r;
+      try { r = await sendChabbat(c, job.key, job.mode, cache); } catch (e) { errors++; console.error('Chabbat', e.message); continue; }
+      if (r.status === 'error') { errors++; if (r.quota) return n; } else { n++; got.add(c.id + '|' + job.key); }
+      await new Promise(r => setTimeout(r, 250));
+    }
+  }
+  return n;
+}
+
+// inscription publique : ajoute au CRM (tag « chabbat » + ville) ; anti-spam simple
+const subHits = new Map();
+async function shabbatSubscribe(req, res) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const nowMs = Date.now(), hits = (subHits.get(ip) || []).filter(t => nowMs - t < 3600000);
+  if (hits.length >= 8) return send(res, 429, { error: 'Trop de tentatives, réessayez plus tard.' });
+  subHits.set(ip, [...hits, nowMs]);
+  const b = await readBody(req);
+  if (b.website) return send(res, 200, { ok: true }); // champ piège : un robot l'a rempli
+  const email = String(b.email || '').trim().toLowerCase().slice(0, 120);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Adresse email invalide' });
+  const city = cityById(b.city), vtag = 'ville:' + city[1];
+  const civ = b.civility === 'Mme' ? 'civ:Mme' : b.civility === 'M' ? 'civ:M' : '';
+  const clip = v => String(v || '').trim().replace(/[<>]/g, '').slice(0, 60);
+  const firstName = clip(b.firstName), lastName = clip(b.lastName);
+  let c = db.contacts.find(x => x.email.toLowerCase() === email);
+  if (c) {
+    c.tags = [...new Set([...(c.tags || []).filter(t => !/^(ville|civ):/.test(t)), 'chabbat', vtag, ...(civ ? [civ] : [])])];
+    if (firstName) c.firstName = firstName; if (lastName) c.lastName = lastName;
+    if (c.status === 'unsubscribed') c.status = 'active'; // il s'inscrit lui-même à nouveau
+  } else {
+    c = { id: uid(), createdAt: now(), email, firstName, lastName, phone: '', status: 'active', tags: ['chabbat', vtag, ...(civ ? [civ] : [])], notes: 'Inscrit via le site (horaires de Chabbat par email)' };
+    db.contacts.push(c);
+  }
+  save();
+  send(res, 200, { ok: true, city: city[0] });
+  // premier envoi tout de suite (confirme l'adresse et montre le format), sans bloquer la réponse
+  const key = 'chabbat-bienvenue';
+  const room = db.settings.dailyLimit - usedToday() > 25 && !(db.settings.pausedUntil && Date.now() < +new Date(db.settings.pausedUntil)); // on garde de la marge pour les envois planifiés
+  if (room && !db.sends.some(x => x.contactId === c.id && x.templateId === key && x.status !== 'error')) sendChabbat(c, key, 'weekly', {}).catch(e => console.error('Chabbat bienvenue', e.message));
 }
 
 // ---------- HTTP ----------
@@ -397,9 +583,49 @@ function publicSettings() {
   return { ...rest, hasKey: !!brevoApiKey, keyHint: brevoApiKey ? '••••' + brevoApiKey.slice(-4) : '' };
 }
 
+// plan d'envoi d'une campagne en cours : même règle que le moteur (quota du jour, étalé sur la plage horaire)
+function campaignPlan(c) {
+  if (c.status !== 'running' || !c.endDate) return null;
+  const s = db.settings, nowD = new Date(), todayStr = parisDay(Date.now());
+  const daysLeft = Math.max(1, Math.round((new Date(c.endDate) - new Date(todayStr)) / 86400000) + 1);
+  const sentC = db.sends.filter(x => x.campaignId === c.id && x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
+  const sentTot = db.sends.filter(x => x.campaignId === c.id && x.status !== 'error').length;
+  const rem = remaining(c);
+  const dayQuota = Math.min(s.dailyLimit, Math.ceil((rem + sentTot) / daysLeft));
+  const winMin = Math.max(1, (s.hourTo - s.hourFrom) * 60);
+  const h = +nowD.toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
+  const nowMin = h * 60 + (+nowD.toLocaleString('en-GB', { timeZone: 'Europe/Paris', minute: 'numeric' }));
+  const fromMin = s.hourFrom * 60, toMin = s.hourTo * 60;
+  const inWindow = nowMin >= fromMin && nowMin < toMin;
+  const elapsed = Math.min(winMin, Math.max(0, nowMin - fromMin));
+  const capNow = Math.max(0, Math.ceil(dayQuota * elapsed / winMin) - sentC);
+  const dayLeft = Math.max(0, dayQuota - sentC);
+  const perHour = Math.round(dayQuota / (winMin / 60) * 10) / 10;
+  const fmtW = m => (m >= 60 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min' : m + ' min');
+  let waitMin, nextLabel, nextCount;
+  if (rem === 0 || dayLeft === 0 && !inWindow && nowMin < fromMin) {
+    if (rem === 0) return { dayQuota, sentToday: sentC, dayLeft: 0, remaining: 0, perHour, nextLabel: 'plus rien à envoyer', nextCount: 0 };
+  }
+  if (inWindow && dayLeft > 0 && capNow > 0) { waitMin = 0; nextLabel = 'maintenant'; nextCount = Math.min(capNow, s.perMinute, dayLeft, rem); }
+  else if (inWindow && dayLeft > 0) { // le quota étalé n'a pas encore avancé : prochain mail quand le temps écoulé le permet
+    const needMin = Math.ceil(((sentC + 1) * winMin) / dayQuota);
+    waitMin = Math.max(1, needMin - elapsed); nextLabel = 'dans ' + fmtW(waitMin); nextCount = 1;
+  }
+  else if (!inWindow && nowMin < fromMin && dayLeft > 0) { waitMin = fromMin - nowMin; nextLabel = 'dans ' + fmtW(waitMin) + ' (à ' + String(s.hourFrom).padStart(2, '0') + ' h)'; nextCount = Math.min(s.perMinute, Math.ceil(dayQuota / winMin), rem); }
+  else { waitMin = (24 * 60 - nowMin) + fromMin; nextLabel = 'demain à ' + String(s.hourFrom).padStart(2, '0') + ' h'; nextCount = Math.min(s.perMinute, Math.ceil(dayQuota / winMin), rem); }
+  return { dayQuota, sentToday: sentC, dayLeft, remaining: rem, perHour, waitMin, nextLabel, nextCount };
+}
 function campaignStats(c) {
   const s = db.sends.filter(x => x.campaignId === c.id);
+  // contacts de l'audience exclus car ils ont déjà reçu ce mail dans une autre campagne (nom différent)
+  const tag = (c.audienceTag || '').trim().toLowerCase(), rs = relevantSends(c);
+  const excluded = db.contacts.filter(ct => ct.status === 'active' && (!tag || (ct.tags || []).map(t => t.toLowerCase()).includes(tag)))
+    .filter(ct => (c.steps || []).some(st => rs.some(x => x.contactId === ct.id && x.templateId === st.templateId && x.campaignId !== c.id))).length;
+  const audience = db.contacts.filter(ct => ct.status === 'active' && (!tag || (ct.tags || []).map(t => t.toLowerCase()).includes(tag))).length;
+  const daily = {}; s.filter(x => x.status !== 'error').forEach(x => { const k = dayKey(x.at); daily[k] = (daily[k] || 0) + 1; });
   return {
+    audience, daily: Object.entries(daily).sort().map(([day, n]) => ({ day, n })),
+    excluded,
     sent: s.filter(x => x.status !== 'error').length,
     errors: s.filter(x => x.status === 'error').length,
     pending: pendingCount(c),
@@ -446,7 +672,7 @@ async function api(req, res, url) {
   if (parts[0] === 'state' && m === 'GET') {
     return send(res, 200, {
       settings: publicSettings(), contacts: db.contacts, templates: db.templates,
-      campaigns: db.campaigns.map(c => ({ ...c, stats: campaignStats(c) })),
+      campaigns: db.campaigns.map(c => ({ ...c, stats: campaignStats(c), plan: campaignPlan(c) })),
       today: { sent: usedToday(), limit: db.settings.dailyLimit, pausedUntil: db.settings.pausedUntil || null, queue: db.campaigns.filter(c => c.status === 'running').reduce((a, c) => a + remaining(c), 0) },
       sends: db.sends.slice(-60).reverse()
     });
@@ -671,6 +897,28 @@ async function handle(req, res) {
       if (!key || got !== key) return send(res, 401, { error: 'non autorisé' });
       return send(res, 200, await tick());
     }
+    // webhook AlloDons (test) : journalise l'événement reçu ; route publique
+    if (url.pathname === '/webhooks/allodons' && req.method === 'POST') {
+      const body = await readBody(req).catch(() => ({}));
+      const ev = { at: now(), type: body.type || body.event || '', data: body };
+      try { fs.appendFileSync(path.join(DATA_DIR, 'allodons-webhook.log'), JSON.stringify(ev) + '\n'); } catch (e) {}
+      // don reçu : si l'email correspond à un contact, il est marqué « a donné » et ne reçoit plus les campagnes
+      try {
+        const d = body.data || body;
+        const em = String(d.email || '').trim().toLowerCase();
+        const c = em && db.contacts.find(x => (x.email || '').toLowerCase() === em);
+        if (c && d.montant) {
+          c.tags = [...new Set([...(c.tags || []), 'a-donne'])];
+          c.status = 'converted'; // accepté par la base ; hors envois (seuls les « active » reçoivent)
+          c.donatedAt = now();
+          save();
+          console.log('don reçu de', c.email, '→ marqué a-donné');
+        }
+      } catch (e) {}
+      console.log('AlloDons webhook :', ev.type || '(sans type)');
+      return send(res, 200, { ok: true });
+    }
+    if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
     if (url.pathname === '/api/pay-session' && req.method === 'POST') { // public : ouvre une session de paiement AlloDons et renvoie son adresse
       const key = envVar('ALLODONS_KEY');
       if (!key) return send(res, 503, { error: 'Paiement direct non activé', fallback: '/don/' });
@@ -776,3 +1024,7 @@ if (require.main === module) {
   }).catch(e => { console.error('Démarrage impossible :', e.message); process.exit(1); });
 }
 module.exports = handle;
+module.exports.loadDb = loadDb;
+module.exports.campaignPlan = (id) => { const c = db.campaigns.find(x => x.id === id); return c ? { plan: campaignPlan(c), stats: campaignStats(c) } : null; };
+module.exports.sendChabbatTest = async (to, cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'test', firstName: 'Yarone', lastName: 'Jami', email: to, tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); const r = await brevoSend({ to, subject: '[TEST] ' + t.subject, html: renderEmail(t, c) }); return { subject: t.subject, result: r.simulated ? 'simulé (pas de clé Brevo)' : 'envoyé' }; };
+module.exports.chabbatHtml = async (cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'preview', firstName: 'Yarone', lastName: 'Jami', email: 'exemple@email.com', tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); return { subject: t.subject, html: renderEmail(t, c) }; };

@@ -1,0 +1,154 @@
+/* Émounatéha — téléphone (≤ 800 px). Chargé en dernier : il a le dernier mot sur les anciens réglages. */
+.qa{display:none}
+
+@media(max-width:800px){
+  html{-webkit-text-size-adjust:100%;scroll-padding-top:60px}
+  body{-webkit-tap-highlight-color:transparent}
+  a,button,select,summary{touch-action:manipulation}
+  .wrap{padding:0 16px}
+  section{padding:30px 0}
+
+  /* ---------- en-tête d'accueil : compact (pas de bouton de don dans l'en-tête, voulu) ---------- */
+  .hero{padding:56px 0 22px}
+  .hero>.wrap{display:flex;flex-direction:column;align-items:center}
+  .hero>.wrap>a:has(img){order:1}
+  .hero h1{order:2}.hero .he{order:3}.hero .rule{order:4}.hero .slogan{order:5}.hero .quote{order:7}.hero .rebbe{order:8}
+  .hero img{width:116px;margin:2px auto 6px;animation:logoIn 1.1s cubic-bezier(.2,.8,.2,1) both}
+  .hero h1{font-size:30px;letter-spacing:1.5px}
+  .he{font-size:16px;letter-spacing:6px;margin:0 0 6px}
+  .rule{margin-bottom:8px}
+  .slogan{font-size:12.5px;line-height:1.4;margin-bottom:14px;padding:0 8px}
+  .hero .quote{font-size:15px;line-height:1.35;margin:0 auto 8px;padding:0 6px}
+  .hero .rebbe{font-size:12.5px;margin:0 auto;padding:0 6px;max-width:340px}
+  .hero .rebbe cite{font-size:11px}
+
+  /* ---------- accès rapides (accueil) ---------- */
+  .qa{display:block;padding:16px 0 4px}
+  .qa .wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .qa a{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;min-height:84px;padding:12px 14px;background:#fff;border:1px solid #e3ecec;border-radius:16px;box-shadow:0 4px 14px rgba(20,60,66,.08);text-decoration:none;color:var(--teal);font-weight:700;font-size:15px;line-height:1.2}
+  .qa a small{display:block;margin-top:1px;font-weight:500;font-size:12px;color:var(--mut)}
+  .qa svg{width:26px;height:26px;color:var(--gold);flex:none}
+  .qa a:active{background:#eef6f6}
+
+  /* ---------- titres, textes ---------- */
+  .title{margin-bottom:18px}.title h2{font-size:25px}.title p{font-size:14px}
+  .title::after{margin-top:12px;width:56px}
+  .about{font-size:16px;line-height:1.6}
+
+  /* ---------- nos actions : grille 2 × 2 compacte ---------- */
+  #actions .grid{grid-template-columns:1fr 1fr;gap:10px}
+  #actions .card{padding:14px 12px;border-radius:16px;box-shadow:0 3px 12px rgba(20,60,66,.07)}
+  #actions .card .ic{width:36px;height:36px;margin-bottom:8px;border-radius:10px}
+  #actions .card h3{font-size:15.5px;line-height:1.2;margin-bottom:4px}
+  #actions .card p{font-size:12.5px;line-height:1.4}
+
+  /* ---------- comment nous aider : lignes compactes ---------- */
+  .steps{gap:10px}
+  .step{padding:14px 16px 14px 62px;border-radius:16px;box-shadow:0 3px 12px rgba(20,60,66,.07)}
+  .step::before{top:50%;left:14px;transform:translateY(-50%);width:36px;height:36px;font-size:18px}
+  .step h3{font-size:16.5px;margin-bottom:2px}.step p{font-size:13.5px;line-height:1.4}
+
+
+  /* ---------- carrousel (Nos actions / Diffusion) : glissement latéral propre, pas de défilement automatique ---------- */
+  .slides{overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;transition:none;scroll-behavior:auto}
+  .slide{scroll-snap-stop:normal}
+  .dots{padding:10px 0 2px}.dots button{width:8px;height:8px}.dots button.on{width:22px}
+
+  /* ---------- diffusion du jour : carte compacte, document et vidéo côte à côte ---------- */
+  .dslide{padding:2px 12px 8px}
+  .dcard{padding:14px 12px 16px;border-radius:16px;box-shadow:0 6px 18px rgba(20,60,66,.08)}
+  .dhead{margin-bottom:10px}
+  .dkick{font-size:10.5px;margin-bottom:2px}
+  .dhead h3{font-size:19px;margin-bottom:1px}
+  .dhead .when{font-size:12.5px}
+  .dbody{grid-template-columns:1.5fr 1fr;gap:10px}
+  .dcol{display:flex;flex-direction:column}
+  .dbody.solo{grid-template-columns:minmax(0,230px);justify-content:center}
+  .dlab{font-size:11.5px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dprev{flex:1;height:auto;aspect-ratio:auto;border-radius:10px;display:flex;align-items:center}
+  .dprev img{height:auto;max-height:none;object-fit:contain}
+  .yt{max-width:none;margin:0;border-radius:10px}
+  .dfade{display:none}
+  .dopen{bottom:8px;padding:0 12px;min-height:30px;font-size:12px;line-height:1;white-space:nowrap}
+  .dmore{padding:12px 0 0}
+  .dmore{text-align:center}
+  .dmore .btn.gold,.dmore .btn,.don .btn.gold,.don .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;max-width:none;min-height:44px;margin:0 auto;padding:0 24px;border:0;border-radius:99px;color:#1b2b2d;background:linear-gradient(180deg,#ecd98f 0%,#d6b862 55%,#c4a24a 100%);font:700 15.5px/1 Inter,system-ui,sans-serif;letter-spacing:.1px;box-shadow:0 8px 18px -8px rgba(168,128,40,.65),inset 0 1px 0 rgba(255,255,255,.6)}
+  .dmore .btn::after{content:"→";font-weight:700}
+  .dmore .btn:active,.don .btn:active{transform:scale(.97)}
+
+  /* ---------- bloc don ---------- */
+  .don{padding:28px 18px;border-radius:20px}
+  .don h2{font-size:24px}.don p{font-size:14.5px;margin-bottom:18px}
+  .don .btn{display:flex;align-items:center;justify-content:center;min-height:52px;font-size:17px;border-radius:14px;max-width:340px;margin:0 auto}
+
+  /* ---------- contact / pied de page ---------- */
+  .social{gap:12px}.social img{width:34px;height:34px}
+  .contactline{display:flex;flex-direction:column;gap:2px;font-size:16px}
+  .contactline span{display:none}
+  .contactline a{display:block;padding:12px 0}
+  footer{position:relative;padding:60px 16px calc(14px + env(safe-area-inset-bottom));line-height:1.45;font-size:13px}
+  html body footer::before{content:"";position:absolute;left:0;right:0;top:0;height:64px;background:linear-gradient(to bottom,#fff 0%,rgba(255,255,255,.86) 16%,rgba(255,255,255,.6) 38%,rgba(255,255,255,.3) 62%,rgba(255,255,255,.1) 82%,rgba(255,255,255,0) 100%);pointer-events:none}
+  footer p{margin:0}
+  footer p+p{margin-top:3px}
+  footer .sir{margin-top:3px}
+  footer a{display:inline;padding:0}
+  footer .legal{display:flex;justify-content:center;gap:0 16px;margin-top:8px}
+  footer .legal a{display:inline-block;padding:7px 0}
+  footer .copy{margin-top:2px}
+  footer .dev{margin-top:10px;padding-top:9px}
+  footer .dev a{display:inline;padding:0}
+
+
+
+  /* ---------- boutons : un seul style, propre ---------- */
+  .btn,#colisPanel .btn,.don .btn,.ytlink{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:0 22px;border:0;border-radius:16px;font:700 17px/1 Inter,system-ui,sans-serif;letter-spacing:.2px;text-decoration:none;text-align:center;transition:transform .12s,box-shadow .12s}
+  .btn.gold,#colisPanel .btn,.don .btn{color:#1b2b2d;background:linear-gradient(180deg,#e0c56e 0%,#c9a84e 55%,#b8923a 100%);box-shadow:0 10px 22px -6px rgba(168,128,40,.55),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.08)}
+  .btn.line{color:#fff;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.85);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .btn:active,#colisPanel .btn:active{transform:scale(.97);box-shadow:0 4px 10px -4px rgba(168,128,40,.5),inset 0 1px 0 rgba(255,255,255,.4)}
+  #colisPanel .btn{width:100%;font-size:18px;min-height:58px}
+  .ytlink{color:var(--teal);background:#fff;border:1.5px solid #cfe0e1}
+  .dopen{min-height:34px;padding:0 16px;border-radius:99px;border:0;background:rgba(255,255,255,.96);color:var(--teal);font:700 12.5px/1 Inter,system-ui,sans-serif;box-shadow:0 6px 16px rgba(20,60,66,.22)}
+
+  /* ---------- onglets des colis : pastilles propres ---------- */
+  .ctabs{gap:8px 8px}
+  .ctab{min-height:42px;padding:0 18px;border:1.5px solid #d6e4e5;border-radius:99px;background:#fff;color:var(--teal);font:700 14px/1 Inter,system-ui,sans-serif;box-shadow:0 3px 10px rgba(20,60,66,.07)}
+  .ctab.on{color:#fff;border-color:transparent;background:linear-gradient(180deg,#2a8791,#1f6a72 60%,#18575e);box-shadow:0 8px 18px -6px rgba(31,106,114,.6),inset 0 1px 0 rgba(255,255,255,.25)}
+  .tabwrap small{margin-top:5px;font-size:9.5px;letter-spacing:.6px}
+  .price{border:0;border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(20,60,66,.1)}
+
+  /* ---------- colis : bouton principal pleine largeur ---------- */
+  #colisPanel .price{display:flex;width:100%;justify-content:center;margin-bottom:14px}
+  #colisPanel br{display:none}
+  #colisPanel .btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;font-size:18px;border-radius:14px;box-shadow:0 6px 18px rgba(196,162,74,.45)}
+
+  /* ---------- bouton menu : bien visible, toujours ---------- */
+  .sec-nav .burger{display:flex;position:absolute;left:10px;right:auto;top:50%;transform:translateY(-50%);width:44px;height:44px;padding:14px 11px;border-radius:12px;background:var(--gold);box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:2}
+  .sec-nav .burger span,.sec-nav.scrolled .burger span,.sec-nav.open .burger span{width:100%;flex:none;align-self:stretch;background:#1b2b2d !important;box-shadow:none;height:3px}
+  .sec-nav.open .burger span:nth-child(1){transform:translateY(8px) rotate(45deg)}
+  .sec-nav.open .burger span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+
+  /* ---------- en-tête : le vert se fond dans le blanc (plus de trait doré net) ---------- */
+  html body .hero,html body .pagehead{padding-bottom:84px}
+  html body .hero::after,html body .pagehead::after{height:110px;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 14%,rgba(255,255,255,.14) 30%,rgba(255,255,255,.34) 48%,rgba(255,255,255,.62) 66%,rgba(255,255,255,.86) 84%,#fff 100%);pointer-events:none}
+
+  /* ---------- בס״ד à droite (le bouton menu est à gauche) ---------- */
+  .sec-nav .nbsd{display:block;position:absolute;right:14px;left:auto;top:50%;transform:translateY(-50%);margin:0;font-size:22px;font-weight:600;line-height:1;z-index:1}
+
+  /* ---------- menu ouvert : texte blanc même après défilement (sinon vert sur vert) ---------- */
+  .sec-nav.open .links a,.sec-nav.scrolled.open .links a{color:#fff !important;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+
+  /* ---------- menu déroulant : cibles tactiles confortables ---------- */
+  .sec-nav .links a{min-height:50px;display:flex;align-items:center;font-size:17px}
+
+
+  /* ---------- formulaires : 16 px minimum, sinon iOS zoome ---------- */
+  input,select,textarea{font-size:16px}
+}
+
+@media(max-width:360px){
+  .hero img{width:100px}.hero h1{font-size:27px}
+  .qa a{font-size:14px;padding:10px 12px}
+}
+@media(max-height:700px) and (max-width:800px){
+  .hero img{width:92px}.slogan{margin-bottom:10px}
+}

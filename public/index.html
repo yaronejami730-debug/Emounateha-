@@ -91,10 +91,10 @@ a{color:inherit}
 .dbody{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;justify-content:center;align-items:start}
 .dbody.solo{grid-template-columns:minmax(0,620px)}
 .dlab{font-weight:700;color:var(--teal);font-size:14px;margin-bottom:8px}
-.dprev{position:relative;background:#f3f6f6;height:586px;overflow:hidden;cursor:zoom-in;border:1px solid #e3ecec;border-radius:14px}
-.dprev img{display:block;width:100%;height:100%;object-fit:cover;object-position:top center}
-.dfade{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.96))}
-.dopen{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);border:1.5px solid var(--teal);background:#fff;color:var(--teal);font:inherit;font-weight:600;font-size:13px;padding:9px 18px;border-radius:99px;cursor:pointer}
+.dprev{position:relative;background:#f3f6f6;height:auto;overflow:hidden;cursor:zoom-in;border:1px solid #e3ecec;border-radius:14px}
+.dprev img{display:block;width:100%;height:auto;max-height:100%;object-fit:contain;object-position:top center}
+.dfade{display:none}
+.dopen{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border:1.5px solid var(--teal);background:#fff;color:var(--teal);font:inherit;font-weight:600;font-size:13px;padding:9px 18px;border-radius:99px;cursor:pointer}
 .dopen:hover{background:var(--teal);color:#fff}
 .yt{position:relative;background:#000;aspect-ratio:9/16;border-radius:14px;overflow:hidden}
 .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -448,7 +448,22 @@ body{overflow-x:hidden}
 .slide{height:auto}
 @media(max-width:800px){.slides{scroll-snap-type:x proximity}}
 .dmore{text-align:center;padding:4px 16px 20px}.dmore .btn{display:inline-block}
+
+/* lecteur vidéo plein écran (comme sur la page Torah) */
+.ytplay{display:block;width:100%;border:0;padding:0;cursor:pointer;font:inherit}
+.ytplay img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ytp{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(196,162,74,.95);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.ytp::after{content:"";position:absolute;left:25px;top:19px;border-style:solid;border-width:13px 0 13px 22px;border-color:transparent transparent transparent #1b2b2d}
+#vp{position:fixed;inset:0;z-index:120;display:none;background:#0b1e21;flex-direction:column}
+#vp.on{display:flex}
+#vp .vpbar{flex:none;height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+#vp .vpc{color:#cfe6e3;font-size:14px;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#vp .vpx{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:var(--teal);font-size:18px;cursor:pointer}
+#vp .vpbody{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+#vp .vpf{height:100%;max-height:100%;aspect-ratio:9/16;max-width:100%;background:#000}
+#vp iframe{width:100%;height:100%;border:0;display:block}
 </style>
+<link rel="stylesheet" href="/mobile.css">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="#contact">Contact</a></div></div></nav>
@@ -469,6 +484,12 @@ body{overflow-x:hidden}
   </div>
 </header>
 
+<section class="qa" aria-label="Accès rapides"><div class="wrap">
+  <a href="/colis/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span>Colis de Chabbat<small>Offrir un colis</small></span></a>
+  <a href="/torah/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg><span>Torah du jour<small>Vidéos et cours</small></span></a>
+  <a href="/horaires/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Horaires<small>Chabbat, 54 villes</small></span></a>
+  <a href="https://wa.me/33669670770" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg><span>Nous écrire<small>Sur WhatsApp</small></span></a>
+</div></section>
 <section class="parsec" id="paracha" hidden><div class="wrap"><div class="parcard" id="parcard">
   <div class="pk"><svg class="torah" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#c4a24a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><rect x="45" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><path d="M14.5 12V7M14.5 52v5M49.5 12V7M49.5 52v5"/><path d="M19 16h26v32H19z" fill="#fff"/><path d="M25 24h14M25 30h14M25 36h10" stroke="#1f6a72"/></g><circle cx="14.5" cy="6" r="2.6" fill="#e4cd8a"/><circle cx="49.5" cy="6" r="2.6" fill="#e4cd8a"/></svg><div><span class="plab">Paracha de la semaine</span><b id="parname">…</b><small id="parheb" dir="rtl"></small></div></div>
   <div class="pt"><span class="plab">Entrée du Chabbat</span><b id="parin">…</b><small id="parinday"></small></div>
@@ -478,6 +499,7 @@ body{overflow-x:hidden}
 
 
 
+<div id="chabbat-mail"></div>
 <section id="mission">
   <div class="wrap">
     <div class="title"><h2>Qui sommes-nous&nbsp;?</h2></div>
@@ -534,7 +556,6 @@ body{overflow-x:hidden}
       <a href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener" aria-label="YouTube"><img src="/icon-youtube.png" alt="YouTube"></a>
       <a href="https://wa.me/33669670770" target="_blank" rel="noopener" aria-label="WhatsApp"><img src="/icon-whatsapp.png" alt="WhatsApp"></a>
     </div>
-    <p class="contactline"><a href="mailto:emounateha770@gmail.com">Envoyez-nous un mail</a><span>·</span><a href="tel:+33669670770">06 69 67 07 70</a></p>
   </div>
 </section>
 
@@ -581,14 +602,14 @@ body{overflow-x:hidden}
  load();
 })();
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
-(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd3'+ymd;
+(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd4'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
  const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
  function label(items){ // transforme les intitulés Hebcal du jour en « Xe jour de … »
    const out=[];
-   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');
+   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');t=t.replace(/Hechvan/g,"Mar'Hechvan");
      if(it.category==='parashat'){out.push('Chabbat · '+t.replace(/^Parachat?\s*/i,'Parachat '));continue}
      if(it.category==='roshchodesh'){out.push(t);continue}
      if(it.category!=='holiday')continue;
@@ -607,7 +628,7 @@ body{overflow-x:hidden}
  Promise.all([
    fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
    fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]}))
- ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
+ ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'').replace(/בחשון/g,'במרחשון');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
 })();
 
 
@@ -622,6 +643,9 @@ body{overflow-x:hidden}
 function openLb(src,cap){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.innerHTML='<div class="lbbar"><span class="lbc"></span><button class="lbx" aria-label="Fermer">✕</button></div><div class="lbs"><img alt=""></div>';document.body.appendChild(lb);
   lb.addEventListener('click',e=>{if(e.target===lb||e.target.classList.contains('lbx')||e.target.classList.contains('lbs'))closeLb()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLb()})}
   lb.querySelector('img').src=src;lb.querySelector('.lbc').textContent=cap;lb.classList.add('on');document.body.style.overflow='hidden'}
+function openVid(id,cap){let v=document.getElementById('vp');if(!v){v=document.createElement('div');v.id='vp';v.innerHTML='<div class="vpbar"><span class="vpc"></span><button class="vpx" aria-label="Fermer">✕</button></div><div class="vpbody"><div class="vpf"><iframe title="Vidéo YouTube" allow="accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div></div>';document.body.appendChild(v);v.addEventListener('click',e=>{if(e.target===v||e.target.classList.contains('vpbody')||e.target.classList.contains('vpx'))closeVid()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVid()})}
+  v.querySelector('iframe').src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&playsinline=1&rel=0';v.querySelector('.vpc').textContent=cap||'';v.classList.add('on');document.body.style.overflow='hidden'}
+function closeVid(){const v=document.getElementById('vp');if(v){v.classList.remove('on');v.querySelector('iframe').src='';document.body.style.overflow=''}}
 function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.remove('on');document.body.style.overflow=''}}
 // ---- carrousel : Nos actions + diffusion du jour
 (function(){
@@ -642,7 +666,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   ['mouseenter','touchstart','pointerdown','focusin'].forEach(e=>box.parentNode.addEventListener(e,()=>pause(15000),{passive:true}));
   box.parentNode.addEventListener('mouseleave',()=>pause(3000));
   box.addEventListener('scroll',()=>pause(10000),{passive:true});
-  function autoTick(){if(slideCount()<2||document.hidden||Date.now()<hold)return;const lb=document.getElementById('lb');if(lb&&lb.classList.contains('on'))return;
+  function autoTick(){if(matchMedia('(max-width:800px)').matches)return;if(slideCount()<2||document.hidden||Date.now()<hold)return;const lb=document.getElementById('lb');if(lb&&lb.classList.contains('on'))return;
     if(document.activeElement&&document.activeElement.tagName==='IFRAME')return;
     const r=box.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight)return; // hors écran : on ne bouge pas
     const n=slideCount(),c=cur();go(c+1>=n?0:c+1)}
@@ -657,8 +681,9 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
     const hasDoc=d.has_image!==false;
     el.innerHTML='<div class="dcard"><div class="dhead"><div class="dkick">Diffusion du jour</div><h3>'+esc(d.name||"Machia'h Now")+'</h3><div class="when">'+esc(dt)+'</div></div>'+
       '<div class="dbody'+(hasDoc&&d.youtube?'':' solo')+'">'+(hasDoc?'<div class="dcol"><div class="dlab">📄 Le document</div><div class="dprev"><img src="'+src+'" alt="Diffusion du '+esc(dt)+'" loading="lazy"><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>':'')+
-      (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/'+id+'" title="Vidéo YouTube" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>'+
+      (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" data-yt="'+id+'" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>'+
       '<div class="dmore"><a class="btn gold" href="/torah/">Voir plus de diffusions</a></div></div>';
+    el.querySelectorAll('.ytplay').forEach(x=>x.addEventListener('click',()=>openVid(x.dataset.yt,esc(dt))));
     el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));
     return el}
   function dLoad(){
@@ -674,5 +699,6 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   drawDots();
 })();
 </script>
+<script src="/chabbat-mail.js" defer></script>
 </body>
 </html>
