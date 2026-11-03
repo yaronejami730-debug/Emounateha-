@@ -235,7 +235,9 @@ body{overflow-x:hidden}
   .sec-nav{background:#1f6a72 url(/header.jpg) center top/cover;border-bottom:0;box-shadow:none}
   .sec-nav .wrap{position:relative;justify-content:center;min-height:50px;padding:0 6px}
   .nbrand{display:none}
-  .ndate{display:block;margin:0;font-size:14px;font-weight:600;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+  .ndate{display:block;margin:0;text-align:center;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35);line-height:1.2;direction:ltr;padding:6px 44px 6px 44px}
+  .ndate b{display:block;font-size:14px;font-weight:700;color:var(--gold-l);direction:rtl}
+  .ndate small{display:block;font-size:11.5px;font-weight:500;opacity:.95}
   .burger{position:absolute;right:8px;top:50%;transform:translateY(-50%)}
   .burger span{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
   .sec-nav.open .burger span{background:#fff}
@@ -297,7 +299,7 @@ body{overflow-x:hidden}
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
 (function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd3'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
- const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.textContent=heb};
+ const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
  const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
  function label(items){ // transforme les intitulés Hebcal du jour en « Xe jour de … »
