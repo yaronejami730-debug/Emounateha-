@@ -464,6 +464,24 @@ body{overflow-x:hidden}
   *{scrollbar-width:none;-ms-overflow-style:none}
   *::-webkit-scrollbar{display:none;width:0;height:0}
 }
+
+/* ordinateur : liens visibles dans la barre ; téléphone : menu ≡ */
+@media(min-width:801px){
+  .burger{display:none!important}
+  .sec-nav .links{display:flex!important;position:static;width:auto;background:transparent;flex-direction:row;gap:0;max-height:none;overflow:visible;box-shadow:none;border-radius:0;padding:0;justify-content:center;flex:1}
+  .sec-nav .links a{color:#fff!important;text-shadow:0 1px 4px rgba(0,0,0,.3);padding:14px 11px;font-size:14px;border-bottom:3px solid transparent;border-left:0}
+  .sec-nav .links a:hover{border-color:var(--gold-l);background:transparent;border-radius:0}
+  .sec-nav.scrolled .links a{color:var(--teal)!important;text-shadow:none}
+  .sec-nav.scrolled .links a:hover{border-color:var(--gold)}
+}
+
+/* ordinateur : date à gauche | liens au centre | בס״ד tout à droite */
+@media(min-width:801px){
+  .sec-nav .wrap{display:flex;align-items:center;justify-content:space-between}
+  .ndate{order:0;margin:0;min-width:170px}
+  .sec-nav .links{order:1;flex:1}
+  .nbsd{order:2;margin:0 0 0 12px;min-width:60px;text-align:right}
+}
 </style>
 <section><div class="tw">
   <div class="today" id="today"><div class="empty">Chargement de la diffusion du jour…</div></div>
