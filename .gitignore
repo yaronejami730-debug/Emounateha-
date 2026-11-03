@@ -8,3 +8,4 @@ supabase/.temp/
 vercel.env
 .vercel
 .env*
+affiches/fonts/
