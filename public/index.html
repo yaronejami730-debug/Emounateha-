@@ -92,6 +92,8 @@ a{color:inherit}
 
 /* petits écrans : tout est resserré */
 @media(max-width:600px){
+  .ctabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding:2px 16px 10px;margin:0 -16px 20px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .ctabs::-webkit-scrollbar{display:none}.ctab,.tabwrap{flex-shrink:0}
   .hero{padding:10px 0 24px}
   .hero img{width:92px;margin-bottom:4px}
   .hero h1{font-size:22px;letter-spacing:1px}
