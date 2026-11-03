@@ -248,6 +248,24 @@ body{overflow-x:hidden}
   .hero .top .hdate,.pagehead .top .hdate{visibility:hidden}
   .hero{padding-top:0}.hero .top{margin-bottom:0}
 }
+
+/* barre de menu fondue dans le fond vert (toutes tailles) */
+.sec-nav{background:#1f6a72 url(/header.jpg) center top/cover;border-bottom:0;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.sec-nav .links a{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.sec-nav .links a:hover{border-color:var(--gold-l)}
+.sec-nav .links a.ndon{color:#1b2b2d;text-shadow:none}
+.nbrand{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+@media(max-width:800px){.sec-nav .links{background:#1f6a72 url(/header.jpg) center/cover;border-top:1px solid rgba(255,255,255,.2)}.sec-nav .links a{border-bottom:1px solid rgba(255,255,255,.15)}}
+
+/* paracha de la semaine + horaires de Chabbat (Hebcal) */
+.parsec{padding:0;margin-top:-26px;position:relative;z-index:5}
+.parcard{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:#fff;border:1px solid #e3ecec;border-radius:16px;box-shadow:0 12px 32px rgba(20,60,66,.14);overflow:hidden}
+.parcard>div{padding:16px 18px;border-left:1px solid #eef3f3;display:flex;flex-direction:column;justify-content:center}
+.parcard>div:first-child{border-left:0;background:linear-gradient(135deg,#e9f4f4,#fff)}
+.plab{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gold)}
+.parcard b{font-family:'Bree Serif',serif;font-weight:400;font-size:22px;color:var(--teal);line-height:1.15;margin-top:2px}
+.parcard small{color:var(--mut);font-size:12px;margin-top:2px}
+@media(max-width:800px){.parsec{margin-top:0;padding:12px 12px 0}.parcard{grid-template-columns:1fr 1fr}.parcard>div{padding:12px 14px;border-left:0;border-top:1px solid #eef3f3}.parcard>div:nth-child(1),.parcard>div:nth-child(2){border-top:0}.parcard>div:nth-child(2),.parcard>div:nth-child(4){border-left:1px solid #eef3f3}.parcard b{font-size:18px}}
 </style>
 </head>
 <body>
@@ -268,6 +286,13 @@ body{overflow-x:hidden}
     </div>
   </div>
 </header>
+
+<section class="parsec" id="paracha"><div class="wrap"><div class="parcard" id="parcard">
+  <div class="pk"><span class="plab">Paracha de la semaine</span><b id="parname">…</b></div>
+  <div class="pt"><span class="plab">Entrée du Chabbat</span><b id="parin">…</b><small id="parinday"></small></div>
+  <div class="pt"><span class="plab">Sortie du Chabbat</span><b id="parout">…</b><small id="paroutday"></small></div>
+  <div class="pc"><span class="plab">Horaires</span><b>Paris</b><small>Hebcal · allumage 18 min avant la chkia</small></div>
+</div></div></section>
 
 
 
@@ -340,6 +365,19 @@ body{overflow-x:hidden}
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YV Solution</b> (contacter le développeur)</a></p>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();
+
+// ---- paracha de la semaine + horaires de Chabbat à Paris (Hebcal)
+(function(){const c=document.getElementById('parcard');if(!c)return;const k='par'+new Date().toDateString();
+ const fill=d=>{const f=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};f('parname',d.p);f('parin',d.ci);f('parinday',d.cid);f('parout',d.ho);f('paroutday',d.hod)};
+ try{const s=sessionStorage.getItem(k);if(s){fill(JSON.parse(s));return}}catch(e){}
+ fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid=2988507&M=on&b=18&lg=fr').then(r=>r.json()).then(j=>{
+   const it=j.items||[];const p=it.find(x=>x.category==='parashat'),ca=it.find(x=>x.category==='candles'),ha=it.find(x=>x.category==='havdalah'),hol=it.find(x=>x.category==='holiday'&&x.yomtov);
+   const hm=s=>new Date(s).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'}).replace(':',' h ');
+   const dj=s=>new Date(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Paris'});
+   const d={p:p?p.title.replace(/^Parachat?\s*/i,'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H'):(hol?hol.title:'—'),ci:ca?hm(ca.date):'—',cid:ca?dj(ca.date):'',ho:ha?hm(ha.date):'—',hod:ha?dj(ha.date):''};
+   fill(d);try{sessionStorage.setItem(k,JSON.stringify(d))}catch(e){}
+ }).catch(()=>{fill({p:'—',ci:'—',cid:'',ho:'—',hod:''})});
+})();
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
 (function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd3'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
