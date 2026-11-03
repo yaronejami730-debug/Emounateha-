@@ -493,6 +493,13 @@ td small{font-size:11px;color:var(--mut);font-weight:500}
 .cityadd{max-width:560px}
 .hnote .loc{color:var(--teal);font-weight:600}.hnote .loc a{color:var(--gold2,#c4a24a);font-weight:600}
 @media(max-width:820px){.hdays{margin:14px 0 20px}.cityadd{flex-wrap:wrap}.cityadd select,.cityadd input{flex:1 1 100%;max-width:100%}}
+
+/* barre du haut : titre | navigation ; ligne du dessous : ajout de ville */
+.hbar{display:grid;grid-template-columns:1fr auto;gap:12px 20px;align-items:center}
+.cityadd{grid-column:1 / -1;max-width:100%;flex-wrap:wrap}
+.cityadd select{max-width:260px}
+.cityadd input{min-width:240px}
+@media(max-width:820px){.hbar{grid-template-columns:1fr}.hnav{justify-content:flex-start}}
 </style>
 <section><div class="hw">
   <div class="hbar">
