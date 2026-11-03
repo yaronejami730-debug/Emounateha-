@@ -660,7 +660,7 @@ const COLL = ['contacts', 'templates', 'campaigns'];
 const PICK = {
   contacts: ['email', 'firstName', 'lastName', 'phone', 'tags', 'status', 'notes'],
   templates: ['holiday', 'name', 'subject', 'preheader', 'title', 'body', 'buttonText', 'buttonUrl', 'color', 'accent'],
-  campaigns: ['name', 'audienceTag', 'steps', 'startDate', 'endDate']
+  campaigns: ['name', 'audienceTag', 'steps', 'startDate', 'endDate', 'buttonUrl']
 };
 const pick = (o, keys) => Object.fromEntries(keys.filter(k => k in o).map(k => [k, o[k]]));
 

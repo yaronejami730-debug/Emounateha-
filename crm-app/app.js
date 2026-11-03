@@ -334,6 +334,7 @@ function campModal(id, preset) {
   campSteps = JSON.parse(JSON.stringify(c.steps));
   modal(`<h2>${id ? 'Modifier' : 'Nouvelle'} campagne</h2>
     <label>Nom</label><input id="k_name" value="${esc(c.name)}" placeholder="Hanouka 2026">
+    <label>Lien du bouton (facultatif : remplace celui du template pour cette campagne)</label><input id="k_btn" value="${esc(c.buttonUrl || '')}" placeholder="https://hannouka.allodons.fr/emounateha?src=hanouka-{{email}}">
     <label>Nom de l'audience</label><input id="k_tag" value="${esc(c.audienceTag)}" placeholder="auto : nom de la campagne">
     <label>Contacts de la campagne (CSV)</label>
     <input type="file" accept=".csv,.txt,.tsv" onchange="readFile(this,'k_csv')">
@@ -364,7 +365,7 @@ async function saveCamp(id) {
   const name = $('#k_name').value.trim() || 'Sans titre';
   let tag = $('#k_tag').value.trim(); const csv = $('#k_csv').value.trim();
   if (!tag) tag = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const body = { name, audienceTag: tag, steps: campSteps, startDate: $('#k_start').value || '', endDate: $('#k_end').value || '' };
+  const body = { name, audienceTag: tag, steps: campSteps, startDate: $('#k_start').value || '', endDate: $('#k_end').value || '', buttonUrl: ($('#k_btn').value || '').trim() };
   if (csv) { const r = await api('POST', '/contacts/import', { csv, tags: tag }); toast(`${r.added} nouveau(x), ${r.existing} déjà connu(s), ${r.skipped} ignoré(s)`); }
   const saved = await api(id ? 'PUT' : 'POST', '/campaigns' + (id ? '/' + id : ''), body);
   if ($('#k_auto').checked && !['running', 'done'].includes(saved.status)) { await api('POST', `/campaigns/${saved.id}/start`); toast('Campagne programmée'); }
