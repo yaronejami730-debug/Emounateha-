@@ -90,14 +90,7 @@ a{color:inherit}
 .dbody{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;justify-content:center;align-items:start}
 .dbody.solo{grid-template-columns:minmax(0,620px)}
 .dlab{font-weight:700;color:var(--teal);font-size:14px;margin-bottom:8px}
-.dlab .dico{width:20px;height:20px;vertical-align:-4px;margin-right:4px}
-@media(max-width:820px){.dprev{height:auto;aspect-ratio:4/3}.dprev img{height:100%;object-fit:cover;object-position:top center}}
-.dprev.hy{height:auto;cursor:zoom-in}
-.dprev.hy canvas{display:block;width:100%;height:auto;background:#fff}
-.dprev.hy .dopen{position:static;display:block;margin:12px auto 0;transform:none;bottom:auto;left:auto}
-.dprev.hy{padding-bottom:14px}
-.dprev.hy .dfade{display:none}
-.dprev{position:relative;background:#f3f6f6;height:480px;overflow:hidden;cursor:zoom-in;border:1px solid #e3ecec;border-radius:14px}
+.dprev{position:relative;background:#f3f6f6;height:586px;overflow:hidden;cursor:zoom-in;border:1px solid #e3ecec;border-radius:14px}
 .dprev img{display:block;width:100%;height:100%;object-fit:cover;object-position:top center}
 .dfade{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.96))}
 .dopen{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);border:1.5px solid var(--teal);background:#fff;color:var(--teal);font:inherit;font-weight:600;font-size:13px;padding:9px 18px;border-radius:99px;cursor:pointer}
@@ -228,7 +221,7 @@ section{padding:56px 0}
 .contact .card:hover{transform:translateY(-3px);border-color:var(--gold)}
 .contact strong{display:block;color:var(--teal);font-family:'Bree Serif',serif;font-size:19px;margin-bottom:4px}
 footer{background:#1f6a72 url(/header.jpg) center/cover;color:#e7f1f1;text-align:center;padding:26px 22px 22px;font-size:13px;position:relative}
-footer::before{content:"";position:absolute;left:0;right:0;top:0;height:90px;pointer-events:none;background:linear-gradient(to bottom,rgba(255,255,255,.9) 0%,rgba(255,255,255,.6) 35%,rgba(255,255,255,.22) 70%,rgba(255,255,255,0) 100%)}
+footer::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
 footer b{color:var(--gold-l)}
 footer a{color:#e7f1f1;text-decoration:none}footer a:hover{color:var(--gold-l);text-decoration:underline}
 footer .legal{display:flex;gap:6px 18px;justify-content:center;flex-wrap:wrap;margin-top:14px;font-size:13px}
@@ -406,32 +399,21 @@ body{overflow-x:hidden}
   .hero{padding-bottom:84px}
 }
 @media(max-width:420px){.hero img{width:170px}.hero h1{font-size:30px}}
-
-.ytplay{display:block;width:100%;border:0;padding:0;cursor:pointer;font:inherit}
-.ytplay img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.ytp{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(196,162,74,.95);box-shadow:0 6px 20px rgba(0,0,0,.4)}
-.ytp::after{content:"";position:absolute;left:25px;top:19px;border-style:solid;border-width:13px 0 13px 22px;border-color:transparent transparent transparent #1b2b2d}
 </style>
-<link rel="stylesheet" href="/mobile.css">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
-<header class="pagehead"><div class="wrap"><h1>Diffusion de la Torah</h1><p>Chaque jour : le Machia'h Now et la vidéo de Tanya.</p></div></header>
+<header class="pagehead"><div class="wrap"><h1>Diffusion de la Torah</h1><p>Chaque jour : le Machia'h Now et la vidéo de Tanya. Et toutes les archives.</p></div></header>
 <style>
 .pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:76px 0 34px;position:relative}
-html body .pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:90px;pointer-events:none;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.22) 30%,rgba(255,255,255,.6) 65%,rgba(255,255,255,.9) 100%)}
-html body .pagehead::before{content:"";position:absolute;left:0;right:0;top:0;height:46px;pointer-events:none;background:linear-gradient(to bottom,rgba(255,255,255,.4) 0%,rgba(255,255,255,0) 100%)}
-html body .pagehead{padding-bottom:70px}
+.pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
 .pagehead h1{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(28px,4.5vw,42px);color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.25)}.pagehead p{opacity:.95;margin-top:6px}
 .tw{max-width:1040px;margin:0 auto;padding:34px 16px 60px}
-.today{background:#fff;border:1px solid #e3ecec;border-radius:18px;box-shadow:0 10px 30px rgba(20,60,66,.1);padding:20px 22px 22px;margin-bottom:34px}
+.today{background:#fff;border:1px solid #e3ecec;border-radius:20px;box-shadow:0 14px 40px rgba(20,60,66,.12);padding:26px 26px 30px;margin-bottom:38px}
 .today .dkick{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);text-align:center}
-.today h2{font-family:'Bree Serif',serif;font-weight:400;font-size:24px;color:var(--teal);text-align:center;margin:4px 0 2px}
-.today .dhe,.today .dph{display:block;margin-top:4px;text-transform:none;text-align:right}
-.today .dhe{font-size:15px;font-weight:600;color:var(--teal);direction:rtl;font-family:'Bree Serif',Georgia,serif}
-.today .dph{font-size:12.5px;color:#7a8b8e;font-style:italic}
-.today .when{color:var(--mut);font-size:13.5px;text-align:right;text-transform:capitalize;margin-bottom:14px}
-.tbody{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;justify-content:center;align-items:start}
+.today h2{font-family:'Bree Serif',serif;font-weight:400;font-size:28px;color:var(--teal);text-align:center;margin:4px 0 2px}
+.today .when{color:var(--mut);font-size:14px;text-align:center;text-transform:capitalize;margin-bottom:18px}
+.tbody{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;justify-content:center;align-items:start}
 .tbody.solo{grid-template-columns:minmax(0,620px)}
 .dlab{font-weight:700;color:var(--teal);font-size:14px;margin-bottom:8px}
 .dprev{position:relative;background:#f3f6f6;height:586px;overflow:hidden;cursor:zoom-in;border:1px solid #e3ecec;border-radius:14px}
@@ -535,9 +517,8 @@ html body .pagehead{padding-bottom:70px}
 /* grille : toutes les vignettes exactement au même format (portrait 9/16), document comme vidéo */
 .grid4{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));align-items:stretch}
 .it{display:flex;flex-direction:column}
-.it .th:not(.v){aspect-ratio:auto;height:auto;width:100%}
-.it .th.v,.it .th.v{aspect-ratio:9/16;height:auto;width:100%}
-.it .th:not(.v) img{width:100%;height:auto;object-fit:contain;object-position:center}
+.it .th,.it .th.v{aspect-ratio:9/16;height:auto;width:100%}
+.it .th img{width:100%;height:100%;object-fit:cover;object-position:top center}
 .it .th.v img{position:absolute;left:50%;top:0;height:100%;width:auto;max-width:none;transform:translateX(-50%) scale(1.02)}
 .it .cap{min-height:64px}
 @media(max-width:820px){.grid4{grid-template-columns:repeat(2,1fr)}}
@@ -550,7 +531,7 @@ html body .pagehead{padding-bottom:70px}
 /* documents : format page (3/4), vidéos : format vertical (9/16) ; chaque type identique entre eux */
 .it .th{aspect-ratio:3/4}
 .it .th.v{aspect-ratio:9/16}
-.it .th:not(.v) img{object-fit:contain;object-position:center;background:#f3f6f6}
+.it .th img{object-fit:cover;object-position:top center}
 .grid4{align-items:start}
 .it .cap{height:auto;min-height:62px}
 
@@ -567,32 +548,17 @@ html body .pagehead{padding-bottom:70px}
 #vm .dhd button{width:32px;height:32px;border-radius:50%;border:0;background:#fff;color:var(--teal);cursor:pointer}
 #vmdonframe iframe{width:100%;border:0;display:block;min-height:620px}
 @media(max-width:820px){#vm .vmwrap{flex-direction:column;align-items:stretch}#vm .vmleft{width:100%}#vm .frame{max-width:360px;margin:0 auto}#vm .vmdon{max-width:360px;margin:0 auto}#vm .vmdonbox{max-width:100%}}
-
-/* ---------- style « chaîne » : en-tête, deux rangées, archives par mois ---------- */
-.chan{display:flex;gap:18px;align-items:center;background:#fff;border:1px solid #e3ecec;border-radius:20px;padding:18px 20px;margin:0 0 22px;box-shadow:0 8px 24px rgba(20,60,66,.07)}
-.chan .av{width:72px;height:72px;border-radius:50%;background:#fff url(/logo.png) center/contain no-repeat;box-shadow:0 0 0 2px var(--gold);flex:none}
-.chan h3{font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:22px;color:var(--teal);margin:0 0 2px}
-.chan p{margin:0;color:var(--mut);font-size:14px}
-.rowhd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:26px 0 12px;border-bottom:1px solid #e3ecec;padding-bottom:8px}
-.rowhd b{font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:21px;color:var(--teal)}
-.rowhd small{color:var(--mut);font-size:13px}
-@media(max-width:820px){.chan{padding:14px 14px;gap:12px}.chan .av{width:56px;height:56px}.chan h3{font-size:19px}}
-/* téléphone : document et vidéo côte à côte, dans la même carte */
-@media(max-width:820px){
-  .today .tbody{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;align-items:start}
-  .today .tbody.solo{grid-template-columns:1fr}
-  .today .dlab{font-size:12px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .today .dprev{height:auto;aspect-ratio:9/16;background:#fff;display:flex;align-items:center;justify-content:center}
-  .today .dprev img{position:static;width:100%;height:auto;max-height:100%;object-fit:contain;object-position:center}
-  .today .dopen{font-size:11px;padding:6px 10px;bottom:8px;white-space:nowrap}
-  .today .yt{max-width:none;margin:0;aspect-ratio:9/16;border-radius:12px}
-  .today .dfade{height:40px}
-}
 </style>
 <section><div class="tw">
   <div class="today" id="today"><div class="empty">Chargement de la diffusion du jour…</div></div>
   <div class="arch">
-    <div class="chan"><div class="av" aria-hidden="true"></div><div><h3>Diffusion de la Torah</h3><p>Chaque jour : le Machia'h Now et la vidéo de Tanya.</p></div></div>
+    <h2>Les archives</h2>
+    <div class="sub">Tous les Machia'h Now et toutes les vidéos de Tanya, jour par jour.</div>
+    <div class="tools">
+      <button class="tab on" data-f="all">Tout</button><button class="tab" data-f="doc">Documents</button><button class="tab" data-f="video">Vidéos de Tanya</button>
+      <select id="mois"><option value="">Tous les mois</option></select>
+    </div>
+    <div id="archives"><div class="empty">Chargement…</div></div>
   </div>
 </div></section>
 <div id="vm"><div class="bar"><span id="vmc"></span><button aria-label="Fermer" onclick="closeVm()">✕</button></div>
@@ -611,14 +577,14 @@ html body .pagehead{padding-bottom:70px}
 document.getElementById('y').textContent=new Date().getFullYear();
 (function(){const n=document.querySelector('.sec-nav');if(!n)return;const f=()=>n.classList.toggle('scrolled',scrollY>40);addEventListener('scroll',f,{passive:true});f()})();
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
-(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd4'+ymd;
+(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd3'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
  const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
  function label(items){ // transforme les intitulés Hebcal du jour en « Xe jour de … »
    const out=[];
-   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');t=t.replace(/Hechvan/g,"Mar'Hechvan");
+   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');
      if(it.category==='parashat'){out.push('Chabbat · '+t.replace(/^Parachat?\s*/i,'Parachat '));continue}
      if(it.category==='roshchodesh'){out.push(t);continue}
      if(it.category!=='holiday')continue;
@@ -637,7 +603,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
  Promise.all([
    fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
    fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]}))
- ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'').replace(/בחשון/g,'במרחשון');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
+ ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
 })();
 // ---- visionneuse (plein écran) pour la diffusion
 function openLb(src,cap){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.innerHTML='<div class="lbbar"><span class="lbc"></span><button class="lbx" aria-label="Fermer">✕</button></div><div class="lbs"><img alt=""></div>';document.body.appendChild(lb);
@@ -664,45 +630,15 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
   const ytId=u=>{const m=String(u||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/);return m&&m[1]};
   const dj=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const dm=k=>new Date(k+'-01T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-  let months=[],filter='doc',mois='';
-
-  (function(){ // date hébraïque et phonétique de la diffusion du jour (API Hebcal)
-    var MF={Tishrei:'Tichri',Cheshvan:"Mar'Hechvan",Kislev:'Kislev',Tevet:'Tévet',Shvat:'Chevat','Adar I':'Adar I','Adar II':'Adar II',Adar:'Adar',Nisan:'Nissan',Iyyar:'Iyar',Sivan:'Sivan',Tamuz:'Tamouz',Av:'Av',Elul:'Eloul'};
-    window.fillDateHebrew=function(day){
-      var p=(day||'').split('-'); if(p.length!==3) return;
-      fetch('https://www.hebcal.com/converter?cfg=json&gy='+(+p[0])+'&gm='+(+p[1])+'&gd='+(+p[2])+'&g2h=1')
-        .then(function(r){return r.json()}).then(function(j){
-          var he=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'').replace(/בחשון/g,'במרחשון');
-          var ph=j.hd+' '+(MF[j.hm]||j.hm)+' '+j.hy;
-          var a=document.getElementById('dhe'),b=document.getElementById('dph');
-          if(a) a.textContent=he; if(b) b.textContent=ph;
-        }).catch(function(){});
-    };
-  })();
-
-  function drawHayomCanvases(){ // zone « HAYOM YOM » (colonne de gauche) découpée dans l'image du document du jour
-    document.querySelectorAll('canvas.hycv').forEach(function(c){
-      var im=new Image(); im.onload=function(){
-        var W=im.naturalWidth,H=im.naturalHeight;
-        var x0=Math.round(W*0.028),x1=Math.round(W*0.6),y0=Math.round(H*0.268),y1=Math.round(H*0.53);
-        c.width=x1-x0; c.height=y1-y0;
-        var g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height);
-        g.drawImage(im,x0,y0,x1-x0,y1-y0,0,0,x1-x0,y1-y0);
-        // masque la colonne hébraïque (Téhilim) voisine : on ne garde que le texte HAYOM YOM
-        var mx=Math.round(W*0.548)-x0, my=Math.round(H*0.318)-y0; g.fillStyle='#fff'; g.fillRect(mx,my,c.width-mx,c.height-my);
-      }; im.src=c.getAttribute('data-src');
-    });
-  }
+  let months=[],filter='all',mois='';
   function renderToday(d){const el=document.getElementById('today');if(d&&d.has_image===false){ // vidéo seule : on la montre avec le dernier document disponible
       const doc=months.flatMap(m=>m.items).find(x=>x.has_image!==false);if(doc)d={...doc,youtube:d.youtube,day:d.day,name:doc.name};}
     if(!d){el.innerHTML='<div class="empty">Aucune diffusion publiée pour le moment.</div>';return}
     const id=ytId(d.youtube),src='/diffusion/'+d.id+'.jpg';
-    if(window.fillDateHebrew) fillDateHebrew(d.day);
-    setTimeout(drawHayomCanvases,0);
-    el.innerHTML='<div class="dkick">Diffusion du jour</div><h2>'+esc(d.name||"Machia'h Now")+'</h2><div class="when">'+esc(dj(d.day))+'<span class="dhe" id="dhe"></span><span class="dph" id="dph"></span></div>'+
-      '<div class="tbody'+(d.youtube?'':' solo')+'"><div><div class="dlab"><svg class="dico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#f5c400" stroke="#c99a00" stroke-width="1"/><rect x="8" y="11" width="8" height="7" rx="1" fill="#fff"/></svg> Hayom Yom du jour</div><div class="dprev" onclick="openLb(\''+src+'\',\''+esc(dj(d.day))+'\')"><img src="'+src+'" alt=""><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
-      (id?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" onclick="openVm(\''+id+'\',\''+esc(dj(d.day))+'\')" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>';}
-  function renderArch(){const el=document.getElementById('archives');if(!el)return;let out='';let n=0;
+    el.innerHTML='<div class="dkick">Diffusion du jour</div><h2>'+esc(d.name||"Machia'h Now")+'</h2><div class="when">'+esc(dj(d.day))+'</div>'+
+      '<div class="tbody'+(d.youtube?'':' solo')+'"><div><div class="dlab">📄 Le document</div><div class="dprev" onclick="openLb(\''+src+'\',\''+esc(dj(d.day))+'\')"><img src="'+src+'" alt=""><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
+      (id?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/'+id+'" title="Vidéo" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div></div>':(d.youtube?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>';}
+  function renderArch(){const el=document.getElementById('archives');let out='';let n=0;
     for(const m of months){if(mois&&m.key!==mois)continue;let cards='';
       for(const x of m.items){const id=ytId(x.youtube),src='/diffusion/'+x.id+'.jpg',cap=dj(x.day);
         if(filter!=='video'&&x.has_image!==false)cards+='<div class="it" onclick="openLb(\''+src+'\',\''+esc(cap)+'\')"><div class="th"><img src="'+src+'" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.name||"Machia'h Now")+'</small></div></div>';
@@ -710,9 +646,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
       if(cards){n++;out+='<div class="month">'+esc(dm(m.key))+'</div><div class="grid4">'+cards+'</div>';}}
     el.innerHTML=out||'<div class="empty">Rien dans cette sélection.</div>';}
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');filter=b.dataset.f;renderArch()}));
-  (document.getElementById('mois')||{addEventListener(){}}).addEventListener('change',e=>{mois=e.target.value;renderArch()});
-  fetch('/diffusion-archives.json').then(r=>r.json()).then(j=>{months=j.months||[];const sel=document.getElementById('mois')||document.createElement('select');months.forEach(m=>{const o=document.createElement('option');o.value=m.key;o.textContent=dm(m.key);sel.appendChild(o)});
-    renderToday(months[0]&&months[0].items[0]);renderArch();}).catch(()=>{renderToday(null);(document.getElementById('archives')||{}).innerHTML='<div class="empty">Archives indisponibles.</div>'});
+  document.getElementById('mois').addEventListener('change',e=>{mois=e.target.value;renderArch()});
+  fetch('/diffusion-archives.json').then(r=>r.json()).then(j=>{months=j.months||[];const sel=document.getElementById('mois');months.forEach(m=>{const o=document.createElement('option');o.value=m.key;o.textContent=dm(m.key);sel.appendChild(o)});
+    renderToday(months[0]&&months[0].items[0]);renderArch();}).catch(()=>{renderToday(null);document.getElementById('archives').innerHTML='<div class="empty">Archives indisponibles.</div>'});
 })();
 </script>
 </body>
