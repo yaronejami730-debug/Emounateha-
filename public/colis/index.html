@@ -471,7 +471,7 @@ body{overflow-x:hidden}
 (function(){const n=document.querySelector('.sec-nav');if(!n)return;const f=()=>n.classList.toggle('scrolled',scrollY>40);addEventListener('scroll',f,{passive:true});f()})();
 
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
-(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd4'+ymd;
+(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd5'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
  const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
@@ -497,7 +497,7 @@ body{overflow-x:hidden}
  Promise.all([
    fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
    fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]}))
- ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'').replace(/בחשון/g,'במרחשון');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
+ ]).then(([j,ev])=>{const heb=j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
 })();
 
 const UBER="<svg class=\"uber\" viewBox=\"0 7.2 24 9.6\" role=\"img\" aria-label=\"Uber\"><path fill=\"#000\" d=\"M0 7.97v4.958c0 1.867 1.302 3.101 3 3.101.826 0 1.562-.316 2.094-.87v.736H6.27V7.97H5.082v4.888c0 1.257-.85 2.106-1.947 2.106-1.11 0-1.946-.827-1.946-2.106V7.971H0zm7.44 0v7.925h1.13v-.725c.521.532 1.257.86 2.06.86a3.006 3.006 0 0 0 3.034-3.01 3.01 3.01 0 0 0-3.033-3.024 2.86 2.86 0 0 0-2.049.861V7.971H7.439zm9.869 2.038c-1.687 0-2.965 1.37-2.965 3 0 1.72 1.334 3.01 3.066 3.01 1.053 0 1.913-.463 2.49-1.233l-.826-.611c-.43.577-.996.847-1.664.847-.973 0-1.753-.7-1.912-1.64h4.697v-.373c0-1.72-1.222-3-2.886-3zm6.295.068c-.634 0-1.098.294-1.381.758v-.713h-1.131v5.774h1.142V12.61c0-.894.544-1.47 1.291-1.47H24v-1.065h-.396zm-6.319.928c.85 0 1.564.588 1.756 1.47H15.52c.203-.882.916-1.47 1.765-1.47zm-6.732.012c1.086 0 1.98.883 1.98 2.004a1.993 1.993 0 0 1-1.98 2.001A1.989 1.989 0 0 1 8.56 13.02a1.99 1.99 0 0 1 1.992-2.004z\"/></svg>";
