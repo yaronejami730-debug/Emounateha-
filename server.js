@@ -216,6 +216,28 @@ ${t.extraCss || ''}
  </table></td></tr></table></body></html>`;
 }
 
+// ---------- SMS : outils ----------
+let smsCost = 4.5; // crédits Brevo par SMS en France ; réajusté d'après la réponse de Brevo à chaque envoi
+const SMS_GSM = new Set([...'@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà']);
+const SMS_EXT = new Set([...'^{}\\[~]|€']);
+function smsInfo(text) { // 1 SMS = 160 car. (alphabet GSM) ou 70 si un caractère spécial (ê, î, ’, emoji…) force l'Unicode
+  let n = 0, uni = false;
+  for (const ch of String(text)) { if (SMS_GSM.has(ch)) n++; else if (SMS_EXT.has(ch)) n += 2; else uni = true; }
+  if (uni) n = String(text).length;
+  const max = uni ? 70 : 160;
+  return { len: n, unicode: uni, max, segments: n <= max ? 1 : Math.ceil(n / (uni ? 67 : 153)) };
+}
+function smsPhone(p) { // -> format Brevo : indicatif + numéro, sans + (ex. 33783259157)
+  let s = String(p || '').trim().replace(/[\s.\-()]/g, '');
+  const intl = /^(\+|00)/.test(s);
+  s = s.replace(/^(\+|00)/, '');
+  if (!/^\d+$/.test(s)) return '';
+  if (!intl && /^0\d{9}$/.test(s)) return '33' + s.slice(1);
+  if (/^33\d{9}$/.test(s)) return s;
+  return intl && s.length >= 8 && s.length <= 15 ? s : '';
+}
+const smsFill = (t, r) => t.replace(/\{\{\s*prenom\s*\}\}/gi, (r.firstName || '').trim()).replace(/\{\{\s*nom\s*\}\}/gi, (r.lastName || '').trim()).replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
+
 // ---------- Brevo ----------
 async function brevoSend({ to, toName, subject, html }) {
   const s = db.settings;
@@ -278,6 +300,31 @@ async function brevoToday(force) {
   } catch {}
   return brevoCache.n;
 }
+// événements Brevo (livré, ouvert, clic, rebond…) des 14 derniers jours, regroupés par messageId ; cache 30 s
+let brevoEvCache = { at: 0, map: new Map(), ok: false };
+async function brevoEvents() {
+  const k = db.settings.brevoApiKey; if (!k) return brevoEvCache;
+  if (Date.now() - brevoEvCache.at < 30000) return brevoEvCache;
+  try {
+    const end = parisDay(Date.now()), start = parisDay(Date.now() - 14 * 86400000), map = new Map();
+    for (let off = 0; off < 7500; off += 2500) {
+      const r = await fetch(`https://api.brevo.com/v3/smtp/statistics/events?limit=2500&offset=${off}&sort=asc&startDate=${start}&endDate=${end}`, { headers: { 'api-key': k, accept: 'application/json' } });
+      if (!r.ok) throw new Error('Brevo ' + r.status);
+      const ev = (await r.json()).events || [];
+      for (const e of ev) {
+        const m = map.get(e.messageId) || { delivered: null, opened: 0, firstOpen: null, clicks: 0, problem: '', problemAt: null };
+        if (e.event === 'delivered') m.delivered = e.date;
+        else if (e.event === 'opened' || e.event === 'loadedByProxy') { m.opened++; m.firstOpen ||= e.date; }
+        else if (e.event === 'clicks') m.clicks++;
+        else if (['hardBounces', 'softBounces', 'blocked', 'invalid', 'spam', 'unsubscribed', 'deferred', 'error'].includes(e.event)) { m.problem = e.event; m.problemAt = e.date; }
+        map.set(e.messageId, m);
+      }
+      if (ev.length < 2500) break;
+    }
+    brevoEvCache = { at: Date.now(), map, ok: true };
+  } catch (e) { console.error('Brevo events', e.message); brevoEvCache = { at: Date.now() - 20000, map: brevoEvCache.map, ok: false }; }
+  return brevoEvCache;
+}
 const usedToday = () => Math.max(sentToday(), brevoCache.n);
 const nextMidnight = () => new Date(parisDay(Date.now() + 86400000) + 'T00:00:05+02:00').toISOString(); // minuit heure de Paris (le quota Brevo est de toute façon revérifié)
 const sentToday = () => db.sends.filter(x => x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
@@ -318,6 +365,13 @@ function dueSends(campaign) {
 }
 
 async function sendOne(campaign, { contact, stepIndex, step }) {
+  // garde anti-doublon : on revérifie dans la base (pas dans la mémoire de l'instance, peut-être périmée) que ce mail n'est pas déjà parti
+  if (pool) {
+    try {
+      const dup = await pool.query("select 1 from public.sends where campaign_id = $1 and contact_id = $2 and template_id = $3 and status <> 'error' limit 1", [campaign.id, contact.id, step.templateId]);
+      if (dup.rows.length) { loadedAt = 0; return { status: 'skipped' }; }
+    } catch (e) { console.error('garde doublon', e.message); }
+  }
   const t = db.templates.find(x => x.id === step.templateId);
   const rec = { id: uid(), at: now(), campaignId: campaign.id, contactId: contact.id, email: contact.email, stepIndex, templateId: step.templateId };
   try {
@@ -369,6 +423,7 @@ async function tick(force = false) {
         if (budget <= 0 || campCap <= 0) break;
         const r = await sendOne(camp, d);
         if (r.quota) { budget = 0; break; }
+        if (r.status === 'skipped') continue; // déjà envoyé (doublon évité)
         if (r.status === 'error') { errors++; if (errors >= 3) { budget = 0; } } else { budget--; campCap--; n++; }
         await new Promise(r => setTimeout(r, 250));
       }
@@ -633,6 +688,93 @@ function campaignStats(c) {
   };
 }
 
+// programmation complète d'une campagne : envois déjà faits (heure réelle) + envois à venir (heure prévue).
+// Simulation minute par minute avec la MÊME règle que tick() (plage horaire, quota du jour étalé, perMinute, délais entre étapes).
+function parisMidnight(day) {
+  const noon = Date.parse(day + 'T12:00:00Z');
+  const h = +new Date(noon).toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
+  return Date.parse(day + 'T00:00:00Z') - (h - 12) * 3600000;
+}
+function campaignSchedule(c) {
+  const s = db.settings, MAXROWS = 5000, DAY = 86400000;
+  const nameOf = ct => ((ct.firstName || '') + ' ' + (ct.lastName || '')).trim();
+  const tplName = id => (db.templates.find(t => t.id === id) || {}).name || '';
+  const steps = c.steps || [];
+  const stepsInfo = steps.map((st, i) => { const t = db.templates.find(x => x.id === st.templateId) || {}; return { label: i ? 'Relance ' + i : 'Premier envoi', templateId: st.templateId, tpl: t.name || '', subject: t.subject || '', title: t.title || '', body: String(t.body || '').slice(0, 220), delayDays: st.delayDays || 0 }; });
+  const mine = db.sends.filter(x => x.campaignId === c.id).sort((a, b) => (a.at < b.at ? -1 : 1));
+  const byId = new Map(db.contacts.map(k => [k.id, k]));
+  const sent = mine.slice(-MAXROWS).map(x => ({ id: x.id, at: x.at, email: x.email, name: nameOf(byId.get(x.contactId) || {}), step: x.stepIndex + 1, tpl: tplName(x.templateId), status: x.status, error: x.error || '' }));
+  const sentOk = mine.filter(x => x.status !== 'error').length;
+  // file d'attente : pour chaque contact, ses étapes restantes, dans l'ordre
+  const tag = (c.audienceTag || '').trim().toLowerCase(), ok = relevantSends(c);
+  const heads = [];
+  const gapMs = (s.minGapHours || 0) * 3600000;
+  for (const ct of db.contacts) {
+    if (ct.status !== 'active') continue;
+    if (tag && !(ct.tags || []).map(t => t.toLowerCase()).includes(tag)) continue;
+    const all = ok.filter(x => x.contactId === ct.id);
+    const got = new Set(all.map(x => x.templateId));
+    const todo = steps.map((st, i) => ({ st, i })).filter(o => !got.has(o.st.templateId));
+    if (!todo.length) continue;
+    const inCamp = all.filter(x => x.campaignId === c.id);
+    const lastAll = all.length ? Math.max(...all.map(x => +new Date(x.at))) : 0;
+    const lastC = inCamp.length ? Math.max(...inCamp.map(x => +new Date(x.at))) : 0;
+    const ready = Math.max(lastC ? lastC + (todo[0].st.delayDays || 0) * DAY : 0, lastAll + gapMs);
+    heads.push({ ct, todo, pos: 0, ready });
+  }
+  const totalPlanned = heads.reduce((a, h) => a + h.todo.length, 0);
+  const planned = [];
+  const running = c.status === 'running' || c.status === 'scheduled';
+  if (!running) {
+    for (const h of heads) for (const o of h.todo) { if (planned.length < MAXROWS) planned.push({ at: null, email: h.ct.email, name: nameOf(h.ct), step: o.i + 1, tpl: tplName(o.st.templateId) }); }
+    return { status: c.status, sent, planned, totalPlanned, sentOk, stepsInfo, truncated: totalPlanned > planned.length, window: [s.hourFrom, s.hourTo] };
+  }
+  const nowMs = Date.now(), today = parisDay(nowMs);
+  const fromMin = s.hourFrom * 60, toMin = s.hourTo * 60, winMin = Math.max(1, toMin - fromMin);
+  let day = today;
+  if (c.startDate && c.startDate > day) day = c.startDate;
+  let pausedUntil = s.pausedUntil && +new Date(s.pausedUntil) > nowMs ? +new Date(s.pausedUntil) : 0;
+  let left = totalPlanned, assigned = 0;
+  const pOf = ts => { // minute du jour à Paris
+    const d = new Date(ts);
+    return (+d.toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24) * 60 + +d.toLocaleString('en-GB', { timeZone: 'Europe/Paris', minute: 'numeric' });
+  };
+  for (let guard = 0; left > 0 && guard < 200; guard++, day = parisDay(parisMidnight(day) + 36 * 3600000)) {
+    if (c.endDate && day > c.endDate) break;
+    const isToday = day === today, mid = parisMidnight(day);
+    if (pausedUntil && mid + 86399000 < pausedUntil) continue;
+    const sentC = isToday ? mine.filter(x => x.status !== 'error' && dayKey(x.at) === today).length : 0;
+    const usedDay = isToday ? usedToday() : 0;
+    let dayQuota = s.dailyLimit;
+    if (c.endDate) {
+      const daysLeft = Math.max(1, Math.round((new Date(c.endDate) - new Date(day)) / DAY) + 1);
+      dayQuota = Math.min(s.dailyLimit, Math.ceil((left + sentOk + assigned) / daysLeft));
+    }
+    let doneDay = sentC, budgetDay = s.dailyLimit - usedDay;
+    let startM = fromMin;
+    if (isToday) startM = Math.max(fromMin, pOf(nowMs) + 1);
+    for (let m = startM; m < toMin && left > 0 && budgetDay > 0; m++) {
+      const at = mid + m * 60000;
+      if (pausedUntil && at < pausedUntil) continue;
+      let n = Math.min(s.perMinute, budgetDay);
+      if (c.endDate) n = Math.min(n, Math.ceil(dayQuota * (m - fromMin) / winMin) - doneDay);
+      else n = Math.min(n, dayQuota - doneDay);
+      for (let k = 0; k < n; k++) {
+        const h = heads.find(x => x.pos < x.todo.length && x.ready <= at);
+        if (!h) break;
+        const o = h.todo[h.pos++];
+        if (planned.length < MAXROWS) planned.push({ at: new Date(at).toISOString(), email: h.ct.email, name: nameOf(h.ct), step: o.i + 1, tpl: tplName(o.st.templateId) });
+        left--; assigned++; doneDay++; budgetDay--;
+        if (h.pos < h.todo.length) h.ready = Math.max(at + (h.todo[h.pos].st.delayDays || 0) * DAY, at + gapMs);
+      }
+    }
+  }
+  // ce qui n'a pas pu être placé (au-delà de la date de fin ou de l'horizon) : sans heure
+  for (const h of heads) for (; h.pos < h.todo.length; h.pos++) { if (planned.length < MAXROWS) planned.push({ at: null, email: h.ct.email, name: nameOf(h.ct), step: h.todo[h.pos].i + 1, tpl: tplName(h.todo[h.pos].st.templateId), late: true }); }
+  planned.sort((a, b) => (a.at && b.at ? (a.at < b.at ? -1 : 1) : a.at ? -1 : b.at ? 1 : 0));
+  return { status: c.status, sent, planned, totalPlanned, sentOk, stepsInfo, truncated: totalPlanned > planned.length, window: [s.hourFrom, s.hourTo], serverNow: nowMs };
+}
+
 const CHABAD = [ // [nom français, nom hébreu, mois (convertisseur Hebcal), jour] — recalculé chaque année
   ['Youd Kislev', 'י׳ כסלו', 'Kislev', 10],
   ['Youd-Tet Kislev', 'י״ט כסלו', 'Kislev', 19],
@@ -689,16 +831,18 @@ async function api(req, res, url) {
     const t = body.template || {};
     return send(res, 200, { html: renderEmail(t, c), subject: fill(t.subject, c || { firstName: 'Prénom', lastName: 'Nom', email: 'email@exemple.com' }), preheader: fill(t.preheader, c || { firstName: 'Prénom', lastName: 'Nom' }) });
   }
-  if (parts[0] === 'historique' && m === 'GET') { // lecture seule : envois réels + dons reçus (webhook AlloDons)
+  if (parts[0] === 'historique' && m === 'GET') {
+    const ev = await brevoEvents(); // lecture seule : envois réels + dons reçus (webhook AlloDons)
     const sends = db.sends.slice().sort((a, b) => (b.at > a.at ? 1 : -1)).slice(0, 200).map(x => {
       const c = db.contacts.find(k => k.id === x.contactId);
       const camp = db.campaigns.find(k => k.id === x.campaignId);
-      return { at: x.at, email: x.email, campagne: camp ? camp.name : '', status: x.status, erreur: x.error || '' };
+      const nom = camp ? camp.name : ({ chabbat: 'Horaires de Chabbat', 'test-templates': 'Test depuis Templates' })[x.campaignId] || 'Campagne supprimée';
+      return { at: x.at, email: x.email, campagne: nom, status: x.status, erreur: x.error || '', brevo: (ev.map.get(x.messageId) || null) };
     });
     let dons = [];
     try { dons = fs.readFileSync(path.join(DATA_DIR, 'allodons-webhook.log'), 'utf8').trim().split('\n').filter(Boolean).slice(-100).map(l => JSON.parse(l)).reverse(); } catch (e) {}
     dons = dons.map(x => ({ at: x.at, donateur: (x.data && x.data.donateur) || '', email: (x.data && x.data.email) || '', montant: (x.data && x.data.montant) || '', transaction: (x.data && x.data.transaction) || '', campagne: (x.data && x.data.category) || '' }));
-    return send(res, 200, { envois: sends, dons });
+    return send(res, 200, { envois: sends, brevoOk: !db.settings.brevoApiKey || ev.ok });
   }
   if (parts[0] === 'test-send' && m === 'POST') {
     const t = body.template; if (!t || !body.to) return send(res, 400, { error: 'template + to requis' });
@@ -779,6 +923,58 @@ async function api(req, res, url) {
   if (parts[0] === 'youtube-sync' && m === 'POST') { try { return send(res, 200, await syncYoutube(true)); } catch (e) { return send(res, 500, { error: e.message }); } }
   if (parts[0] === 'tick' && m === 'POST') return send(res, 200, await tick(true));
 
+  // ---------- SMS (Brevo) ----------
+  if (parts[0] === 'sms' && parts[1] === 'credits' && m === 'GET') { // crédits SMS restants, lus en direct chez Brevo
+    const key = db.settings.brevoApiKey;
+    if (!key) return send(res, 400, { error: 'Clé Brevo manquante (Réglages)' });
+    try {
+      const r = await fetch('https://api.brevo.com/v3/account', { headers: { 'api-key': key, accept: 'application/json' } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return send(res, r.status, { error: r.status === 403 ? 'La clé Brevo n\'a pas le droit « Compte » en lecture (Brevo > SMTP et API > clé > Compte : Lues).' : (j.message || 'Brevo HTTP ' + r.status) });
+      const p = (j.plan || []).find(x => x.type === 'sms');
+      return send(res, 200, { credits: p ? p.credits : 0, perSms: smsCost, at: now() });
+    } catch (e) { return send(res, 502, { error: 'Brevo injoignable : ' + e.message }); }
+  }
+  if (parts[0] === 'sms' && parts[1] === 'send' && m === 'POST') { // un lot de SMS (le navigateur découpe en lots de 25)
+    const key = db.settings.brevoApiKey;
+    if (!key) return send(res, 400, { error: 'Clé Brevo manquante (Réglages)' });
+    const type = body.type === 'transactional' ? 'transactional' : 'marketing'; // transactionnel = test vers son propre numéro
+    const h = +new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
+    if (type === 'marketing' && (h < 8 || h >= 22)) return send(res, 400, { error: 'Les SMS de prospection ne peuvent partir qu\'entre 8 h et 22 h (heure de Paris).' });
+    const sender = String(body.sender || 'Emounateha').trim();
+    if (!/^[A-Za-z0-9]{1,11}$/.test(sender)) return send(res, 400, { error: 'Expéditeur : 11 caractères max, lettres et chiffres seulement.' });
+    const tpl = String(body.message || '').trim();
+    if (!tpl) return send(res, 400, { error: 'Message vide' });
+    const list = Array.isArray(body.recipients) ? body.recipients.slice(0, 100) : [];
+    const failed = []; let sent = 0, used = 0, remaining = null;
+    const queue = [];
+    const seen = new Set();
+    for (const r of list) {
+      const to = smsPhone(r.phone);
+      if (!to) { failed.push({ phone: r.phone || '', error: 'numéro invalide' }); continue; }
+      if (seen.has(to)) continue; seen.add(to);
+      const text = smsFill(tpl, r);
+      if (smsInfo(text).segments !== 1) { failed.push({ phone: to, error: 'dépasse un SMS (' + smsInfo(text).len + ' car.)' }); continue; }
+      queue.push({ to, text });
+    }
+    let stop = null;
+    const worker = async () => {
+      while (queue.length && !stop) {
+        const { to, text } = queue.shift();
+        try {
+          const rr = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', { method: 'POST', headers: { 'api-key': key, 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ sender, recipient: to, content: text, type, tag: 'crm' }) });
+          const j = await rr.json().catch(() => ({}));
+          if (!rr.ok) { const msg = j.message || 'Brevo HTTP ' + rr.status; failed.push({ phone: to, error: msg }); if (rr.status === 402 || rr.status === 429 || /credit|limit|quota/i.test(msg)) stop = msg; continue; }
+          sent++; used += j.usedCredits || 0; remaining = j.remainingCredits ?? remaining;
+          if (j.usedCredits && j.smsCount) smsCost = j.usedCredits / j.smsCount;
+        } catch (e) { failed.push({ phone: to, error: e.message }); }
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker(), worker()]);
+    if (stop) failed.push({ phone: '', error: 'Envoi arrêté : ' + stop });
+    return send(res, 200, { sent, failed, used, remaining, perSms: smsCost });
+  }
+
   if (parts[0] === 'contacts' && parts[1] === 'import' && m === 'POST') {
     let added = 0, skipped = 0;
     const tags = (body.tags || '').split(',').map(t => t.trim()).filter(Boolean);
@@ -808,6 +1004,10 @@ async function api(req, res, url) {
     save(); return send(res, 200, { added, skipped, existing: dup });
   }
 
+  if (parts[0] === 'campaigns' && parts[2] === 'schedule' && m === 'GET') { // programmation détaillée (envoyés + prévus), rafraîchie en direct par le CRM
+    const c = db.campaigns.find(x => x.id === parts[1]); if (!c) return send(res, 404, { error: 'introuvable' });
+    return send(res, 200, { name: c.name, ...campaignSchedule(c) });
+  }
   if (parts[0] === 'campaigns' && parts[2] && m === 'POST') {
     const c = db.campaigns.find(x => x.id === parts[1]); if (!c) return send(res, 404, { error: 'introuvable' });
     if (parts[2] === 'start') c.status = (c.startDate && c.startDate > new Date().toISOString().slice(0, 10)) ? 'scheduled' : 'running';

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Simulateur iPhone — Émounatéha</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:-apple-system,system-ui,sans-serif;background:#e9eef0;color:#14272a;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:12px 16px;width:100%}
+.bar select,.bar button{font:inherit;font-size:14px;padding:8px 14px;border-radius:99px;border:1.5px solid #c5d6d7;background:#fff;color:#1f6a72;font-weight:600;cursor:pointer}
+.bar button.on{background:#1f6a72;color:#fff;border-color:#1f6a72}
+.bar .sep{width:1px;height:22px;background:#c5d6d7;margin:0 6px}
+.stage{flex:1;width:100%;display:flex;align-items:flex-start;justify-content:center;padding:6px 0 16px;min-height:0}
+.scaler{transform-origin:top center}
+.phone{position:relative;background:#111;border-radius:64px;padding:14px;box-shadow:0 0 0 2px #3a3f41 inset,0 0 0 3px #888,0 30px 70px rgba(0,0,0,.35)}
+.phone.se{border-radius:44px;padding:70px 14px}
+.screen{position:relative;overflow:hidden;border-radius:50px;background:#fff}
+.phone.se .screen{border-radius:6px}
+.screen iframe{display:block;border:0;width:100%;height:100%;background:#fff}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#000;border-radius:20px;z-index:5;pointer-events:none}
+.phone.se .island{display:none}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:#111;z-index:5;pointer-events:none}
+.phone.se .homebar{display:none}
+.info{font-size:12px;color:#51666a;padding-bottom:4px}
+</style>
+</head>
+<body>
+<div class="bar" id="bar">
+  <button data-p="/">Accueil</button>
+  <button data-p="/colis/">Colis</button>
+  <button data-p="/don/">Don</button>
+  <button data-p="/torah/">Torah</button>
+  <button data-p="/horaires/">Horaires</button>
+  <span class="sep"></span>
+  <select id="dev">
+    <option value="393x852" selected>iPhone 15 / 16 (393×852)</option>
+    <option value="375x667">iPhone SE (375×667)</option>
+    <option value="390x844">iPhone 14 (390×844)</option>
+    <option value="430x932">iPhone 15 Pro Max (430×932)</option>
+    <option value="360x780">Android (360×780)</option>
+  </select>
+  <button id="rot">⟳ Recharger</button>
+</div>
+<div class="stage" id="stage"><div class="scaler" id="scaler">
+  <div class="phone" id="phone"><div class="island"></div><div class="screen" id="screen"><iframe id="fr" title="Aperçu"></iframe></div><div class="homebar"></div></div>
+</div></div>
+<div class="info" id="info"></div>
+<script>
+(function(){
+  var fr=document.getElementById('fr'),screen=document.getElementById('screen'),phone=document.getElementById('phone'),scaler=document.getElementById('scaler'),stage=document.getElementById('stage'),dev=document.getElementById('dev'),info=document.getElementById('info');
+  var page=(location.hash||'#/').slice(1)||'/';
+  function mark(){[].forEach.call(document.querySelectorAll('[data-p]'),function(b){b.classList.toggle('on',b.getAttribute('data-p')===page)})}
+  function fit(){
+    var d=dev.value.split('x'),w=+d[0],h=+d[1],se=h<700;
+    screen.style.width=w+'px';screen.style.height=h+'px';phone.classList.toggle('se',se);
+    var pw=w+28,ph=h+(se?168:28);
+    var s=Math.min(1,(stage.clientWidth-20)/pw,(stage.clientHeight-10)/ph);
+    scaler.style.transform='scale('+s+')';
+    scaler.style.width=pw+'px';scaler.style.height=ph+'px';
+    scaler.style.marginBottom=(-(ph*(1-s)))+'px';
+    info.textContent=w+'×'+h+' px · zoom '+Math.round(s*100)+' % · '+page;
+  }
+  function load(){fr.src=page;mark();fit();location.hash=page}
+  document.getElementById('bar').addEventListener('click',function(e){var p=e.target.getAttribute&&e.target.getAttribute('data-p');if(p){page=p;load()}});
+  document.getElementById('rot').onclick=function(){fr.contentWindow.location.reload()};
+  dev.onchange=function(){fit();fr.contentWindow.location.reload()};
+  window.addEventListener('resize',fit);
+  load();
+})();
+</script>
+</body>
+</html>

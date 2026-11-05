@@ -117,14 +117,6 @@ const views = {
     <div class="card" style="margin-top:16px">
       <b>Prochaines fêtes</b> <span class="hint">(Hebcal) — programmez vos campagnes à l'avance</span>
       <div class="grid g4" style="margin-top:12px">${S.holidays.slice(0, 4).map(h => { const d = Math.ceil((new Date(h.date) - new Date(new Date().toDateString())) / 86400000); return `<div class="card" style="padding:16px;background:#f8fbfb;box-shadow:none"><div style="font-family:'Bree Serif',serif;font-size:18px;color:var(--navy)">${esc(h.title)}</div><div class="hint" style="margin:2px 0 8px">${esc(h.hebrew)} · ${new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · dans ${d} j</div><button class="btn sm" onclick="campFromHoliday('${h.date}','${esc(h.title).replace(/'/g, '')}')">+ Campagne</button></div>`; }).join('') || '<div class="hint">Calendrier indisponible.</div>'}</div>
-    </div>
-    <div class="card" style="margin-top:16px;padding:0">
-      <div style="padding:18px 20px 6px"><b>Activité récente</b></div>
-      ${S.sends.length ? `<table><thead><tr><th>Date</th><th>Destinataire</th><th>Campagne</th><th>Étape</th><th>Statut</th></tr></thead><tbody>${S.sends.slice(0, 15).map(x => {
-        const c = S.campaigns.find(c => c.id === x.campaignId);
-        return `<tr><td>${fmt(x.at)}</td><td>${esc(x.email)}</td><td>${esc(c?.name || '—')}</td><td>#${x.stepIndex + 1}</td>
-          <td>${x.status === 'error' ? `<span class="pill bad" title="${esc(x.error)}">Erreur</span>` : x.status === 'simulated' ? '<span class="pill">Simulé</span>' : '<span class="pill ok">Envoyé</span>'}</td></tr>`;
-      }).join('')}</tbody></table>` : `<div class="empty"><big>📭</big>Aucun envoi pour l'instant.<br>Ajoutez des contacts, créez une campagne puis démarrez-la.</div>`}
     </div>`;
   },
 
@@ -142,7 +134,7 @@ const views = {
       : `<div class="empty"><big>☺</big>Aucun contact. Importez une liste (prénom, nom, email) ou ajoutez-en un.</div>`}</div>`;
   },
 
-  historique: () => `<div class="head"><div><h1>Historique</h1><p class="sub">Envois réels et dons reçus (lecture seule)</p></div><button class="btn" onclick="render(true)">↻ Actualiser</button></div>
+  historique: () => `<div class="head"><div><h1>Historique</h1><p class="sub">Les 200 derniers envois, avec leur campagne (lecture seule)</p></div><button class="btn" onclick="render(true)">↻ Actualiser</button></div>
     <div id="hist"><div class="card empty">Chargement…</div></div>`,
   campaigns: () => `
     <div class="head"><div><h1>Campagnes</h1><p class="sub">Séquences de mails envoyées au fil de l'eau (max ${S.today.limit}/jour) · <b style="color:${S.settings.hasKey ? 'var(--ok)' : 'var(--warn)'}">${S.settings.hasKey ? '● Brevo connecté' : '⚠ Mode simulation (Brevo non connecté)'}</b></p></div>
@@ -158,7 +150,7 @@ const views = {
         <div class="stat"><b style="font-size:22px;color:${c.stats.errors ? 'var(--bad)' : 'inherit'}">${c.stats.errors}</b><em>erreurs</em></div>
         <div class="row">
           ${c.status === 'running' || c.status === 'scheduled' ? `<button class="btn" onclick="campAct('${c.id}','pause')">⏸ Pause</button>` : c.status !== 'done' ? `<button class="btn pri" onclick="campAct('${c.id}','start')">▶ Démarrer</button>` : ''}
-          <button class="btn" onclick="campDetail('${c.id}')">📊 Statistiques</button><button class="btn" onclick="campModal('${c.id}')">Modifier</button><button class="btn bad" onclick="del('campaigns','${c.id}')">✕</button></div></div>`;
+          <button class="btn" onclick="location.hash='#/campaigns/${c.id}'">🗓 Programmation</button><button class="btn" onclick="campDetail('${c.id}')">📊 Statistiques</button><button class="btn" onclick="campModal('${c.id}')">Modifier</button><button class="btn bad" onclick="del('campaigns','${c.id}')">✕</button></div></div>`;
     }).join('') : `<div class="card empty"><big>➤</big>Aucune campagne. Créez « Hanouka » avec une séquence de relances.</div>`}`,
 
   templates: () => {
@@ -471,17 +463,21 @@ function bindTpl() {
 async function render(skipLoad) {
   if (!skipLoad) await load();
   const route = (location.hash.replace(/^#\/?/, '') || '');
-  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.r === route));
+  stopSchedule(); if (typeof smsStop === 'function') smsStop();
+  const schedId = (/^campaigns\/([^/]+)$/.exec(route) || [])[1];
+  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.r === (schedId ? 'campaigns' : route)));
+  if (schedId) { $('#main').innerHTML = schedShell(schedId); startSchedule(schedId); return; }
   $('#main').innerHTML = (views[route] || views[''])();
   if (route === 'templates') bindTpl();
   if (route === 'historique') loadHistorique();
+  if (route === 'sms') smsInit();
 }
 function renderKeepFocus() {
   const pos = $('#q')?.selectionStart; render(true).then(() => { const q = $('#q'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } });
 }
 window.addEventListener('hashchange', () => { tplDraft = null; render(); });
 render();
-setInterval(() => { if (!document.hidden && $('#modal').classList.contains('hidden') && !location.hash.includes('templates') && !location.hash.includes('settings')) render(); }, 30000);
+setInterval(() => { if (!document.hidden && $('#modal').classList.contains('hidden') && !location.hash.includes('templates') && !location.hash.includes('settings') && !location.hash.includes('sms') && !location.hash.includes('campaigns/')) render(); }, 30000);
 
 // fiche statistiques d'une campagne
 function campDetail(id){
@@ -492,7 +488,7 @@ function campDetail(id){
     ${cell('Audience',st.audience||0)}${cell('Déjà envoyés',st.sent||0,'var(--ok)')}${cell('Aujourd\'hui',p?p.sentToday+' / '+p.dayQuota:'—')}${cell('Restant à envoyer',p?p.remaining:(st.pending||0))}
     ${cell('En séquence',st.pending||0)}${cell('Exclus (autre campagne)',st.excluded||0,st.excluded?'var(--warn)':'inherit')}${cell('Erreurs',st.errors||0,st.errors?'var(--bad)':'inherit')}${cell('Mails / heure',p?p.perHour:'—')}</div>`;
   const next=p?`<div class="card" style="padding:12px 14px;margin-bottom:12px"><b>Prochaine rafale</b> : ${p.nextLabel} · <b>${p.nextCount}</b> mail(s)<br><small class="hint">Quota du jour ${p.dayQuota} · ${p.dayLeft} restant aujourd'hui · moyenne ≈ ${p.perHour} mails/heure programmés</small></div>`:'';
-  const perStep=steps.length?`<table style="width:100%;font-size:14px;margin-bottom:12px"><tr><th align="left">Étape</th><th align="right">Envois</th><th align="right">Délai</th></tr>${steps.map((x,i)=>`<tr><td>Étape ${i+1}</td><td align="right"><b>${(st.steps||[])[i]||0}</b></td><td align="right">${i?'+'+(x.delayDays||0)+' j':'immédiat'}</td></tr>`).join('')}</table>`:'';
+  const perStep=steps.length?`<table style="width:100%;font-size:14px;margin-bottom:12px"><tr><th align="left">Mail</th><th align="right">Envois</th><th align="right">Délai</th></tr>${steps.map((x,i)=>`<tr><td>${i?'Relance '+i:'Premier envoi'}</td><td align="right"><b>${(st.steps||[])[i]||0}</b></td><td align="right">${i?'+'+(x.delayDays||0)+' j':'immédiat'}</td></tr>`).join('')}</table>`:'';
   const days=(st.daily||[]).length?`<h3 style="margin:12px 0 6px">Envois par jour</h3><table style="width:100%;font-size:14px">${st.daily.map(d=>`<tr><td>${new Date(d.day+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</td><td align="right"><b>${d.n}</b></td></tr>`).join('')}</table>`:'<p class="hint">Aucun envoi pour le moment.</p>';
   const period=`<p class="hint">Période : ${c.startDate?new Date(c.startDate).toLocaleDateString('fr-FR'):'—'} → ${c.endDate?new Date(c.endDate).toLocaleDateString('fr-FR'):'sans fin'} · statut : ${esc(c.status)}</p>`;
   modal(`<h2>${esc(c.name)}</h2>${period}${grid}${next}${perStep}${days}<div class="row" style="margin-top:14px"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
@@ -503,9 +499,254 @@ function campDetail(id){
 async function loadHistorique(){
   const el=document.getElementById('hist'); if(!el) return;
   try{ const h=await api('GET','/historique');
-    const dons=(h.dons||[]).map(d=>`<tr><td>${new Date(d.at).toLocaleString('fr-FR')}</td><td>${esc(d.donateur)}</td><td>${esc(d.email)}</td><td align="right"><b>${d.montant} €</b></td><td>${esc(d.campagne)}</td></tr>`).join('');
-    const envs=(h.envois||[]).map(x=>`<tr><td>${new Date(x.at).toLocaleString('fr-FR')}</td><td>${esc(x.email)}</td><td>${esc(x.campagne)}</td><td>${x.status==='error'?'<span style="color:var(--bad)">erreur</span>':esc(x.status)}</td></tr>`).join('');
-    el.innerHTML=`<h3 style="margin:14px 0 6px">Dons reçus (AlloDons)</h3>${dons?`<table style="width:100%;font-size:14px"><tr><th align="left">Date</th><th align="left">Donateur</th><th align="left">Email</th><th align="right">Montant</th><th align="left">Campagne</th></tr>${dons}</table>`:'<div class="card empty">Aucun don reçu pour le moment.</div>'}
-    <h3 style="margin:18px 0 6px">Envois (200 derniers)</h3>${envs?`<table style="width:100%;font-size:14px"><tr><th align="left">Date</th><th align="left">Email</th><th align="left">Campagne</th><th align="left">Statut</th></tr>${envs}</table>`:'<div class="card empty">Aucun envoi.</div>'}`;
+    const envs=(h.envois||[]).map(x=>`<tr><td>${new Date(x.at).toLocaleString('fr-FR')}</td><td>${esc(x.email)}</td><td>${esc(x.campagne)}</td><td>${x.status==='error'?'<span style="color:var(--bad)" title="'+esc(x.erreur)+'">erreur</span>':x.status==='simulated'?'simulé':'envoyé'}</td></tr>`).join('');
+    el.innerHTML=`<h3 style="margin:14px 0 6px">Envois (200 derniers)</h3>${envs?`<table style="width:100%;font-size:14px"><tr><th align="left">Date</th><th align="left">Email</th><th align="left">Campagne</th><th align="left">Statut</th></tr>${envs}</table>`:'<div class="card empty">Aucun envoi.</div>'}`;
   }catch(e){ el.innerHTML='<div class="card empty">Historique indisponible.</div>'; }
 }
+
+
+// ---------- Programmation d'une campagne, en direct ----------
+let sch = null; // { id, timer, data, prev:Set, filter, q, showOld }
+function stopSchedule() { if (sch && sch.timer) clearInterval(sch.timer); sch = null; }
+function schedShell(id) {
+  return `<div class="head"><div><a href="#/campaigns" style="font-size:13px;color:var(--mut)">← Campagnes</a><h1 id="sch_t">Programmation</h1><p class="sub" id="sch_sub">Chargement…</p></div>
+    <div><span id="sch_live" class="pill ok">● En direct</span></div></div>
+    <div id="sch_sum"></div>
+    <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap">
+      <button class="btn sm pri" data-sf="all" onclick="schedFilter('all')">Tous</button>
+      <button class="btn sm" data-sf="sent" onclick="schedFilter('sent')">✓ Envoyés</button>
+      <button class="btn sm" data-sf="planned" onclick="schedFilter('planned')">⏰ Prévus</button>
+      <button class="btn sm" data-sf="error" onclick="schedFilter('error')">⚠ Erreurs</button>
+      <input id="sch_q" placeholder="Rechercher un nom ou un email…" style="max-width:260px;margin-left:auto" oninput="sch.q=this.value.toLowerCase();schedDraw()">
+    </div>
+    <div class="card" style="padding:0"><table style="width:100%;font-size:14px" id="sch_tab"><thead><tr><th align="left" style="padding:10px 14px">Statut</th><th align="left">Heure</th><th align="left">Contact</th><th align="left">Étape</th></tr></thead><tbody id="sch_body"><tr><td colspan="4" class="empty" style="padding:24px">Chargement…</td></tr></tbody></table></div>
+    <div id="sch_more" class="hint" style="margin:10px 0"></div>
+    <style>.sr-sent td{background:#f2fbf6}.sr-err td{background:#fff3f3}.sr-now td{background:#fff9e6;font-weight:600;text-align:center;color:#8a6d1f}.sr-day td{background:#eef6f6;font-weight:600;padding:6px 14px;color:#164c52}
+    @keyframes schflash{from{background:#b8f0cf}to{background:#f2fbf6}}.sr-flash td{animation:schflash 2.4s ease-out}
+    #sch_tab td{padding:8px 14px;border-top:1px solid var(--line)}#sch_tab th{background:#f6f8fa;font-size:12px;color:var(--mut)}</style>`;
+}
+function startSchedule(id) {
+  sch = { id, data: null, prev: null, filter: 'all', q: '', showOld: false, timer: null };
+  const pull = async () => {
+    if (!sch || sch.id !== id || document.hidden) return;
+    try {
+      const d = await api('GET', `/campaigns/${id}/schedule`);
+      if (!sch || sch.id !== id) return;
+      sch.data = d; sch.err = false; schedDraw();
+    } catch (e) { if (sch) { sch.err = true; const l = $('#sch_live'); if (l) { l.className = 'pill warn'; l.textContent = '⚠ Connexion perdue…'; } } }
+  };
+  pull(); sch.timer = setInterval(pull, 3000);
+}
+function schedFilter(f) { if (!sch) return; sch.filter = f; schedDraw(); }
+const schHM = iso => new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const schHMS = iso => new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const schDay = iso => new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+function schedDraw() {
+  const d = sch && sch.data; if (!d || !$('#sch_body')) return;
+  const sentOk = d.sent.filter(x => x.status !== 'error').length, errs = d.sent.filter(x => x.status === 'error').length;
+  const total = sentOk + d.totalPlanned, pct = total ? Math.round(sentOk / total * 100) : 0;
+  $('#sch_t').textContent = d.name;
+  const first = d.planned.find(x => x.at);
+  const pillMap = { running: 'En cours', scheduled: 'Programmée', paused: 'En pause', draft: 'Brouillon', done: 'Terminée' };
+  $('#sch_sub').innerHTML = `${pillMap[d.status] || d.status} · plage d'envoi ${d.window[0]} h → ${d.window[1]} h · actualisé à ${schHMS(new Date().toISOString())}`;
+  const live = $('#sch_live'); live.className = d.status === 'running' ? 'pill ok' : 'pill'; live.textContent = d.status === 'running' ? '● En direct' : '⏸ ' + (pillMap[d.status] || d.status);
+  $('#sch_sum').innerHTML = `<div class="card" style="padding:14px 18px"><div style="display:flex;gap:26px;flex-wrap:wrap;align-items:center">
+    <div><b style="font-size:26px;color:var(--ok)">${sentOk}</b><br><small class="hint">envoyés</small></div>
+    <div><b style="font-size:26px">${d.totalPlanned}</b><br><small class="hint">à envoyer</small></div>
+    <div><b style="font-size:26px;color:${errs ? 'var(--bad)' : 'inherit'}">${errs}</b><br><small class="hint">erreurs</small></div>
+    <div style="flex:1;min-width:200px"><div style="height:10px;border-radius:99px;background:#e6ecef;overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:var(--ok);transition:width .6s"></i></div>
+      <small class="hint">${pct} % terminé${first ? ' · prochain envoi prévu à <b>' + schHM(first.at) + '</b> (' + schDay(first.at) + ')' : (d.totalPlanned && d.status !== 'running' ? ' · démarrez la campagne pour lancer la programmation' : '')}</small></div></div></div>`;
+  document.querySelectorAll('[data-sf]').forEach(b => b.classList.toggle('pri', b.dataset.sf === sch.filter));
+  // lignes : envoyés (chronologique) puis prévus (chronologique)
+  const keyOf = (e, st) => e + '|' + st;
+  const q = sch.q;
+  const match = x => !q || (x.email + ' ' + x.name).toLowerCase().includes(q);
+  const f = sch.filter;
+  let sent = d.sent.filter(x => (f === 'all' || f === 'sent' && x.status !== 'error' || f === 'error' && x.status === 'error') && match(x));
+  let plan = (f === 'all' || f === 'planned') ? d.planned.filter(match) : [];
+  const OLD = 25, PLAN = 500;
+  const hiddenOld = sch.showOld ? 0 : Math.max(0, sent.length - OLD);
+  if (hiddenOld) sent = sent.slice(-OLD);
+  const planCut = Math.max(0, plan.length - PLAN); plan = plan.slice(0, PLAN);
+  const sentKeys = new Set(d.sent.filter(x => x.status !== 'error').map(x => keyOf(x.email, x.step)));
+  const justSent = sch.prev ? new Set([...sentKeys].filter(k => !sch.prev.has(k))) : new Set();
+  const stepCell = n => { const si = (d.stepsInfo || [])[n - 1] || {}; const tip = [si.tpl && 'Template : ' + si.tpl, si.subject && 'Objet : ' + si.subject, si.title && 'Titre : ' + si.title, si.body].filter(Boolean).join('\n'); return `<span title="${esc(tip)}" style="cursor:help;border-bottom:1px dotted var(--mut)">${esc(si.label || 'Envoi ' + n)}</span> <button class="btn sm" style="padding:1px 7px;font-size:12px" title="Voir le mail" onclick="schedTpl(${n - 1})">👁</button>`; };
+  const nameCell = x => `<b>${esc(x.name || x.email)}</b>${x.name ? '<br><small class="hint">' + esc(x.email) + '</small>' : ''}`;
+  let html = '', lastDay = '';
+  const dayRow = iso => { const dd = schDay(iso); if (dd !== lastDay) { lastDay = dd; html += `<tr class="sr-day"><td colspan="4">${dd.charAt(0).toUpperCase() + dd.slice(1)}</td></tr>`; } };
+  for (const x of sent) {
+    dayRow(x.at);
+    const bad = x.status === 'error';
+    html += `<tr class="${bad ? 'sr-err' : 'sr-sent'} ${justSent.has(keyOf(x.email, x.step)) ? 'sr-flash' : ''}"><td>${bad ? '<span class="pill bad">⚠ Erreur</span>' : '<span class="pill ok">✓ Envoyé</span>'}</td><td>${schHMS(x.at)}</td><td>${nameCell(x)}${bad ? '<br><small style="color:var(--bad)">' + esc(x.error) + '</small>' : ''}</td><td>${stepCell(x.step)}</td></tr>`;
+  }
+  if (f === 'all' || f === 'planned') html += `<tr class="sr-now"><td colspan="4">▼ Maintenant · ${plan.length || d.totalPlanned ? d.totalPlanned + ' mail(s) à venir' : 'rien à venir'}</td></tr>`;
+  lastDay = '';
+  for (const x of plan) {
+    if (x.at) dayRow(x.at);
+    html += `<tr><td><span class="pill blue">⏰ Programmé</span></td><td>${x.at ? '<b>' + schHM(x.at) + '</b>' : '<span class="hint">' + (x.late ? 'hors période' : d.status === 'paused' ? 'campagne en pause' : 'non planifié') + '</span>'}</td><td>${nameCell(x)}</td><td>${stepCell(x.step)}</td></tr>`;
+  }
+  if (!sent.length && !plan.length) html = `<tr><td colspan="4" class="empty" style="padding:24px">Aucun mail à afficher.</td></tr>`;
+  $('#sch_body').innerHTML = html;
+  $('#sch_more').innerHTML = (hiddenOld ? `<a href="#" onclick="sch.showOld=true;schedDraw();return false">Afficher les ${hiddenOld} envois précédents</a> · ` : '') + (planCut ? `${planCut} mail(s) prévus plus tard non affichés (affinez avec la recherche)` : '') + (d.truncated ? ' · liste tronquée à 5000' : '');
+  sch.prev = sentKeys;
+}
+
+async function schedTpl(i) {
+  const d = sch && sch.data; const si = d && d.stepsInfo && d.stepsInfo[i]; if (!si) return;
+  const t = S.templates.find(x => x.id === si.templateId);
+  let html = '<p class="hint">Template introuvable.</p>';
+  if (t) { try { const r = await api('POST', '/render', { template: t }); html = `<p class="hint" style="margin:0 0 8px">Objet : <b>${esc(r.subject)}</b></p><iframe style="width:100%;height:520px;border:1px solid var(--line);border-radius:10px;background:#fff" srcdoc="${esc(r.html)}"></iframe>`; } catch (e) { html = '<p class="hint">Aperçu indisponible.</p>'; } }
+  modal(`<h2>${esc(si.label)} — ${esc(si.tpl)}</h2>${html}<div class="row" style="margin-top:14px"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
+}
+
+// ================= SMS (Brevo) =================
+const SMS_GSM = new Set([...'@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà']);
+const SMS_EXT = new Set([...'^{}\\[~]|€']);
+function smsInfo(text) { // 1 SMS = 160 car. (alphabet GSM) ou 70 si un caractère spécial (ê, î, ’, emoji…)
+  let n = 0, uni = false;
+  for (const ch of String(text)) { if (SMS_GSM.has(ch)) n++; else if (SMS_EXT.has(ch)) n += 2; else uni = true; }
+  if (uni) n = String(text).length;
+  const max = uni ? 70 : 160;
+  return { len: n, unicode: uni, max, segments: n <= max ? 1 : Math.ceil(n / (uni ? 67 : 153)) };
+}
+function smsPhone(p) {
+  let s = String(p || '').trim().replace(/[\s.\-()]/g, '');
+  const intl = /^(\+|00)/.test(s);
+  s = s.replace(/^(\+|00)/, '');
+  if (!/^\d+$/.test(s)) return '';
+  if (!intl && /^0\d{9}$/.test(s)) return '33' + s.slice(1);
+  if (/^33\d{9}$/.test(s)) return s;
+  return intl && s.length >= 8 && s.length <= 15 ? s : '';
+}
+const smsFill = (t, r) => t.replace(/\{\{\s*prenom\s*\}\}/gi, (r.firstName || '').trim()).replace(/\{\{\s*nom\s*\}\}/gi, (r.lastName || '').trim()).replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
+function smsNoUnicode(t) { // remplace ’ « » … œ et retire les accents que l'alphabet SMS ne connaît pas (ê→e, ô→o…)
+  const map = { '’': "'", '‘': "'", '“': '"', '”': '"', '«': '"', '»': '"', '–': '-', '—': '-', '…': '...', 'œ': 'oe', 'Œ': 'OE', ' ': ' ', ' ': ' ' };
+  return [...t].map(ch => { if (SMS_GSM.has(ch) || SMS_EXT.has(ch)) return ch; if (map[ch] !== undefined) return map[ch]; const b = ch.normalize('NFD').replace(/[̀-ͯ]/g, ''); return SMS_GSM.has(b) ? b : ch; }).join('');
+}
+
+const sms = { rows: [], msg: '', sender: 'Emounateha', credits: null, perSms: 4.5, err: '', timer: null, busy: false, result: null, tag: '' };
+function smsParse(text) { // CSV/collage : Prénom;Nom;Téléphone (avec ou sans ligne d'en-tête)
+  const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const split = l => l.split(/[;,\t]/).map(x => x.trim().replace(/^"|"$/g, ''));
+  let cols = { fn: -1, ln: -1, ph: -1 };
+  if (lines.length && !/\d{8}/.test(lines[0].replace(/[\s.\-]/g, ''))) {
+    split(lines.shift()).forEach((h, i) => { h = h.toLowerCase(); if (/t[ée]l|phone|mobile|portable|gsm|num/.test(h)) cols.ph = i; else if (/pr[ée]nom|first/.test(h)) cols.fn = i; else if (/^nom|last|famil/.test(h)) cols.ln = i; });
+  }
+  const seen = new Set();
+  return lines.map(l => {
+    const c = split(l);
+    const raw = cols.ph >= 0 ? c[cols.ph] : c.find(x => smsPhone(x)) || '';
+    const phone = smsPhone(raw);
+    const rest = c.filter(x => x !== raw);
+    const firstName = cols.fn >= 0 ? c[cols.fn] || '' : rest[0] || '';
+    const lastName = cols.ln >= 0 ? c[cols.ln] || '' : rest[1] || '';
+    const dup = phone && seen.has(phone); if (phone) seen.add(phone);
+    return { firstName, lastName, raw, phone, ok: !!phone && !dup, why: !phone ? 'numéro invalide' : dup ? 'doublon' : '' };
+  });
+}
+function smsSetRows(rows) { sms.rows = rows; sms.result = null; smsDraw(); }
+function smsLoadCsv() { smsSetRows(smsParse($('#sms_csv').value)); }
+function smsFromContacts() {
+  const tag = ($('#sms_tag').value || '').trim().toLowerCase(); sms.tag = tag;
+  const list = (S.contacts || []).filter(c => c.phone && c.status === 'active' && (!tag || (c.tags || []).some(t => t.toLowerCase() === tag)));
+  smsSetRows(smsParse(list.map(c => [c.firstName, c.lastName, c.phone].join(';')).join('\n')));
+}
+function smsStats() {
+  const msg = sms.msg;
+  const good = sms.rows.filter(r => r.ok);
+  good.forEach(r => { r.text = smsFill(msg, r); r.info = smsInfo(r.text); r.over = r.info.segments !== 1; });
+  const sendable = msg.trim() ? good.filter(r => !r.over) : [];
+  return { good, sendable, over: good.length - sendable.length, bad: sms.rows.length - good.length };
+}
+function smsDraw() {
+  const box = $('#sms_body'); if (!box) return;
+  const st = smsStats();
+  const info = smsInfo(sms.msg);
+  const sample = (st.good[0] && st.good[0].text) || sms.msg;
+  const cost = st.sendable.length * sms.perSms;
+  const after = sms.credits == null ? null : sms.credits - cost;
+  $('#sms_count').innerHTML = `<b style="color:${info.segments > 1 ? '#b3261e' : 'inherit'}">${info.len} / ${info.max}</b> caractères · ${info.segments} SMS${info.unicode ? ' <span class="pill warn">Unicode : 70 max</span>' : ''}`;
+  $('#sms_hint').innerHTML = info.unicode ? 'Un caractère spécial (accent comme ê/î/ô/â, apostrophe ’, « », émoji) fait tomber la limite de 160 à 70. <a href="#" onclick="smsClean();return false">Remplacer automatiquement</a>' : 'Alphabet SMS standard : 160 caractères par SMS (é, è, à, ù, ç restent autorisés).';
+  $('#sms_prev').textContent = sample || 'Votre message apparaîtra ici.';
+  $('#sms_sum').innerHTML = sms.rows.length
+    ? `<b>${st.good.length}</b> numéro(s) valide(s)${st.bad ? ` · <span style="color:#b3261e">${st.bad} ignoré(s) (invalide ou doublon)</span>` : ''}${st.over ? ` · <span style="color:#b3261e">${st.over} message(s) dépassent un SMS</span>` : ''}`
+    : '<span style="color:var(--mut)">Aucun destinataire chargé.</span>';
+  $('#sms_cost').innerHTML = `<b>${st.sendable.length}</b> SMS × ${String(sms.perSms).replace('.', ',')} crédits = <b>${String(Math.round(cost * 10) / 10).replace('.', ',')}</b> crédits${after != null ? ` · il restera <b style="color:${after < 0 ? '#b3261e' : 'inherit'}">${String(Math.round(after * 10) / 10).replace('.', ',')}</b>` : ''}`;
+  const b = $('#sms_go'); if (b) { b.disabled = sms.busy || !st.sendable.length || (after != null && after < 0); b.textContent = `Envoyer à ${st.sendable.length} personne${st.sendable.length > 1 ? 's' : ''}`; }
+  const t = $('#sms_tbtn'); if (t) t.disabled = sms.busy;
+  const list = sms.rows.slice(0, 60).map(r => `<tr${r.ok && !r.over ? '' : ' style="opacity:.55"'}><td>${esc(r.firstName)} ${esc(r.lastName)}</td><td>${esc(r.phone ? '+' + r.phone : r.raw)}</td><td>${r.ok ? (r.over ? '<span class="pill bad">trop long</span>' : '<span class="pill ok">OK</span>') : `<span class="pill bad">${esc(r.why)}</span>`}</td></tr>`).join('');
+  $('#sms_list').innerHTML = sms.rows.length ? `<table><thead><tr><th>Nom</th><th>Numéro</th><th></th></tr></thead><tbody>${list}</tbody></table>${sms.rows.length > 60 ? `<p class="hint" style="padding:8px 14px">… et ${sms.rows.length - 60} autres</p>` : ''}` : '';
+  const r = sms.result;
+  $('#sms_res').innerHTML = r ? `<div class="card" style="margin-top:14px"><h3 style="margin:0 0 6px">${r.done ? 'Envoi terminé' : 'Envoi en cours…'}</h3><div class="bar" style="margin:6px 0"><i style="width:${Math.round(r.total ? r.pos / r.total * 100 : 0)}%"></i></div><p>${r.sent} envoyé(s) · ${r.failed.length} échec(s) · ${String(Math.round(r.used * 10) / 10).replace('.', ',')} crédits utilisés</p>${r.failed.length ? `<details><summary>Voir les échecs</summary><ul>${r.failed.slice(0, 50).map(f => `<li>${esc(f.phone)} — ${esc(f.error)}</li>`).join('')}</ul></details>` : ''}</div>` : '';
+}
+function smsClean() { const t = $('#sms_msg'); t.value = smsNoUnicode(t.value); sms.msg = t.value; smsDraw(); }
+function smsCredDraw() {
+  const el = $('#sms_cr'); if (!el) return;
+  el.innerHTML = sms.err ? `<span class="pill bad" title="${esc(sms.err)}">Crédits indisponibles</span>` : sms.credits == null ? '<span class="pill">Crédits SMS…</span>' : `<span class="pill ok" style="font-size:14px">● ${Math.floor(sms.credits).toLocaleString('fr-FR')} crédits SMS</span><div style="font-size:11px;color:var(--mut);margin-top:3px">≈ ${Math.floor(sms.credits / sms.perSms).toLocaleString('fr-FR')} SMS · mis à jour ${new Date().toLocaleTimeString('fr-FR')}</div>`;
+  if (sms.err) { const e = $('#sms_err'); if (e) e.textContent = sms.err; }
+}
+async function smsCredits() {
+  try { const r = await api('GET', '/sms/credits'); sms.credits = r.credits; sms.perSms = r.perSms || sms.perSms; sms.err = ''; }
+  catch (e) { sms.err = e.message; }
+  smsCredDraw(); smsDraw();
+}
+function smsStop() { if (sms.timer) clearInterval(sms.timer); sms.timer = null; }
+function smsInit() {
+  smsStop(); smsCredDraw(); smsDraw(); smsCredits();
+  sms.timer = setInterval(() => { if (!document.hidden && !sms.busy) smsCredits(); }, 15000);
+}
+async function smsSend(test) {
+  const st = smsStats();
+  let rows;
+  if (test) {
+    if (!sms.msg.trim()) return toast('Écrivez d\'abord votre message (étape 2)', true);
+    const p = smsPhone($('#sms_test').value); if (!p) return toast('Numéro de test invalide : chiffres uniquement, ex. 06 12 34 56 78', true);
+    rows = [{ phone: p, firstName: (sms.rows[0] && sms.rows[0].firstName) || 'Test', lastName: '' }];
+    const i = smsInfo(smsFill(sms.msg, rows[0])); if (i.segments !== 1) return toast('Message trop long pour 1 SMS', true);
+    if (!confirm(`Envoyer ce SMS de test à +${p} ?\n(≈ ${sms.perSms} crédits)`)) return;
+  } else {
+    rows = st.sendable.map(r => ({ phone: r.phone, firstName: r.firstName, lastName: r.lastName }));
+    if (!rows.length) return;
+    const tot = Math.round(rows.length * sms.perSms * 10) / 10;
+    if (!confirm(`Envoyer ce SMS à ${rows.length} personne(s) ?\n\n« ${st.sendable[0].text} »\n\nCoût estimé : ${tot} crédits.\nL'envoi est définitif.`)) return;
+  }
+  sms.busy = true; sms.result = { total: rows.length, pos: 0, sent: 0, failed: [], used: 0, done: false }; smsDraw();
+  try {
+    for (let i = 0; i < rows.length; i += 25) {
+      const r = await api('POST', '/sms/send', { message: sms.msg, sender: sms.sender, recipients: rows.slice(i, i + 25), type: test ? 'transactional' : 'marketing' });
+      sms.result.sent += r.sent; sms.result.used += r.used || 0; sms.result.failed.push(...r.failed); sms.result.pos = Math.min(rows.length, i + 25);
+      if (r.remaining != null) sms.credits = r.remaining;
+      if (r.perSms) sms.perSms = r.perSms;
+      smsCredDraw(); smsDraw();
+      if (r.failed.some(f => !f.phone)) break; // Brevo a stoppé l'envoi (crédits…)
+    }
+  } catch (e) { sms.result.failed.push({ phone: '', error: e.message }); toast(e.message, true); }
+  sms.result.done = true; sms.busy = false; smsDraw(); smsCredits();
+  if (!sms.result.failed.length) toast(`${sms.result.sent} SMS envoyé(s)`);
+}
+views.sms = () => `
+  <div class="head"><div><h1>Campagne SMS</h1><p class="sub">Envoyez un SMS à une liste importée (CSV) ou à vos contacts, via Brevo</p></div><div id="sms_cr" style="text-align:right"></div></div>
+  <p id="sms_err" class="hint" style="color:#b3261e"></p>
+  <div id="sms_body">
+  <div class="card"><h3 style="margin-top:0">1. Destinataires</h3>
+    <p class="hint">Une ligne par personne : <code>Prénom;Nom;Téléphone</code> (ou seulement le numéro). Les 06/07… sont convertis en +33 ; les doublons sont retirés.</p>
+    <label>Fichier CSV</label><input type="file" accept=".csv,.txt,.tsv" onchange="readFile(this,'sms_csv');setTimeout(smsLoadCsv,300)">
+    <label>Ou coller la liste</label><textarea id="sms_csv" rows="5" placeholder="David;Cohen;06 12 34 56 78&#10;07 83 25 91 57" oninput="smsLoadCsv()"></textarea>
+    <div class="row" style="margin-top:10px;gap:8px;align-items:center"><span class="hint" style="margin:0">ou</span><input id="sms_tag" placeholder="tag (facultatif)" value="${esc(sms.tag)}" style="width:160px"><button class="btn" onclick="smsFromContacts()">Utiliser mes contacts avec téléphone</button></div>
+    <p id="sms_sum" style="margin:12px 0 0"></p>
+    <div id="sms_list" style="margin-top:8px;max-height:260px;overflow:auto"></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3 style="margin-top:0">2. Message</h3>
+    <textarea id="sms_msg" rows="4" placeholder="Bonjour {{prenom}}, Émounatéha vous souhaite…" oninput="sms.msg=this.value;smsDraw()">${esc(sms.msg)}</textarea>
+    <div class="row" style="justify-content:space-between;margin-top:6px"><span id="sms_count"></span><span><button class="btn sm" onclick="const t=$('#sms_msg');t.value+='{{prenom}}';sms.msg=t.value;smsDraw()">+ {{prenom}}</button></span></div>
+    <p id="sms_hint" class="hint"></p>
+    <label>Expéditeur (11 caractères max, sans espace)</label><input id="sms_sender" maxlength="11" value="${esc(sms.sender)}" style="width:180px" oninput="sms.sender=this.value">
+    <label>Aperçu</label><div id="sms_prev" style="background:#f1f3f4;border-radius:14px;padding:12px 14px;max-width:360px;white-space:pre-wrap"></div>
+    <p class="hint" style="margin-top:12px">Rappel légal : envoi de 8 h à 22 h (heure de Paris), uniquement à des personnes qui ont accepté d'être contactées. Pensez à une mention de désinscription.</p>
+  </div>
+  <div class="card" style="margin-top:14px"><h3 style="margin-top:0">3. Envoi</h3>
+    <p id="sms_cost"></p>
+    <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button id="sms_go" class="btn pri" onclick="smsSend(false)" disabled>Envoyer</button>
+      <span style="color:var(--mut);margin:0 6px">ou un test :</span><input id="sms_test" placeholder="06 12 34 56 78" style="width:160px"><button id="sms_tbtn" class="btn" onclick="smsSend(true)">Envoyer un test</button></div>
+    <div id="sms_res"></div>
+  </div></div>`;
