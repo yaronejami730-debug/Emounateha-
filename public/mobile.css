@@ -122,10 +122,10 @@
   #colisPanel .btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;font-size:18px;border-radius:14px;box-shadow:0 6px 18px rgba(196,162,74,.45)}
 
   /* ---------- bouton menu : bien visible, toujours ---------- */
-  .sec-nav .burger{display:flex;position:absolute;left:10px;right:auto;top:50%;transform:translateY(-50%);width:44px;height:44px;padding:14px 11px;border-radius:12px;background:var(--gold);box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:2}
+  .sec-nav .burger{display:flex;position:absolute;left:10px;right:auto;top:50%;transform:translateY(-50%);width:38px;height:38px;padding:11px 8px;border-radius:11px;background:rgba(255,255,255,.55);border:1px solid rgba(196,162,74,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:2}
   .sec-nav .burger span,.sec-nav.scrolled .burger span,.sec-nav.open .burger span{width:100%;flex:none;align-self:stretch;background:#1b2b2d !important;box-shadow:none;height:3px}
-  .sec-nav.open .burger span:nth-child(1){transform:translateY(8px) rotate(45deg)}
-  .sec-nav.open .burger span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+  .sec-nav.open .burger span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+  .sec-nav.open .burger span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
 
   /* ---------- en-tête : le vert se fond dans le blanc (plus de trait doré net) ---------- */
   html body .hero,html body .pagehead{padding-bottom:84px}
@@ -151,4 +151,15 @@
 }
 @media(max-height:700px) and (max-width:800px){
   .hero img{width:92px}.slogan{margin-bottom:10px}
+}
+
+/* téléphone : logo un peu plus grand, בס״ד plus petit, date plus grande, bloc horaires plus serré */
+@media(max-width:800px) and (min-width:361px) and (min-height:701px){
+  .hero img{width:176px}
+}
+@media(max-width:800px){
+  .sec-nav .nbsd{font-size:17px}
+  .sec-nav .ndate b{font-size:17px}
+  .sec-nav .ndate small{font-size:13.5px}
+  #chabbat-mail.nlsec{padding:0 0 22px;margin-top:-24px}
 }

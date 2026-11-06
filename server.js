@@ -517,14 +517,16 @@ function chabbatTemplate(city, wk, mode, contact) {
   const pairs = []; let open = null;
   for (const e of ev) { if (e.kind === 'candles') { if (open) pairs.push({ i: open }); open = e; } else if (e.kind === 'havdalah') { pairs.push({ i: open, o: e }); open = null; } }
   if (open) pairs.push({ i: open });
-  const sched = pairs.map((p, k) => (k ? hr : '') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cell('in', p.i, false)}${cell('out', p.o, true)}</tr></table>`).join('')
+  // une seule ligne entrée / sortie : le Chabbat de la semaine (les fêtes peuvent en avoir plusieurs, mais jamais d'entrée sans sortie)
+  const shown = mode === 'yomtov' ? (pairs.some(p => p.o) ? pairs.filter(p => p.o) : pairs) : pairs.slice(0, 1);
+  const sched = shown.map((p, k) => (k ? hr : '') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cell('in', p.i, false)}${cell('out', p.o, true)}</tr></table>`).join('')
     || '<p style="text-align:center;color:#8a9a9d;">Horaires indisponibles pour le moment.</p>';
   const head = `<div style="text-align:center;margin:4px 0 14px;"><div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:#b0902f;">${esc(city[0])}</div>${par ? `<div style="font-family:Georgia,serif;font-size:19px;color:${T};margin-top:3px;">${esc(par.title)}</div>` : ''}${mev ? `<div style="font-size:13px;color:#51666a;margin-top:2px;">Chabbat Mévarkhim ${esc(mev.title)}</div>` : ''}</div>`;
   let rh = '';
   if (rhs.length) {
     const nm = rhs[0].title, days = rhs.map(r => r.day);
     const dline = days.length === 1 ? fmtD(days[0] + 'T12:00:00', tz) : cap1(new Date(days[0] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', timeZone: tz })) + ' et ' + new Date(days[days.length - 1] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
-    rh = hr + `<div class="cb-rh" style="text-align:center;padding:2px 10px;"><div style="font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:#8a9a9d;">🌙 Nouveau mois</div><div style="font-family:Georgia,serif;font-size:24px;line-height:1.2;font-weight:bold;color:#b0902f;margin:5px 0 3px;">Roch Hodech ${esc(nm)}</div><div style="font-size:14.5px;color:#2b4044;">${esc(dline)}</div><div style="font-size:13px;color:#8a9a9d;margin-top:4px;">Hodech tov !</div></div>`;
+    rh = hr + `<div class="cb-rh" style="text-align:center;padding:2px 10px;"><div style="font-family:Georgia,serif;font-size:22px;line-height:1.25;font-weight:bold;color:#b0902f;">Roch Hodech ${esc(nm)}</div><div style="font-size:14px;color:#51666a;margin-top:3px;">${esc(dline)}</div></div>`;
   }
   const grp = [];
   for (const f of fetes) { const g = grp.find(x => x.title === f.title && (new Date(f.day) - new Date(x.days[x.days.length - 1])) <= 86400000 * 1.5); if (g) g.days.push(f.day); else grp.push({ title: f.title, days: [f.day] }); }

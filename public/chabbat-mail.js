@@ -18,6 +18,21 @@
     '<input type="email" name="email" placeholder="Votre adresse email" autocomplete="email" inputmode="email" aria-label="Votre email" required>' +
     '<input class="nlhp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
     '<button type="submit">Je m\'inscris</button></div><p class="nlmsg" role="status" aria-live="polite"></p><p class="nlsmall">Gratuit · un email par semaine · désinscription en un clic</p></div></form></div>';
+  // bouton qui plie / déplie le formulaire (replié par défaut)
+  (function () {
+    var wrap = host.querySelector('.wrap'), box = host.querySelector('.nlbox');
+    var st = document.createElement('style');
+    st.textContent = '.nlbox[hidden]{display:none}.nltog{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:680px;margin:0 auto;padding:12px 18px;border:1px solid rgba(196,162,74,.6);border-radius:999px;background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#14525c;font:600 15px/1.3 inherit;font-family:inherit;cursor:pointer;box-shadow:0 8px 22px -14px rgba(11,30,43,.45)}.nltog .nlic{display:inline-flex;align-items:center;gap:10px}.nltog .nlic svg{width:20px;height:20px;color:#c4a24a;flex:none}.nltog i{font-style:normal;color:#c4a24a;transition:transform .25s}.nltog.open{border-radius:20px 20px 0 0;background:rgba(255,255,255,.8)}.nltog.open i{transform:rotate(180deg)}.nltog+.nlbox{border-top-left-radius:0;border-top-right-radius:0}.nlsec{padding:0 0 22px;margin-top:-20px}';
+    document.head.appendChild(st);
+    var tog = document.createElement('button'); tog.type = 'button'; tog.className = 'nltog'; tog.setAttribute('aria-expanded', 'false'); tog.setAttribute('aria-controls', 'nlform');
+    tog.innerHTML = '<span class="nlic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>Recevoir les horaires de Chabbat par e-mail</span><i aria-hidden="true">▾</i>';
+    box.hidden = true;
+    tog.addEventListener('click', function () {
+      var open = box.hidden; box.hidden = !open; tog.setAttribute('aria-expanded', String(open)); tog.classList.toggle('open', open);
+      if (open) setTimeout(function () { box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 60);
+    });
+    wrap.insertBefore(tog, box);
+  })();
   var f = document.getElementById('nlform'), msg = f.querySelector('.nlmsg'), btn = f.querySelector('button');
   f.addEventListener('submit', function (e) {
     e.preventDefault();

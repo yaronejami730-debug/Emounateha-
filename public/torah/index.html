@@ -618,14 +618,14 @@ html body .pagehead{padding-bottom:70px}
 document.getElementById('y').textContent=new Date().getFullYear();
 (function(){const n=document.querySelector('.sec-nav');if(!n)return;const f=()=>n.classList.toggle('scrolled',scrollY>40);addEventListener('scroll',f,{passive:true});f()})();
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
-(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd6'+ymd;
+(function(){const el=document.getElementById('hdate')||document.createElement('span');if(!document.getElementById('ndate'))return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd7'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
  const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
  function label(items){ // transforme les intitulés Hebcal du jour en « Xe jour de … »
    const out=[];
-   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');
+   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');t=t.replace(/Hechvan/g,"Mar'Hechvan");
      if(it.category==='parashat'){out.push('Chabbat · '+t.replace(/^Parachat?\s*/i,'Parachat '));continue}
      if(it.category==='roshchodesh'){out.push(t);continue}
      if(it.category!=='holiday')continue;
@@ -713,9 +713,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     el.innerHTML=out||'<div class="empty">Rien dans cette sélection.</div>';}
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');filter=b.dataset.f;renderArch()}));
   (document.getElementById('mois')||{addEventListener(){}}).addEventListener('change',e=>{mois=e.target.value;renderArch()});
-  fetch('/diffusion-archives.json').then(r=>r.json()).then(j=>{months=j.months||[];const sel=document.getElementById('mois')||document.createElement('select');months.forEach(m=>{const o=document.createElement('option');o.value=m.key;o.textContent=dm(m.key);sel.appendChild(o)});
-    renderToday(months[0]&&months[0].items[0]);renderArch();}).catch(()=>{renderToday(null);(document.getElementById('archives')||{}).innerHTML='<div class="empty">Archives indisponibles.</div>'});
+  Promise.all([fetch('/diffusion-archives.json').then(r=>r.json()),fetch('/diffusion.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])]).then(([j,today])=>{months=j.months||[];const sel=document.getElementById('mois')||document.createElement('select');months.forEach(m=>{const o=document.createElement('option');o.value=m.key;o.textContent=dm(m.key);sel.appendChild(o)});
+    renderToday((today&&today[0])||(months[0]&&months[0].items[0]));renderArch();}).catch(()=>{renderToday(null);(document.getElementById('archives')||{}).innerHTML='<div class="empty">Archives indisponibles.</div>'});
 })();
 </script>
+<script>/* un clic sur la barre du haut ramène à la page principale (ou en haut de l'accueil) */
+(function(){var n=document.querySelector('.sec-nav');if(!n)return;n.style.cursor='pointer';
+n.addEventListener('click',function(e){if(e.target.closest('.burger,.links,a,button'))return;
+if(location.pathname==='/'||location.pathname==='/index.html')window.scrollTo({top:0,behavior:'smooth'});else location.href='/'})})();</script>
+<script src="/roch-hodech.js" defer></script>
 </body>
 </html>
