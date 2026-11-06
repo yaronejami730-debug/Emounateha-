@@ -1166,13 +1166,14 @@ async function handle(req, res) {
       for (const x of r.rows) { const k = x.day.slice(0, 7); let m = months.find(y => y.key === k); if (!m) { m = { key: k, items: [] }; months.push(m); } m.items.push(x); }
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' }); return res.end(JSON.stringify({ months }));
     }
-    if (url.pathname === '/diffusion.json') { // public : UNIQUEMENT la diffusion du jour (document + vidéo du même jour)
+    if (url.pathname === '/diffusion.json') { // public : dernier document + dernière vidéo (indépendants : tant que la nouvelle vidéo n'est pas là, on garde la précédente)
       if (!pool) return send(res, 200, []);
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
-      const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day = (select max(day) from public.diffusion where day <= $1) order by created_at desc', [today]);
-      const doc = r.rows.find(x => x.has_image), vid = r.rows.find(x => x.youtube);
+      const q = "select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day <= $1 and ";
+      const doc = (await pool.query(q + "data is not null order by day desc, created_at desc limit 1", [today])).rows[0];
+      const vid = (await pool.query(q + "youtube <> '' order by day desc, created_at desc limit 1", [today])).rows[0];
       if (!doc && !vid) return send(res, 200, []);
-      const item = { id: (doc || vid).id, day: r.rows[0].day, name: (doc || vid).name, youtube: vid ? vid.youtube : '', has_image: !!doc };
+      const item = { id: (doc || vid).id, day: (doc || vid).day, name: (doc || vid).name, youtube: vid ? vid.youtube : '', has_image: !!doc };
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify([item]));
     }
     if (/^\/diffusion\/[a-f0-9]+\.jpg$/.test(url.pathname) && pool) { // public : l'image
