@@ -35,7 +35,7 @@ var stamp=d>1?'DANS '+d+' JOURS':d===1?'DEMAIN SOIR':d===0?'CE SOIR':'C’EST HA
 function open(){
   if(document.getElementById('hnov'))return;
   var o=document.createElement('div');o.id='hnov';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Affiche Hanouka 5787');
-  o.innerHTML='<div id="hnc"><button class="x" aria-label="Fermer" type="button">×</button><div class="fw"><img src="/hanouka/affiche.jpg?v=11" alt="Hanouka — Offrez la lumière à une famille"></div><a class="go" href="'+LINKDON+'">Je participe</a></div>';
+  o.innerHTML='<div id="hnc"><button class="x" aria-label="Fermer" type="button">×</button><div class="fw"><img src="/hanouka/affiche.jpg?v=17" alt="Hanouka — Offrez la lumière à une famille"><span class="st" aria-hidden="true">'+stamp+'</span></div><a class="go" href="'+LINKDON+'">Je participe</a></div>';
   document.body.appendChild(o);requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})});
   function close(){o.classList.remove('on');setTimeout(function(){o.remove()},400);try{sessionStorage.setItem('hnseen','1')}catch(e){}}
   var im=o.querySelector('img'),st=o.querySelector('.st');function fit(){st.style.fontSize=(im.clientWidth*0.0325)+'px'}if(im.complete)fit();im.addEventListener('load',fit);window.addEventListener('resize',fit);
