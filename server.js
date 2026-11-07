@@ -139,6 +139,12 @@ function unsubUrl(contact) {
   return `${base}/u/${contact?.id || 'preview'}`;
 }
 
+// hébreu : chaque suite de lettres hébraïques reçoit lang="he", dir="rtl" et Frank Ruhl Libre
+function heTag(html) {
+  const HE = /[\u0590-\u05FF\uFB1D-\uFB4F][\u0590-\u05FF\uFB1D-\uFB4F\s"'״׳,.\-–:()]*/g;
+  return html.split(/(<[^>]*>)/).map((p, i, arr) => (p.startsWith('<') || !/[\u0590-\u05FF]/.test(p) || /lang="he"/.test(arr[i - 1] || '')) ? p
+    : p.replace(HE, m => `<span lang="he" dir="rtl">${m}</span>`)).join('');
+}
 function renderEmail(t, contact) {
   const s = db.settings;
   const color = t.color || '#1f6a72', accent = t.accent || '#c4a24a';
@@ -166,11 +172,14 @@ function renderEmail(t, contact) {
     s.youtubeUrl ? ico(s.youtubeUrl, 'youtube', 'YouTube') : '',
     s.phone ? ico('https://wa.me/' + wa, 'whatsapp', 'WhatsApp') : ''  // le numéro est dans le lien, pas affiché
   ].filter(Boolean).join('') + '</div>';
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return heTag(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only">
 <title>${esc(fill(t.subject, c))}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;900&display=swap" rel="stylesheet">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;900&display=swap');
 :root{color-scheme:light only;supported-color-schemes:light only}
+.he{font-family:'Frank Ruhl Libre','David',serif !important}
 body,table,td{background-color:inherit}
 .bgp{background-color:#ffffff !important}
 .ink{color:#111827 !important}
@@ -188,7 +197,8 @@ body,table,td{background-color:inherit}
   .outer{padding:0 !important}
   .card{border-radius:0 !important;box-shadow:none !important;max-width:100% !important}
   .pad{padding-left:18px !important;padding-right:18px !important}
-  .cb-time{font-size:30px !important}
+  .cb-time{font-size:28px !important}
+  .cb-date{font-size:10.5px !important}
 }
 ${t.extraCss || ''}
 </style></head>
@@ -197,10 +207,10 @@ ${t.extraCss || ''}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f1;"><tr><td align="center" class="outer" style="padding:24px 12px;">
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:600px;width:100%;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
   <tr><td class="hdr" background="${abase}/header2.jpg" bgcolor="#1f6a72" style="background:#1f6a72 url('${abase}/header2.jpg') center top/cover no-repeat;padding:26px 24px 30px;text-align:center;">
-    <div style="text-align:right;color:${accent};font-size:13px;margin-bottom:6px;">בס״ד</div>
+    <div lang="he" dir="rtl" style="text-align:right;color:${accent};font-size:13px;margin-bottom:6px;">בס״ד</div>
     ${logo}
-    <div style="font-family:Georgia,serif;font-size:30px;font-weight:bold;color:${accent};letter-spacing:1px;margin-top:14px;">${esc(s.orgName.toUpperCase())}</div>
-    <div style="font-size:22px;color:#fff;letter-spacing:6px;margin-top:2px;">אמונתך</div>
+    <div style="font-family:'Cinzel',Georgia,serif;font-size:30px;font-weight:bold;color:${accent};letter-spacing:2px;margin-top:14px;">${esc(s.orgName.toUpperCase())}</div>
+    <div class="he" lang="he" dir="rtl" style="font-family:'Frank Ruhl Libre','David',serif;font-weight:900;font-size:28px;color:#fff;letter-spacing:2px;margin-top:2px;">אמונתך</div>
     <div style="height:2px;width:90px;background:${accent};margin:14px auto 12px;"></div>
     <div style="font-size:13px;color:#d8ecea;">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</div></td></tr>
   <tr><td class="bgp pad" ${patAttr} style="${pat}padding:${t.extraHtml ? '30px 24px 10px' : '40px 36px 12px'};">
@@ -213,7 +223,7 @@ ${t.extraCss || ''}
     <p style="margin:0;font-size:12px;color:#9ca3af;">Vous recevez cet email car vous êtes en contact avec ${esc(s.orgName)}.<br>
     <a href="${esc(unsubUrl(c))}" style="color:#9ca3af;">Se désinscrire</a></p>
   </td></tr>
- </table></td></tr></table></body></html>`;
+ </table></td></tr></table></body></html>`);
 }
 
 // ---------- SMS : outils ----------
@@ -471,8 +481,9 @@ const ymdTz = (iso, tz) => new Date(iso).toLocaleDateString('sv-SE', { timeZone:
 const SKIP_FETE = /^(Hag HaBanot|Roch Hachanah LaBehemot|Lel Selihot|Yom HaAliyah|Family Day|Sigd|Yom HaShoah VeHaGevurah)/i;
 
 // horaires + fêtes des `days` prochains jours pour une ville (API Hebcal)
-async function hebcalWeek(city, days = 8) {
-  const start = parisDay(Date.now()), end = parisDay(Date.now() + days * 86400000);
+async function hebcalWeek(city, days = 8, shiftDays = 0) {
+  const t0 = Date.now() + shiftDays * 86400000;
+  const start = parisDay(t0), end = parisDay(t0 + days * 86400000);
   const u = `https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=on&geonameid=${city[1]}&M=on&b=${city[2]}&lg=fr&i=${ISRAEL.has(city[1]) ? 'on' : 'off'}&start=${start}&end=${end}`;
   const r = await fetch(u); if (!r.ok) throw new Error('Hebcal ' + r.status);
   const j = await r.json(); const tz = (j.location && j.location.tzid) || 'Europe/Paris';
@@ -511,9 +522,9 @@ function chabbatTemplate(city, wk, mode, contact) {
   const firstCandle = can[0];
   const G = '#d6b862', T = '#1f6a72';
   const hr = `<div style="height:1px;background:${G};margin:16px 0;line-height:1px;font-size:1px;">&nbsp;</div>`;
-  const cell = (kind, e, border) => `<td width="50%" valign="top" class="${kind === 'in' ? 'cb-in' : 'cb-in2'}" style="padding:4px 10px;text-align:center;${border ? 'border-left:1px solid ' + G + ';' : ''}">
+  const cell = (kind, e, border) => `<td width="50%" valign="top" class="${kind === 'in' ? 'cb-in' : 'cb-in2'}" style="padding:4px 4px;text-align:center;${border ? 'border-left:1px solid ' + G + ';' : ''}">
       <div style="font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:#8a9a9d;">${kind === 'in' ? '<span class="cb-flame">🕯️</span> Entrée' : '<span class="cb-flame">✨</span> Sortie'}</div>
-      ${e ? `<div class="cb-time" style="font-family:Georgia,serif;font-size:36px;line-height:1.1;font-weight:bold;color:${T};margin:6px 0 3px;white-space:nowrap;">${esc(fmtH(e.at, tz)).replace(/ /g, '&nbsp;')}</div><div style="font-size:13.5px;color:#51666a;">${esc(fmtD(e.at, tz))}</div>` : '<div style="font-size:22px;color:#c3cfd1;margin-top:10px;">—</div>'}</td>`;
+      ${e ? `<div class="cb-time" style="font-family:Georgia,serif;font-size:36px;line-height:1.1;font-weight:bold;color:${T};margin:6px 0 3px;white-space:nowrap;">${esc(fmtH(e.at, tz)).replace(/ /g, '&nbsp;')}</div><div class="cb-date" style="font-size:12px;letter-spacing:0;white-space:nowrap;color:#51666a;">${esc(fmtD(e.at, tz))}</div>` : '<div style="font-size:22px;color:#c3cfd1;margin-top:10px;">—</div>'}</td>`;
   const pairs = []; let open = null;
   for (const e of ev) { if (e.kind === 'candles') { if (open) pairs.push({ i: open }); open = e; } else if (e.kind === 'havdalah') { pairs.push({ i: open, o: e }); open = null; } }
   if (open) pairs.push({ i: open });
@@ -531,7 +542,7 @@ function chabbatTemplate(city, wk, mode, contact) {
   const grp = [];
   for (const f of fetes) { const g = grp.find(x => x.title === f.title && (new Date(f.day) - new Date(x.days[x.days.length - 1])) <= 86400000 * 1.5); if (g) g.days.push(f.day); else grp.push({ title: f.title, days: [f.day] }); }
   const dTxt = g => g.days.length === 1 ? fmtD(g.days[0] + 'T12:00:00', tz) : cap1(new Date(g.days[0] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', timeZone: tz })) + ' et ' + new Date(g.days[g.days.length - 1] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
-  const fl = grp.length ? hr + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + grp.map(f => `<tr><td style="padding:5px 8px;font-size:14px;color:#51666a;">${esc(dTxt(f))}</td><td style="padding:5px 8px;font-size:15px;font-weight:bold;color:${T};text-align:right;">🕎 ${esc(f.title)}</td></tr>`).join('') + '</table>' : '';
+  const fl = grp.length ? hr + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + grp.map(f => `<tr><td style="padding:5px 8px;font-size:14px;color:#51666a;">${esc(dTxt(f))}</td><td style="padding:5px 8px;font-size:14px;font-weight:bold;color:${T};text-align:right;">🕎 ${esc(f.title)}</td></tr>`).join('') + '</table>' : '';
   const card = head + sched + rh + fl + hr +
     `<p class="ink" style="margin:0 0 4px;font-size:12px;line-height:1.5;color:#8a9a9d;text-align:center;">Horaires Hebcal (Baal HaTanya) pour ${esc(city[0])}. Consultez votre Rav pour l'usage de votre communauté.</p>`;
   const ytNow = mode === 'yomtov';
@@ -1247,5 +1258,5 @@ if (require.main === module) {
 module.exports = handle;
 module.exports.loadDb = loadDb;
 module.exports.campaignPlan = (id) => { const c = db.campaigns.find(x => x.id === id); return c ? { plan: campaignPlan(c), stats: campaignStats(c) } : null; };
-module.exports.sendChabbatTest = async (to, cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'test', firstName: 'Yarone', lastName: 'Jami', email: to, tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); const r = await brevoSend({ to, subject: '[TEST] ' + t.subject, html: renderEmail(t, c) }); return { subject: t.subject, result: r.simulated ? 'simulé (pas de clé Brevo)' : 'envoyé' }; };
+module.exports.sendChabbatTest = async (to, cityId, mode) => { const city = cityById(cityId); const dow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' })).getDay(); const wk = await hebcalWeek(city, 8, (4 - dow + 7) % 7); /* un test se lit comme le mail du jeudi, même envoyé un autre jour */ const c = { id: 'test', firstName: 'Yarone', lastName: 'Jami', email: to, tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); const r = await brevoSend({ to, subject: '[TEST] ' + t.subject, html: renderEmail(t, c) }); return { subject: t.subject, result: r.simulated ? 'simulé (pas de clé Brevo)' : 'envoyé' }; };
 module.exports.chabbatHtml = async (cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'preview', firstName: 'Yarone', lastName: 'Jami', email: 'exemple@email.com', tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); return { subject: t.subject, html: renderEmail(t, c) }; };
