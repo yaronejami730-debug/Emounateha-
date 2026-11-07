@@ -27,3 +27,10 @@ html.bas body{background:#327881}
 html body::before{content:"";position:absolute;left:0;right:0;top:0;bottom:0;background:#fff url(/bg.png) repeat;z-index:-1;pointer-events:none}
 @media(max-width:800px){html body footer::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;background:linear-gradient(to bottom,rgba(50,120,129,0),#327881);pointer-events:none}}
 @media(max-width:800px){html body footer{padding-bottom:4px!important;padding-top:96px}html body footer .dev{padding-bottom:0;margin-bottom:0}}
+/* titre du haut des pages intérieures : Cinzel plus serré, sur une ligne si possible */
+html body .pagehead h1{line-height:1.2;letter-spacing:.05em;font-size:clamp(22px,6.2vw,34px)}
+@media(min-width:801px){html body .pagehead h1{font-size:clamp(30px,3.4vw,40px)}}
+/* 4 tuiles d'accueil (téléphone) : petites icônes 3D Pixar à la place des icônes au trait */
+@media(max-width:800px){
+  html body .qa a .qi{width:40px;height:40px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 3px rgba(120,90,30,.25))}
+}
