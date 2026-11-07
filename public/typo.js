@@ -19,3 +19,8 @@ function scan(root){
 function go(){scan(document.body);
   var busy=false;new MutationObserver(function(){if(busy)return;busy=true;setTimeout(function(){scan(document.body);busy=false},60)}).observe(document.body,{childList:true,subtree:true,characterData:true})}
 if(document.body)go();else document.addEventListener('DOMContentLoaded',go)})();
+
+/* la zone sous la page (barre Safari iPhone) prend la couleur du pied de page seulement quand on arrive en bas */
+(function(){function go(){var f=document.querySelector('footer');if(!f||!('IntersectionObserver' in window))return;
+new IntersectionObserver(function(e){document.documentElement.classList.toggle('bas',e[0].isIntersecting)},{threshold:0.15}).observe(f)}
+if(document.readyState!=='loading')go();else document.addEventListener('DOMContentLoaded',go)})();

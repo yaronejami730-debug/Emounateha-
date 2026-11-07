@@ -2,7 +2,7 @@
 (function(){
 if(window.__wab)return;window.__wab=1;
 var NUM='33669670770',TXT='Bonjour, je vous contacte depuis le site Émounatéha.';
-var K='wab',st={ign:0,clk:0};
+var K='wab',st={ign:0,clk:0,until:0},PHONE=window.matchMedia&&matchMedia('(max-width:800px)').matches,MAXTRY=6,PAUSE=6*24*3600*1000;
 try{st=Object.assign(st,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 function save(){try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}}
 var css=document.createElement('style');
@@ -19,15 +19,15 @@ var b=document.createElement('div');b.id='wab';
 b.innerHTML='<a class="m" href="https://wa.me/'+NUM+'?text='+encodeURIComponent(TXT)+'" target="_blank" rel="noopener" aria-label="Contactez-nous sur WhatsApp"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.4 15.1L2 22l5-1.6A9.9 9.9 0 1 0 12.04 2zm0 1.8a8.1 8.1 0 1 1-4.3 15l-.3-.2-2.9.9.9-2.8-.2-.3A8.1 8.1 0 0 1 12.04 3.8zm-3 3.6c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.9 4.5 3.9 2.2.9 2.7.7 3.2.6.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3l-1.9-.9c-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5l-.9-2c-.2-.5-.4-.5-.6-.5z"/></svg><span>Contactez-nous ici</span></a>';
 document.body.appendChild(b);
 var a=b.querySelector('a.m'),idle,lab,shown=false,lastHide=0,y0=window.scrollY||0,acc=0,clicked=false;
-function dismissed(){try{return +sessionStorage.getItem('wabd')>Date.now()}catch(e){return false}}
+function dismissed(){if(st.until>Date.now())return true;try{return +sessionStorage.getItem('wabd')>Date.now()}catch(e){return false}}
 function show(){
   if(shown||dismissed())return;
   if(Date.now()-lastHide<3000*(1+Math.min(st.ign,6)))return;     /* ignoré souvent => revient moins vite */
   shown=true;clicked=false;b.classList.add('in');
-  if(st.clk===0&&st.ign<4){setTimeout(function(){if(shown)b.classList.add('open')},500);lab=setTimeout(function(){b.classList.remove('open')},4200)}}
+  if(!PHONE&&st.clk===0&&st.ign<4){setTimeout(function(){if(shown)b.classList.add('open')},500);lab=setTimeout(function(){b.classList.remove('open')},4200)}}
 function hide(){
   if(!shown)return;shown=false;clearTimeout(lab);b.classList.remove('open','in');lastHide=Date.now();
-  if(!clicked){st.ign++;save()}}
+  if(!clicked){st.ign++;if(st.ign>=MAXTRY){st.until=Date.now()+PAUSE;st.ign=MAXTRY-2}save()}}
 var ua=0;['wheel','touchstart','touchmove','touchend','keydown','mousedown'].forEach(function(n){window.addEventListener(n,function(){ua=Date.now()},{passive:true})});
 window.addEventListener('scroll',function(){
   var y=window.scrollY||0,d=Math.abs(y-y0);y0=y;

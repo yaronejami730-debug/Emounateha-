@@ -1,6 +1,6 @@
 /* Typographie : Cinzel (français), Frank Ruhl Libre (hébreu). Les couleurs du site restent claires, jour comme nuit. */
 :root{color-scheme:light only}
-html body{font-family:'Cinzel',Georgia,serif;line-height:1.7;letter-spacing:.02em;font-weight:400}
+html body{font-family:'Cormorant Garamond',Georgia,serif;line-height:1.6;letter-spacing:0;font-weight:500;font-size:17px}
 html body *{font-family:inherit}
 [lang="he"],:lang(he){font-family:'Frank Ruhl Libre','David',serif!important;letter-spacing:0!important;font-weight:500}
 h1 [lang="he"],h2 [lang="he"],h3 [lang="he"],h1[lang="he"],h2[lang="he"],h3[lang="he"],.bsd{font-weight:900}
@@ -36,3 +36,37 @@ html body .hero .he{font-size:clamp(26px,3.2vw,36px);letter-spacing:3px;line-hei
 @media(max-width:800px){html body .hero .he{font-size:28px;letter-spacing:3px}}
 /* zone sous le pied de page (barre Safari iPhone, rebond) : même teinte que le pied de page, plus de bande blanche */
 html{background:#1f6a72}
+/* iOS 26 : la zone sous la fin de page prend la couleur de fond du body. Body = teal ; le fond blanc à motif est posé sur une couche qui couvre seulement le document. */
+html body{background:#fff;position:relative;isolation:isolate;transition:background-color .25s}
+html.bas body{background:#327881}
+html body::before{content:"";position:absolute;left:0;right:0;top:0;bottom:0;background:#fff url(/bg.png) repeat;z-index:-1;pointer-events:none}
+/* bas du pied de page : fondu vers la couleur de la zone sous la page (iPhone), plus de raccord visible */
+@media(max-width:800px){html body footer::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;background:linear-gradient(to bottom,rgba(50,120,129,0),#327881);pointer-events:none}}
+/* cartes (Nos actions, Comment aider) : Cinzel est large, on réduit sur téléphone */
+@media(max-width:800px){
+  html body #actions .card h3,html body .step h3{font-size:12.5px;letter-spacing:.04em;line-height:1.25;margin-bottom:4px}
+  html body #actions .card p,html body .step p{font-size:13px;letter-spacing:0;line-height:1.35}
+  html body #actions .card{padding:14px 12px}
+}
+/* pied de page : le texte descend au plus près du bas (téléphone) */
+@media(max-width:800px){html body footer{padding-bottom:4px!important;padding-top:96px}html body footer .dev{padding-bottom:0;margin-bottom:0}}
+
+/* Cinzel n'a pas de vraies minuscules (tout s'affiche en capitales) : Cinzel reste pour titres, menus, boutons ; le texte courant est en Cormorant Garamond (minuscules). */
+html body h1,html body h2,html body h3,html body h4,html body button,html body .btn,html body nav a,html body .sec-nav a,html body .top a,html body th,html body summary,html body .plab,html body .qa a,html body .parmail,html body .nltog{font-family:'Cinzel',Georgia,serif}
+html body p,html body li,html body td,html body small,html body span,html body div{letter-spacing:0}
+html body .qa a small,html body .card p,html body .step p{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600}
+html body .ndate small{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;letter-spacing:.01em}
+
+/* tailles classiques pour un site responsive sur iPhone (texte 16-17 px, détails 14-15 px, titres 22-28 px) */
+@media(max-width:800px){
+  html body p,html body li{font-size:17px;line-height:1.55}
+  html body #actions .card p,html body .step p{font-size:15px;line-height:1.4}
+  html body .qa a small{font-size:14px}
+  html body small{font-size:14px}
+  html body footer,html body footer p{font-size:15px}
+  html body h1{font-size:clamp(26px,8vw,32px)}
+  html body h2{font-size:clamp(22px,6.4vw,26px)}
+  html body #actions .card h3,html body .step h3{font-size:14px;letter-spacing:.04em}
+  html body .qa a{font-size:15px}
+}
+html body{font-variant-numeric:lining-nums}
