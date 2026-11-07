@@ -7,9 +7,14 @@ var cnt=d>1?'dans <b>'+d+' jours</b>':d===1?'<b>demain soir</b>':d===0?'<b>ce so
 var LINK='/hanouka-lp/';
 var css=document.createElement('style');
 css.textContent=
-'#hnband{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:9px 14px;background:linear-gradient(90deg,#10202b,#1b3140 50%,#10202b);color:#f3d58c;font:600 12px/1.3 Inter,system-ui,sans-serif;letter-spacing:.06em;text-align:center;text-decoration:none;position:sticky;top:0;z-index:120}'+
-'#hnband b{color:#fff;font-weight:700}#hnband u{text-decoration:none;border:1px solid rgba(243,213,140,.55);border-radius:99px;padding:3px 12px;color:#f3d58c}'+
-'#hnband svg{width:16px;height:16px;flex:none}'+
+'#hnband{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:nowrap;padding:8px 14px;background:linear-gradient(rgba(22,76,82,.9),rgba(31,106,114,.86)),url(/header.jpg) center/cover #1f6a72;color:#fff;font:600 13px/1.2 Inter,system-ui,sans-serif;text-align:center;text-decoration:none;position:sticky;top:0;z-index:120;border-bottom:1px solid rgba(228,205,138,.7);box-shadow:0 2px 10px rgba(10,40,45,.25);overflow:hidden}'+
+'#hnband::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-18deg);animation:hnsh 5.5s ease-in-out infinite;pointer-events:none}'+
+'@keyframes hnsh{0%,70%{left:-80px}100%{left:110%}}'+
+'#hnband .t{font:700 13px/1 Cinzel,Georgia,serif;letter-spacing:.1em;color:#e4cd8a;text-transform:uppercase;white-space:nowrap}'+
+'#hnband .c{font:500 13px/1 Inter,system-ui,sans-serif;color:#fff;white-space:nowrap}#hnband .c b{color:#e4cd8a;font-weight:700}'+
+'#hnband .m{width:22px;height:22px;flex:none}'+
+'#hnband u{text-decoration:none;white-space:nowrap;border-radius:99px;padding:6px 14px;background:linear-gradient(180deg,#e4cd8a,#c4a24a);color:#16393e;font:700 12px/1 Inter,system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25)}'+
+'@media(max-width:420px){#hnband{gap:8px;padding:7px 10px}#hnband .t{font-size:11.5px;letter-spacing:.07em}#hnband .c{font-size:12px}#hnband u{padding:6px 11px;font-size:11.5px}#hnband .m{width:19px;height:19px}}'+
 '#hnov{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(8,14,20,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;transition:opacity .4s}'+
 '#hnov.on{opacity:1}'+
 '#hnc{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;max-height:94vh;transform:translateY(24px) scale(.95);transition:transform .55s cubic-bezier(.2,.8,.2,1)}'+
@@ -20,10 +25,10 @@ css.textContent=
 '#hnc .go{display:block;padding:13px 40px;border-radius:99px;background:linear-gradient(180deg,#f3d58c,#c9973f);color:#1b1407;font:700 13px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-decoration:none;box-shadow:0 6px 20px rgba(201,151,63,.4)}'+
 '#hnc .x{position:absolute;top:-46px;right:0;width:36px;height:36px;border-radius:50%;border:0;background:#fff;color:#222;font-size:22px;line-height:36px;cursor:pointer;z-index:2;box-shadow:0 2px 10px rgba(0,0,0,.4)}';
 document.head.appendChild(css);
-var flame='<svg viewBox="0 0 24 24" fill="#f3d58c" aria-hidden="true"><path d="M12 2c1 3-2 4-2 7a3 3 0 0 0 6 0c0-1.2-.5-2-1-3 3 1.5 5 4 5 7.5A8 8 0 0 1 4 15.500C4 10 9 8 12 2z"/></svg>';
+var flame='<svg class="m" viewBox="0 0 32 32" aria-hidden="true"><g fill="#e4cd8a"><rect x="14.6" y="4" width="2.8" height="9" rx="1.2"/><rect x="3" y="9" width="2.2" height="6" rx="1"/><rect x="7.4" y="9" width="2.2" height="6" rx="1"/><rect x="11" y="9" width="2.2" height="6" rx="1"/><rect x="18.8" y="9" width="2.2" height="6" rx="1"/><rect x="22.4" y="9" width="2.2" height="6" rx="1"/><rect x="26.8" y="9" width="2.2" height="6" rx="1"/></g><g fill="#fff6d6"><ellipse cx="16" cy="2.6" rx="1.5" ry="2.2"/></g><path d="M3 16h26M16 14v10M10 28h12" stroke="#e4cd8a" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M4 16c0 6 6 9 12 9s12-3 12-9" stroke="#e4cd8a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
 /* bandeau permanent */
 var b=document.createElement('a');b.id='hnband';b.href=LINK;
-b.innerHTML=flame+'<span>Hanouka '+cnt+'</span><u>Offrir un colis</u>';
+b.innerHTML=flame+'<span class="t">Hanouka</span><span class="c">'+cnt+'</span><u>Offrir un colis</u>';
 function mountBand(){document.body.insertBefore(b,document.body.firstChild);
   /* bandeau toujours visible : la barre de menu se cale juste en dessous */
   function fit(){var n=document.querySelector('.sec-nav');if(n&&n.style)n.style.top=b.offsetHeight+'px'}
@@ -35,14 +40,26 @@ var stamp=d>1?'DANS '+d+' JOURS':d===1?'DEMAIN SOIR':d===0?'CE SOIR':'C’EST HA
 function open(){
   if(document.getElementById('hnov'))return;
   var o=document.createElement('div');o.id='hnov';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Affiche Hanouka 5787');
-  o.innerHTML='<div id="hnc"><button class="x" aria-label="Fermer" type="button">×</button><div class="fw"><img src="/hanouka/affiche.jpg?v=17" alt="Hanouka — Offrez la lumière à une famille"><span class="st" aria-hidden="true">'+stamp+'</span></div><a class="go" href="'+LINKDON+'">Je participe</a></div>';
+  o.innerHTML='<div id="hnc"><button class="x" aria-label="Fermer" type="button">×</button><div class="fw"><img src="/hanouka/affiche.jpg?v=19" alt="Hanouka — Offrez la lumière à une famille"><span class="st" aria-hidden="true">'+stamp+'</span></div><a class="go" href="'+LINKDON+'">Je participe</a></div>';
   document.body.appendChild(o);requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})});
   function close(){o.classList.remove('on');setTimeout(function(){o.remove()},400);try{sessionStorage.setItem('hnseen','1')}catch(e){}}
   var im=o.querySelector('img'),st=o.querySelector('.st');function fit(){st.style.fontSize=(im.clientWidth*0.0325)+'px'}if(im.complete)fit();im.addEventListener('load',fit);window.addEventListener('resize',fit);
   o.querySelector('.x').onclick=close;o.addEventListener('click',function(e){if(e.target===o)close()});
   document.addEventListener('keydown',function k(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',k)}});
 }
+window.hnOpen=open;
 b.addEventListener('click',function(e){e.preventDefault();open()});
+/* banderole Hanouka sous la citation du Rabbi */
+function mountBanner(){
+  var r=document.querySelector('.hero .quote');if(!r||document.getElementById('hnbanner'))return;
+  var st=document.createElement('style');
+  st.textContent='#hnbanner{display:block;order:9;width:min(100%,760px);margin:18px auto 0;border-radius:22px;overflow:hidden;box-shadow:0 10px 28px rgba(8,20,28,.35),0 0 0 1px rgba(243,213,140,.35);position:relative;z-index:2;-webkit-tap-highlight-color:transparent;transition:transform .2s}#hnbanner:active{transform:scale(.985)}html body .hero #hnbanner img{display:block;width:100%;height:auto;margin:0;filter:none;animation:none;max-width:none}@media(max-width:800px){#hnbanner{width:calc(100% - 4px);margin-top:16px;border-radius:18px}}';
+  document.head.appendChild(st);
+  var a=document.createElement('a');a.id='hnbanner';a.href='/don/';a.setAttribute('aria-label','Hanouka 5787 : offrez la lumière à une famille, colis de fête 130 euros');
+  a.innerHTML='<img src="/hanouka/banderole.jpg?v=2" alt="Hanouka 5787 — Offrez la lumière à une famille. Un colis de fête livré avant la première bougie. Pour 130 € · Émounatéha × AlloDons" width="1046" height="262" loading="eager">';
+  a.addEventListener('click',function(e){if(window.hnOpen){e.preventDefault();window.hnOpen()}});
+  r.parentNode.insertBefore(a,r.nextSibling)}
+if(document.readyState!=='loading')mountBanner();else document.addEventListener('DOMContentLoaded',mountBanner);
 try{if(sessionStorage.getItem('hnseen'))return}catch(e){}
 setTimeout(open,4500);
 })();
