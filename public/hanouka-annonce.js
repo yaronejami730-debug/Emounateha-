@@ -37,5 +37,5 @@ function open(){
 }
 b.addEventListener('click',function(e){e.preventDefault();open()});
 try{if(sessionStorage.getItem('hnseen'))return}catch(e){}
-setTimeout(open,1400);
+setTimeout(open,4500);
 })();
