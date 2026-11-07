@@ -34,3 +34,5 @@ html body .ndate b{font-size:18px;line-height:1.15}
 /* אמונתך sous le titre */
 html body .hero .he{font-size:clamp(26px,3.2vw,36px);letter-spacing:3px;line-height:1.2;font-weight:700}
 @media(max-width:800px){html body .hero .he{font-size:28px;letter-spacing:3px}}
+/* zone sous le pied de page (barre Safari iPhone, rebond) : même teinte que le pied de page, plus de bande blanche */
+html{background:#1f6a72}
