@@ -477,9 +477,11 @@ body{overflow-x:hidden}
 </style>
 <link rel="stylesheet" href="/mobile.css">
 <link rel="stylesheet" href="/fade.css?v=3">
-<link rel="stylesheet" href="/typo.css?v=35">
+<link rel="stylesheet" href="/typo.css?v=44">
 <script src="/typo.js?v=5" defer></script>
-<script src="/hanouka-annonce.js?v=30" defer></script>
+<script src="/hanouka-annonce.js?v=38" defer></script>
+<script src="/ecrire-rabbi.js?v=14" defer></script>
+<script src="/partager.js?v=1" defer></script>
 <script src="/wa-bouton.js?v=2" defer></script>
 </head>
 <body>
@@ -506,13 +508,13 @@ body{overflow-x:hidden}
   <a href="/horaires/"><img class="qi" src="/tuiles/horaires.png?v=3" alt="" width="40" height="40" loading="eager"><span>Horaires<small>Chabbat, 54 villes</small></span></a>
   <a href="https://wa.me/33669670770" target="_blank" rel="noopener"><img class="qi" src="/tuiles/ecrire.png?v=3" alt="" width="40" height="40" loading="eager"><span>Nous écrire<small>Sur WhatsApp</small></span></a>
 </div></section>
-<section class="parole" id="parole" aria-label="Parole du Rabbi"><div class="wrap"><h2>Parole du Rabbi</h2><div class="gline"></div><blockquote class="rebbe">« Rien n'est jamais perdu. On peut toujours réparer. Celui qui est impur ou éloigné, même s'il est responsable d'un tel état de fait, même s'il l'a voulu, peut, malgré tout, réparer. »<cite>Rabbi de Loubavitch</cite></blockquote></div></section>
 <section class="parsec" id="paracha" hidden><div class="wrap"><div class="parcard" id="parcard">
   <div class="pk"><svg class="torah" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#c4a24a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><rect x="45" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><path d="M14.5 12V7M14.5 52v5M49.5 12V7M49.5 52v5"/><path d="M19 16h26v32H19z" fill="#fff"/><path d="M25 24h14M25 30h14M25 36h10" stroke="#1f6a72"/></g><circle cx="14.5" cy="6" r="2.6" fill="#e4cd8a"/><circle cx="49.5" cy="6" r="2.6" fill="#e4cd8a"/></svg><div><span class="plab">Paracha de la semaine</span><b id="parname">…</b><small id="parheb" dir="rtl"></small></div></div>
   <div class="pt"><span class="plab">Entrée du Chabbat</span><b id="parin">…</b><small id="parinday"></small></div>
   <div class="pt"><span class="plab">Sortie du Chabbat</span><b id="parout">…</b><small id="paroutday"></small></div>
   <div class="pc"><span class="plab">Votre ville</span><label class="citysel" title="Cliquez pour changer de ville"><select id="parcity" aria-label="Choisir votre ville"></select><span class="chev">▾</span></label><small id="parnote"></small></div>
 </div></div></section>
+<section class="parole" id="parole" aria-label="Parole du Rabbi"><div class="wrap"><h2>Parole du Rabbi</h2><div class="gline"></div><blockquote class="rebbe"><div class="rtxt">« Rien n'est jamais perdu. On peut toujours réparer. Celui qui est impur ou éloigné, même s'il est responsable d'un tel état de fait, même s'il l'a voulu, peut, malgré tout, réparer. »<cite>Rabbi de Loubavitch</cite></div></blockquote></div></section>
 <div class="parmailwrap"><a class="parmail" href="#chabbat-mail" id="parmail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>Recevoir les horaires de Chabbat par e-mail<span aria-hidden="true">›</span></a></div>
 
 
@@ -546,9 +548,9 @@ body{overflow-x:hidden}
   <div class="wrap">
     <div class="title"><h2>Comment nous aider</h2><p>Trois façons simples d'allumer une lumière.</p></div>
     <div class="steps">
-      <div class="step"><h3>Faire un don</h3><p>Un don en ligne, sécurisé, sur notre page allodons. Chaque montant compte.</p></div>
-      <div class="step"><h3>Nous écrire</h3><p>Une question, une idée, une famille à aider&nbsp;? Écrivez-nous sur WhatsApp.</p></div>
-      <div class="step"><h3>Partager</h3><p>Faites connaître Émounatéha autour de vous, sur nos réseaux et dans vos cercles.</p></div>
+      <a class="step stlink" href="/don/"><h3>Faire un don</h3><p>Un don en ligne, sécurisé, sur notre page allodons. Chaque montant compte.</p></a>
+      <a class="step stlink" href="https://wa.me/33669670770" target="_blank" rel="noopener"><h3>Nous écrire</h3><p>Une question, une idée, une famille à aider&nbsp;? Écrivez-nous sur WhatsApp.</p></a>
+      <button class="step stlink" type="button" id="sharebtn"><h3>Partager</h3><p>Faites connaître Émounatéha autour de vous, sur nos réseaux et dans vos cercles.</p></button>
     </div>
   </div>
 </section>
@@ -597,6 +599,7 @@ body{overflow-x:hidden}
  const f=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
  const sec=document.getElementById('paracha');
  const visible=d=>{ // du jeudi 21h (Paris) jusqu'à la fin du Chabbat (havdala)
+   if(/[?&]apercu=jeudi/.test(location.search))return true; // aperçu : montre la carte comme un jeudi soir
    const now=new Date();const p=new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',weekday:'short',hour:'numeric',hour12:false}).formatToParts(now);
    const wd=(p.find(x=>x.type==='weekday')||{}).value||'',h=+((p.find(x=>x.type==='hour')||{}).value||0);
    const jeudiSoir=/^jeu/.test(wd)&&h>=21, ven=/^ven/.test(wd), sam=/^sam/.test(wd);

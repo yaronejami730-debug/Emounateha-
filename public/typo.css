@@ -62,8 +62,10 @@ html body .parole .rebbe{color:#24505a;text-shadow:0 0 6px rgba(255,255,255,.95)
 html body .parole .rebbe cite{text-shadow:0 0 6px rgba(255,255,255,.95);color:#9a7a22}
 html body .parole .rebbe::before{width:92%;right:0;opacity:.88;background-position:62% 38%;-webkit-mask-image:radial-gradient(ellipse 52% 72% at 70% 48%,#000 42%,rgba(0,0,0,.75) 62%,transparent 92%);mask-image:radial-gradient(ellipse 52% 72% at 70% 48%,#000 42%,rgba(0,0,0,.75) 62%,transparent 92%)}
 @media(max-width:800px){html body .parole .rebbe::before{width:100%;background-position:60% 36%;-webkit-mask-image:radial-gradient(ellipse 58% 74% at 72% 48%,#000 40%,rgba(0,0,0,.7) 62%,transparent 92%);mask-image:radial-gradient(ellipse 58% 74% at 72% 48%,#000 40%,rgba(0,0,0,.7) 62%,transparent 92%)}}
-/* Parole du Rabbi : texte à gauche, le Rabbi bien visible à droite, fondu en dégradé */
-html body .parole .rebbe{min-height:290px;display:flex;flex-direction:column;justify-content:center;padding:24px 40% 22px 18px;text-shadow:none}
-html body .parole .rebbe cite{text-shadow:none}
-html body .parole .rebbe::before{width:68%;left:auto;right:0;top:0;bottom:0;opacity:1;background:url(/rebbe.jpg?v=1) 100% 22%/auto 118% no-repeat;-webkit-mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.5) 28%,#000 58%),linear-gradient(to bottom,transparent 0%,#000 12%,#000 88%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.5) 28%,#000 58%),linear-gradient(to bottom,transparent 0%,#000 12%,#000 88%,transparent 100%);mask-composite:intersect}
-@media(min-width:801px){html body .parole .rebbe{padding-right:42%;min-height:300px}}
+/* Parole du Rabbi : deux colonnes (texte | photo entière), la photo n'est jamais sous les mots */
+html body .parole .rebbe{display:grid;grid-template-columns:1fr 48%;align-items:center;min-height:300px;padding:0;max-width:720px;font-size:14.5px;line-height:1.65;text-shadow:none}
+html body .parole .rebbe .rtxt{padding:26px 10px 24px 22px;text-align:center}
+html body .parole .rebbe cite{display:block;margin-top:14px;padding-top:12px;border-top:1px solid rgba(196,162,74,.45);text-align:center;font-size:11.5px;letter-spacing:.08em;text-shadow:none}
+html body .parole .rebbe::before{left:auto;right:14px;top:50%;bottom:auto;transform:translateY(-50%);width:44%;height:auto;aspect-ratio:900/1067;opacity:1;background:url(/rebbe.jpg?v=1) center/cover no-repeat;border-radius:14px;box-shadow:0 4px 16px rgba(20,60,66,.2);-webkit-mask-image:none;mask-image:none;z-index:0}
+html body .parole .rebbe::after{content:none;display:none}
+@media(min-width:801px){html body .parole .rebbe{grid-template-columns:1fr 46%;min-height:340px;font-size:17px}html body .parole .rebbe .rtxt{padding:30px 16px 28px 34px}html body .parole .rebbe cite{font-size:12.5px}html body .parole .rebbe::before{width:40%;right:20px}}

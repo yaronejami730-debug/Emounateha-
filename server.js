@@ -249,7 +249,7 @@ function smsPhone(p) { // -> format Brevo : indicatif + numéro, sans + (ex. 337
 const smsFill = (t, r) => t.replace(/\{\{\s*prenom\s*\}\}/gi, (r.firstName || '').trim()).replace(/\{\{\s*nom\s*\}\}/gi, (r.lastName || '').trim()).replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
 
 // ---------- Brevo ----------
-async function brevoSend({ to, toName, subject, html }) {
+async function brevoSend({ to, toName, subject, html, replyToEmail, replyToName }) {
   const s = db.settings;
   if (!s.brevoApiKey) return { simulated: true, messageId: 'sim-' + uid() };
   if (!s.senderEmail) throw new Error('Email expéditeur manquant (Réglages)');
@@ -259,7 +259,7 @@ async function brevoSend({ to, toName, subject, html }) {
     body: JSON.stringify({
       sender: { name: s.senderName || s.orgName, email: s.senderEmail },
       to: [{ email: to, name: toName || undefined }],
-      ...(s.replyTo ? { replyTo: { email: s.replyTo, name: s.senderName || s.orgName } } : {}),
+      ...(replyToEmail ? { replyTo: { email: replyToEmail, name: replyToName || undefined } } : s.replyTo ? { replyTo: { email: s.replyTo, name: s.senderName || s.orgName } } : {}),
       subject, htmlContent: html
     })
   });
@@ -633,6 +633,37 @@ async function shabbatSubscribe(req, res) {
   const key = 'chabbat-bienvenue';
   const room = db.settings.dailyLimit - usedToday() > 25 && !(db.settings.pausedUntil && Date.now() < +new Date(db.settings.pausedUntil)); // on garde de la marge pour les envois planifiés
   if (room && !db.sends.some(x => x.contactId === c.id && x.templateId === key && x.status !== 'error')) sendChabbat(c, key, 'weekly', {}).catch(e => console.error('Chabbat bienvenue', e.message));
+}
+
+
+// ---------- Lettre au Rabbi : formulaire du site -> email (Brevo) vers l'Ohel ----------
+const letterHits = new Map();
+async function rabbiLetter(req, res) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const t0 = Date.now(), hits = (letterHits.get(ip) || []).filter(t => t0 - t < 3600000);
+  if (hits.length >= 5) return send(res, 429, { error: 'Trop d\'envois, réessayez dans une heure.' });
+  letterHits.set(ip, [...hits, t0]);
+  const b = await readBody(req);
+  if (b.website) return send(res, 200, { ok: true }); // champ piège
+  const clip = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const name = clip(b.name, 90), heb = clip(b.heb, 60), mother = clip(b.mother, 60), city = clip(b.city, 60), phone = clip(b.phone, 30);
+  const email = String(b.email || '').trim().toLowerCase().slice(0, 120);
+  const message = String(b.message || '').replace(/[<>]/g, '').trim().slice(0, 4000);
+  if (!name || !heb || !mother || message.length < 5) return send(res, 400, { error: 'Merci de remplir tous les champs obligatoires.' });
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Adresse email invalide.' });
+  if (!b.consent) return send(res, 400, { error: 'Merci de cocher l\'autorisation d\'envoi.' });
+  const to = envVar('RABBI_LETTER_TO') || db.settings.rabbiLetterTo || 'ohel@ohelchabad.org';
+  const e = esc;
+  const html = renderEmail({ subject: 'Lettre pour le Rabbi', preheader: 'Lettre transmise depuis le site Émounatéha', title: 'Lettre pour le Rabbi', color: '#1f6a72', accent: '#c4a24a',
+    body: 'Lettre envoyée par le formulaire du site Émounatéha.\n\nNom : ' + name + '\nPrénom hébraïque : ' + heb + '\nPrénom hébraïque de la mère : ' + mother + '\nVille : ' + (city || '—') + '\nEmail : ' + email + '\nTéléphone : ' + (phone || '—') + '\n\nDemande :\n' + message }, { firstName: '', lastName: '', email: to, id: 'letter' });
+  try {
+    await brevoSend({ to, subject: 'Lettre pour le Rabbi — ' + name, html, replyToEmail: email, replyToName: name });
+    // copie de confirmation pour l'expéditeur
+    const copy = renderEmail({ subject: 'Votre lettre a été transmise', preheader: 'Copie de votre lettre', title: 'Votre lettre a été transmise', color: '#1f6a72', accent: '#c4a24a',
+      body: 'Bonjour ' + name + ',\n\nNous avons bien transmis votre lettre. Voici la copie de ce que vous avez écrit :\n\n' + message + '\n\nQue D.ieu vous bénisse.' }, { firstName: name, lastName: '', email, id: 'letter-copy' });
+    await brevoSend({ to: email, toName: name, subject: 'Votre lettre au Rabbi a été transmise', html: copy }).catch(() => {});
+    send(res, 200, { ok: true });
+  } catch (err) { console.error('Lettre Rabbi', err.message); send(res, 502, { error: 'L\'envoi a échoué. Réessayez dans un instant.' }); }
 }
 
 // ---------- HTTP ----------
@@ -1150,6 +1181,7 @@ async function handle(req, res) {
       return send(res, 200, { ok: true });
     }
     if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
+    if (url.pathname === '/api/rabbi-letter' && req.method === 'POST') return rabbiLetter(req, res);
     if (url.pathname === '/api/pay-session' && req.method === 'POST') { // public : ouvre une session de paiement AlloDons et renvoie son adresse
       const key = envVar('ALLODONS_KEY');
       if (!key) return send(res, 503, { error: 'Paiement direct non activé', fallback: '/don/' });
