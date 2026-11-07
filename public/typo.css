@@ -1,0 +1,36 @@
+/* Typographie : Cinzel (français), Frank Ruhl Libre (hébreu). Les couleurs du site restent claires, jour comme nuit. */
+:root{color-scheme:light only}
+html body{font-family:'Cinzel',Georgia,serif;line-height:1.7;letter-spacing:.02em;font-weight:400}
+html body *{font-family:inherit}
+[lang="he"],:lang(he){font-family:'Frank Ruhl Libre','David',serif!important;letter-spacing:0!important;font-weight:500}
+h1 [lang="he"],h2 [lang="he"],h3 [lang="he"],h1[lang="he"],h2[lang="he"],h3[lang="he"],.bsd{font-weight:900}
+html body h1,html body h2,html body h3{font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.08em}
+html body button,html body .btn,html body nav a,html body .sec-nav a,html body .top a,html body label,html body th,html body summary,html body select,html body input,html body textarea{font-family:'Cinzel',Georgia,serif;font-weight:600;letter-spacing:.06em}
+html body p{font-weight:400;line-height:1.7}
+html body .sec-nav .links a{letter-spacing:.04em;white-space:nowrap}
+@media(min-width:801px){
+  html body .sec-nav .links a{font-size:15px;letter-spacing:.04em;padding:14px 9px}
+  html body .ndate b{font-size:14.5px}
+  html body .ndate small{font-size:13.5px;letter-spacing:.02em}
+  html body .sec-nav .nbsd{font-size:18px}
+  html body .sec-nav .links{margin-left:30px}
+}
+@media(min-width:801px) and (max-width:1300px){
+  html body .sec-nav .links a{font-size:13px;letter-spacing:.02em;padding:14px 6px}
+  html body .ndate{flex:none;margin-right:14px}
+  html body .ndate b{font-size:12.5px}
+  html body .ndate small{font-size:11.5px}
+}
+@media(max-width:800px){
+  html body .parmail{white-space:nowrap;font-size:11.5px;letter-spacing:.015em;padding:11px 12px;gap:6px}
+  html body .parmail svg{width:16px;height:16px}
+  html body .qa{margin-top:-24px;position:relative;z-index:5}
+  html body .parmailwrap{position:relative;z-index:5}
+}
+/* date hébraïque (barre du haut) : plus grande */
+html body .ndate b{font-size:18px;line-height:1.15}
+@media(min-width:801px){html body .ndate b{font-size:17px}}
+@media(min-width:801px) and (max-width:1300px){html body .ndate b{font-size:15.5px}}
+/* אמונתך sous le titre */
+html body .hero .he{font-size:clamp(26px,3.2vw,36px);letter-spacing:3px;line-height:1.2;font-weight:700}
+@media(max-width:800px){html body .hero .he{font-size:28px;letter-spacing:3px}}
