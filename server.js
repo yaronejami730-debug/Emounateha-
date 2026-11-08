@@ -1519,7 +1519,7 @@ async function handle(req, res) {
     if (url.pathname === '/api/etude-texte' && req.method === 'GET') { // public : texte du jour (Houmach, Téhilim, Tanya)
       const ty = url.searchParams.get('type');
       if (!['houmach', 'tehilim', 'tanya'].includes(ty)) return send(res, 400, { error: 'type inconnu' });
-      try { const v = await chabadTexte(ty, url.searchParams.get('date'), process.env.VERCEL_OIDC_TOKEN || req.headers['x-vercel-oidc-token'] || process.env.AI_GATEWAY_API_KEY); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': (ty === 'tanya' && v.trLang !== 'fr') ? 'no-store' : url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
+      try { const v = await chabadTexte(ty, url.searchParams.get('date'), process.env.VERCEL_OIDC_TOKEN || req.headers['x-vercel-oidc-token'] || process.env.AI_GATEWAY_API_KEY); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': (ty === 'tanya' && v.trLang !== 'fr') ? 'no-store' : ty === 'tanya' ? 'public, max-age=900' : url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
     }
     if (url.pathname === '/api/etude' && req.method === 'GET') { // public : étude du jour (flux RSS Chabad)

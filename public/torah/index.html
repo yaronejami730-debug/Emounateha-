@@ -801,7 +801,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     var h='<div class="dkick">'+t[1]+'</div><h2>'+t[0]+'</h2><div class="edate">'+esc(d)+'</div><div class="etxt" id="etxt"><div class="empty">Chargement du texte…</div></div>';
     pe.innerHTML=h;
     var tp=cur;
-    (texts[tp]?Promise.resolve(texts[tp]):fetch('/api/etude-texte?type='+tp+'&date='+(function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})(new Date())).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){texts[tp]=j;return j})).then(function(j){
+    (texts[tp]?Promise.resolve(texts[tp]):fetch('/api/etude-texte?v=4&type='+tp+'&date='+(function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})(new Date())).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){texts[tp]=j;return j})).then(function(j){
       if(cur!==tp)return;var el=document.getElementById('etxt');if(!el)return;
       var o='<p class="eport">'+esc(j.ref)+'</p><div class="elang" role="group"><button type="button" class="on" data-l="both">Hébreu + '+(j.trLang==='fr'?'français':'anglais')+'</button><button type="button" data-l="he">Hébreu</button><button type="button" data-l="tr">'+(j.trLang==='fr'?'Français':'Anglais')+'</button></div>';
       j.sections.forEach(function(sc){
