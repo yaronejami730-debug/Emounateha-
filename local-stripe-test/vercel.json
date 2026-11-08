@@ -1,0 +1,9 @@
+{
+  "functions": { "api/index.js": { "maxDuration": 60, "memory": 2048, "includeFiles": "{templates/**,asso.config.json,fetes.config.json,logo-asso*.png,apple-pay/**,node_modules/@sparticuz/chromium/bin/**}" } },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js" },
+    { "source": "/webhook", "destination": "/api/index.js" },
+    { "source": "/recus/(.*)", "destination": "/api/index.js" },
+    { "source": "/.well-known/(.*)", "destination": "/api/index.js" }
+  ]
+}

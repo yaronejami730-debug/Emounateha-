@@ -21,7 +21,7 @@ const ASSO = JSON.parse(fs.readFileSync(path.join(__dirname, 'asso.config.json')
 const PORT = Number(process.env.PORT || 3100);
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PREFIX = process.env.NUM_PREFIX || 'TEST';
-const DATA_DIR = process.env.DATA_DIR || __dirname;           // en ligne : disque persistant (/data)
+const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? '/tmp/don' : __dirname);           // en ligne : disque persistant (/data)
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const DATA = path.join(DATA_DIR, 'data.json');
 const RECUS = path.join(DATA_DIR, 'recus');
@@ -143,7 +143,7 @@ function remplir(don, numero) {
   let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
 }
 let browserP = null;
-const browser = () => browserP || (browserP = puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu', ...(process.env.CHROME_NO_SANDBOX ? ['--no-sandbox', '--disable-dev-shm-usage'] : [])] }));
+const browser = () => browserP || (browserP = process.env.VERCEL ? (async () => { const cr = require('@sparticuz/chromium'); return puppeteer.launch({ executablePath: await cr.executablePath(), headless: 'shell', args: cr.args }); })() : puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu', ...(process.env.CHROME_NO_SANDBOX ? ['--no-sandbox', '--disable-dev-shm-usage'] : [])] }));
 let pdfActifs = 0; const pdfAttente = [];                          // au plus 3 PDF fabriqués en même temps (évite de saturer l'ordinateur)
 const pdfPlace = () => pdfActifs < 3 ? (pdfActifs++, Promise.resolve()) : new Promise(r => pdfAttente.push(r));
 const pdfLibere = () => { const n = pdfAttente.shift(); if (n) n(); else pdfActifs--; };
@@ -195,15 +195,16 @@ try { vault.setAllowPlain(true); const n = vault.migrateDir(RECUS); if (fs.exist
 // --- serveur ---
 const app = express();
 app.disable('x-powered-by');
+if (process.env.VERCEL) { app.set('trust proxy', true); app.use(require('./store')({ DATA, RECUS })); }   // Vercel : données dans Postgres (voir store.js)
 // --- accès : l'ordinateur local a tous les droits ; via le tunnel HTTPS (*.trycloudflare.com) seule la page de don est ouverte ---
 const hits = new Map();
 app.use((req, res, next) => {
   const host = req.headers.host || '';
-  if (/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !req.headers['cf-connecting-ip']) return next();          // ordinateur local
-  if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host)) return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
+  if (!process.env.VERCEL && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !req.headers['cf-connecting-ip']) return next();          // ordinateur local
+  if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST) return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
   if (req.path.startsWith('/backoffice') || req.path === '/api/recu') return res.status(403).type('text').send("Réservé à l'ordinateur local");
   if (req.method === 'POST') {                                                                                           // limite : 30 envois / 10 min / visiteur
-    const ip = String(req.headers['cf-connecting-ip'] || req.ip), now = Date.now(), arr = (hits.get(ip) || []).filter(t => now - t < 600000);
+    const ip = String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.ip).split(',')[0].trim(), now = Date.now(), arr = (hits.get(ip) || []).filter(t => now - t < 600000);
     if (arr.length >= 30) return res.status(429).json({ error: 'Trop de demandes, réessayez dans quelques minutes.' });
     arr.push(now); hits.set(ip, arr);
   }
@@ -351,4 +352,5 @@ app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/a
 });
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.use(express.static(SITE_PUBLIC, { index: false, dotfiles: 'deny' }));
-app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));
+if (!process.env.VERCEL) app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));
+module.exports = app;

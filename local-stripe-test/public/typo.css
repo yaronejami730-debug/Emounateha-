@@ -1,0 +1,161 @@
+/* Typographie : titres principaux en Cinzel, hébreu en Frank Ruhl Libre ; le reste du site garde ses polices d'origine (Inter, Bree Serif). Couleurs claires, jour comme nuit. */
+:root{color-scheme:light only}
+/* seul le grand titre du haut : Cinzel (français) et Frank Ruhl Libre (hébreu) */
+html body .hero h1,html body .pagehead h1{font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.08em}
+html body .hero .he,html body .pagehead .he{font-family:'Frank Ruhl Libre','David',serif;font-weight:900}
+@media(min-width:801px){
+  html body .ndate b{font-size:17px}
+  html body .sec-nav .nbsd{font-size:18px}
+}
+@media(min-width:801px) and (max-width:1300px){html body .ndate b{font-size:15.5px}html body .ndate{flex:none;margin-right:14px}}
+html body .ndate b{font-size:18px;line-height:1.15}
+@media(min-width:801px){html body .ndate b{font-size:17px}}
+@media(min-width:801px) and (max-width:1300px){html body .ndate b{font-size:15.5px}}
+@media(max-width:800px){
+  html body .parmail{white-space:nowrap;font-size:13px;padding:11px 12px;gap:6px}
+  html body .parmail svg{width:16px;height:16px}
+  html body .qa{margin-top:-24px;position:relative;z-index:5}
+  html body .parmailwrap{position:relative;z-index:5}
+}
+/* אמונתך sous le titre */
+html body .hero .he{font-size:clamp(26px,3.2vw,36px);letter-spacing:3px;line-height:1.2;font-weight:700}
+@media(max-width:800px){html body .hero .he{font-size:28px;letter-spacing:3px}}
+/* zone sous le pied de page (barre Safari iPhone) : couleur du pied de page, pas de bande blanche */
+html{background:#1f6a72}
+html body{background:#fff;position:relative;isolation:isolate;transition:background-color .25s}
+html.bas body{background:#327881}
+html body::before{content:"";position:absolute;left:0;right:0;top:0;bottom:0;background:#fff url(/bg.png) repeat;z-index:-1;pointer-events:none}
+@media(max-width:800px){html body footer::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;background:linear-gradient(to bottom,rgba(50,120,129,0),#327881);pointer-events:none}}
+@media(max-width:800px){html body footer{padding-bottom:4px!important;padding-top:96px}html body footer .dev{padding-bottom:0;margin-bottom:0}}
+/* titre du haut des pages intérieures : Cinzel plus serré, sur une ligne si possible */
+html body .pagehead h1{line-height:1.2;letter-spacing:.05em;font-size:clamp(22px,6.2vw,34px)}
+@media(min-width:801px){html body .pagehead h1{font-size:clamp(30px,3.4vw,40px)}}
+/* 4 tuiles d'accueil (téléphone) : petites icônes 3D Pixar à la place des icônes au trait */
+@media(max-width:800px){
+  html body .qa a .qi{width:46px;height:46px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 3px rgba(120,90,30,.25))}
+}
+/* Nos actions : icônes 3D Pixar (couleurs du site) */
+html body #actions .card .ic{background:none;width:auto;height:auto;border-radius:0;display:block;margin-bottom:8px}
+html body #actions .card .ic img{display:block;width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(120,90,30,.22))}
+@media(max-width:800px){html body #actions .card .ic img{width:40px;height:40px}}
+/* « Accueillons Mashia'h… » en or */
+html body .hero .quote{font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.06em;color:#c4a24a;font-size:clamp(13px,1.7vw,17px);line-height:1.5;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+@media(max-width:800px){html body .hero .quote{font-size:12.5px;letter-spacing:.04em}}
+/* Section « Parole du Rabbi » (sous les tuiles) */
+html body .parole{padding:26px 0 6px;text-align:center}
+html body .parole h2{font-size:clamp(20px,5.4vw,26px);margin:0 0 8px;color:var(--teal)}
+html body .parole .gline{width:64px;height:3px;border-radius:3px;margin:0 auto 14px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+html body .parole .rebbe{max-width:640px;margin:0 auto;padding:18px 20px;border-radius:18px;background:rgba(255,255,255,.82);border:1px solid rgba(196,162,74,.45);box-shadow:0 6px 18px rgba(20,60,66,.08);color:#1b3a3f;font-size:clamp(15px,4.2vw,17px);line-height:1.6;opacity:1}
+html body .parole .rebbe cite{color:#a8842a;font-size:12px;margin-top:10px}
+/* Parole du Rabbi : photo en transparence sur la droite de la carte */
+html body .parole .rebbe{position:relative;overflow:hidden;text-align:left;padding:20px 22px 18px 20px;isolation:isolate;background:rgba(255,255,255,.9)}
+html body .parole .rebbe::before{content:"";position:absolute;top:0;right:0;bottom:0;width:68%;background:url(/rebbe.jpg?v=1) 50% 46%/cover no-repeat;opacity:.62;z-index:-1;-webkit-mask-image:radial-gradient(ellipse 62% 60% at 62% 50%,#000 30%,rgba(0,0,0,.55) 58%,transparent 86%);mask-image:radial-gradient(ellipse 62% 60% at 62% 50%,#000 30%,rgba(0,0,0,.55) 58%,transparent 86%)}
+html body .parole .rebbe cite{display:block;text-align:left}
+@media(max-width:800px){html body .parole .rebbe{padding-right:18px}html body .parole .rebbe::before{width:74%;background-position:50% 46%}}
+/* Parole du Rabbi : texte centré et plus léger */
+html body .parole .rebbe{text-align:center;padding:22px 20px 20px;color:#3f6a70;font-size:clamp(14px,3.9vw,16px);line-height:1.65;font-weight:400}
+html body .parole .rebbe cite{text-align:center;color:#b2923a;font-weight:600}
+html body .parole .rebbe::before{width:80%;right:0;opacity:.5;-webkit-mask-image:radial-gradient(ellipse 60% 62% at 66% 50%,#000 28%,rgba(0,0,0,.5) 58%,transparent 88%);mask-image:radial-gradient(ellipse 60% 62% at 66% 50%,#000 28%,rgba(0,0,0,.5) 58%,transparent 88%)}
+@media(max-width:800px){html body .parole .rebbe::before{width:84%}}
+/* Parole du Rabbi : photo bien visible */
+html body .parole .rebbe{color:#24505a;text-shadow:0 0 6px rgba(255,255,255,.95),0 0 14px rgba(255,255,255,.85)}
+html body .parole .rebbe cite{text-shadow:0 0 6px rgba(255,255,255,.95);color:#9a7a22}
+html body .parole .rebbe::before{width:92%;right:0;opacity:.88;background-position:62% 38%;-webkit-mask-image:radial-gradient(ellipse 52% 72% at 70% 48%,#000 42%,rgba(0,0,0,.75) 62%,transparent 92%);mask-image:radial-gradient(ellipse 52% 72% at 70% 48%,#000 42%,rgba(0,0,0,.75) 62%,transparent 92%)}
+@media(max-width:800px){html body .parole .rebbe::before{width:100%;background-position:60% 36%;-webkit-mask-image:radial-gradient(ellipse 58% 74% at 72% 48%,#000 40%,rgba(0,0,0,.7) 62%,transparent 92%);mask-image:radial-gradient(ellipse 58% 74% at 72% 48%,#000 40%,rgba(0,0,0,.7) 62%,transparent 92%)}}
+/* Parole du Rabbi : deux colonnes (texte | photo entière), la photo n'est jamais sous les mots */
+html body .parole .rebbe{display:grid;grid-template-columns:1fr 48%;align-items:center;min-height:300px;padding:0;max-width:720px;font-size:14.5px;line-height:1.65;text-shadow:none}
+html body .parole .rebbe .rtxt{padding:26px 10px 24px 22px;text-align:center}
+html body .parole .rebbe cite{display:block;margin-top:14px;padding-top:12px;border-top:1px solid rgba(196,162,74,.45);text-align:center;font-size:11.5px;letter-spacing:.08em;text-shadow:none}
+html body .parole .rebbe::before{left:auto;right:0;top:50%;bottom:auto;transform:translateY(-50%);width:44%;height:auto;aspect-ratio:900/1067;opacity:1;background:url(/rebbe.jpg?v=1) center/cover no-repeat;border-radius:14px 0 0 14px;box-shadow:0 4px 16px rgba(20,60,66,.18);-webkit-mask-image:none;mask-image:none;z-index:0}
+html body .parole .rebbe::after{content:none;display:none}
+@media(min-width:801px){html body .parole .rebbe{grid-template-columns:1fr 46%;min-height:340px;font-size:17px}html body .parole .rebbe .rtxt{padding:30px 16px 28px 34px}html body .parole .rebbe cite{font-size:12.5px}html body .parole .rebbe::before{width:40%;right:0}}
+/* Comment nous aider : icône 3D à la place du numéro */
+html body .step.stlink::before{content:none;display:none}
+html body .step.stlink{padding:22px 22px 22px 92px;min-height:92px}
+html body .step.stlink .sti{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(120,90,30,.22))}
+html body .step.stlink h3{margin-top:0}
+html body a.step.stlink,html body a.step.stlink *{text-decoration:none!important}
+html body a.step.stlink h3{color:var(--teal)}html body a.step.stlink p{color:var(--mut)}
+html body button.step.stlink{text-align:left!important}html body button.step.stlink *{text-align:left}
+html body .qa a small{font-size:11.5px;letter-spacing:0;white-space:nowrap}
+/* Jeudi soir → samedi : la carte des horaires de Chabbat a la priorité, la banderole de fête se met en retrait (le bandeau du haut reste) */
+/* Carte horaires de Chabbat sur téléphone : parachat à gauche, entrée et sortie à droite, ville en dessous */
+@media(max-width:800px){
+  html body .parcard{grid-template-columns:1fr 1.05fr;grid-template-rows:auto auto auto}
+  html body .parcard>div:nth-child(1){grid-column:1;grid-row:1/3;border-top:0;border-left:0;justify-content:center}
+  html body .parcard>div:nth-child(2){grid-column:2;grid-row:1;border-top:0;border-left:1px solid #eef3f3}
+  html body .parcard>div:nth-child(3){grid-column:2;grid-row:2;border-top:1px solid #eef3f3;border-left:1px solid #eef3f3}
+  html body .parcard>div:nth-child(4){grid-column:1/3;grid-row:3;border-left:0;border-top:1px solid #eef3f3}
+  html body .parcard small{white-space:nowrap}
+  html body .parcard>div:nth-child(1) b{font-size:20px}
+  html body .parcard>div:nth-child(4) small{white-space:normal}
+}
+/* Pendant les horaires de Chabbat, la banderole Hanouka descend sous la carte et son bouton e-mail */
+html body #hnbanner.hnmoved{margin:14px auto 0;width:calc(100% - 32px);max-width:760px}
+/* Banderole Hanouka dans l'en-tête : un peu plus bas, au-dessus du fondu blanc (aucune bande blanche) */
+html body .hero #hnbanner:not(.hnmoved){margin-top:30px;z-index:8;isolation:isolate}
+html body .hero{padding-bottom:128px}
+@media(max-width:800px){html body .hero #hnbanner:not(.hnmoved){margin-top:18px}html body .hero{padding-bottom:96px}}
+/* banderole déplacée sous les horaires : l'image ne doit laisser aucun liseré blanc dessous */
+html body #hnbanner{display:block;line-height:0;font-size:0}
+html body #hnbanner img{display:block;width:100%;height:auto;margin:0;vertical-align:top}
+/* petits ajustements d'espacement */
+html body #hnbanner.hnmoved{margin-top:26px}
+html body .parole{padding-bottom:0}
+html body .parole .ecr-wrap{margin:14px 0 0}
+html body .parole + .parmailwrap{padding-top:12px;padding-bottom:0}
+html body #mission{padding-top:18px}
+@media(max-width:600px){html body #mission{padding-top:14px}}
+/* Page Les colis : moins de vide entre l'en-tête, les onglets et la fiche du colis */
+html body .pagehead{padding-bottom:64px}
+html body #colis{padding-top:10px!important;padding-bottom:30px}
+html body #colis .ctabs{margin-bottom:14px!important}
+html body #colis .title{display:none}
+@media(max-width:800px){html body .pagehead{padding-bottom:56px}html body #colis{padding-top:4px!important}}
+/* source des horaires : toute petite et discrète */
+html body #parnote::after{content:"Horaires : fr.chabad.org · parachat : hebcal.com";display:block;margin-top:4px;font-size:7.5px;line-height:1.2;color:#c9d0d1;letter-spacing:0;font-weight:400}
+
+/* écriteau : ville de référence détectée */
+html body #geowarn{margin:10px auto 0;max-width:960px;padding:9px 14px;border-radius:12px;background:#fff7e0;border:1px solid #e6cf8a;color:#5b4a14;font-size:12.5px;line-height:1.45;text-align:center}
+html body #geowarn b{color:#7a5d10}
+
+/* écriteau « ville de référence » : sobre, aux couleurs du site */
+html body .geonote,html body #geowarn{position:relative;margin:0 0 12px;padding:12px 16px 12px 50px;border-radius:14px;background:rgba(255,255,255,.92);border:1px solid #e3ecec;box-shadow:0 6px 18px rgba(20,60,66,.07);color:#51666a;font-size:12.5px;line-height:1.5;text-align:left}
+html body .geonote::before,html body #geowarn::before{content:"";position:absolute;left:16px;top:50%;transform:translateY(-50%);width:22px;height:22px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c4a24a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 21s-7-6.2-7-11.2A7 7 0 0 1 19 9.800C19 14.800 12 21 12 21z'/><circle cx='12' cy='10' r='2.500'/></svg>") center/contain no-repeat}
+html body .geonote::after,html body #geowarn::after{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,#e4cd8a,#c4a24a)}
+html body .geonote b,html body #geowarn b{display:inline;color:#1f6a72;font-size:13.5px;font-weight:700}
+html body .geonote>b{display:block;margin-bottom:2px}
+html body .geonote span{display:block;color:#6a7d81}
+html body #abonote{background:rgba(255,255,255,.92)!important;border-color:#e3ecec!important;color:#51666a!important}
+html body #geowarn{margin-top:12px;text-align:left}
+html body .geonote span{font-size:12px}html body .geonote small{font-weight:400;color:#8a9a9d;font-size:12px}
+/* Ordinateur : la ligne de la ville de référence est surlignée d'un jaune doux */
+@media(min-width:801px){
+  html body .htable tr.me td{background:linear-gradient(180deg,#fff3c4,#fbe9a6)!important;color:#5d4710}
+  html body .htable tr.me td:first-child{background:linear-gradient(180deg,#fbe9a6,#f6dd88)!important;color:#5d4710;font-weight:700;box-shadow:inset 4px 0 0 #c4a24a}
+  html body .htable tr.me td.shc,html body .htable tr.me td b{color:#5d4710}
+  html body .htable tr.me{box-shadow:0 8px 22px -12px rgba(196,162,74,.7)}
+}
+@media(min-width:801px){html body .htable tr.me>td,html body .htable tr.me>td.shc,html body .htable tr.me>td[data-l]{background-color:#fcecb0!important;background-image:linear-gradient(180deg,#fff3c4,#fbe6a0)!important}
+html body .htable tr.me>td:first-child{background-image:linear-gradient(180deg,#fbe9a6,#f6dd88)!important}}
+/* iPad (≈ 800 à 1180 px) : la barre du haut ne déborde plus (date, liens et בס״ד sur une seule ligne, sans chevauchement) */
+@media(min-width:801px) and (max-width:1180px){
+  html body .ndate,html body .nbsd{flex:0 0 118px!important;min-width:118px!important}
+  html body .ndate b{font-size:12.5px!important}
+  html body .ndate small{font-size:10.5px!important;letter-spacing:0}
+  html body .sec-nav .nbsd{font-size:15px!important}
+  html body .sec-nav .links{margin-left:0!important;flex:1 1 auto;justify-content:space-evenly;gap:0}
+  html body .sec-nav .links a{font-size:12px!important;letter-spacing:.01em!important;padding:14px 5px!important}
+}
+@media(min-width:801px) and (max-width:900px){
+  html body .ndate,html body .nbsd{flex:0 0 100px!important;min-width:100px!important}
+  html body .ndate b{font-size:11.5px!important}html body .ndate small{font-size:9.5px!important}
+  html body .sec-nav .nbsd{font-size:13px!important}
+  html body .sec-nav .links a{font-size:11.5px!important;padding:14px 3px!important}
+}
+@media(min-width:801px) and (max-width:900px){
+  html body .ndate{flex:0 0 132px!important;min-width:132px!important}
+  html body .nbsd{flex:0 0 58px!important;min-width:58px!important}
+  html body .sec-nav .links a{font-size:11px!important;padding:14px 2px!important}
+  html body .sec-nav .links{justify-content:space-around}
+}
