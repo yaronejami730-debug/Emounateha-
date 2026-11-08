@@ -41,7 +41,7 @@ function shell(s, inner, { preheader = '', testBanner = false } = {}) {
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${esc(s.orgName)}</title>
 <style>:root{color-scheme:light only}.he{font-family:'Frank Ruhl Libre','David',serif !important}@media only screen and (max-width:620px){.outer{padding:0 !important}.card{border-radius:0 !important}.pad{padding-left:18px !important;padding-right:18px !important}.big{font-size:40px !important}.code{font-size:34px !important;letter-spacing:6px !important}}</style></head>
 <body bgcolor="#eef2f1" style="margin:0;padding:0;background:#eef2f1;font-family:Arial,Helvetica,sans-serif;">
-<span style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(preheader)}</span>
+<span style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${esc(preheader)}${'&#847;&zwnj;&nbsp;'.repeat(120)}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f1;"><tr><td align="center" class="outer" style="padding:24px 12px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:600px;width:100%;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(20,60,66,.12);">
 ${testBanner ? '<tr><td align="center" style="background:#8a1f1f;color:#ffffff;font-size:11px;letter-spacing:1px;padding:7px 10px;font-weight:bold;">EMAIL DE TEST — AUCUN DON RÉEL</td></tr>' : ''}
