@@ -90,9 +90,7 @@ async function donEmail(d) {   // { prenom, montant(centimes), dateDon, affectat
   </table></td></tr></table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;"><tr>
     <td style="padding:6px 8px;text-align:center;font-family:Inter,-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:1.55;">
-      <div style="font-size:14px;color:${accent};font-weight:600;"><span style="font-family:Georgia,serif;font-size:34px;line-height:0;font-weight:bold;color:${accent};vertical-align:-17px;margin-right:6px;">&ldquo;</span>En pratiquant la tsédaka, nous honorons son héritage</div>
-      <div style="font-size:15px;color:${accent};font-weight:800;margin:2px 0;">et contribuons à la construction d'un monde</div>
-      <div style="font-size:14px;color:${accent};font-weight:600;">empreint de bienveillance, d'unité et de générosité.<span style="font-family:Georgia,serif;font-size:34px;line-height:0;font-weight:bold;color:${accent};vertical-align:-19px;margin-left:6px;">&rdquo;</span></div>
+      <div style="font-size:14px;color:${accent};font-weight:600;line-height:1.6;"><span style="font-family:Georgia,serif;font-size:30px;line-height:0;font-weight:bold;color:${accent};vertical-align:-15px;margin-right:5px;">&ldquo;</span>En pratiquant la tsédaka, nous honorons<br>son héritage et contribuons à la<br>construction d'un monde empreint de<br>bienveillance, d'unité et de générosité.<span style="font-family:Georgia,serif;font-size:30px;line-height:0;font-weight:bold;color:${accent};vertical-align:-17px;margin-left:5px;">&rdquo;</span></div>
     </td>
   </tr></table>
   ${d.spaceUrl ? `<table role="presentation" align="center" style="margin:24px auto 6px;"><tr><td style="background:${accent};border-radius:999px;"><a href="${esc(d.spaceUrl)}" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:bold;color:#1b2b2d;text-decoration:none;font-family:Inter,-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Retrouver tous mes reçus</a></td></tr></table>
