@@ -176,7 +176,7 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   const info = await t.sendMail({ from, to, subject, text, attachments });
   const eml = path.basename(pdfFile).replace(/\.pdf$/, '.eml');
   vault.writeFile(path.join(RECUS, eml), info.message);
-  return { sent: false, eml: '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
+  return { sent: false, eml: (process.env.BASE_PATH || '') + '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
 }
 
 async function fabriquer(don, { envoyerEmail }) {
@@ -184,7 +184,7 @@ async function fabriquer(don, { envoyerEmail }) {
   const numero = nextNumero(annee);
   const file = path.join(RECUS, `recu_${numero}_${crypto.randomBytes(3).toString('hex')}.pdf`);
   await pdf(remplir(don, numero), file);
-  const out = { numero, pdf: '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
+  const out = { numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
   return out;
 }
@@ -195,6 +195,8 @@ try { vault.setAllowPlain(true); const n = vault.migrateDir(RECUS); if (fs.exist
 // --- serveur ---
 const app = express();
 app.disable('x-powered-by');
+// le paiement est servi sous emounateha.fr/don-cerfa (réécriture du site) : on accepte aussi ce préfixe en direct et en local
+app.use((req, res, next) => { if (req.url === '/don-cerfa' || req.url.startsWith('/don-cerfa/') || req.url.startsWith('/don-cerfa?')) req.url = req.url.slice(10) || '/'; next(); });
 if (process.env.VERCEL) { app.set('trust proxy', true); app.use(require('./store')({ DATA, RECUS })); }   // Vercel : données dans Postgres (voir store.js)
 // --- accès : l'ordinateur local a tous les droits ; via le tunnel HTTPS (*.trycloudflare.com) seule la page de don est ouverte ---
 const hits = new Map();
@@ -225,7 +227,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/webhook') return next();   // le webhook est protégé par la signature Stripe
   const o = req.headers.origin; if (!o) return next();
-  try { if (new URL(o).host === req.headers.host) return next(); } catch (e) {}
+  try { const h = new URL(o).host; if (h === req.headers.host || String(process.env.ALLOWED_ORIGIN_HOSTS || '').split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
   res.status(403).json({ error: 'Origine non autorisée' });
 });
 app.use((req, res, next) => { if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('.html') || req.path.endsWith('/'))) res.setHeader('Cache-Control', 'no-store');

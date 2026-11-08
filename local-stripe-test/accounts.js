@@ -15,7 +15,7 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
   // ---------- liens signés pour les PDF ----------
   function secret() { const d = load(); if (!d.urlSecret) { d.urlSecret = crypto.randomBytes(32).toString('hex'); save(d); } return d.urlSecret; }
   const sig = (file, exp) => crypto.createHmac('sha256', secret()).update(file + '.' + exp).digest('hex').slice(0, 32);
-  function signUrl(file, ttl = 3600) { const f = path.basename(file), e = Math.floor(Date.now() / 1000) + ttl; return `/recus/${f}?e=${e}&s=${sig(f, e)}`; }
+  function signUrl(file, ttl = 3600) { const f = path.basename(file), e = Math.floor(Date.now() / 1000) + ttl; return `${process.env.BASE_PATH || ''}/recus/${f}?e=${e}&s=${sig(f, e)}`; }
   function publicReceipt(out) {   // les liens renvoyés au navigateur expirent ; le PDF n'est jamais public
     const o = { ...out }; if (o.pdf) o.pdf = signUrl(o.pdf);
     if (o.email && o.email.eml) o.email = { ...o.email, eml: signUrl(o.email.eml) };
@@ -25,13 +25,13 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
   // ---------- sessions ----------
   function cookies(req) { const o = {}; String(req.headers.cookie || '').split(';').forEach(p => { const i = p.indexOf('='); if (i > 0) o[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim()); }); return o; }
   function getSession(req) {
-    const t = cookies(req).sid; if (!t || !/^[a-f0-9]{64}$/.test(t)) return null;
+    const t = cookies(req).don_sid; if (!t || !/^[a-f0-9]{64}$/.test(t)) return null;
     const d = load(), s = (d.sessions || {})[sha(t)]; if (!s || s.exp < Date.now()) return null;
     return { email: s.email, hash: sha(t) };
   }
   function setCookie(req, res, value, maxAgeSec) {
     const https = /https/i.test(String(req.headers['x-forwarded-proto'] || '')) || req.secure;
-    res.setHeader('Set-Cookie', `sid=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${https ? '; Secure' : ''}`);
+    res.setHeader('Set-Cookie', `don_sid=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${https ? '; Secure' : ''}`);
   }
   function requireUser(req, res) { const s = getSession(req); if (!s) { res.status(401).json({ error: 'Non connecté' }); return null; } return s; }
   // contrôle d'origine : une page d'un autre site ne peut pas agir au nom du donateur
