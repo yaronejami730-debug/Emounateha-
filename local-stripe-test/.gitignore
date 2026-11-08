@@ -6,3 +6,5 @@ recus/
 signature*.png
 signature*.jpg
 logo-asso.jpg
+.vercel
+.env*
