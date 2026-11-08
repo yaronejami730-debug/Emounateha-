@@ -15,13 +15,16 @@ try {
     const m = l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/); if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
   }
 } catch (e) {}
+if (process.env.NODE_ENV === 'production' && !/^[0-9a-f]{64}$/i.test(process.env.DATA_KEY || '')) { console.error('DATA_KEY (64 caractères hexadécimaux) obligatoire en production : arrêt.'); process.exit(1); }
 vault.ensureKey(path.join(__dirname, '.env'));
 const ASSO = JSON.parse(fs.readFileSync(path.join(__dirname, 'asso.config.json'), 'utf8'));
 const PORT = Number(process.env.PORT || 3100);
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PREFIX = process.env.NUM_PREFIX || 'TEST';
-const DATA = path.join(__dirname, 'data.json');
-const RECUS = path.join(__dirname, 'recus');
+const DATA_DIR = process.env.DATA_DIR || __dirname;           // en ligne : disque persistant (/data)
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const DATA = path.join(DATA_DIR, 'data.json');
+const RECUS = path.join(DATA_DIR, 'recus');
 const TEMPLATE_PATH = path.join(__dirname, 'templates', 'cerfa.html');
 fs.mkdirSync(RECUS, { recursive: true, mode: 0o700 });
 
@@ -140,7 +143,7 @@ function remplir(don, numero) {
   let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
 }
 let browserP = null;
-const browser = () => browserP || (browserP = puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu'] }));
+const browser = () => browserP || (browserP = puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu', ...(process.env.CHROME_NO_SANDBOX ? ['--no-sandbox', '--disable-dev-shm-usage'] : [])] }));
 let pdfActifs = 0; const pdfAttente = [];                          // au plus 3 PDF fabriqués en même temps (évite de saturer l'ordinateur)
 const pdfPlace = () => pdfActifs < 3 ? (pdfActifs++, Promise.resolve()) : new Promise(r => pdfAttente.push(r));
 const pdfLibere = () => { const n = pdfAttente.shift(); if (n) n(); else pdfActifs--; };
@@ -348,4 +351,4 @@ app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/a
 });
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.use(express.static(SITE_PUBLIC, { index: false, dotfiles: 'deny' }));
-app.listen(PORT, '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));
+app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));

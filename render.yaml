@@ -1,0 +1,35 @@
+# Déploiement indépendant du paiement Stripe (mode TEST) sur Render. Le site principal n'est pas touché.
+services:
+  - type: web
+    name: emounateha-don
+    runtime: docker
+    dockerfilePath: ./local-stripe-test/Dockerfile
+    dockerContext: .
+    branch: paiement-cerfa
+    plan: starter
+    healthCheckPath: /api/config
+    disk:
+      name: donnees
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: STRIPE_SECRET_KEY        # sk_test_… (à coller dans Render)
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY   # pk_test_…
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET    # whsec_… du point d'entrée https://<url>/webhook
+        sync: false
+      - key: DATA_KEY                 # clé de chiffrement (la même que le .env local pour garder les données, sinon en générer une)
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: PUBLIC_URL
+        sync: false
