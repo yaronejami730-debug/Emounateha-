@@ -1065,11 +1065,11 @@ async function act() {
         $('paySum').textContent = money(payAmount / 100) + (payMen ? ' par mois' : '') + ' · ' + ($('aff').value || 'Don');
         elements.create('payment', { layout: { type: 'tabs' }, wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } }).mount('#payel');
         // Apple Pay / Google Pay : bouton express au-dessus de la carte (visible seulement si l'appareil et le domaine le permettent)
-        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'never', amazonPay: 'never' } });
+        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'always', amazonPay: 'never' } });
         ex.mount('#exel');
         ex.on('loaderror', ev => { $('exDiag').textContent = 'Erreur Apple Pay / Google Pay : ' + ((ev.error && (ev.error.message || ev.error.code)) || JSON.stringify(ev)); window.__exErr = ev; });
         setTimeout(() => { if (!window.__exReady && !window.__exErr) $('exDiag').textContent = 'Portefeuilles : aucune réponse de Stripe après 6 s'; }, 6000);
-        ex.on('ready', ev => { const a = ev.availablePaymentMethods; window.__exReady = a || null; $('exDiag').textContent = 'Portefeuilles détectés : Apple Pay ' + (a && a.applePay ? '✓' : '✗') + ' · Google Pay ' + (a && a.googlePay ? '✓' : '✗') + (a ? '' : ' (aucun disponible sur cet appareil / ce navigateur)'); const ok = !!(a && (a.applePay || a.googlePay)); $('exwrap').style.display = ok ? 'block' : 'none'; $('cardLab').style.display = ok ? 'none' : ''; });
+        ex.on('ready', ev => { const a = ev.availablePaymentMethods; window.__exReady = a || null; $('exDiag').textContent = 'Portefeuilles détectés : Apple Pay ' + (a && a.applePay ? '✓' : '✗') + ' · Google Pay ' + (a && a.googlePay ? '✓' : '✗') + ' · PayPal ' + (a && a.paypal ? '✓' : '✗') + (a ? '' : ' (aucun disponible sur cet appareil / ce navigateur)'); const ok = !!(a && (a.applePay || a.googlePay || a.paypal)); $('exwrap').style.display = ok ? 'block' : 'none'; $('cardLab').style.display = ok ? 'none' : ''; });
         ex.on('confirm', async () => {
           try {
             const { error, paymentIntent } = await stripe.confirmPayment({ elements, clientSecret, redirect: 'if_required', confirmParams: { return_url: location.href } });
