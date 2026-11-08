@@ -373,7 +373,8 @@ body{overflow-x:hidden}
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
 <header class="pagehead"><div class="wrap"><div class="top"><span class="hdate" id="hdate"></span><span class="bsd">בס״ד</span></div><h1>Faire un don</h1><p>Paiement sécurisé par carte · reçu fiscal envoyé par email</p></div></header>
-<style>.pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:10px 0 22px;position:relative}
+<style>.pagehead .top{display:none}/* la date et בס״ד sont déjà dans la barre du haut */
+.pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:72px 0 22px;position:relative}
 .pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
 .pagehead h1{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(26px,4vw,36px);color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.25);margin-top:4px}.pagehead p{opacity:.95;margin-top:4px;font-size:14px}
 .donwrap .title{display:none}.donwrap{padding-top:26px}</style>
@@ -386,7 +387,7 @@ body{overflow-x:hidden}
 .donbox{background:#fff;border:1px solid #e3ecec;border-radius:20px;box-shadow:0 14px 40px rgba(20,60,66,.12);padding:10px;overflow:hidden}
 .donalt{text-align:center;color:var(--mut);font-size:14px;margin-top:18px}.donalt a{color:var(--teal)}
 .thanks{display:none;text-align:center;background:#e9f4f4;border:1px solid #c5e0e1;border-radius:14px;padding:18px;margin-bottom:16px;color:var(--teal);font-weight:600}
-@media(max-width:600px){.donwrap{padding:10px 0 30px;max-width:100%}.pagehead{padding:8px 0 16px}.pagehead h1{font-size:24px}.pagehead p{font-size:12.5px}.donwrap .title{padding:0 16px;margin-bottom:14px}.donbox{border-radius:0;border-left:0;border-right:0;padding:0;box-shadow:none}.donalt{padding:0 16px}}
+@media(max-width:600px){.donwrap{padding:10px 0 30px;max-width:100%}.pagehead{padding:64px 0 16px}.pagehead h1{font-size:24px}.pagehead p{font-size:12.5px}.donwrap .title{padding:0 16px;margin-bottom:14px}.donbox{border-radius:0;border-left:0;border-right:0;padding:0;box-shadow:none}.donalt{padding:0 16px}}
 
 /* téléphone : aucune barre de défilement visible */
 @media(max-width:800px){
