@@ -2,14 +2,15 @@ const UNITES = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'hui
 const DIX_A_SEIZE = ['dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize'];
 const DIZAINES = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante', 'quatre-vingt', 'quatre-vingt'];
 
-function centainesEnLettres(n) {
+// accord : « cents » et « quatre-vingts » prennent un s seulement en fin de nombre ou devant million/milliard, jamais devant « mille »
+function centainesEnLettres(n, accord = true) {
   let mots = [];
   const c = Math.floor(n / 100);
   const reste = n % 100;
 
   if (c > 0) {
     if (c === 1) mots.push('cent');
-    else mots.push(UNITES[c] + ' cent' + (reste === 0 ? 's' : ''));
+    else mots.push(UNITES[c] + ' cent' + (reste === 0 && accord ? 's' : ''));
   }
 
   if (reste > 0) {
@@ -24,11 +25,11 @@ function centainesEnLettres(n) {
       const u = reste % 10;
       let base;
       if (d === 7) {
-        base = u === 1 ? 'soixante-et-onze' : 'soixante-' + DIX_A_SEIZE[u];
+        base = u === 1 ? 'soixante-et-onze' : 'soixante-' + (u <= 6 ? DIX_A_SEIZE[u] : 'dix-' + UNITES[u]);
       } else if (d === 9) {
-        base = u === 0 ? 'quatre-vingt-dix' : 'quatre-vingt-' + DIX_A_SEIZE[u];
+        base = u === 0 ? 'quatre-vingt-dix' : 'quatre-vingt-' + (u <= 6 ? DIX_A_SEIZE[u] : 'dix-' + UNITES[u]);
       } else if (u === 0) {
-        base = DIZAINES[d] + (d === 8 ? 's' : '');
+        base = DIZAINES[d] + (d === 8 && accord ? 's' : '');
       } else if (u === 1 && d !== 8) {
         base = DIZAINES[d] + '-et-un';
       } else {
@@ -42,7 +43,7 @@ function centainesEnLettres(n) {
 }
 
 function entierEnLettres(n) {
-  if (n === 0) return 'zero';
+  if (n === 0) return 'zéro';
   if (n < 0) return 'moins ' + entierEnLettres(-n);
 
   const tranches = [
@@ -60,7 +61,7 @@ function entierEnLettres(n) {
       if (tranche.valeur === 1000 && q === 1) {
         mots.push('mille');
       } else {
-        mots.push(centainesEnLettres(q) + ' ' + (q > 1 ? tranche.pluriel : tranche.singulier));
+        mots.push(centainesEnLettres(q, tranche.valeur !== 1000) + ' ' + (q > 1 ? tranche.pluriel : tranche.singulier));
       }
       reste %= tranche.valeur;
     }

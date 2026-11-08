@@ -631,7 +631,7 @@ async function act() {
     }
     else if (panel === 3) {
       $('go').textContent = 'Paiement en cours…';
-      const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required', confirmParams: { return_url: location.href, payment_method_data: { billing_details: { name: isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()), email: $('email').value.trim(), address: { line1: $('adr').value.trim(), postal_code: $('cp').value.trim(), city: $('ville').value.trim(), country: 'FR' } } } } });
+      const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required', confirmParams: { return_url: location.href, payment_method_data: { billing_details: { name: isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()), email: $('email').value.trim(), address: { line1: $('adr').value.trim(), postal_code: $('cp').value.trim(), city: $('ville').value.trim(), state: '', country: 'FR' } } } } });
       if (error) { $('go').textContent = 'Réessayer'; throw new Error(error.message || 'Paiement refusé'); }
       if (!paymentIntent || paymentIntent.status !== 'succeeded') { $('go').textContent = 'Réessayer'; throw new Error('Paiement non abouti (statut : ' + (paymentIntent && paymentIntent.status) + ')'); }
       renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
