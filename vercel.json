@@ -4,7 +4,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 180,
-      "includeFiles": "{supabase/migrations/**,crm-app/**}"
+      "includeFiles": "{supabase/migrations/**,crm-app/**,contenu/**}"
     }
   },
   "rewrites": [

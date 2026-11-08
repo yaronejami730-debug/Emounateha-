@@ -898,7 +898,7 @@ async function traduireTanya(items, jeton) {
     method: 'POST', headers: { authorization: 'Bearer ' + jeton, 'content-type': 'application/json' },
     signal: AbortSignal.timeout(100000),
     body: JSON.stringify({ model: TRAD_MODEL, temperature: 0.2, max_tokens: 16000, messages: [
-      { role: 'system', content: "Tu traduis le Tanya (l'œuvre de l'Admour Hazaken) en français, pour un public juif francophone habad. Pour chaque segment tu reçois l'original hébreu et sa traduction anglaise (Kehot). Traduis fidèlement le sens en français soutenu et clair, en t'appuyant sur l'hébreu. Translittère les termes hébreux à la française (Hachem, Torah, mitsvot, néchama, 'Hassidout, Ein Sof, Sefirot, Zohar, Arizal…), garde les références entre crochets ou parenthèses. Réponds UNIQUEMENT par un tableau JSON de chaînes, une par segment, dans le même ordre, sans aucun autre texte." },
+      { role: 'system', content: "Tu traduis le Tanya (l'œuvre de l'Admour Hazaken) en français, pour un public juif francophone habad. Pour chaque segment tu reçois l'original hébreu et une traduction anglaise (Kehot) qui contient aussi des notes explicatives mêlées au texte. Traduis l'HÉBREU, et seulement lui : sers-toi de l'anglais pour le sens, mais n'y reprends jamais les notes ni les ajouts, et ignore les remarques éditoriales entre crochets de l'hébreu. Écris un français soutenu, clair et élégant, fidèle au texte. Translittère les termes hébreux à la française (Hachem, Torah, mitsvot, néchama, 'Hassidout, Ein Sof, Sefirot, Zohar, Arizal…), garde les références entre crochets ou parenthèses. Réponds UNIQUEMENT par un tableau JSON de chaînes, une par segment, dans le même ordre, sans aucun autre texte." },
       { role: 'user', content: JSON.stringify(segs) }] })
   });
   if (!r.ok) throw new Error('AI Gateway ' + r.status + ' ' + (await r.text()).slice(0, 200));
@@ -908,7 +908,10 @@ async function traduireTanya(items, jeton) {
   return arr.map(x => String(x || '').trim());
 }
 const tradEnCours = new Map();
+let TANYA_FR = null;   // traductions relues à la main, livrées avec le site (data/tanya-fr.json) : prioritaires
+function tanyaFichier(cle) { if (!TANYA_FR) { try { TANYA_FR = JSON.parse(fs.readFileSync(path.join(ROOT, 'contenu', 'tanya-fr.json'), 'utf8')); } catch (e) { TANYA_FR = {}; } } return TANYA_FR[cle] || null; }
 async function tanyaFrancais(cle, items, jeton) {
+  const fic = tanyaFichier(cle); if (fic && fic.length === items.length) return fic;
   const deja = await tradLire(cle).catch(() => null); if (deja && deja.length === items.length) return deja;
   if (tradEnCours.has(cle)) return tradEnCours.get(cle);
   const p = traduireTanya(items, jeton).then(async fr => { await tradEcrire(cle, fr).catch(e => console.error('[trad] écriture', e.message)); return fr; }).finally(() => tradEnCours.delete(cle));
@@ -943,7 +946,7 @@ async function chabadTexte(type, jour, jeton) {
     try {   // anglais -> français (une seule fois par chapitre, gardé en base)
       const tous = v.sections.flatMap(sc => sc.items), fr = await tanyaFrancais('tanya:' + part[0] + ':' + a + '-' + b, tous, jeton);
       tous.forEach((it2, k) => { it2.tr = fr[k] || it2.tr; });
-      v.trLang = 'fr'; v.trNote = "Traduction française automatique d'après la version anglaise de Kehot Publication Society (CC BY-NC).";
+      v.trLang = 'fr'; v.trNote = tanyaFichier('tanya:' + part[0] + ':' + a + '-' + b) ? "Traduction française d'après l'original hébreu." : "Traduction française automatique d'après l'original hébreu (aidée de la version anglaise de Kehot, CC BY-NC).";
     } catch (e) { console.error('[trad] Tanya', e.message); }
   }
   if (!v.sections.length) throw new Error('texte vide');
