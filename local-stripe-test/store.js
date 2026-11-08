@@ -5,17 +5,23 @@
 const fs = require('fs'), path = require('path'), { Pool } = require('pg');
 const LOCK = 424242;
 module.exports = function createStore({ DATA, RECUS }) {
-  const url = process.env.DATABASE_URL;
+  let url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL manquant');
-  const pool = new Pool({ connectionString: url, max: 3, idleTimeoutMillis: 3000, ssl: /localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: false } });
-  const ready = pool.query('create table if not exists don_kv (key text primary key, value bytea not null, updated_at timestamptz not null default now())');
+  // pooler Supabase : le mode « session » (5432) est limité à 15 clients ; le mode « transaction » (6543) convient (tout se fait dans une transaction)
+  url = url.replace(/(pooler\.supabase\.com):5432\b/, '$1:6543');
+  const pool = new Pool({ connectionString: url, max: 1, idleTimeoutMillis: 1000, ssl: /localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: false } });
+  pool.on('error', e => console.error('[store] connexion perdue', e.message));
+  let ready = null;
+  const ensure = () => ready || (ready = pool.query('create table if not exists don_kv (key text primary key, value bytea not null, updated_at timestamptz not null default now())').catch(e => { ready = null; throw e; }));
+  // routes qui n'ont pas besoin des données (aucune connexion ouverte)
+  const SANS = /^\/api\/(config|siret)\b/;
   const same = (a, b) => a && b && Buffer.compare(a, b) === 0;
   return async (req, res, next) => {
     const p = req.path;
-    if (!(p === '/webhook' || p.startsWith('/api/') || p.startsWith('/recus/') || p.startsWith('/u/'))) return next();
+    if (!(p === '/webhook' || p.startsWith('/api/') || p.startsWith('/recus/') || p.startsWith('/u/')) || SANS.test(p)) return next();
     let c, t0 = Date.now() - 1000, base = null, done = false;
     try {
-      await ready; c = await pool.connect();
+      await ensure(); c = await pool.connect();
       await c.query('begin'); await c.query("set local lock_timeout = '25s'"); await c.query('select pg_advisory_xact_lock($1)', [LOCK]);
       const r = await c.query("select value from don_kv where key = 'data.json'");
       if (r.rows[0]) { base = r.rows[0].value; fs.writeFileSync(DATA, base, { mode: 0o600 }); } else { try { fs.unlinkSync(DATA); } catch (e) {} }
