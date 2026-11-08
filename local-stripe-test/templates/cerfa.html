@@ -138,35 +138,16 @@
     <div class="in">
       <div class="row"><div class="k">Date du versement</div><div class="v">{{dateVersement}}</div></div>
       <div class="row"><div class="k">Périodicité</div><div class="v">{{periodicite}}</div></div>
-      <div class="row"><div class="k">Mode de versement</div><div class="v">{{modePaiement}}</div></div>
-      <div class="opts" style="margin:3px 0 2px">
-        <span class="opt"><span class="cb">{{modeEsp}}</span> Remise d'espèces</span>
-        <span class="opt"><span class="cb">{{modeChq}}</span> Chèque</span>
-        <span class="opt"><span class="cb">{{modeVir}}</span> Virement, prélèvement, carte bancaire</span>
-      </div>
       <div class="row"><div class="k">Contrepartie</div><div class="v s">Aucune : versement effectué à titre gratuit, sans contrepartie directe ou indirecte pour le donateur</div></div>
     </div>
   </div>
 
   <div class="sign">
-    <div class="mode">Reçu établi le <b>{{dateSignature}}</b><br>par voie électronique</div>
+    <div class="mode">Mode de paiement : <b>{{modeCourt}}</b></div>
     <div class="sg">
       <div class="l">Date et signature</div>
       <div class="d">{{dateSignature}}</div>
       {{blocSignature}}
-    </div>
-  </div>
-
-  <div class="box mentions" style="break-before: page; margin-top: 22mm;">
-    <h2>Mentions légales et informations</h2>
-    <div class="in ml">
-      <p><b>Objet du reçu.</b> Ce reçu est délivré pour permettre au donateur de bénéficier de la réduction d'impôt prévue, selon sa situation, aux articles 200 (impôt sur le revenu), 238 bis (impôt sur les sociétés) ou 978 (impôt sur la fortune immobilière) du code général des impôts, aux taux et dans les limites en vigueur.</p>
-      <p><b>Conservation.</b> Le donateur doit conserver ce reçu et le présenter à la demande de l'administration fiscale. Il n'est pas à joindre à la déclaration de revenus.</p>
-      <p><b>Certification.</b> Le bénéficiaire certifie sur l'honneur que les dons et versements qu'il reçoit ouvrent droit à la réduction d'impôt, et que les informations portées sur ce reçu sont exactes. Elles sont établies sous sa seule responsabilité.</p>
-      <p><b>Sanctions.</b> La délivrance irrégulière de ce reçu expose l'organisme aux sanctions prévues à l'article 1740 A du code général des impôts, sans préjudice des articles 1741 et suivants du même code réprimant la fraude fiscale.</p>
-      <p><b>Numérotation.</b> Le numéro d'ordre du reçu est unique et chronologique. Ce reçu est établi en un seul exemplaire original.</p>
-      <p><b>Données personnelles.</b> Les données du donateur (identité, adresse, montant, date) sont traitées par {{assoNomMin}} uniquement pour établir et conserver ce reçu fiscal, en application d'une obligation légale, et conservées {{conservation}}. Droits d'accès, de rectification et d'opposition dans les limites prévues par la loi : {{assoEmail}}.</p>
-      <p><b>Références.</b> Cerfa n° 11580*05 — formulaire 2041-RD — direction générale des finances publiques.</p>
     </div>
   </div>
 
