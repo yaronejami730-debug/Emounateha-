@@ -49,6 +49,7 @@ Tout le code est dans le sous-dossier `local-stripe-test/`.
 - **Back-office** `/backoffice/` : générer un reçu **sans paiement** (virement, chèque, espèces).
 - **Email** : le reçu PDF est joint à un email. Sans SMTP configuré, il est enregistré en fichier `.eml` (à ouvrir dans Mail).
 - **Don mensuel** : abonnement Stripe, première échéance avec reçu.
+- **Webhook Stripe** (testé en local avec l'outil `stripe listen`) : le reçu est créé par le webhook, signature vérifiée, **une seule fois par paiement** même si le navigateur le réclame aussi (pas de doublon). Même si le téléphone se déconnecte juste après le paiement, le reçu est créé. Un faux webhook sans bonne signature est refusé (erreur 400).
 - Tunnel HTTPS temporaire pour tester sur le téléphone (Cloudflare). Seule la page de don y est ouverte : le back-office et la création de reçus sont bloqués hors de l'ordinateur.
 
 ---
@@ -66,7 +67,7 @@ Tout le code est dans le sous-dossier `local-stripe-test/`.
 2. **Numérotation réelle** : retirer le préfixe `TEST-` (format type `A2026/00394` chez AlloDons), numéros uniques et chronologiques, stockés en base.
 3. **Stockage** : aujourd'hui les reçus et le compteur sont dans un fichier local. Il faut les mettre dans la base (Supabase) et les rattacher au CRM.
 4. **Envoi réel des emails** (Brevo ou SMTP) avec le PDF en pièce jointe.
-5. **Webhook Stripe** : pour les dons mensuels (un reçu à chaque prélèvement) et pour ne jamais perdre un paiement si le téléphone se déconnecte.
+5. **Webhook Stripe en ligne** : fait et testé en local pour les paiements ponctuels et la 1re échéance mensuelle. **Reste à faire** : enregistrer le vrai point d'entrée `https://…/webhook` dans le tableau de bord Stripe (avec son vrai secret `whsec_`), et **tester les mensualités suivantes** (code écrit pour `invoice.paid`, jamais exécuté de bout en bout).
 6. **Hébergement du serveur** : le PDF est fabriqué avec Chrome ; sur Vercel il faut une variante adaptée, ou un petit serveur séparé.
 7. **Passage en clés Stripe réelles** (`sk_live` / `pk_live`), enregistrement du domaine `www.emounateha.fr` pour Apple Pay **en mode réel**, et dépôt du fichier de vérification Apple dans `/.well-known/` du site.
 8. **Sécurité du back-office** : mot de passe / connexion (il est aujourd'hui seulement réservé à l'ordinateur local).
@@ -99,6 +100,8 @@ cd /Users/yarone/Emounateha-paiement-cerfa/local-stripe-test
 npm install                  # une seule fois
 cp .env.example .env         # puis y coller les clés Stripe de TEST
 node server.js               # page de don : http://127.0.0.1:3100/
+stripe listen --forward-to localhost:3100/webhook   # webhooks Stripe (autre terminal) ; son secret whsec_ va dans .env
+                             # (STRIPE_WEBHOOK_SECRET=…, obtenu avec : stripe listen --print-secret)
                              # back-office  : http://127.0.0.1:3100/backoffice/
 python3 build.py             # reconstruit les pages à partir du site
 python3 tools/make_logo.py <logo_rond.jpg> && node tools/lockup.js   # reconstruit le logo transparent

@@ -77,7 +77,7 @@ function remplir(don, numero) {
     check200: ent ? '' : '✔', check238: ent ? '✔' : '', check978: '',
     modePaiement: esc(don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')), dateSignature: fmt(Date.now()),
     assoForme: esc(ASSO.forme || ''), assoSiret: esc(ASSO.siret || ''), assoContact: esc(`${ASSO.email} · ${ASSO.telephone}`), assoNomMin: esc(ASSO.nom), assoEmail: esc(ASSO.email), conservation: esc(ASSO.conservation || '6 ans'),
-    dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? 'Don mensuel (reçu pour chaque prélèvement) — échéance n°1' : 'Don ponctuel',
+    dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? `Don mensuel (un reçu pour chaque prélèvement) — échéance n°${don.echeance || 1}` : 'Don ponctuel',
     modeEsp: /Esp[eè]ces/i.test(don.mode) ? '✔' : '', modeChq: /Ch[eè]que/i.test(don.mode) ? '✔' : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : '✔',
     blocSignature: sig, piedPage: esc(`Reçu fiscal généré par ${ASSO.nom} · ${ASSO.email} · ${ASSO.telephone}`), testDisplay: process.env.NO_TEST_BANNER ? 'display:none' : ''
   };
@@ -137,6 +137,30 @@ app.use((req, res, next) => {
 });
 app.use((req, res, next) => { if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('.html') || req.path.endsWith('/'))) res.setHeader('Cache-Control', 'no-store');
   if (req.headers['cf-connecting-ip'] && (req.path === '/' || req.path.startsWith('/api/'))) console.log('[tunnel]', new Date().toISOString().slice(11, 19), req.method, req.path, '|', String(req.headers['user-agent'] || '').replace(/\(([^)]*)\)/, (m, g) => '(' + g.slice(0, 40) + ')').slice(0, 110)); next(); });
+// --- webhook Stripe : la signature est vérifiée ; sans elle rien n'est traité ---
+app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (req, res) => {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET; if (!stripe || !secret) return res.status(503).send('Webhook non configuré');
+  let ev; try { ev = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], secret); } catch (e) { console.log('[webhook] signature invalide'); return res.status(400).send('Signature invalide'); }
+  try {
+    if (ev.type === 'payment_intent.succeeded') {
+      const id = ev.data.object.id, d = load();
+      if (d.pending[id] || d.receipts[id]) { const r = await receiptForPayment(id); console.log('[webhook]', ev.type, id, '->', r.numero, r.deja ? '(déjà créé)' : '(créé par le webhook)'); }
+      else console.log('[webhook]', ev.type, id, '-> ignoré (paiement qui ne vient pas de cette page)');
+    } else if (ev.type === 'invoice.paid' && ev.data.object.billing_reason === 'subscription_cycle') {
+      const inv = ev.data.object, d = load();                      // don mensuel : un reçu à chaque prélèvement (2e échéance et suivantes)
+      if (d.receipts[inv.id]) console.log('[webhook] invoice.paid', inv.id, '(déjà créé)');
+      else {
+        const sub = await stripe.subscriptions.retrieve(inv.subscription), cu = await stripe.customers.retrieve(inv.customer), m = sub.metadata || {}, ad = cu.address || {};
+        const n = (await stripe.invoices.list({ subscription: sub.id, limit: 100 })).data.filter(i => i.status === 'paid').length;
+        const out = await fabriquer({ type: m.type === 'entreprise' ? 'entreprise' : 'particulier', nom: cu.name, siren: m.siren || '', adresse: `${ad.line1 || ''}, ${ad.postal_code || ''} ${ad.city || ''}`, email: cu.email, montant: inv.amount_paid, mensuel: true, echeance: n,
+          mode: 'Carte bancaire (Stripe, test) — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
+        out.affectation = m.affectation; out.mensuel = true; const d2 = load(); d2.receipts[inv.id] = out; save(d2);
+        console.log('[webhook] invoice.paid', inv.id, '-> reçu', out.numero, '(mensualité n°' + n + ')');
+      }
+    } else console.log('[webhook]', ev.type, '(non traité)');
+    res.json({ received: true });
+  } catch (e) { console.error('[webhook] erreur', e.message); res.status(500).send('erreur'); }   // Stripe réessaiera plus tard
+});
 app.use(express.json({ limit: '50kb' }));
 // fichier de vérification Apple Pay (Apple le réclame à la racine du domaine, dans .well-known)
 app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res) => res.type('text/plain').sendFile(path.join(__dirname, 'apple-pay', 'apple-developer-merchantid-domain-association')));
@@ -152,10 +176,10 @@ app.post('/api/intent', async (req, res) => {
     const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel' };
     let id, clientSecret, subscription = null;
     if (mensuel) {
-      const cust = await stripe.customers.create({ email: don.email, name: don.nom, metadata: meta });
+      const cust = await stripe.customers.create({ email: don.email, name: don.nom, address: { line1: don.adresse.split(',')[0], postal_code: (don.adresse.match(/\b\d{5}\b/) || [''])[0], city: don.ville, country: 'FR' }, metadata: meta });
       const sub = await stripe.subscriptions.create({ customer: cust.id, payment_behavior: 'default_incomplete', payment_settings: { payment_method_types: ['card'], save_default_payment_method: 'on_subscription' },
         items: [{ price_data: { currency: 'eur', unit_amount: don.montant, recurring: { interval: 'month' }, product: (await stripe.products.create({ name: `Don mensuel ${ASSO.nom} (TEST)` })).id } }],
-        metadata: meta, expand: ['latest_invoice.payment_intent'] });
+        metadata: { ...meta, siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0' }, expand: ['latest_invoice.payment_intent'] });
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
       const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: ['card'], description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
@@ -165,21 +189,29 @@ app.post('/api/intent', async (req, res) => {
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
-// 2) après paiement : on vérifie auprès de Stripe (jamais sur la parole du navigateur), puis reçu + email — une seule fois par paiement
-app.post('/api/finalize', async (req, res) => {
-  try {
-    if (!stripe) throw new Error('Stripe non configuré');
-    const id = String(req.body.id || ''); if (!/^pi_[A-Za-z0-9]+$/.test(id)) throw new Error('Paiement inconnu');
-    const d = load();
-    if (d.receipts[id]) return res.json({ ...d.receipts[id], deja: true });
+// 2) après paiement : le navigateur OU le webhook Stripe déclenchent la création du reçu ; on vérifie toujours auprès de Stripe, et une seule fois par paiement
+const inflight = new Map();
+async function receiptForPayment(id) {
+  const d0 = load(); if (d0.receipts[id]) return { ...d0.receipts[id], deja: true };
+  if (inflight.has(id)) return inflight.get(id);                 // deux demandes en même temps : la 2e attend la 1re
+  const job = (async () => {
+    const d = load(); if (d.receipts[id]) return { ...d.receipts[id], deja: true };
     const p = d.pending[id]; if (!p) throw new Error('Paiement inconnu de cette page');
     const pi = await stripe.paymentIntents.retrieve(id);
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
-    const out = await fabriquer({ ...p, mode: p.mensuel ? 'Carte bancaire (Stripe, test) — don mensuel, 1re échéance' : MODES[3], dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
+    const out = await fabriquer({ ...p, echeance: 1, mode: p.mensuel ? 'Carte bancaire (Stripe, test) — don mensuel, 1re échéance' : MODES[3], dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
     out.affectation = p.affectation; out.mensuel = !!p.mensuel;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id]; save(d2);
-    res.json(out);
+    return out;
+  })().finally(() => inflight.delete(id));
+  inflight.set(id, job); return job;
+}
+app.post('/api/finalize', async (req, res) => {
+  try {
+    if (!stripe) throw new Error('Stripe non configuré');
+    const id = String(req.body.id || ''); if (!/^pi_[A-Za-z0-9]+$/.test(id)) throw new Error('Paiement inconnu');
+    res.json(await receiptForPayment(id));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 // 3) reçu SANS paiement (virement, chèque, espèces déjà reçus)
