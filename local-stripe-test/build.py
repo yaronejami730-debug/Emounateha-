@@ -177,6 +177,17 @@ CSS = r"""
 .dn-ok2 h3{font-family:'Bree Serif',serif;font-weight:400;font-size:22px;color:#1d6b43;margin:0 0 4px}
 .dn-ok2 .num{display:inline-block;background:#eef7f1;border:1px solid #bfe3cf;color:#1d6b43;font-weight:700;padding:6px 14px;border-radius:99px;margin:8px 0}
 .dn-ok2 p{color:#3b5f50;font-size:14.5px;margin:4px 0}
+.dn-thx{color:#51666a!important;font-size:14.5px;line-height:1.5;margin:2px 8px 16px!important}
+.dn-recap{background:#f6faf9;border:1px solid #dbe9e6;border-radius:18px;padding:16px 18px 10px;text-align:left;margin:0 0 12px}
+.dn-amt{font-family:'Bree Serif',serif;font-size:34px;color:var(--teal);text-align:center;margin-bottom:10px}
+.dn-amt small{font-family:'Inter',sans-serif;font-size:15px;color:#51666a}
+.dn-sr{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid #e1ecea;font-size:14px}
+.dn-sr span{color:#6a7f83}.dn-sr b{color:#14272a;text-align:right;font-weight:600}
+.dn-mail{font-size:13.5px!important;color:#6a7f83!important;margin:6px 0 4px!important}
+.dn-dl{display:flex;align-items:center;justify-content:center;gap:9px}
+.dn-esp{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0 4px;color:var(--teal);font-weight:700;font-size:15px;text-decoration:none;padding:10px}
+.dn-esp span{font-size:18px}
+.dn-espn{font-size:12.5px!important;color:#8a9b9e!important;margin:0!important}
 .dn-dl{display:block;margin:12px 0 0;padding:13px;border-radius:99px;font-weight:700;font-size:15px;text-decoration:none;background:var(--teal);color:#fff;text-align:center}
 .dn-dl.g{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:#1b2b2d}
 /* récapitulatif (ordinateur) */
@@ -366,6 +377,7 @@ async function withLoad(txt, fn) { $('dnLoadTxt').textContent = txt; $('dnLoad')
 // écrans
 function goPanel(n) {
   panel = n; show('');
+  if ($('acct')) $('acct').style.display = n === 4 ? 'none' : '';
   [1, 2, 3, 4].forEach(i => $('p' + i).classList.toggle('on', i === n));
   const li = document.querySelectorAll('#dnSteps li');
   li.forEach((x, i) => { const k = i + 1; x.className = n === 4 || k < n ? 'done' : (k === n ? 'on' : ''); });
@@ -598,17 +610,23 @@ $('back').onclick = () => { elements = null; $('payel').innerHTML = ''; goPanel(
 
 if (/[?&]diag=1/.test(location.search)) $('exDiag').hidden = false;
 function renderRes(o) {
+  const dev = /^(127\.0\.0\.1|localhost)$/.test(location.hostname) || /[?&]diag=1/.test(location.search);
   let em = '';
-  if (o.email && o.email.skipped) em = 'Aucun email demandé.';
-  else if (o.email && o.email.error) em = '⚠️ Email non envoyé : ' + esc(o.email.error);
-  else if (o.email && o.email.sent) em = '✉️ Reçu envoyé par email, avec le PDF en pièce jointe.';
-  else if (o.email && o.email.eml) em = '✉️ ' + esc(o.email.note);
+  if (o.email && o.email.sent) em = 'Votre reçu fiscal vous a aussi été envoyé par email.';
+  else if (o.email && o.email.error) em = 'L’email n’a pas pu être envoyé : ' + esc(o.email.error);
+  else if (dev && o.email && o.email.eml) em = esc(o.email.note);
+  const row = (k, v) => '<div class="dn-sr"><span>' + k + '</span><b>' + v + '</b></div>';
   $('res').innerHTML = '<div class="dn-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>' +
-    '<h3>Merci pour votre don !</h3><span class="num">Reçu ' + esc(o.numero) + '</span>' +
-    '<p><b>' + eur(o.montant) + (o.mensuel ? ' / mois' : '') + '</b> · ' + esc(o.mode) + '</p>' + (o.affectation ? '<p>Affectation : ' + esc(o.affectation) + '</p>' : '') + '<p>' + em + '</p>' +
-    '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener">📄 Ouvrir le PDF du CERFA</a>' +
-    (o.email && o.email.eml ? '<a class="dn-dl g" href="' + o.email.eml + '">✉️ Ouvrir l\'email (.eml)</a>' : '');
-  $('res').insertAdjacentHTML('beforeend', me ? '<div class="dn-cta"><p>Retrouvez tous vos reçus, classés par année.</p><a href="/espace/">Mon espace donateur</a></div>' : '<div class="dn-cta"><p>Retrouvez tous vos reçus au même endroit.</p><small>Connexion par un simple code envoyé par email, sans mot de passe.</small><a href="/espace/" id="ctaEspace">Accéder à mon espace donateur</a></div>');
+    '<h3>Merci pour votre don !</h3>' +
+    '<p class="dn-thx">Votre générosité aide directement les familles que nous accompagnons.</p>' +
+    '<div class="dn-recap"><div class="dn-amt">' + eur(o.montant) + (o.mensuel ? '<small> par mois</small>' : '') + '</div>' +
+      (o.affectation ? row('Affectation', esc(o.affectation)) : '') +
+      row('Paiement', o.mensuel ? 'Don mensuel · 1re échéance' : 'Don ponctuel') +
+      row('Reçu fiscal', 'n° ' + esc(o.numero)) + '</div>' +
+    (em ? '<p class="dn-mail">' + em + '</p>' : '') +
+    '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Télécharger mon reçu fiscal</a>' +
+    (dev && o.email && o.email.eml ? '<a class="dn-dl g" href="' + o.email.eml + '">Ouvrir l’email de test (.eml)</a>' : '');
+  $('res').insertAdjacentHTML('beforeend', me ? '<a class="dn-esp" href="/espace/">Voir tous mes reçus<span>→</span></a>' : '<a class="dn-esp" href="/espace/" id="ctaEspace">Retrouver tous mes reçus plus tard<span>→</span></a><p class="dn-espn">Connexion par code envoyé par email, sans mot de passe.</p>');
   if ($('ctaEspace')) $('ctaEspace').onclick = () => { try { sessionStorage.setItem('acctEmail', $('email').value.trim()); } catch (e) {} };
   goPanel(4); elements = null; $('payel').innerHTML = '';
 }
