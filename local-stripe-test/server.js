@@ -158,7 +158,9 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
       const inv = ev.data.object, d = load();                      // don mensuel : un reçu à chaque prélèvement (2e échéance et suivantes)
       if (d.receipts[inv.id]) console.log('[webhook] invoice.paid', inv.id, '(déjà créé)');
       else {
-        const sub = await stripe.subscriptions.retrieve(inv.subscription), cu = await stripe.customers.retrieve(inv.customer), m = sub.metadata || {}, ad = cu.address || {};
+        const subId = inv.subscription || (inv.parent && inv.parent.subscription_details && inv.parent.subscription_details.subscription);
+        if (!subId) throw new Error('abonnement introuvable sur la facture ' + inv.id);
+        const sub = await stripe.subscriptions.retrieve(subId), cu = await stripe.customers.retrieve(inv.customer), m = sub.metadata || {}, ad = cu.address || {};
         const n = (await stripe.invoices.list({ subscription: sub.id, limit: 100 })).data.filter(i => i.status === 'paid').length;
         const out = await fabriquer({ type: m.type === 'entreprise' ? 'entreprise' : 'particulier', nom: cu.name, siren: m.siren || '', adresse: `${ad.line1 || ''}, ${ad.postal_code || ''} ${ad.city || ''}`, email: cu.email, montant: inv.amount_paid, mensuel: true, echeance: n,
           mode: 'Carte bancaire (Stripe, test) — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
