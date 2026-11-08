@@ -35,7 +35,7 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
   }
   function requireUser(req, res) { const s = getSession(req); if (!s) { res.status(401).json({ error: 'Non connecté' }); return null; } return s; }
   // contrôle d'origine : une page d'un autre site ne peut pas agir au nom du donateur
-  function sameOrigin(req, res) { const o = req.headers.origin; if (o) { try { if (new URL(o).host !== req.headers.host) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } catch (e) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } return true; }
+  function sameOrigin(req, res) { const o = req.headers.origin; if (o) { try { const h = new URL(o).host; if (h !== req.headers.host && !('www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } catch (e) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } return true; }
 
   // ---------- profils ----------
   function cleanProfile(kind, b) {
