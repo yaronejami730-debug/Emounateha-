@@ -836,7 +836,7 @@ body{overflow-x:hidden}
         <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
         <div class="dn-full dn-guestsave" id="guestSave"><span>Pour retrouver ces informations la prochaine fois, <button type="button" class="dn-link" id="guestLogin">connectez-vous</button> (un code par email, sans mot de passe).</span></div>
         <div class="dn-full dn-savep"><label class="dn-ck"><input id="saveProf" type="checkbox" checked><span>Enregistrer ces informations dans mon espace donateur<small>Pour ne plus avoir à les retaper</small></span></label></div>
-        <div class="dn-full"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email<small id="smtp"></small></span></label></div>
+        <div class="dn-full" id="envRow"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email</span></label></div>
       </div>
     </div>
 
@@ -1057,7 +1057,7 @@ function fillRandom() {
 
 const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []);
-  $('smtp').textContent = c.smtp ? '' : 'Sans SMTP : fichier .eml à ouvrir dans Mail';
+  if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (mode === 'sans' || /[?&]test=1/.test(location.search)) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
   pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
@@ -1281,7 +1281,7 @@ function renderRes(o) {
   const espace = me ? 'Vous pouvez aussi retrouver tous vos reçus directement depuis votre espace donateur.' : 'Vous pouvez aussi retrouver tous vos reçus fiscaux directement depuis votre espace donateur.';
   let em = '';
   if (o.email && o.email.error) em = '<b>L’email n’a pas pu être envoyé</b> (' + esc(o.email.error) + '). Téléchargez votre reçu ci-dessous. ' + espace;
-  else if (o.email && !o.email.skipped) em = '<b>Nous vous avons envoyé un email</b> à ' + to + ', avec votre reçu fiscal (CERFA) en pièce jointe. Conservez-le : il vous sera demandé pour votre déclaration de revenus.<br><br>' + espace + (dev && o.email.eml ? '<br><i>(test local : ' + esc(o.email.note) + ')</i>' : '');
+  else if (o.email && !o.email.skipped) em = '<b>Nous vous avons envoyé un email</b> à ' + to + ', avec votre reçu fiscal (CERFA) en pièce jointe. Conservez-le : il vous sera demandé pour votre déclaration de revenus.<br><br>' + espace;
   else em = espace;
   const row = (k, v) => '<div class="dn-sr"><span>' + k + '</span><b>' + v + '</b></div>';
   $('res').innerHTML = '<img class="dn-logo" src="/logo-asso.png" alt="Émounatéha">' +
@@ -1292,8 +1292,7 @@ function renderRes(o) {
       row('Paiement', o.mensuel ? 'Don mensuel · 1re échéance' : 'Don ponctuel') +
       row('Reçu fiscal', 'n° ' + esc(o.numero)) + '</div>' +
     (em ? '<p class="dn-mail">' + em + '</p>' : '') +
-    '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Télécharger mon reçu fiscal</a>' +
-    (dev && o.email && o.email.eml ? '<a class="dn-dl g" href="' + o.email.eml + '">Ouvrir l’email de test (.eml)</a>' : '');
+    '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Télécharger mon reçu fiscal</a>';
   $('res').insertAdjacentHTML('beforeend', me ? '<a class="dn-esp" href="/espace/">Voir tous mes reçus<span>→</span></a>' : '<a class="dn-esp" href="/espace/" id="ctaEspace">Retrouver tous mes reçus plus tard<span>→</span></a><p class="dn-espn">Connexion par code envoyé par email, sans mot de passe.</p>');
   if ($('ctaEspace')) $('ctaEspace').onclick = () => { try { sessionStorage.setItem('acctEmail', $('email').value.trim()); } catch (e) {} };
   goPanel(4); elements = null; $('payel').innerHTML = '';
