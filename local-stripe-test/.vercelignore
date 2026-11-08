@@ -2,6 +2,7 @@ public/backoffice
 build.py
 tools
 email-auth
-.env
+.env*
 data.json
 recus
+.vercel

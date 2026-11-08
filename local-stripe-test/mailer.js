@@ -10,7 +10,7 @@ async function settings() {
   if (cache !== null && Date.now() - cacheAt < 300000) return cache || null;
   try {
     const need = m => { try { return require(m); } catch (e) { return require(path.join(MAIN, 'node_modules', m)); } };
-    const env = Object.fromEntries(fs.readFileSync(path.join(MAIN, '.env'), 'utf8').split('\n').filter(l => /^[A-Z_]+=/.test(l)).map(l => [l.split('=')[0], l.slice(l.indexOf('=') + 1).trim()]));
+    const env = process.env.DATABASE_URL ? { DATABASE_URL: process.env.DATABASE_URL } : Object.fromEntries(fs.readFileSync(path.join(MAIN, '.env'), 'utf8').split('\n').filter(l => /^[A-Z_]+=/.test(l)).map(l => [l.split('=')[0], l.slice(l.indexOf('=') + 1).trim()]));
     const { Pool } = need('pg'); const pool = new Pool({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 1 });
     const s = ((await pool.query('select data from public.settings where id = 1')).rows[0] || {}).data || {}; await pool.end();
     cache = (s.brevoApiKey && s.senderEmail) ? s : false;
