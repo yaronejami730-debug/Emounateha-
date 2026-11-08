@@ -115,13 +115,15 @@ function validerDonateur(b) {
 
 // --- reçu : HTML -> PDF (Chrome) ---
 const lieu = ASSO.lieuSignature || '';
+const OK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.4l3.1 3.1 6.6-7" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';   // coche dessinée : ne dépend d'aucune police
 function remplir(don, numero) {
   const fmt = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const ent = don.type === 'entreprise';
   const img = (f, mime) => `data:${mime};base64,${fs.readFileSync(path.join(__dirname, f)).toString('base64')}`;
   const logo = ASSO.logo && fs.existsSync(path.join(__dirname, ASSO.logo)) ? img(ASSO.logo, /\.png$/i.test(ASSO.logo) ? 'image/png' : 'image/jpeg') : '';
-  const sigOk = ASSO.signatureImage && fs.existsSync(path.join(__dirname, ASSO.signatureImage));
-  const sig = sigOk ? `<img src="${img(ASSO.signatureImage, /\.png$/i.test(ASSO.signatureImage) ? 'image/png' : 'image/jpeg')}" alt="signature"/>${ASSO.signataire ? `<div class="who2">${esc(ASSO.signataire)}</div>` : ''}`
+  const sigEnv = process.env.SIGNATURE_PNG_B64 ? 'data:image/png;base64,' + process.env.SIGNATURE_PNG_B64.replace(/\s/g, '') : '';   // en ligne : signature dans une variable d'environnement (jamais dans Git)
+  const sigOk = sigEnv || (ASSO.signatureImage && fs.existsSync(path.join(__dirname, ASSO.signatureImage)));
+  const sig = sigOk ? `<img src="${sigEnv || img(ASSO.signatureImage, /\.png$/i.test(ASSO.signatureImage) ? 'image/png' : 'image/jpeg')}" alt="signature"/>${ASSO.signataire ? `<div class="who2">${esc(ASSO.signataire)}</div>` : ''}`
                     : `<div style="height:16mm"></div><div class="who2">${esc(ASSO.signataire || 'Signé électroniquement')}</div>`;
   const ligne = (k, v) => `<div class="row"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`;
   const v = {
@@ -133,11 +135,11 @@ function remplir(don, numero) {
     montantFigures: (don.montant / 100).toFixed(2).replace('.', ','), montantLettres: esc(montantEnLettres(don.montant)),
     donateurBloc: esc(don.nom) + '<br>' + esc(don.adresse.split(',')[0]) + '<br>' + esc(don.adresse.split(',').slice(1).join(',').trim()),
     donateurNom: esc(don.nom.toUpperCase()), donateurSiren: ent && don.siren ? ligne('Numéro SIREN', don.siren.replace(/(\d{3})(?=\d)/g, '$1 ')) : '', donateurAdresse: esc(don.adresse),
-    check200: ent ? '' : '✔', check238: ent ? '✔' : '', check978: '',
+    check200: ent ? '' : OK, check238: ent ? OK : '', check978: '',
     modePaiement: esc(don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')), dateSignature: fmt(Date.now()),
     assoForme: esc(ASSO.forme || ''), assoSiret: esc(ASSO.siret || ''), assoContact: esc(`${ASSO.email} · ${ASSO.telephone}`), assoNomMin: esc(ASSO.nom), assoEmail: esc(ASSO.email), conservation: esc(ASSO.conservation || '6 ans'),
     dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? `Don mensuel (un reçu pour chaque prélèvement) — échéance n°${don.echeance || 1}` : 'Don ponctuel',
-    modeEsp: /Esp[eè]ces/i.test(don.mode) ? '✔' : '', modeChq: /Ch[eè]que/i.test(don.mode) ? '✔' : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : '✔',
+    modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
     blocSignature: sig, piedPage: esc(`Reçu fiscal généré par ${ASSO.nom} · ${ASSO.email} · ${ASSO.telephone}`), testDisplay: process.env.NO_TEST_BANNER ? 'display:none' : ''
   };
   let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
@@ -157,7 +159,7 @@ async function pdf(html, file) {
 }
 async function pdf1(html, file) {
   const b = await browser(), page = await b.newPage();
-  try { await page.setContent(html, { waitUntil: 'load' }); vault.writeFile(file, Buffer.from(await page.pdf({ format: 'A4', printBackground: true }))); } finally { await page.close(); }
+  try { await page.setContent(html, { waitUntil: 'networkidle0', timeout: 20000 }).catch(() => {}); await page.evaluate(() => document.fonts.ready); vault.writeFile(file, Buffer.from(await page.pdf({ format: 'A4', printBackground: true }))); } finally { await page.close(); }
 }
 
 // --- email : vrai envoi si SMTP configuré, sinon fichier .eml (ouvrable dans Mail) ---
@@ -359,4 +361,5 @@ app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/a
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.use(express.static(SITE_PUBLIC, { index: false, dotfiles: 'deny' }));
 if (!process.env.VERCEL) app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));
+app.locals.remplir = remplir; app.locals.pdf = pdf;
 module.exports = app;
