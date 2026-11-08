@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Reçu fiscal {{numeroRecu}}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; color: #111; font-size: 11.5px; line-height: 1.35; zoom: 0.64; width: 328mm; padding: 22mm 20mm 10mm; }
+
+  /* en-tête : formulaire de référence | titre | numéro d'ordre */
+  .top { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid #111; }
+  .top .ref { width: 62mm; text-align: center; font-weight: 700; }
+  .top .ref .rd { font-size: 11px; margin-bottom: 6px; }
+  .top .ref .cn { font-size: 11px; margin-top: 7px; }
+  .cerfa-logo { display: block; margin: 0 auto; }
+  .top .titre { flex: 1; text-align: center; font-weight: 700; font-size: 13.5px; line-height: 1.25; padding: 2px 8px 0; }
+  .top .num { width: 62mm; text-align: right; }
+  .top .num .l { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #555; font-weight: 700; }
+  .top .num .n { margin-top: 6px; font-family: 'Courier New', Courier, monospace; font-weight: 700; font-size: 17px; color: #e0765c; }
+
+  /* association | donateur */
+  .who { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 12px; }
+  .who .asso { width: 80mm; text-align: center; }
+  .who .asso img { height: 50mm; width: auto; display: block; margin: 0 auto; }
+  .who .asso b { font-size: 12px; text-transform: uppercase; }
+  .who .don { width: 78mm; border-left: 3px solid #e0765c; padding: 2px 0 2px 10px; font-weight: 700; font-size: 12px; line-height: 1.45; text-transform: uppercase; }
+
+  /* blocs à bandeau noir */
+  .box { border: 1px solid #bdbdbd; border-radius: 4px; margin-bottom: 9px; overflow: hidden; page-break-inside: avoid; }
+  .box h2 { margin: 0; background: #111; color: #fff; font-size: 11.5px; letter-spacing: 1.6px; text-transform: uppercase; padding: 7px 11px; font-weight: 700; line-height: 1.4; }
+  .box .in { padding: 8px 11px 9px; }
+  .row { display: flex; margin: 5px 0; align-items: baseline; }
+  .row .k { width: 52mm; flex: none; text-transform: uppercase; letter-spacing: .8px; font-size: 10.5px; color: #555; font-weight: 700; }
+  .row .v { font-weight: 700; font-size: 11.5px; }
+  .row .v.s { font-size: 11px; }
+  .recu { border: 2px solid #111; border-radius: 8px; text-align: center; padding: 9px 10px 8px; margin: 10px 6px 4px; }
+  .recu .t { font-size: 10.5px; color: #555; }
+  .recu .m { font-size: 20px; font-weight: 700; margin: 6px 0 3px; }
+  .recu .l { font-style: italic; font-size: 11.5px; color: #333; }
+
+  /* cases à cocher */
+  .opts { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 5px 0 9px; align-items: center; }
+  .opt { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 11.5px; }
+  .cb { display: inline-block; width: 13px; height: 13px; border: 1.2px solid #111; border-radius: 2px; text-align: center; line-height: 11px; font-size: 12px; font-weight: 700; }
+  .opts-t { font-size: 11px; font-weight: 700; text-decoration: underline; margin: 6px 0 2px; color: #333; }
+
+  /* date et signature */
+  .sign { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; min-height: 36mm; }
+  .sign .mode { font-size: 12px; padding-bottom: 6px; }
+  .sign .mode b { font-size: 12.5px; }
+  .sign .sg { width: 70mm; text-align: center; }
+  .sign .sg .l { font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: #555; font-weight: 700; }
+  .sign .sg .d { font-weight: 700; margin-top: 3px; font-size: 12px; }
+  .sign .sg img { max-height: 24mm; max-width: 62mm; display: block; margin: 4px auto 0; background: none; }
+  .sign .sg .who2 { font-size: 10px; color: #666; margin-top: 2px; }
+  .ml p { margin: 3px 0; font-size: 9.6px; line-height: 1.4; color: #333; }
+  .mentions h2 { font-size: 10.5px; }
+  .pied { margin-top: 12px; border-top: 1px dashed #aaa; padding-top: 7px; text-align: center; font-size: 10px; color: #777; }
+  .test { margin-top: 8px; padding: 5px 8px; border: 1px dashed #b00; color: #b00; font-size: 9px; text-align: center; {{testDisplay}} }
+</style>
+</head>
+<body>
+
+  <div class="top">
+    <div class="ref">
+      <div class="rd">2041-RD</div>
+      <svg class="cerfa-logo" width="66" height="35" viewBox="0 0 96 50" aria-label="cerfa"><ellipse cx="48" cy="25" rx="47" ry="24" fill="#111"/><text x="48" y="33" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="25" fill="#fff">cerfa</text></svg>
+      <div class="cn">N° Cerfa : 11580*05</div>
+    </div>
+    <div class="titre">{{titreCerfa}}</div>
+    <div class="num"><div class="l">N° d'ordre du reçu</div><div class="n">{{numeroRecu}}</div></div>
+  </div>
+
+  <div class="who">
+    <div class="asso"><img src="{{assoLogo}}" alt="Émounatéha" /></div>
+    <div class="don">{{donateurBloc}}</div>
+  </div>
+
+  <div class="box">
+    <h2>Bénéficiaire du don</h2>
+    <div class="in">
+      <div class="row"><div class="k">Nom ou dénomination</div><div class="v">{{assoNom}}</div></div>
+      <div class="row"><div class="k">Forme juridique</div><div class="v">{{assoForme}}</div></div>
+      <div class="row"><div class="k">Numéro SIREN / RNA</div><div class="v">{{assoSiren}}</div></div>
+      <div class="row"><div class="k">Numéro SIRET (siège)</div><div class="v">{{assoSiret}}</div></div>
+      <div class="row"><div class="k">Adresse association</div><div class="v">{{assoAdresse}}</div></div>
+      <div class="row"><div class="k">Contact</div><div class="v">{{assoContact}}</div></div>
+      <div class="row"><div class="k">Objet</div><div class="v s">{{assoObjet}}</div></div>
+      <div class="row"><div class="k">Qualité de l'organisme</div><div class="v">{{assoQualite}}</div></div>
+      <div class="opts" style="margin:2px 0 4px 52mm"><span class="opt"><span class="cb"></span> Association ou fondation reconnue d'utilité publique</span><span class="opt"><span class="cb">✔</span> Œuvre ou organisme d'intérêt général</span><span class="opt"><span class="cb"></span> Autre</span></div>
+      <div class="recu">
+        <div class="t">Le bénéficiaire reconnaît avoir reçu au titre des dons et versements ouvrant droit à réduction d'impôt, la somme de :</div>
+        <div class="m">*** {{montantFigures}} Euros ***</div>
+        <div class="l">{{montantLettres}}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Donateur</h2>
+    <div class="in">
+      <div class="row"><div class="k">Nom ou dénomination</div><div class="v">{{donateurNom}}</div></div>
+      {{donateurSiren}}
+      <div class="row"><div class="k">Adresse donateur</div><div class="v">{{donateurAdresse}}</div></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Le bénéficiaire certifie sur l'honneur que les dons et versements qu'il reçoit ouvrent droit à la réduction d'impôt prévue à l'article</h2>
+    <div class="in">
+      <div class="opts" style="margin-top:3px">
+        <span class="opt"><span class="cb">{{check200}}</span> 200 du CGI</span>
+        <span class="opt"><span class="cb">{{check238}}</span> 238 <i>bis</i> du CGI</span>
+        <span class="opt"><span class="cb">{{check978}}</span> 978 du CGI</span>
+      </div>
+      <div class="opts-t">Forme du don</div>
+      <div class="opts">
+        <span class="opt"><span class="cb"></span> Acte authentique</span>
+        <span class="opt"><span class="cb"></span> Acte sous seing privé</span>
+        <span class="opt"><span class="cb">✔</span> Déclaration de don manuel</span>
+        <span class="opt"><span class="cb"></span> Autres</span>
+      </div>
+      <div class="opts-t">Nature du don</div>
+      <div class="opts" style="margin-bottom:2px">
+        <span class="opt"><span class="cb">✔</span> Numéraire</span>
+        <span class="opt"><span class="cb"></span> Titres de sociétés cotées</span>
+        <span class="opt"><span class="cb"></span> Autres</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Détail du versement</h2>
+    <div class="in">
+      <div class="row"><div class="k">Date du versement</div><div class="v">{{dateVersement}}</div></div>
+      <div class="row"><div class="k">Périodicité</div><div class="v">{{periodicite}}</div></div>
+      <div class="row"><div class="k">Mode de versement</div><div class="v">{{modePaiement}}</div></div>
+      <div class="opts" style="margin:3px 0 2px">
+        <span class="opt"><span class="cb">{{modeEsp}}</span> Remise d'espèces</span>
+        <span class="opt"><span class="cb">{{modeChq}}</span> Chèque</span>
+        <span class="opt"><span class="cb">{{modeVir}}</span> Virement, prélèvement, carte bancaire</span>
+      </div>
+      <div class="row"><div class="k">Contrepartie</div><div class="v s">Aucune : versement effectué à titre gratuit, sans contrepartie directe ou indirecte pour le donateur</div></div>
+    </div>
+  </div>
+
+  <div class="sign">
+    <div class="mode">Reçu établi le <b>{{dateSignature}}</b><br>par voie électronique</div>
+    <div class="sg">
+      <div class="l">Date et signature</div>
+      <div class="d">{{dateSignature}}</div>
+      {{blocSignature}}
+    </div>
+  </div>
+
+  <div class="box mentions">
+    <h2>Mentions légales et informations</h2>
+    <div class="in ml">
+      <p><b>Objet du reçu.</b> Ce reçu est délivré pour permettre au donateur de bénéficier de la réduction d'impôt prévue, selon sa situation, aux articles 200 (impôt sur le revenu), 238 bis (impôt sur les sociétés) ou 978 (impôt sur la fortune immobilière) du code général des impôts, aux taux et dans les limites en vigueur.</p>
+      <p><b>Conservation.</b> Le donateur doit conserver ce reçu et le présenter à la demande de l'administration fiscale. Il n'est pas à joindre à la déclaration de revenus.</p>
+      <p><b>Certification.</b> Le bénéficiaire certifie sur l'honneur que les dons et versements qu'il reçoit ouvrent droit à la réduction d'impôt, et que les informations portées sur ce reçu sont exactes. Elles sont établies sous sa seule responsabilité.</p>
+      <p><b>Sanctions.</b> La délivrance irrégulière de ce reçu expose l'organisme aux sanctions prévues à l'article 1740 A du code général des impôts, sans préjudice des articles 1741 et suivants du même code réprimant la fraude fiscale.</p>
+      <p><b>Numérotation.</b> Le numéro d'ordre du reçu est unique et chronologique. Ce reçu est établi en un seul exemplaire original.</p>
+      <p><b>Données personnelles.</b> Les données du donateur (identité, adresse, montant, date) sont traitées par {{assoNomMin}} uniquement pour établir et conserver ce reçu fiscal, en application d'une obligation légale, et conservées {{conservation}}. Droits d'accès, de rectification et d'opposition dans les limites prévues par la loi : {{assoEmail}}.</p>
+      <p><b>Références.</b> Cerfa n° 11580*05 — formulaire 2041-RD — direction générale des finances publiques.</p>
+    </div>
+  </div>
+
+  <div class="pied">{{piedPage}}</div>
+  <div class="test">DOCUMENT DE TEST — paiement Stripe en mode test, aucun argent réel. Ce reçu n'a aucune valeur fiscale.</div>
+
+</body>
+</html>

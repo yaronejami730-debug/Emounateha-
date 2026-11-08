@@ -1,0 +1,8 @@
+# secrets et données locales : jamais dans Git
+.env
+node_modules/
+data.json
+recus/
+signature*.png
+signature*.jpg
+logo-asso.jpg

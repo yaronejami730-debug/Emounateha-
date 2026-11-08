@@ -1,0 +1,501 @@
+"""Construit local-stripe-test/public/index.html à partir d'une vraie page du site (bandeau du haut, fond, pied de page),
+avec le formulaire de don (modèle AlloDons) à la place du contenu. Relancer : python3 build.py"""
+import re, os
+HERE = os.path.dirname(os.path.abspath(__file__))
+SITE = os.path.join(HERE, '..', 'public')
+src = open(os.path.join(SITE, 'colis', 'index.html'), encoding='utf-8').read()
+LOCAL = 'http://localhost:3000'   # les liens du menu vont vers le site local
+
+CSS = r"""
+#wab{display:none!important}
+#dn{padding:20px 0 40px;overflow-x:clip}
+.dn-wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+.dn-pill{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:6px 13px;border-radius:99px;margin-top:12px}
+/* étapes */
+.dn-steps{position:relative;display:flex;justify-content:space-between;list-style:none;padding:0;margin:4px auto 22px;max-width:560px;counter-reset:s}
+.dn-steps::before{content:"";position:absolute;left:16%;right:16%;top:13px;height:4px;border-radius:4px;background:#dbe6e6}
+.dn-fill{position:absolute;left:16%;top:13px;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--gold-l));width:0;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.dn-steps li{position:relative;flex:1;text-align:center;font-size:12px;font-weight:700;color:#85999c;counter-increment:s;transition:color .3s}
+.dn-steps li::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;margin:0 auto 5px;background:#fff;border:3px solid #dbe6e6;font-family:'Bree Serif',serif;font-size:14px;font-weight:400;color:#85999c;transition:.3s;position:relative;z-index:1}
+.dn-steps li.on{color:#7a5f14}.dn-steps li.on::before{border-color:var(--gold);color:#1b2b2d;background:var(--gold-l);box-shadow:0 0 0 5px rgba(196,162,74,.22)}
+.dn-steps li.done{color:var(--teal)}.dn-steps li.done::before{content:"✓";background:var(--teal);border-color:var(--teal);color:#fff;font-family:Inter,sans-serif;font-weight:700}
+.dn-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start;max-width:1040px;margin:0 auto}
+.dn-card{background:rgba(255,255,255,.98);border:1px solid #e3ecec;border-radius:26px;box-shadow:0 16px 44px rgba(20,60,66,.13)}
+.dn-form{padding:20px 22px 22px;position:relative}
+.dn-tools{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-bottom:2px}
+.dn-tabs{display:flex;gap:4px;background:#e6f0f0;padding:4px;border-radius:99px}
+.dn-tab{border:0;background:transparent;font:inherit;font-weight:600;font-size:13.5px;color:var(--teal);padding:9px 14px;border-radius:99px;cursor:pointer;transition:.2s;white-space:nowrap}
+.dn-tab.on{background:#fff;box-shadow:0 3px 10px rgba(20,60,66,.16);color:#164c52}
+.dn-rand{border:1.5px dashed #c4a24a;background:#fffaf0;color:#7a5f14;font:inherit;font-weight:600;font-size:12.5px;padding:8px 13px;border-radius:99px;cursor:pointer}
+.dn-panel{display:none;animation:dnIn .4s ease both}
+.dn-panel.on{display:block}
+@keyframes dnIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+.dn-h{font-family:'Bree Serif',serif;font-size:21px;color:var(--teal);margin:12px 0 3px;line-height:1.15}
+.dn-p{color:#51666a;font-size:13.5px;margin:0 0 12px}
+.dn-lab{font-size:11.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#9a7a22;margin:16px 0 8px}
+.dn-amts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}
+.dn-amts button{border:2px solid #d3e0e0;background:#fff;border-radius:14px;height:52px;font-family:'Bree Serif',serif;font-size:19px;color:var(--teal);cursor:pointer;transition:.18s;line-height:1;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.dn-amts button:active{transform:scale(.96)}
+.dn-amts button.on{background:linear-gradient(180deg,var(--gold-l),var(--gold));border-color:var(--gold);color:#1b2b2d;box-shadow:0 8px 20px rgba(196,162,74,.42)}
+.dn-other{position:relative}.dn-other input{padding-right:46px;font-weight:600}.dn-other span{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--teal)}
+.dn-freq{display:flex;background:#e6f0f0;border-radius:99px;padding:4px}
+.dn-freq label{flex:1;margin:0;cursor:pointer}.dn-freq input{position:absolute;opacity:0;pointer-events:none}
+.dn-freq span{display:block;text-align:center;padding:10px 8px;border-radius:99px;font-weight:700;font-size:14.5px;color:var(--teal);transition:.2s}
+.dn-freq input:checked+span{background:#fff;box-shadow:0 3px 10px rgba(20,60,66,.18)}
+.dn-sub{font-size:12.5px;color:#51666a;margin:8px 4px 0}
+/* affectation : cartes à toucher */
+.dn-chips{display:grid;gap:9px}
+.dn-chip{margin:0!important;cursor:pointer;display:block!important}
+.dn-chip input{position:absolute;opacity:0;pointer-events:none;width:auto!important}
+.dn-chip span{display:flex;align-items:center;gap:11px;padding:7px 12px;border:2px solid #d3e0e0;border-radius:14px;background:#fff;transition:.18s;min-height:48px}
+.dn-chip img{width:28px;height:28px;object-fit:contain;flex:none}
+.dn-chip em{font-style:normal;font-weight:600;font-size:14px;color:#24505a;line-height:1.25;flex:1}
+.dn-chip i{width:20px;height:20px;border-radius:50%;border:2px solid #cbd9d9;flex:none;transition:.18s;position:relative}
+.dn-chip input:checked+span{border-color:var(--gold);background:#fff8e6;box-shadow:0 6px 16px rgba(196,162,74,.25)}
+.dn-chip input:checked+span i{border-color:var(--teal);background:var(--teal)}
+.dn-chip input:checked+span i::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.dn-g{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.dn-full{grid-column:1/-1}
+#dn label{display:block;font-size:13px;font-weight:600;color:#24505a;margin:0 0 6px}
+#dn input:not([type=radio]):not([type=checkbox]),#dn select{width:100%;height:46px;padding:0 14px;border:2px solid #d3e0e0;border-radius:13px;font:inherit;font-size:16px;background:#fff;color:#14272a;outline:none;transition:border-color .2s,box-shadow .2s;box-shadow:none;-webkit-appearance:none;appearance:none}
+#dn input:focus,#dn select:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(196,162,74,.22)}
+#dn select{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%231f6a72' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 16px center;padding-right:42px}
+.dn-type{display:flex;gap:10px;margin-bottom:16px}
+.dn-type label{flex:1;margin:0!important;cursor:pointer}
+.dn-type input{position:absolute;opacity:0;pointer-events:none}
+.dn-type span{display:block;text-align:center;padding:9px 8px;border:2px solid #d3e0e0;border-radius:14px;font-weight:700;font-size:14px;color:var(--teal);background:#fff;transition:.18s;line-height:1.25}
+.dn-type span small{display:block;font-weight:500;font-size:12px;color:#51666a}
+.dn-type input:checked+span{background:var(--teal);border-color:var(--teal);color:#fff}
+.dn-type input:checked+span small{color:#cfe6e3}
+.dn-ck{display:flex!important;gap:12px;align-items:flex-start;font-size:14.5px!important;font-weight:500!important;margin-top:8px!important;color:#2b4044!important;cursor:pointer}
+#dn .dn-ck input{width:24px;height:24px;margin-top:0;flex:none;accent-color:var(--teal)}
+.dn-ck small{display:block;color:#51666a;font-weight:400;font-size:12.5px}
+/* barre d'action */
+.dn-actions{display:flex;align-items:center;gap:14px;margin-top:22px}
+.dn-bamt{min-width:0;flex:none}
+.dn-bamt small{display:block;font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#7f9396}
+.dn-bamt b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:21px;color:var(--teal);line-height:1.1;white-space:nowrap}
+.dn-bamt b em{font-style:normal;font-family:Inter,sans-serif;font-weight:600;font-size:13px;color:#51666a}
+.dn-btn{flex:1;border:0;border-radius:99px;height:50px;padding:0 18px;font:inherit;font-weight:700;font-size:16px;cursor:pointer;background:linear-gradient(180deg,var(--gold-l),var(--gold));color:#1b2b2d;box-shadow:0 10px 24px rgba(196,162,74,.45);transition:transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.dn-btn:active{transform:scale(.97)}
+.dn-btn:disabled{opacity:.55;cursor:wait}
+.dn-back{display:block;width:100%;margin-top:12px;border:0;background:transparent;color:var(--teal);font:inherit;font-weight:600;font-size:15px;padding:10px;cursor:pointer}
+.dn-err{display:none;margin-top:16px;padding:13px 15px;border-radius:14px;background:#fdecea;color:#8a2a22;font-size:14.5px;font-weight:500}
+#payel{margin:12px 0}
+#exel{min-height:0}
+.dn-or{display:flex;align-items:center;gap:10px;margin:16px 0 6px;color:#7f9396;font-size:12.5px;font-weight:600}
+.dn-or::before,.dn-or::after{content:"";flex:1;height:1px;background:#dbe6e6}
+.dn-paysum{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f1f7f7;border:1px solid #dbe8e8;border-radius:14px;padding:11px 14px;margin:2px 0 6px;font-weight:600;font-size:14px;color:#24505a}
+.dn-paysum i{font-style:normal;font-size:12px;font-weight:700;color:#5b7377;white-space:nowrap}
+.dn-diag{font-size:12px;font-weight:600;color:#7a5f14;background:#fff8e1;border:1px dashed #e6cf87;border-radius:10px;padding:6px 10px;margin:2px 0 8px}
+.dn-secure{display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:#51666a;margin:12px 2px 0;line-height:1.4}
+.dn-secure svg{flex:none;margin-top:1px;color:#2c8a5a}
+.dn-test{font-size:12px;color:#7a5f14;background:#fff8e1;border:1px dashed #e6cf87;border-radius:12px;padding:8px 12px;margin:12px 0 0}
+.dn-ok2{text-align:center;padding:10px 0 4px}
+.dn-check{width:68px;height:68px;margin:6px auto 12px;border-radius:50%;background:linear-gradient(180deg,#38b27a,#1d8a5a);display:grid;place-items:center;box-shadow:0 12px 30px rgba(29,138,90,.4);animation:dnPop .6s cubic-bezier(.2,1.4,.4,1) both}
+.dn-check svg{width:34px;height:34px}
+@keyframes dnPop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+.dn-ok2 h3{font-family:'Bree Serif',serif;font-weight:400;font-size:22px;color:#1d6b43;margin:0 0 4px}
+.dn-ok2 .num{display:inline-block;background:#eef7f1;border:1px solid #bfe3cf;color:#1d6b43;font-weight:700;padding:6px 14px;border-radius:99px;margin:8px 0}
+.dn-ok2 p{color:#3b5f50;font-size:14.5px;margin:4px 0}
+.dn-dl{display:block;margin:12px 0 0;padding:13px;border-radius:99px;font-weight:700;font-size:15px;text-decoration:none;background:var(--teal);color:#fff;text-align:center}
+.dn-dl.g{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:#1b2b2d}
+/* récapitulatif (ordinateur) */
+.dn-sum{position:sticky;top:84px;padding:22px 20px;overflow:hidden}
+.dn-sum::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+.dn-sum h3{font-size:19px;color:var(--teal);margin:0 0 12px}
+.dn-amt{font-family:'Bree Serif',serif;font-size:44px;color:var(--teal);line-height:1}
+.dn-amt small{font-family:Inter,sans-serif;font-size:15px;color:#51666a;font-weight:600}
+.dn-sum dl{margin:14px 0 0;display:grid;gap:9px}
+.dn-sum dt{font-size:11.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gold)}
+.dn-sum dd{font-size:15px;font-weight:500;margin:0}
+.dn-ok{margin-top:16px;padding-top:14px;border-top:1px solid #e3ecec;font-size:13.5px;color:#51666a}
+.dn-ok p{margin:0 0 6px;display:flex;gap:8px}
+.dn-ok span{color:#2c8a5a;font-weight:700}
+.dn-legal{display:none;text-align:center;font-size:11.5px;color:#7f9396;margin:18px 12px 0;line-height:1.6}
+.dn-legal a{color:#51666a;text-decoration:underline}
+.dn-note{max-width:1040px;margin:22px auto 0;text-align:center;font-size:12.5px;color:#51666a;padding:0 16px}
+/* autocomplétion des adresses */
+.dn-ac{position:relative}
+.dn-ac ul{position:absolute;z-index:40;left:0;right:0;top:100%;margin:6px 0 0;padding:6px;list-style:none;background:#fff;border:2px solid #d3e0e0;border-radius:18px;box-shadow:0 16px 38px rgba(20,60,66,.22);max-height:300px;overflow:auto}
+.dn-ac li{padding:12px 13px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+.dn-ac li b{font-weight:600;font-size:15.5px;color:#14272a}
+.dn-ac li span{font-size:13px;color:#51666a}
+.dn-ac li:hover,.dn-ac li.on{background:#f6ecd0}
+.dn-ac small{display:block;font-size:11.5px;color:#7f9396;margin-top:5px}
+/* chargement */
+.dn-load{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:rgba(20,76,82,.88);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+.dn-load.on{display:flex}
+.dn-load div{text-align:center;color:#fff;padding:0 24px}
+.dn-load img{width:84px;height:84px;object-fit:contain;animation:dnSpin 1.6s linear infinite;filter:drop-shadow(0 6px 18px rgba(0,0,0,.35))}
+.dn-load p{margin:14px 0 0;font-family:'Bree Serif',serif;font-size:21px;color:var(--gold-l)}
+.dn-load small{display:block;opacity:.85;margin-top:4px;font-size:13px}
+@keyframes dnSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.dn-load img,.dn-panel,.dn-check{animation:none}}
+/* téléphone : vraiment une application */
+@media(max-width:860px){
+  .dn-grid{grid-template-columns:1fr}.dn-sum{display:none}
+  #dn{padding:12px 0 18px}.dn-wrap{padding:0 12px}
+  footer{display:none!important}
+  #dn{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  .dn-legal{display:block}
+  .dn-form{padding:14px 14px 16px;border-radius:22px}
+  .dn-actions{position:fixed;z-index:700;left:0;right:0;bottom:0;margin:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid #dbe6e6;box-shadow:0 -10px 30px rgba(20,60,66,.14)}
+  .dn-btn{height:50px}
+  .dn-h{font-size:20px}
+}
+@media(max-width:420px){.dn-g{grid-template-columns:1fr}.dn-tabs{width:100%}.dn-tab{flex:1;padding:10px 6px;font-size:13px}.dn-rand{width:100%}.dn-amts button{font-size:18px;height:48px}.dn-steps li{font-size:11.5px}}
+"""
+
+HTML = r"""
+<section id="dn"><div class="dn-wrap">
+  <ol class="dn-steps" id="dnSteps"><i class="dn-fill" id="dnFill"></i><li>Votre don</li><li>Coordonnées</li><li id="dnS3">Paiement</li></ol>
+  <div class="dn-grid">
+  <form id="f" class="dn-card dn-form" novalidate autocomplete="on">
+    <div class="dn-tools">
+      <button class="dn-rand" id="rand" type="button">🎲 Données au hasard</button>
+    </div>
+
+    <div class="dn-panel on" id="p1">
+      <h2 class="dn-h" id="h1">Choisissez votre don</h2>
+      <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal vous est envoyé par email.</p>
+      <div class="dn-amts" id="amts"><button type="button" data-v="26">26 €</button><button type="button" data-v="52">52 €</button><button type="button" data-v="126">126 €</button><button type="button" data-v="252">252 €</button><button type="button" data-v="770">770 €</button><button type="button" data-v="1540">1 540 €</button></div>
+      <div class="dn-other"><input id="montant" inputmode="decimal" placeholder="Autre montant" aria-label="Autre montant"><span>€</span></div>
+      <div id="gFreq">
+        <div class="dn-lab">Je fais un don</div>
+        <div class="dn-freq"><label><input type="radio" name="freq" value="ponctuel" checked><span>Ponctuel</span></label><label><input type="radio" name="freq" value="mensuel"><span>Mensuel</span></label></div>
+        <p class="dn-sub" id="freqHint" style="display:none">Prélèvement chaque mois, jusqu'à ce que vous l'arrêtiez. Un reçu fiscal est établi pour chaque prélèvement.</p>
+      </div>
+      <div id="gSans" style="display:none">
+        <div class="dn-lab">Le versement reçu</div>
+        <div class="dn-g">
+          <div><label for="mode">Mode de versement</label><select id="mode"><option>Virement bancaire</option><option>Chèque</option><option>Espèces</option></select></div>
+          <div><label for="dt">Date du don</label><input id="dt" type="date"></div>
+        </div>
+      </div>
+      <div class="dn-lab">À quoi affectez-vous votre don ?</div>
+      <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don"></div>
+      <input type="hidden" id="aff">
+    </div>
+
+    <div class="dn-panel" id="p2">
+      <h2 class="dn-h">Vos coordonnées</h2>
+      <p class="dn-p">Elles figurent sur votre reçu fiscal.</p>
+      <div class="dn-type">
+        <label><input type="radio" name="type" value="particulier" checked><span>Personne physique<small>particulier</small></span></label>
+        <label><input type="radio" name="type" value="entreprise"><span>Personne morale<small>entreprise, organisme</small></span></label>
+      </div>
+      <div class="dn-g">
+        <div id="gPart" class="dn-full dn-g" style="padding:0">
+          <div><label for="prenom">Prénom</label><input id="prenom" autocomplete="given-name"></div>
+          <div><label for="nom">Nom</label><input id="nom" autocomplete="family-name"></div>
+        </div>
+        <div id="gEnt" class="dn-full dn-g" style="padding:0;display:none">
+          <div><label for="rs">Raison sociale</label><input id="rs" autocomplete="organization"></div>
+          <div><label for="siren">SIREN <span style="font-weight:400;color:#51666a">(facultatif)</span></label><input id="siren" inputmode="numeric" placeholder="9 chiffres"></div>
+        </div>
+        <div class="dn-full dn-ac">
+          <label for="adr">Adresse</label>
+          <input id="adr" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="adrList" autocomplete="off" placeholder="Commencez à taper votre adresse…">
+          <ul id="adrList" role="listbox" hidden></ul>
+          <small>Suggestions issues de la Base Adresse Nationale (Géoplateforme, IGN).</small>
+        </div>
+        <div><label for="cp">Code postal</label><input id="cp" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
+        <div><label for="ville">Ville</label><input id="ville" autocomplete="address-level2"></div>
+        <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
+        <div class="dn-full"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email<small id="smtp"></small></span></label></div>
+      </div>
+    </div>
+
+    <div class="dn-panel" id="p3">
+      <h2 class="dn-h">Paiement sécurisé</h2>
+      <p class="dn-diag" id="exDiag">Portefeuilles (Apple Pay / Google Pay) : détection en cours…</p>
+      <div class="dn-paysum"><span id="paySum">—</span><i>🔒 Stripe</i></div>
+      <div id="exwrap" style="display:none">
+        <div class="dn-lab" style="margin-top:6px">Paiement express</div>
+        <div id="exel"></div>
+        <div class="dn-or"><span>ou par carte bancaire</span></div>
+      </div>
+      <div class="dn-lab" id="cardLab" style="margin-top:6px">Carte bancaire</div>
+      <div id="payel"></div>
+      <p class="dn-secure"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Paiement chiffré par Stripe : vos données bancaires ne passent jamais par nos serveurs.</p>
+      <p class="dn-test">Mode test : carte <b>4242 4242 4242 4242</b> · date future · CVC <b>123</b></p>
+    </div>
+
+    <div class="dn-panel" id="p4"><div class="dn-ok2" id="res" aria-live="polite"></div></div>
+
+    <div class="dn-err" id="err" role="alert"></div>
+    <div class="dn-actions" id="bar">
+      <div class="dn-bamt" id="bamt"><small>Votre don</small><b id="bAmt">—</b></div>
+      <button class="dn-btn" id="go" type="button">Continuer</button>
+    </div>
+    <button class="dn-back" id="back" type="button" hidden>← Retour</button>
+  </form>
+
+  <aside class="dn-card dn-sum" aria-label="Récapitulatif">
+    <h3>Votre don</h3>
+    <div class="dn-amt" id="sAmt">— <small></small></div>
+    <dl>
+      <div><dt>Affectation</dt><dd id="sAff">—</dd></div>
+      <div><dt>Donateur</dt><dd id="sWho">—</dd></div>
+      <div><dt>Bénéficiaire</dt><dd>Émounatéha · association d'intérêt général</dd></div>
+    </dl>
+    <div class="dn-ok">
+      <p><span>✓</span> Reçu fiscal CERFA en PDF par email</p>
+      <p><span>✓</span> Paiement sécurisé par Stripe</p>
+      <p><span>✓</span> Aucun compte à créer</p>
+    </div>
+  </aside>
+  </div>
+</div>
+<p class="dn-legal">Émounatéha · association déclarée · SIREN 930 755 558<br><a href="http://localhost:3000/mentions-legales/">Mentions légales</a> · <a href="http://localhost:3000/cgv/">CGV</a></p>
+<div class="dn-load" id="dnLoad" role="status" aria-live="polite"><div><img src="/logo.png" alt=""><p id="dnLoadTxt">Un instant…</p><small>Merci de patienter</small></div></div>
+</section>
+"""
+
+JS = r"""
+// ===== formulaire de don (test) : parcours en écrans =====
+const $ = id => document.getElementById(id);
+let cfg = {}, stripe = null, elements = null, clientSecret = '', mode = '@@MODE@@', busy = false, panel = 1, payAmount = 0, payMen = false;
+const eur = c => (c / 100).toFixed(2).replace('.', ',') + ' €';
+const nf = v => { const n = Number(String(v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; };
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const isEnt = () => document.querySelector('input[name=type]:checked').value === 'entreprise';
+const isMen = () => document.querySelector('input[name=freq]:checked').value === 'mensuel' && mode === 'carte';
+const money = v => v.toFixed(2).replace('.00', '').replace('.', ',') + ' €';
+
+function show(m) { const e = $('err'); e.textContent = m; e.style.display = m ? 'block' : 'none'; if (m) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+async function withLoad(txt, fn) { $('dnLoadTxt').textContent = txt; $('dnLoad').classList.add('on'); const t0 = Date.now(); try { return await fn(); } finally { const d = 650 - (Date.now() - t0); if (d > 0) await wait(d); $('dnLoad').classList.remove('on'); } }
+
+// écrans
+function goPanel(n) {
+  panel = n; show('');
+  [1, 2, 3, 4].forEach(i => $('p' + i).classList.toggle('on', i === n));
+  const li = document.querySelectorAll('#dnSteps li');
+  li.forEach((x, i) => { const k = i + 1; x.className = n === 4 || k < n ? 'done' : (k === n ? 'on' : ''); });
+  $('dnFill').style.width = (n === 4 ? 68 : (n - 1) * 34) + '%';
+  $('dnS3').textContent = mode === 'carte' ? 'Paiement' : 'Reçu';
+  $('go').textContent = n === 1 ? 'Continuer' : n === 2 ? (mode === 'carte' ? 'Valider mon don' : 'Générer le reçu') : n === 3 ? 'Payer ' + eur(payAmount) : 'Nouveau don';
+  $('back').hidden = n === 1 || n === 4; $('back').textContent = '← ' + (n === 3 ? 'Modifier mes informations' : 'Retour');
+  document.querySelector('.dn-tools').style.display = n === 1 ? '' : 'none';
+  $('bamt').style.display = n === 4 ? 'none' : '';
+  $('dnSteps').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function upSum() {
+  const v = nf($('montant').value), men = isMen();
+  $('sAmt').innerHTML = v ? money(v) + ' <small>' + (men ? 'par mois' : '') + '</small>' : '— <small></small>';
+  $('bAmt').innerHTML = v ? money(v) + (men ? ' <em>/ mois</em>' : '') : '—';
+  $('sAff').textContent = $('aff').value || '—';
+  const who = isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()).trim();
+  $('sWho').textContent = who || '—';
+}
+function mark() { document.querySelectorAll('#amts button').forEach(b => b.classList.toggle('on', b.dataset.v === $('montant').value.trim())); }
+function setType(ent) { document.querySelector('input[name=type][value=' + (ent ? 'entreprise' : 'particulier') + ']').checked = true; $('gPart').style.display = ent ? 'none' : 'grid'; $('gEnt').style.display = ent ? 'grid' : 'none'; }
+
+// affectation : cartes à toucher
+const ICON = a => /colis/i.test(a) ? '/tuiles/colis.png' : /toit/i.test(a) ? '/tuiles/act-toit.png' : /soutien/i.test(a) ? '/tuiles/act-soutien.png' : /insertion/i.test(a) ? '/tuiles/act-reinsertion.png' : /tement/i.test(a) ? '/tuiles/act-vetements.png' : '/logo.png';
+function buildChips(list) {
+  $('chips').innerHTML = list.map((a, i) => '<label class="dn-chip"><input type="radio" name="affr" value="' + esc(a) + '"' + (i === 0 ? ' checked' : '') + '><span><img src="' + ICON(a) + '" alt=""><em>' + esc(a) + '</em><i></i></span></label>').join('');
+  $('aff').value = list[0] || '';
+  document.querySelectorAll('input[name=affr]').forEach(r => r.onchange = () => { $('aff').value = r.value; upSum(); });
+}
+function pickAff(i) { const r = document.querySelectorAll('input[name=affr]')[i]; if (r) { r.checked = true; $('aff').value = r.value; } }
+
+// données au hasard (test)
+const R = a => a[Math.floor(Math.random() * a.length)];
+const ascii = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+function sirenRandom() { const d = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)); let sum = 0; for (let i = 0; i < 8; i++) { let x = d[i]; if (i % 2 === 1) { x *= 2; if (x > 9) x -= 9; } sum += x; } for (let c = 0; c < 10; c++) if ((sum + c) % 10 === 0) return d.join('') + c; return '930755558'; }
+function fillRandom() {
+  const ent = Math.random() < 0.25, rue = R([['14 rue des Rosiers', '75004', 'Paris'], ['28 boulevard Félix Faure', '93300', 'Aubervilliers'], ['5 avenue Victor Hugo', '93300', 'Aubervilliers'], ['12 rue de la Paix', '75002', 'Paris'], ['7 cours de Vincennes', '75020', 'Paris'], ['31 avenue de Paris', '94300', 'Vincennes']]);
+  const pr = R(['Esther', 'David', 'Sarah', 'Daniel', 'Léa', 'Nathan', 'Hanna', 'Samuel', 'Rachel', 'Jonathan']), nm = R(['Martin', 'Bernard', 'Dubois', 'Moreau', 'Laurent', 'Simon', 'Michel', 'Lefebvre', 'Garcia', 'Roux']);
+  setType(ent); $('prenom').value = pr; $('nom').value = nm; $('rs').value = R(['Boulangerie Martin SARL', 'Cabinet Dubois & Associés', 'Garage Moreau', 'Épicerie du Marais SAS']); $('siren').value = ent ? sirenRandom() : '';
+  $('adr').value = rue[0]; $('cp').value = rue[1]; $('ville').value = rue[2]; $('email').value = ascii(pr) + '.' + ascii(nm) + '@example.com';
+  $('montant').value = String(R([26, 52, 126, 252, 770, 1540])); mark();
+  const men = Math.random() < 0.3; document.querySelector('input[name=freq][value=' + (men ? 'mensuel' : 'ponctuel') + ']').checked = true; $('freqHint').style.display = men ? 'block' : 'none';
+  pickAff(Math.floor(Math.random() * document.querySelectorAll('input[name=affr]').length));
+  const m = $('mode'); m.selectedIndex = Math.floor(Math.random() * m.options.length); upSum();
+}
+
+const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
+  cfg = c; buildChips(c.affectations || []);
+  $('smtp').textContent = c.smtp ? '' : 'Sans SMTP : fichier .eml à ouvrir dans Mail';
+  fillRandom(); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
+  return c;
+});
+// Stripe.js : chargé à la demande, et on attend qu'il soit prêt avant d'ouvrir le paiement
+let stripeP = null;
+function ensureStripe() {
+  if (stripe) return Promise.resolve(stripe);
+  if (!stripeP) stripeP = cfgP.then(c => new Promise((res, rej) => {
+    if (!c.publishableKey) return rej(new Error('Clé Stripe publique manquante (.env)'));
+    const init = () => { try { stripe = Stripe(c.publishableKey); res(stripe); } catch (e) { rej(e); } };
+    if (window.Stripe) return init();
+    const sc = document.createElement('script'); sc.src = 'https://js.stripe.com/v3/'; sc.onload = init;
+    sc.onerror = () => rej(new Error('Stripe.js n\'a pas pu se charger (connexion Internet ?)'));
+    document.head.appendChild(sc);
+  }));
+  return stripeP.catch(e => { stripeP = null; throw e; });
+}
+$('dt').value = new Date().toISOString().slice(0, 10); $('dt').max = $('dt').value;
+$('rand').onclick = () => { fillRandom(); show(''); };
+
+function setMode(m) {
+  mode = m;
+  $('gSans').style.display = m === 'sans' ? 'block' : 'none'; $('gFreq').style.display = m === 'carte' ? '' : 'none';
+  $('fs').textContent = m === 'carte' ? 'Chaque don compte. Votre reçu fiscal vous est envoyé par email.' : 'Pour un don déjà reçu par virement, chèque ou espèces : le reçu CERFA est généré directement.';
+  $('h1').textContent = m === 'carte' ? 'Choisissez votre don' : 'Don reçu';
+  upSum(); goPanel(1);
+}
+document.querySelectorAll('input[name=type]').forEach(r => r.onchange = () => { setType(isEnt()); upSum(); });
+document.querySelectorAll('input[name=freq]').forEach(r => r.onchange = () => { $('freqHint').style.display = isMen() ? 'block' : 'none'; upSum(); });
+$('amts').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('montant').value = b.dataset.v; mark(); upSum(); };
+['montant', 'prenom', 'nom', 'rs', 'adr', 'cp', 'ville', 'email'].forEach(i => $(i).addEventListener('input', () => { if (i === 'montant') mark(); upSum(); }));
+
+// autocomplétion des adresses (Base Adresse Nationale, Géoplateforme IGN)
+(function () {
+  const inp = $('adr'), list = $('adrList'); let items = [], act = -1, t = null, ctl = null;
+  const close = () => { list.hidden = true; list.innerHTML = ''; items = []; act = -1; inp.setAttribute('aria-expanded', 'false'); };
+  const render = () => { list.innerHTML = items.map((it, i) => '<li role="option" data-i="' + i + '"' + (i === act ? ' class="on" aria-selected="true"' : '') + '><b>' + esc(it.rue) + '</b><span>' + esc(it.cp + ' ' + it.ville) + '</span></li>').join(''); list.hidden = !items.length; inp.setAttribute('aria-expanded', items.length ? 'true' : 'false'); };
+  async function search(q) {
+    if (ctl) ctl.abort(); ctl = new AbortController();
+    try {
+      const r = await fetch('https://data.geopf.fr/geocodage/search?autocomplete=1&limit=6&q=' + encodeURIComponent(q), { signal: ctl.signal }); const j = await r.json();
+      items = (j.features || []).map(f => f.properties).filter(p => p.type === 'housenumber' || p.type === 'street').map(p => ({ rue: p.type === 'housenumber' ? p.housenumber + ' ' + p.street : p.name, cp: p.postcode, ville: p.city }));
+      act = -1; render();
+    } catch (e) { if (e.name !== 'AbortError') close(); }
+  }
+  function pick(it) { if (!it) return; inp.value = it.rue; $('cp').value = it.cp; $('ville').value = it.ville; close(); upSum(); }
+  inp.addEventListener('input', () => { clearTimeout(t); const q = inp.value.trim(); if (q.length < 3) { close(); return; } t = setTimeout(() => search(q), 220); });
+  inp.addEventListener('keydown', e => {
+    if (list.hidden) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); act = (act + 1) % items.length; render(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); act = (act - 1 + items.length) % items.length; render(); }
+    else if (e.key === 'Enter' && act >= 0) { e.preventDefault(); pick(items[act]); }
+    else if (e.key === 'Escape') close();
+  });
+  list.addEventListener('pointerdown', e => { const li = e.target.closest('li'); if (li) { e.preventDefault(); pick(items[+li.dataset.i]); } });
+  inp.addEventListener('blur', () => setTimeout(close, 150));
+})();
+
+function body() {
+  return { type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
+    adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value, montant: $('montant').value,
+    mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
+    frequence: document.querySelector('input[name=freq]:checked').value, affectation: $('aff').value };
+}
+async function post(url, data) {
+  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status); return j;
+}
+function check1() { if (nf($('montant').value) < 1) throw new Error('Choisissez un montant (1 € minimum).'); }
+function check2() {
+  if (isEnt() ? !$('rs').value.trim() : !($('prenom').value.trim() && $('nom').value.trim())) throw new Error(isEnt() ? 'Indiquez la raison sociale.' : 'Indiquez votre prénom et votre nom.');
+  if ($('adr').value.trim().length < 3) throw new Error('Indiquez votre adresse.');
+  if (!/^\d{5}$/.test($('cp').value.trim())) throw new Error('Code postal : 5 chiffres.');
+  if ($('ville').value.trim().length < 2) throw new Error('Indiquez la ville.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test($('email').value.trim())) throw new Error('Email invalide.');
+}
+
+async function act() {
+  if (busy) return; busy = true; $('go').disabled = true;
+  try {
+    if (panel === 1) { check1(); goPanel(2); }
+    else if (panel === 2) {
+      check2();
+      if (mode === 'sans') { renderRes(await withLoad('Création de votre reçu fiscal…', () => post('/api/recu', body()))); }
+      else {
+        await withLoad('Connexion à Stripe…', ensureStripe);
+        const j = await withLoad('Préparation du paiement sécurisé…', () => post('/api/intent', body()));
+        payAmount = j.montant; payMen = j.mensuel;
+        clientSecret = j.clientSecret;
+        elements = stripe.elements({ clientSecret: j.clientSecret, fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' }], appearance: {
+          theme: 'flat', labels: 'above',
+          variables: { colorPrimary: '#1f6a72', colorText: '#14272a', colorTextSecondary: '#51666a', colorDanger: '#8a2a22', fontFamily: 'Inter, system-ui, sans-serif', fontSizeBase: '16px', borderRadius: '14px', spacingUnit: '4px', spacingGridRow: '14px', spacingGridColumn: '12px' },
+          rules: { '.Input': { border: '2px solid #d3e0e0', backgroundColor: '#fff', padding: '13px 14px', boxShadow: 'none' }, '.Input:focus': { border: '2px solid #c4a24a', boxShadow: '0 0 0 4px rgba(196,162,74,0.22)' }, '.Input--invalid': { border: '2px solid #c0564b', boxShadow: 'none' }, '.Label': { fontWeight: '600', fontSize: '13px', color: '#24505a', marginBottom: '6px' }, '.Error': { fontSize: '13px' } } } });
+        $('payel').innerHTML = ''; $('exel').innerHTML = ''; $('exwrap').style.display = 'none'; $('cardLab').style.display = '';
+        $('paySum').textContent = money(payAmount / 100) + (payMen ? ' par mois' : '') + ' · ' + ($('aff').value || 'Don');
+        elements.create('payment', { layout: { type: 'tabs' }, wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } }).mount('#payel');
+        // Apple Pay / Google Pay : bouton express au-dessus de la carte (visible seulement si l'appareil et le domaine le permettent)
+        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'never', amazonPay: 'never' } });
+        ex.mount('#exel');
+        ex.on('loaderror', ev => { $('exDiag').textContent = 'Erreur Apple Pay / Google Pay : ' + ((ev.error && (ev.error.message || ev.error.code)) || JSON.stringify(ev)); window.__exErr = ev; });
+        setTimeout(() => { if (!window.__exReady && !window.__exErr) $('exDiag').textContent = 'Portefeuilles : aucune réponse de Stripe après 6 s'; }, 6000);
+        ex.on('ready', ev => { const a = ev.availablePaymentMethods; window.__exReady = a || null; $('exDiag').textContent = 'Portefeuilles détectés : Apple Pay ' + (a && a.applePay ? '✓' : '✗') + ' · Google Pay ' + (a && a.googlePay ? '✓' : '✗') + (a ? '' : ' (aucun disponible sur cet appareil / ce navigateur)'); const ok = !!(a && (a.applePay || a.googlePay)); $('exwrap').style.display = ok ? 'block' : 'none'; $('cardLab').style.display = ok ? 'none' : ''; });
+        ex.on('confirm', async () => {
+          try {
+            const { error, paymentIntent } = await stripe.confirmPayment({ elements, clientSecret, redirect: 'if_required', confirmParams: { return_url: location.href } });
+            if (error) throw new Error(error.message || 'Paiement refusé');
+            if (!paymentIntent || paymentIntent.status !== 'succeeded') throw new Error('Paiement non abouti');
+            renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
+          } catch (e) { show(e.message); }
+        });
+        goPanel(3);
+        if (payMen) $('go').textContent = 'Payer ' + eur(payAmount) + ' · puis chaque mois';
+      }
+    }
+    else if (panel === 3) {
+      $('go').textContent = 'Paiement en cours…';
+      const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required', confirmParams: { return_url: location.href, payment_method_data: { billing_details: { name: isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()), email: $('email').value.trim(), address: { line1: $('adr').value.trim(), postal_code: $('cp').value.trim(), city: $('ville').value.trim(), country: 'FR' } } } } });
+      if (error) { $('go').textContent = 'Réessayer'; throw new Error(error.message || 'Paiement refusé'); }
+      if (!paymentIntent || paymentIntent.status !== 'succeeded') { $('go').textContent = 'Réessayer'; throw new Error('Paiement non abouti (statut : ' + (paymentIntent && paymentIntent.status) + ')'); }
+      renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
+    }
+    else if (panel === 4) { fillRandom(); goPanel(1); }
+  } catch (e) { show(e.message); } finally { busy = false; $('go').disabled = false; }
+}
+$('go').onclick = act;
+$('f').addEventListener('submit', e => { e.preventDefault(); act(); });
+$('back').onclick = () => { elements = null; $('payel').innerHTML = ''; goPanel(panel === 3 ? 2 : 1); };
+
+function renderRes(o) {
+  let em = '';
+  if (o.email && o.email.skipped) em = 'Aucun email demandé.';
+  else if (o.email && o.email.error) em = '⚠️ Email non envoyé : ' + esc(o.email.error);
+  else if (o.email && o.email.sent) em = '✉️ Reçu envoyé par email, avec le PDF en pièce jointe.';
+  else if (o.email && o.email.eml) em = '✉️ ' + esc(o.email.note);
+  $('res').innerHTML = '<div class="dn-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>' +
+    '<h3>Merci pour votre don !</h3><span class="num">Reçu ' + esc(o.numero) + '</span>' +
+    '<p><b>' + eur(o.montant) + (o.mensuel ? ' / mois' : '') + '</b> · ' + esc(o.mode) + '</p>' + (o.affectation ? '<p>Affectation : ' + esc(o.affectation) + '</p>' : '') + '<p>' + em + '</p>' +
+    '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener">📄 Ouvrir le PDF du CERFA</a>' +
+    (o.email && o.email.eml ? '<a class="dn-dl g" href="' + o.email.eml + '">✉️ Ouvrir l\'email (.eml)</a>' : '');
+  goPanel(4); elements = null; $('payel').innerHTML = '';
+}
+setMode(mode);
+// mode test : ?auto=pay avance seul jusqu'à l'écran de paiement
+if (/[?&]auto=pay/.test(location.search)) cfgP.then(async () => { await wait(700); await act(); await wait(400); await act(); });
+"""
+
+def build(variant="don"):
+    s = src
+    # SEO : page de test, jamais indexée
+    s = re.sub(r'<!-- seo:start -->.*?<!-- seo:end -->', '<meta name="robots" content="noindex,nofollow">', s, flags=re.S)
+    adm = variant == 'admin'
+    s = re.sub(r'<title>.*?</title>', '<title>%s · Émounatéha</title>' % ('Back-office — reçu sans paiement' if adm else 'Faire un don'), s, count=1, flags=re.S)
+    s = re.sub(r'<meta name="description"[^>]*>', '', s, count=1)
+    s = re.sub(r'<meta name="theme-color"[^>]*>', '', s)
+    s = s.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<meta name="theme-color" content="#ffffff">', 1)
+    s = s.replace('<script src="/apercu-video.js?v=3" defer></script>', '')
+    # liens du menu et du pied de page -> site local (port 3000)
+    def loc(m): return m.group(0).replace('href="/', 'href="%s/' % LOCAL)
+    s = re.sub(r'<nav class="sec-nav".*?</nav>', loc, s, count=1, flags=re.S)
+    s = re.sub(r'<footer>.*?</footer>', loc, s, count=1, flags=re.S)
+    # en-tête de page
+    head = re.search(r'<header class="pagehead">.*?</header>', s, re.S).group(0)
+    s = s.replace(head, ('<header class="pagehead"><div class="wrap"><h1>Reçu sans paiement</h1><p>Back-office : générez le reçu fiscal CERFA d\'un don reçu par virement, chèque ou espèces.</p><span class="dn-pill">Back-office · mode test</span></div></header>' if adm else '<header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA vous est envoyé par email, en PDF, dès votre don.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>'))
+    # contenu
+    a = s.index('<section id="colis">'); b = s.index('</section>', a) + len('</section>')
+    s = s[:a] + HTML + s[b:]
+    # script principal : partie commune du site (date, barre au défilement…) + formulaire + menu
+    sa = s.index("<script>document.getElementById('y')"); sb = s.index('</script>', sa) + len('</script>')
+    p0 = src.index("<script>document.getElementById('y')"); p1 = src.index('const UBER=', p0)
+    nav_a = src.index("(function(){const nav=document.querySelector('.sec-nav')"); nav_b = src.index('</script>', nav_a)
+    s = s[:sa] + src[p0:p1] + JS.replace('@@MODE@@', 'sans' if adm else 'carte') + '\n' + src[nav_a:nav_b] + '</script>' + s[sb:]
+    s = s.replace('</head>', '<style>%s</style>\n</head>' % CSS, 1)
+    out = os.path.join(HERE, 'public', 'backoffice' if adm else '', 'index.html')
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    open(out, 'w', encoding='utf-8').write(s)
+    print('page construite :', out.replace(HERE, '.'), len(s), 'octets')
+
+build('don')
+build('admin')
