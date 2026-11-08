@@ -24,7 +24,8 @@
   /* association | donateur */
   .who { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 12px; }
   .who .asso { width: 80mm; text-align: center; }
-  .who .asso img { height: 26mm; width: auto; display: block; margin: 0 auto; }
+  .who .asso b { display: block; margin-top: 6px; font-size: 12.5px; text-transform: uppercase; }
+  .who .asso img { height: 22mm; width: auto; display: block; margin: 0 auto; }
   .who .asso b { font-size: 12px; text-transform: uppercase; }
   .who .don { width: 78mm; border-left: 3px solid #e0765c; padding: 2px 0 2px 10px; font-weight: 700; font-size: 12px; line-height: 1.45; text-transform: uppercase; }
 
@@ -67,16 +68,16 @@
 
   <div class="top">
     <div class="ref">
-      <div class="rd">2041-RD</div>
+      <div class="rd">{{cerfaCode}}</div>
       <svg class="cerfa-logo" width="66" height="35" viewBox="0 0 96 50" aria-label="cerfa"><ellipse cx="48" cy="25" rx="47" ry="24" fill="#111"/><text x="48" y="33" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="25" fill="#fff">cerfa</text></svg>
-      <div class="cn">N° Cerfa : 11580*05</div>
+      <div class="cn">N° Cerfa : {{cerfaNum}}</div>
     </div>
     <div class="titre">{{titreCerfa}}</div>
     <div class="num"><div class="l">N° d'ordre du reçu</div><div class="n">{{numeroRecu}}</div></div>
   </div>
 
   <div class="who">
-    <div class="asso"><img src="{{assoLogo}}" alt="Émounatéha" /></div>
+    <div class="asso"><img src="{{assoLogo}}" alt="Émounatéha" /><b>{{assoNom}}</b></div>
     <div class="don">{{donateurBloc}}</div>
   </div>
 
@@ -84,14 +85,10 @@
     <h2>Bénéficiaire du don</h2>
     <div class="in">
       <div class="row"><div class="k">Nom ou dénomination</div><div class="v">{{assoNom}}</div></div>
-      <div class="row"><div class="k">Forme juridique</div><div class="v">{{assoForme}}</div></div>
       <div class="row"><div class="k">Numéro SIREN / RNA</div><div class="v">{{assoSiren}}</div></div>
-      <div class="row"><div class="k">Numéro SIRET (siège)</div><div class="v">{{assoSiret}}</div></div>
       <div class="row"><div class="k">Adresse association</div><div class="v">{{assoAdresse}}</div></div>
-      <div class="row"><div class="k">Contact</div><div class="v">{{assoContact}}</div></div>
       <div class="row"><div class="k">Objet</div><div class="v s">{{assoObjet}}</div></div>
       <div class="row"><div class="k">Qualité de l'organisme</div><div class="v">{{assoQualite}}</div></div>
-      <div class="opts" style="margin:2px 0 4px 52mm"><span class="opt"><span class="cb"></span> Association ou fondation reconnue d'utilité publique</span><span class="opt"><span class="cb"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.4l3.1 3.1 6.6-7" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Œuvre ou organisme d'intérêt général</span><span class="opt"><span class="cb"></span> Autre</span></div>
       <div class="recu">
         <div class="t">Le bénéficiaire reconnaît avoir reçu au titre des dons et versements ouvrant droit à réduction d'impôt, la somme de :</div>
         <div class="m">*** {{montantFigures}} Euros ***</div>
@@ -103,9 +100,9 @@
   <div class="box">
     <h2>Donateur</h2>
     <div class="in">
-      <div class="row"><div class="k">Nom ou dénomination</div><div class="v">{{donateurNom}}</div></div>
+      <div class="row"><div class="k">{{donateurLabel}}</div><div class="v">{{donateurNom}}</div></div>
+      <div class="row"><div class="k">Adresse</div><div class="v">{{donateurAdresse}}</div></div>
       {{donateurSiren}}
-      <div class="row"><div class="k">Adresse donateur</div><div class="v">{{donateurAdresse}}</div></div>
     </div>
   </div>
 
@@ -133,17 +130,8 @@
     </div>
   </div>
 
-  <div class="box">
-    <h2>Détail du versement</h2>
-    <div class="in">
-      <div class="row"><div class="k">Date du versement</div><div class="v">{{dateVersement}}</div></div>
-      <div class="row"><div class="k">Périodicité</div><div class="v">{{periodicite}}</div></div>
-      <div class="row"><div class="k">Contrepartie</div><div class="v s">Aucune : versement effectué à titre gratuit, sans contrepartie directe ou indirecte pour le donateur</div></div>
-    </div>
-  </div>
-
   <div class="sign">
-    <div class="mode">Mode de paiement : <b>{{modeCourt}}</b></div>
+    <div class="mode">Mode de versement : <b>{{modeCourt}}</b></div>
     <div class="sg">
       <div class="l">Date et signature</div>
       <div class="d">{{dateSignature}}</div>

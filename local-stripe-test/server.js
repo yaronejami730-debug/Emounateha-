@@ -120,14 +120,16 @@ function remplir(don, numero) {
   const fmt = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const ent = don.type === 'entreprise';
   const img = (f, mime) => `data:${mime};base64,${fs.readFileSync(path.join(__dirname, f)).toString('base64')}`;
-  const logo = ASSO.logo && fs.existsSync(path.join(__dirname, ASSO.logo)) ? img(ASSO.logo, /\.png$/i.test(ASSO.logo) ? 'image/png' : 'image/jpeg') : '';
+  const LOGO = fs.existsSync(path.join(__dirname, 'public', 'emblem.png')) ? 'public/emblem.png' : ASSO.logo;
+  const logo = LOGO && fs.existsSync(path.join(__dirname, LOGO)) ? img(LOGO, /\.png$/i.test(LOGO) ? 'image/png' : 'image/jpeg') : '';
   const sigEnv = process.env.SIGNATURE_PNG_B64 ? 'data:image/png;base64,' + process.env.SIGNATURE_PNG_B64.replace(/\s/g, '') : '';   // en ligne : signature dans une variable d'environnement (jamais dans Git)
   const sigOk = sigEnv || (ASSO.signatureImage && fs.existsSync(path.join(__dirname, ASSO.signatureImage)));
-  const sig = sigOk ? `<img src="${sigEnv || img(ASSO.signatureImage, /\.png$/i.test(ASSO.signatureImage) ? 'image/png' : 'image/jpeg')}" alt="signature"/>${ASSO.signataire ? `<div class="who2">${esc(ASSO.signataire)}</div>` : ''}`
+  const sig = sigOk ? `<img src="${sigEnv || img(ASSO.signatureImage, /\.png$/i.test(ASSO.signatureImage) ? 'image/png' : 'image/jpeg')}" alt="signature"/>`
                     : `<div style="height:16mm"></div><div class="who2">${esc(ASSO.signataire || 'Signé électroniquement')}</div>`;
   const ligne = (k, v) => `<div class="row"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`;
   const v = {
     numeroRecu: esc(numero),
+    cerfaCode: ent ? '2041-MEC-SD' : '2041-RD', cerfaNum: ent ? '16216*01' : '11580*05', donateurLabel: ent ? "Dénomination de l'entreprise" : 'Nom ou dénomination',
     titreCerfa: ent ? "Reçu des dons et versements effectués par les entreprises au titre de l'article 238 bis du code général des impôts"
                     : 'Reçu des dons et versements effectués par les particuliers au titre des articles 200 et 978 du code général des impôts',
     assoLogo: logo, assoNom: esc(ASSO.nom.toUpperCase()), assoAdresse: esc(ASSO.adresse), assoSiren: esc(`${ASSO.siren.replace(/\s/g, '')} / ${ASSO.rna}`),
@@ -139,8 +141,8 @@ function remplir(don, numero) {
     modePaiement: esc(don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')), dateSignature: fmt(Date.now()),
     assoForme: esc(ASSO.forme || ''), assoSiret: esc(ASSO.siret || ''), assoContact: esc(`${ASSO.email} · ${ASSO.telephone}`), assoNomMin: esc(ASSO.nom), assoEmail: esc(ASSO.email), conservation: esc(ASSO.conservation || '6 ans'),
     dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? `Don mensuel (un reçu pour chaque prélèvement) — échéance n°${don.echeance || 1}` : 'Don ponctuel',
-    modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : 'CB', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
-    blocSignature: sig, piedPage: esc(`Reçu fiscal généré par ${ASSO.nom} · ${ASSO.email} · ${ASSO.telephone}`), testDisplay: process.env.NO_TEST_BANNER ? 'display:none' : ''
+    modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : /Apple Pay/i.test(don.mode) ? 'Carte bancaire (Apple Pay)' : /Google Pay/i.test(don.mode) ? 'Carte bancaire (Google Pay)' : 'Carte bancaire', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
+    blocSignature: sig, piedPage: esc(`Reçu cerfa généré par ${ASSO.nom}`), testDisplay: process.env.NO_TEST_BANNER ? 'display:none' : ''
   };
   let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
 }
@@ -256,7 +258,7 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
         const sub = await stripe.subscriptions.retrieve(subId), cu = await stripe.customers.retrieve(inv.customer), m = sub.metadata || {}, ad = cu.address || {};
         const n = (await stripe.invoices.list({ subscription: sub.id, limit: 100 })).data.filter(i => i.status === 'paid').length;
         const out = await fabriquer({ type: m.type === 'entreprise' ? 'entreprise' : 'particulier', nom: cu.name, siren: m.siren || '', adresse: `${ad.line1 || ''}, ${ad.postal_code || ''} ${ad.city || ''}`, email: cu.email, montant: inv.amount_paid, mensuel: true, echeance: n,
-          mode: 'Carte bancaire (Stripe, test) — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
+          mode: 'Carte bancaire — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
         out.affectation = m.affectation; out.mensuel = true; const d2 = load(); d2.receipts[inv.id] = out; save(d2);
         console.log('[webhook] invoice.paid', inv.id, '-> reçu', out.numero, '(mensualité n°' + n + ')');
       }
@@ -323,10 +325,12 @@ async function receiptForPayment(id) {
   const job = (async () => {
     const d = load(); if (d.receipts[id]) return { ...d.receipts[id], deja: true };
     const p = d.pending[id]; if (!p) throw new Error('Paiement inconnu de cette page');
-    const pi = await stripe.paymentIntents.retrieve(id);
+    const pi = await stripe.paymentIntents.retrieve(id, { expand: ['payment_method'] });
+    const pm = pi.payment_method || {}, wal = pm.card && pm.card.wallet && pm.card.wallet.type;
+    const moyen = pm.type === 'paypal' ? 'PayPal' : wal === 'apple_pay' ? 'Carte bancaire (Apple Pay)' : wal === 'google_pay' ? 'Carte bancaire (Google Pay)' : 'Carte bancaire';
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
-    const out = await fabriquer({ ...p, echeance: 1, mode: p.mensuel ? 'Carte bancaire (Stripe, test) — don mensuel, 1re échéance' : MODES[3], dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
+    const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
     out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.lignes) out.lignes = p.lignes;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id]; save(d2);
     if (p.owner && p.saveProfile) acc.saveProfileFromForm(p.owner, p.type, p.form);   // « enregistrer mes informations »
