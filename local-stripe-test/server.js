@@ -233,7 +233,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/webhook') return next();   // le webhook est protégé par la signature Stripe
   const o = req.headers.origin; if (!o) return next();
-  try { const h = new URL(o).host; if (h === req.headers.host || String(process.env.ALLOWED_ORIGIN_HOSTS || '').split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
+  try { const h = new URL(o).host; if (h === req.headers.host || String(process.env.ALLOWED_ORIGIN_HOSTS || 'www.emounateha.fr,emounateha.fr').split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
   res.status(403).json({ error: 'Origine non autorisée' });
 });
 app.use((req, res, next) => { if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('.html') || req.path.endsWith('/'))) res.setHeader('Cache-Control', 'no-store');
