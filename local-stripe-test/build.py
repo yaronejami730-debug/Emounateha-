@@ -183,7 +183,7 @@ CSS = r"""
 .dn-amt small{font-family:'Inter',sans-serif;font-size:15px;color:#51666a}
 .dn-sr{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid #e1ecea;font-size:14px}
 .dn-sr span{color:#6a7f83}.dn-sr b{color:#14272a;text-align:right;font-weight:600}
-.dn-logo{display:block;height:118px;width:auto;margin:0 auto 0}
+.dn-logo{display:block;height:130px;width:auto;margin:0 auto 6px}
 .dn-ok2 .dn-check{width:52px;height:52px;margin:6px auto 10px}.dn-ok2 .dn-check svg{width:26px;height:26px}
 .dn-mail{font-size:13.5px!important;line-height:1.55;color:#51666a!important;background:#f3f8f7;border-radius:14px;padding:12px 14px;margin:6px 0 4px!important;text-align:left}
 .dn-mail b{color:#14272a}
@@ -622,7 +622,6 @@ function renderRes(o) {
   else em = espace;
   const row = (k, v) => '<div class="dn-sr"><span>' + k + '</span><b>' + v + '</b></div>';
   $('res').innerHTML = '<img class="dn-logo" src="/logo-asso.png" alt="Émounatéha">' +
-    '<div class="dn-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>' +
     '<h3>Merci pour votre don !</h3>' +
     '<p class="dn-thx">Votre générosité aide directement les familles que nous accompagnons.</p>' +
     '<div class="dn-recap"><div class="dn-amt">' + eur(o.montant) + (o.mensuel ? '<small> par mois</small>' : '') + '</div>' +
