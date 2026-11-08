@@ -18,18 +18,17 @@ function load(){
 }
 var css=document.createElement('style');
 css.textContent='#tt{position:fixed;inset:0;z-index:3000;background:#000;opacity:0;transition:opacity .25s}#tt.on{opacity:1}'+
-'#tt .ttl{position:absolute;inset:0;touch-action:pan-y;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}'+
+'#tt .ttl{position:absolute;inset:0;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}'+
 '#tt .tts{position:relative;height:100vh;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:#000}'+
 '#tt .ttp{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat}'+
-'#tt .ttpl{position:absolute;inset:0;pointer-events:none;z-index:2}'+
-'#tt .ttv{position:absolute;left:0;top:50%;width:100%;height:min(100dvh,177.78vw);transform:translateY(-50%);opacity:0;transition:opacity .18s;background:#000;overflow:hidden}#tt .ttv.show{opacity:1}#tt .ttv iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}'+
+'#tt iframe.ttf{position:absolute;left:0;top:50%;transform:translateY(-50%);width:100%;height:min(100dvh,177.78vw);border:0;background:#000;pointer-events:none;opacity:0;transition:opacity .25s}#tt iframe.ttf.ok{opacity:1}'+
 '#tt .ttx{position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;z-index:6;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.18);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;display:grid;place-items:center;padding:0}#tt .ttx svg{width:16px;height:16px}'+
-'#tt .ttb{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:60px 16px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,0));display:flex;align-items:flex-end;justify-content:space-between;gap:12px;pointer-events:none}'+
+'#tt .ttb{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:60px 16px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,0));display:flex;align-items:flex-end;justify-content:space-between;gap:12px;pointer-events:none}'+
 '#tt .ttc{color:#fff;font:600 14px/1.3 Inter,system-ui,sans-serif;text-shadow:0 1px 6px rgba(0,0,0,.6)}#tt .ttc small{display:block;font-weight:400;opacity:.85;font-size:12px;margin-top:2px}'+
 '#tt .ttd{pointer-events:auto;flex:none;border:0;padding:11px 18px;border-radius:99px;background:#c4a24a;color:#1b2b2d;font:700 13px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35)}'+
-'#tt .tts-snd{position:absolute;top:calc(14px + env(safe-area-inset-top));left:12px;z-index:6;border:0;border-radius:99px;padding:9px 14px;background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font:600 12px Inter,system-ui,sans-serif}'+
+'#tt .tts-snd{position:fixed;top:calc(14px + env(safe-area-inset-top));left:12px;z-index:6;border:0;border-radius:99px;padding:9px 14px;background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font:600 12px Inter,system-ui,sans-serif}'+
 '#tt .ttbk{position:fixed;inset:0;z-index:7;display:none}#tt.sheet .ttbk{display:block}'+
-'#tt .ttsh{position:fixed;left:0;right:0;bottom:0;z-index:8;height:68vh;height:68dvh;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.45);transform:translateY(105%);transition:transform .38s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}#tt .ttsh.on{transform:none}'+
+'#tt .ttsh{position:fixed;left:0;right:0;bottom:0;z-index:8;height:68vh;height:68dvh;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.45);transform:translateY(105%);transition:transform .38s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden;visibility:hidden}#tt .ttsh.on{transform:none;visibility:visible}'+
 '#tt .ttsh .hd{flex:none;display:flex;align-items:center;gap:10px;padding:10px 14px 10px 18px;border-bottom:1px solid #e3ecec;background:linear-gradient(180deg,#fffdf6,#fff)}'+
 '#tt .ttsh .hd b{font:700 15px Cinzel,Georgia,serif;letter-spacing:.06em;color:#1f6a72;flex:1}#tt .ttsh .hd span{font:500 11px Inter,system-ui,sans-serif;color:#7d8f92}'+
 '#tt .ttsh .hd button{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:#eef3f3;color:#1f6a72;font-size:18px;line-height:34px;padding:0}'+
@@ -37,69 +36,41 @@ css.textContent='#tt{position:fixed;inset:0;z-index:3000;background:#000;opacity
 '#tt.sheet .ttl{overflow:hidden}html.tt-lock,html.tt-lock body{overflow:hidden!important}';
 document.head.appendChild(css);
 
-/* ---- API YouTube : deux lecteurs permanents (un actif, un qui précharge la vidéo suivante) → pas de rechargement à chaque glissement ---- */
-var YTR=null;
-function ytReady(){
-  if(YTR)return YTR;
-  YTR=new Promise(function(res){
-    if(window.YT&&YT.Player)return res();
-    var prev=window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady=function(){try{prev&&prev()}catch(e){}res()};
-    var t=document.createElement('script');t.src='https://www.youtube.com/iframe_api';document.head.appendChild(t);
-  });
-  return YTR;
-}
-var PL=[null,null],ACT=-1; /* PL[k] = {el, p, ready, idx, prep} ; ACT = numéro du lecteur affiché */
-function mkPlayer(k,host){
-  var el=document.createElement('div');el.className='ttv';var inner=document.createElement('div');el.appendChild(inner);host.appendChild(el);
-  var o={el:el,p:null,ready:false,idx:-1,prep:false,want:null};PL[k]=o;
-  ytReady().then(function(){
-    o.p=new YT.Player(inner,{width:'100%',height:'100%',playerVars:{autoplay:0,controls:0,rel:0,modestbranding:1,playsinline:1,disablekb:1,fs:0,iv_load_policy:3,loop:0,mute:1,origin:location.origin},
-      events:{onReady:function(){o.ready=true;if(o.want){var w=o.want;o.want=null;o.load(w.id,w.play)}},
-        onStateChange:function(e){
-          if(e.data===1&&o.prep){o.prep=false;try{o.p.pauseVideo();o.p.seekTo(0,true)}catch(x){}}
-          if(e.data===1&&o.el.classList.contains('show')&&!o.shown1){o.shown1=1}
-          if(e.data===0){try{o.p.seekTo(0,true);o.p.playVideo()}catch(x){}}          /* boucle comme TikTok */
-        }}});
-    var f=o.el.querySelector('iframe');if(f)f.setAttribute('allow','autoplay; encrypted-media');
-  });
-  o.load=function(id,play){
-    if(!o.ready){o.want={id:id,play:play};return}
-    o.vid=id;o.prep=!play;
-    try{o.p.mute()}catch(x){}
-    try{o.p.loadVideoById({videoId:id,startSeconds:0})}catch(x){}
+function post(f,fn,args){try{f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args||''}),'*')}catch(e){}}
+function listen(f){try{f.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*')}catch(e){}}
+/* lecteur propre à chaque vidéo (il défile avec elle) ; on garde la vidéo à l'écran + sa voisine d'avant et d'après, les autres sont retirées */
+function mount(s,i,active){
+  var f=s.querySelector('iframe.ttf');if(f)return f;
+  var it=LIST[i];f=document.createElement('iframe');f.className='ttf';
+  f.allow='autoplay; encrypted-media';f.setAttribute('playsinline','');f.dataset.act=active?'1':'0';
+  f.src='https://www.youtube-nocookie.com/embed/'+it.id+'?autoplay=1&mute=1&playsinline=1&controls=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist='+it.id+'&enablejsapi=1';
+  f.onload=function(){
+    listen(f);setTimeout(function(){listen(f)},400);
+    if(f.dataset.act!=='1'){setTimeout(function(){post(f,'pauseVideo');post(f,'seekTo',[0,true])},1500)}
+    setTimeout(function(){f.classList.add('ok')},active?400:0);
   };
-  return o;
+  s.insertBefore(f,s.querySelector('.ttb'));
+  return f;
 }
-function setSound(on){sound=on;var o=PL[ACT];if(o&&o.ready){try{if(on)o.p.unMute();else o.p.mute()}catch(x){}}}
 function activate(i){
-  if(!LIST[i])return;
-  var it=LIST[i];
-  /* quel lecteur ? celui qui a déjà cette vidéo, sinon l'autre */
-  var k=(PL[0]&&PL[0].idx===i)?0:(PL[1]&&PL[1].idx===i)?1:(ACT===0?1:0);
-  var o=PL[k],spare=PL[k===0?1:0];
-  if(!o)return;
-  var had=(o.idx===i);
-  ACT=k;o.idx=i;
-  PL.forEach(function(x){if(x&&x!==o){x.el.classList.remove('show');try{x.ready&&x.p.pauseVideo()}catch(e){}}});
-  if(had&&o.ready){
-    o.prep=false;try{o.p.seekTo(0,true);sound?o.p.unMute():o.p.mute();o.p.playVideo()}catch(e){}
-  }else{
-    o.load(it.id,true);
-    if(o.ready){setTimeout(function(){try{o.p.playVideo();if(sound)o.p.unMute()}catch(e){}},350)}
-  }
-  o.el.classList.add('show');
-  /* préchargement de la vidéo d'après dans l'autre lecteur */
-  var nx=i+1<LIST.length?i+1:i-1;
-  if(spare&&LIST[nx]&&spare.idx!==nx){spare.idx=nx;spare.load(LIST[nx].id,false)}
-  /* légende + bouton « Faire un don » */
-  var c=ov.querySelector('.ttc');if(c)c.innerHTML=fdate(it.day)+'<small>'+(it.name?it.name:'Vidéo de Tanya du jour')+'</small>';
+  var slides=[].slice.call(ov.querySelectorAll('.tts'));
+  slides.forEach(function(s,k){
+    var f=s.querySelector('iframe.ttf');
+    if(Math.abs(k-i)>1){if(f)f.remove();return}
+    if(k===i){
+      f=mount(s,k,true);f.dataset.act='1';f.classList.add('ok');
+      post(f,'seekTo',[0,true]);post(f,'playVideo');if(sound)post(f,'unMute');
+      setTimeout(function(){post(f,'playVideo');if(sound)post(f,'unMute')},600);
+      s._p=0;
+    }else{
+      if(!f){f=mount(s,k,false)}else{f.dataset.act='0';post(f,'pauseVideo')}
+    }
+  });
   var b=ov.querySelector('#ttsnd');if(b)b.style.display=sound?'none':'block';
 }
 function close(){
   if(!open)return;open=false;document.documentElement.classList.remove('tt-lock');
-  PL.forEach(function(x){if(x){try{x.p&&x.p.destroy()}catch(e){}}});PL=[null,null];ACT=-1;cur=-1;
-  ov.classList.remove('on');setTimeout(function(){ov&&ov.remove();ov=null},250);
+  ov.classList.remove('on');setTimeout(function(){ov&&ov.remove();ov=null},250);cur=-1;
   try{if(history.state&&history.state.tt)history.back()}catch(e){}
 }
 function show(id){
@@ -111,38 +82,34 @@ function show(id){
     document.documentElement.classList.add('tt-lock');
     ov=document.createElement('div');ov.id='tt';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Vidéos');
     var h='<button class="ttx" type="button" aria-label="Fermer"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button><button class="tts-snd" id="ttsnd" type="button">🔊 Activer le son</button><div class="ttl">';
-    L.forEach(function(x,i){h+='<div class="tts" data-i="'+i+'"><div class="ttp" data-bg="https://i.ytimg.com/vi/'+x.id+'/hqdefault.jpg"></div></div>'});
-    h+='</div><div class="ttpl" id="ttpl"></div><div class="ttb"><div class="ttc"></div><button class="ttd" type="button">♥ Faire un don</button></div>';
-    h+='<div class="ttbk" id="ttbk"></div><div class="ttsh" id="ttsh" role="dialog" aria-label="Faire un don"><div class="hd"><b>Faire un don</b><span>Paiement sécurisé</span><button type="button" id="ttshx" aria-label="Fermer">✕</button></div><div class="bd" id="ttshbd"></div></div>';
+    L.forEach(function(x,i){
+      h+='<div class="tts" data-i="'+i+'"><div class="ttp" data-bg="https://i.ytimg.com/vi/'+x.id+'/hqdefault.jpg"></div><div class="ttb"><div class="ttc">'+fdate(x.day)+'<small>'+(x.name?x.name:'Vidéo de Tanya du jour')+'</small></div><button class="ttd" type="button">♥ Faire un don</button></div></div>';
+    });
+    h+='</div><div class="ttbk" id="ttbk"></div><div class="ttsh" id="ttsh" role="dialog" aria-label="Faire un don"><div class="hd"><b>Faire un don</b><span>Paiement sécurisé</span><button type="button" id="ttshx" aria-label="Fermer">✕</button></div><div class="bd" id="ttshbd"></div></div>';
     ov.innerHTML=h;document.body.appendChild(ov);
-    var list=ov.querySelector('.ttl'),slides=[].slice.call(ov.querySelectorAll('.tts')),host=ov.querySelector('#ttpl');
+    var list=ov.querySelector('.ttl'),slides=[].slice.call(ov.querySelectorAll('.tts'));
     list.scrollTop=start*list.clientHeight;
-    /* images d'attente : chargées seulement pour les vidéos proches (pas les 154 d'un coup, ce qui saturait le téléphone) */
+    /* images d'attente : seulement pour les vidéos proches */
     var pio=new IntersectionObserver(function(es){es.forEach(function(e){var p=e.target;if(e.isIntersecting){if(p.dataset.bg){p.style.backgroundImage='url('+p.dataset.bg+')';p.dataset.bg=''}pio.unobserve(p)}})},{root:list,rootMargin:'160% 0px'});
     ov.querySelectorAll('.ttp').forEach(function(p){pio.observe(p)});
     requestAnimationFrame(function(){ov.classList.add('on')});
-    mkPlayer(0,host);mkPlayer(1,host);ACT=-1;cur=-1;
-    var snap=start,settle=null;
-    function maybeHide(){var d=Math.abs(list.scrollTop-snap*list.clientHeight);var o=PL[ACT];if(!o)return;if(d>12)o.el.classList.remove('show');else if(cur===snap)o.el.classList.add('show')}
-    list.addEventListener('scroll',function(){maybeHide();clearTimeout(settle);settle=setTimeout(function(){var i=Math.round(list.scrollTop/list.clientHeight);if(i!==cur){snap=i;cur=i;activate(i)}else maybeHide()},110)},{passive:true});
-    cur=start;snap=start;activate(start);
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&e.intersectionRatio>.6){var i=+e.target.dataset.i;if(i!==cur){cur=i;activate(i)}}})},{root:list,threshold:[.6]});
+    slides.forEach(function(s){io.observe(s)});cur=-1;
     var sh=ov.querySelector('#ttsh');
     function donOpen(){ov.classList.add('sheet');sh.classList.add('on');
       if(!sh._l){sh._l=1;var f=document.createElement('iframe');f.src='https://www.allodons.fr/embed/emounateha';f.title='Faire un don';f.allow='payment *';f.style.height='620px';ov.querySelector('#ttshbd').appendChild(f);
         window.addEventListener('message',function(e){if(e.origin!=='https://www.allodons.fr')return;var d=e.data||{};if(d.type==='allodons:embed-height')f.style.height=d.height+'px';if(d.type==='allodons:payment-result'&&d.status==='succeeded'){var t=ov.querySelector('#ttsh .hd b');if(t)t.textContent='Merci de tout cœur 🙏';var sp=ov.querySelector('#ttsh .hd span');if(sp)sp.textContent='Votre don a bien été reçu'}})}}
     function donClose(){sh.classList.remove('on');ov.classList.remove('sheet')}
-    ov.querySelector('.ttd').onclick=function(e){e.stopPropagation();donOpen()};
+    ov.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.ttd');if(b){e.stopPropagation();donOpen()}},true);
     ov.querySelector('#ttshx').onclick=donClose;ov.querySelector('#ttbk').onclick=donClose;
     ov.querySelector('.ttx').onclick=close;
-    ov.querySelector('#ttsnd').onclick=function(e){e.stopPropagation();this.style.display='none';setSound(true);var o=PL[ACT];if(o&&o.ready){try{o.p.unMute();o.p.playVideo()}catch(x){}}};
-    /* un toucher sur la vidéo : pause / lecture */
-    var paused=false;
-    list.addEventListener('click',function(e){var o=PL[ACT];if(!o||!o.ready)return;try{if(paused){o.p.playVideo();paused=false}else{o.p.pauseVideo();paused=true}}catch(x){}});
+    ov.querySelector('#ttsnd').onclick=function(e){e.stopPropagation();sound=true;this.style.display='none';var cs=ov.querySelectorAll('.tts')[cur];var x=cs&&cs.querySelector('iframe.ttf');if(x){post(x,'unMute');post(x,'playVideo')}};
+    list.addEventListener('click',function(e){if(e.target.closest('a,button'))return;var s=e.target.closest('.tts'),f=s&&s.querySelector('iframe.ttf');if(!f)return;if(s._p){post(f,'playVideo');s._p=0}else{post(f,'pauseVideo');s._p=1}});
     try{history.pushState({tt:1},'')}catch(e){}
     }catch(err){open=false;document.documentElement.classList.remove('tt-lock');if(ov){ov.remove();ov=null}}
   });
 }
-window.addEventListener('popstate',function(){if(open){open=false;document.documentElement.classList.remove('tt-lock');PL.forEach(function(x){if(x){try{x.p&&x.p.destroy()}catch(e){}}});PL=[null,null];if(ov){ov.remove();ov=null}}});
+window.addEventListener('popstate',function(){if(open){open=false;document.documentElement.classList.remove('tt-lock');cur=-1;if(ov){ov.remove();ov=null}}});
 /* branchements : cartes vidéo de la bibliothèque, grand aperçu, vidéo du jour de l'accueil */
 document.addEventListener('click',function(e){
   var c=e.target.closest&&e.target.closest('.it .th.v, .it:has(.th.v), button.ytplay[data-yt], .yt.ytplay');if(!c)return;
