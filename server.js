@@ -57,7 +57,7 @@ function envVar(k) {
 }
 const DATABASE_URL = envVar('DATABASE_URL');
 let pool = null;
-if (DATABASE_URL) { const { Pool } = require('pg'); pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: process.env.VERCEL ? 1 : 3, idleTimeoutMillis: 20000 }); }
+if (DATABASE_URL) { const { Pool } = require('pg'); pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: process.env.VERCEL ? 1 : 3, idleTimeoutMillis: process.env.VERCEL ? 3000 : 20000, allowExitOnIdle: true }); }
 
 const TABLES = {
   contacts: { email: 'email', firstName: 'first_name', lastName: 'last_name', phone: 'phone', tags: 'tags', status: 'status', notes: 'notes', createdAt: 'created_at' },
