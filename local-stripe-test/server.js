@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
 const nodemailer = require('nodemailer');
-const puppeteer = require('puppeteer-core');
+const loadPuppeteer = () => import('puppeteer-core').then(m => m.default || m);   // module ESM : chargé à la demande (Vercel refuse require)
 const { montantEnLettres } = require('./nombreEnLettres');
 const vault = require('./vault');
 
@@ -143,7 +143,11 @@ function remplir(don, numero) {
   let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
 }
 let browserP = null;
-const browser = () => browserP || (browserP = process.env.VERCEL ? (async () => { const cr = require('@sparticuz/chromium'); return puppeteer.launch({ executablePath: await cr.executablePath(), headless: 'shell', args: cr.args }); })() : puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu', ...(process.env.CHROME_NO_SANDBOX ? ['--no-sandbox', '--disable-dev-shm-usage'] : [])] }));
+const browser = () => browserP || (browserP = (async () => {
+  const puppeteer = await loadPuppeteer();
+  if (process.env.VERCEL) { const m = await import('@sparticuz/chromium'), cr = m.default || m; return puppeteer.launch({ executablePath: await cr.executablePath(), headless: 'shell', args: cr.args }); }
+  return puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu', ...(process.env.CHROME_NO_SANDBOX ? ['--no-sandbox', '--disable-dev-shm-usage'] : [])] });
+})());
 let pdfActifs = 0; const pdfAttente = [];                          // au plus 3 PDF fabriqués en même temps (évite de saturer l'ordinateur)
 const pdfPlace = () => pdfActifs < 3 ? (pdfActifs++, Promise.resolve()) : new Promise(r => pdfAttente.push(r));
 const pdfLibere = () => { const n = pdfAttente.shift(); if (n) n(); else pdfActifs--; };
