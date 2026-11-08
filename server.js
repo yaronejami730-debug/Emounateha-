@@ -829,10 +829,15 @@ async function chabadZmanim(id, ymd, before = 18) {
 
 
 // ---------- Étude du jour (Houmach, Téhilim, Tanya) : flux RSS « Daily Study » de fr.chabad.org ----------
-let etudeCache = null;
-async function chabadEtude() {
-  if (etudeCache && Date.now() - etudeCache.at < 3 * 3600 * 1000) return etudeCache.v;
-  const r = await fetch('https://fr.chabad.org/tools/rss/dailystudy_rss.xml', { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Safari/605.1.15' } });
+const etudeCache = new Map();
+// jour demandé (AAAA-MM-JJ) ; par défaut le jour à Paris. Le flux Chabad sans date suit l'heure de New York : on passe toujours tdate.
+const jourValide = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '') && Math.abs(new Date(d + 'T12:00:00Z') - Date.now()) < 3 * 86400000 ? d : parisDay(Date.now());
+async function chabadEtude(jour) {
+  jour = jourValide(jour);
+  const hit = etudeCache.get(jour);
+  if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
+  const [y, m, d] = jour.split('-');
+  const r = await fetch(`https://fr.chabad.org/tools/rss/dailystudy_rss.xml?tdate=${+m}/${+d}/${y}`, { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Safari/605.1.15' } });
   if (!r.ok) throw new Error('Chabad ' + r.status);
   const t = await r.text();
   const g = (b, k) => decEnt(((b.match(new RegExp('<' + k + '>([\\s\\S]*?)</' + k + '>')) || [])[1] || '')).replace(/&apos;|&#39;/g, "'").replace(/\s+/g, ' ').trim();
@@ -840,7 +845,7 @@ async function chabadEtude() {
   const pick = re => items.find(i => re.test(i.title));
   const v = { date: g(t, 'title').replace(/^Chabad\.org Daily Study - /, ''), houmach: pick(/Chumash/i) || null, tehilim: pick(/^Daily Tehilim - Psalms$/i) || null, tehilimHeb: pick(/\(Hebrew\)/i) && items.find(i => /Tehilim - Psalms \(Hebrew\)/i.test(i.title)) || null, tanya: pick(/Tanya/i) || null };
   if (!v.houmach && !v.tehilim && !v.tanya) throw new Error('flux vide');
-  etudeCache = { at: Date.now(), v };
+  etudeCache.set(jour, { at: Date.now(), v }); if (etudeCache.size > 10) etudeCache.delete(etudeCache.keys().next().value);
   return v;
 }
 
@@ -874,10 +879,11 @@ function gem(n) { // nombre -> lettres hébraïques (135 -> קל״ה)
   return r.length > 1 ? r.slice(0, -1) + '״' + r.slice(-1) : r + '׳';
 }
 const LIVRES = { berechit: 'Genesis', bereshit: 'Genesis', chemot: 'Exodus', shemot: 'Exodus', vayikra: 'Leviticus', bamidbar: 'Numbers', devarim: 'Deuteronomy' };
-async function chabadTexte(type) {
-  const hit = texteCache.get(type);
-  if (hit && Date.now() - hit.at < 3 * 3600 * 1000) return hit.v;
-  const e = await chabadEtude(), it = e[type];
+async function chabadTexte(type, jour) {
+  jour = jourValide(jour);
+  const hit = texteCache.get(type + jour);
+  if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
+  const e = await chabadEtude(jour), it = e[type];
   if (!it) throw new Error('rien aujourd\'hui');
   let v;
   if (type === 'houmach') {
@@ -900,7 +906,7 @@ async function chabadTexte(type) {
     v = { title: 'Tanya', ref: part[1] + (b > a ? `, chapitres ${a} à ${b}` : `, chapitre ${a}`), trLang: 'en', sections: sections(x.he, x.tr, a, 1, 'Chapitre').map(sc => ({ head: sc.head, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr })) })) };
   }
   if (!v.sections.length) throw new Error('texte vide');
-  texteCache.set(type, { at: Date.now(), v });
+  v.jour = jour; texteCache.set(type + jour, { at: Date.now(), v }); if (texteCache.size > 30) texteCache.delete(texteCache.keys().next().value);
   return v;
 }
 
@@ -1469,11 +1475,11 @@ async function handle(req, res) {
     if (url.pathname === '/api/etude-texte' && req.method === 'GET') { // public : texte du jour (Houmach, Téhilim, Tanya)
       const ty = url.searchParams.get('type');
       if (!['houmach', 'tehilim', 'tanya'].includes(ty)) return send(res, 400, { error: 'type inconnu' });
-      try { const v = await chabadTexte(ty); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=1800' }); return res.end(JSON.stringify(v)); }
+      try { const v = await chabadTexte(ty, url.searchParams.get('date')); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
     }
     if (url.pathname === '/api/etude' && req.method === 'GET') { // public : étude du jour (flux RSS Chabad)
-      try { const v = await chabadEtude(); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=1800' }); return res.end(JSON.stringify(v)); }
+      try { const v = await chabadEtude(url.searchParams.get('date')); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Étude indisponible' }); }
     }
     if (url.pathname === '/api/zmanim' && req.method === 'GET') { // public : horaires du flux RSS Chabad (id Chabad + jour)
