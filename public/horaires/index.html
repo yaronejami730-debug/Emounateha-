@@ -450,8 +450,9 @@ body{overflow-x:hidden}
 </style>
 <link rel="stylesheet" href="/mobile.css">
 <link rel="stylesheet" href="/fade.css?v=3">
-<link rel="stylesheet" href="/typo.css?v=44">
+<link rel="stylesheet" href="/typo.css?v=65">
 <script src="/typo.js?v=5" defer></script>
+<script src="/geoloc.js?v=1" defer></script>
 <script src="/wa-bouton.js?v=2" defer></script>
 </head>
 <body>
@@ -630,19 +631,26 @@ tr.open .zch{transform:rotate(180deg)}
 .hnav{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
 .hpick{display:inline-flex;align-items:center;gap:8px;border:1.5px solid #cfe0e1;border-radius:99px;padding:6px 14px;background:#fff;color:var(--teal);font-weight:600;font-size:14px;cursor:pointer}
 .hpick input{border:0;background:transparent;font:inherit;color:inherit;max-width:140px}
+#hnote,.zsrc,.zsrc a{font-size:10px!important;color:#aab4b6!important;opacity:.85;text-decoration:none;margin-top:6px}
+.mymail{margin-left:8px;cursor:pointer;font-size:13px;opacity:.8;border:1px solid #d9c27a;border-radius:99px;padding:0 6px;background:#fffaf0}.mymail:hover{opacity:1}
+.geonote{margin:0 0 12px;padding:11px 14px;border-radius:12px;background:#fff7e0;border:1px solid #e6cf8a;color:#5b4a14;font-size:13px;line-height:1.45}.geonote b{display:block;color:#7a5d10;font-size:14px;margin-bottom:2px}.geonote span{display:block}
+.hmany{margin:2px 2px 10px;font-size:13px;line-height:1.45;color:var(--teal);text-align:center}
+#chabbat-mail{margin-top:-34px}
+@media(max-width:800px){#chabbat-mail{margin-top:-14px}}
 </style>
 <section><div class="hw">
   <div class="hbar">
     <div class="range"><span id="hrange">…</span><small id="hrange2"></small></div>
-    <button type="button" class="cityopen" id="cityopen">+ Ajouter une ville</button>
-    <div class="cityadd"><select id="citysel"><option value="">+ Ajouter une ville…</option></select><input id="cityq" placeholder="ou chercher n'importe quelle ville" autocomplete="off"><div class="sugg" id="sugg"></div></div>
+    <button type="button" class="cityopen" id="cityopen">+ Ajouter une ville · plus de 1 000 disponibles</button>
+    <div class="cityadd"><select id="citysel"><option value="">+ Ajouter une ville (liste rapide)…</option></select><input id="cityq" placeholder="Chercher parmi plus de 1 000 villes dans le monde" autocomplete="off"><div class="sugg" id="sugg"></div></div>
     <div class="hnav"><button id="prev" aria-label="Jour précédent">‹</button><button id="today">Aujourd'hui</button><button id="next" aria-label="Jour suivant">›</button><label class="hpick" aria-label="Choisir une date"><span>Autre date</span><input type="date" id="hdate"></label></div>
   </div>
   
+  <p class="hmany">Plus de 1 000 villes dans le monde, avec tous leurs horaires : ajoutez la vôtre, puis cliquez sur une ville pour voir le détail complet.</p>
   <div class="htable"><div class="cap" id="hcap">Du … au …</div>
     <table><thead><tr><th>Ville</th><th>Pose<br>Téfilin</th><th>Limite<br>Chéma</th><th>Min'ha<br>Guédola</th><th>Chkia</th><th>Tset<br>Ko'havim</th><th>Entrée<br>Chabbat</th><th>Sortie<br>Chabbat</th></tr></thead><tbody id="hbody"></tbody></table>
   </div>
-  <p class="hnote" id="hnote">Horaires exacts calculés par Hebcal, à la seconde (méthode du Baal HaTanya pour le Chéma, Min'ha et Tset ; pose des téfilin = michéyakir strict). Consultez votre Rav pour l'usage de votre communauté.</p>
+  <p class="hnote" id="hnote">Source : fr.chabad.org</p>
 </div></section>
 <div id="chabbat-mail"></div>
 <footer>
@@ -725,8 +733,17 @@ document.getElementById('y').textContent=new Date().getFullYear();
     return '<td data-l="'+CL[i]+'" class="shc"><span class="sh">'+SHI[i-5]+'<span class="sht"><i class="shl">'+(i===5?'Entrée':'Sortie')+'</i><b>'+x+'</b></span></span></td>'}
   // horaires halakhiques complets d'une ville (méthode du Baal HaTanya, comme Chabad.org), jour choisi
   const ZD={};
+  // ---- source unique : flux RSS fr.chabad.org (via /api/zmanim) ; repli Hebcal pour les villes sans lieu Chabad
+  const LIEUX=fetch('/chabad-lieux.json').then(r=>r.json()).catch(()=>({}));
+  const zc=async(lieu,d)=>{const k='c'+lieu+d;if(cache[k])return cache[k];const j=await (await fetch('/api/zmanim?id='+lieu+'&date='+d)).json();if(!j.items)throw 0;cache[k]=j;return j};
+  const pick=(z,re)=>{const it=z.items.find(x=>re.test(x.label));return it?it.time:null};
+  const geoOf=async n=>{const k='geo:'+n;try{const c=localStorage.getItem(k);if(c)return +c}catch(e){}
+    try{const r=await (await fetch('https://www.hebcal.com/complete.php?q='+encodeURIComponent(n))).json();const x=r.find(y=>y.id&&/^\d+$/.test(String(y.id)));if(x){try{localStorage.setItem(k,String(x.id))}catch(e){}return +x.id}}catch(e){}return null};
+  const hm=t=>t?t.replace(/^0(\d):/,'$1:'):'—';
+  const weekDay=(d,wd)=>{const x=new Date(d);x.setDate(x.getDate()-x.getDay()+wd);return ymd(x)};
   const ZL=[['Aube (Alot Hacha‘har)','alosBaalHatanya'],['Mise du talit et des téfilin (Misheyakir)','misheyakirMachmir'],['Lever du soleil (Hanets Ha\'hama)','sunrise'],['Fin de l\'heure du Chéma','sofZmanShmaBaalHatanya'],['Cha‘harit au plus tard','sofZmanTfilaBaalHatanya'],['Mi-journée (‘Hatsot Hayom)','chatzot'],['Min‘ha Guédola','minchaGedolaBaalHatanya'],['Min‘ha Ketana','minchaKetanaBaalHatanya'],['Plag Hamin‘ha','plagHaminchaBaalHatanya'],['Coucher du soleil (Chkia)','sunset'],['Tombée de la nuit (Tset Hakokhavim)','tzaisBaalHatanya'],['Mi-nuit (‘Hatsot Halaïla)','chatzotNight']];
   function zdet(id,n,dayLabel){const d=ZD[id];if(!d)return '<div class="zbox"><p>Horaires indisponibles.</p></div>';
+    if(d.z)return '<div class="zbox"><h4>Horaires halakhiques · '+n+'</h4><p class="zday">'+dayLabel+'</p><ul>'+d.z.items.map(x=>'<li><span>'+x.label+'</span><b>'+hm(x.time)+'</b></li>').join('')+'</ul><p class="zsrc">Source : fr.chabad.org</p></div>';
     return '<div class="zbox"><h4>Horaires halakhiques · '+n+'</h4><p class="zday">'+dayLabel+'</p><ul>'+ZL.map(([l,k])=>'<li><span>'+l+'</span><b>'+(d.j.times[k]&&d.j.times[k][d.dk]?fmt(d.j.times[k][d.dk],d.tz):'—')+'</b></li>').join('')+'</ul><p class="zsrc">Source : <a href="https://www.hebcal.com/home/zmanim" target="_blank" rel="noopener">Hebcal.com</a> (calcul des zemanim). Méthode du Baal HaTanya pour l\'aube, le Chéma, Cha‘harit, Min‘ha, Plag et la tombée de la nuit ; lever, coucher et mi-journée astronomiques. Consultez votre Rav.</p></div>'}
   async function shab(id,a,b){const k='s'+id+ymd(a)+ymd(b);if(cache[k])return cache[k];
     const j=await (await fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&c=on&M=on&b='+(id===281184?40:18)+'&geonameid='+id+'&start='+ymd(a)+'&end='+ymd(b)+'&lg=fr')).json();
@@ -751,36 +768,53 @@ document.getElementById('y').textContent=new Date().getFullYear();
     hebRange(day0,day0).then(t=>{document.getElementById('hrange2').textContent=t;document.getElementById('hcap').innerHTML='<b>'+document.getElementById('hrange').textContent+'</b>'+(t?'<small>'+t+'</small>':'')}).catch(()=>{});
     const day=new Date(a);day.setDate(a.getDate()+dayIdx);const dk=ymd(day);
     document.getElementById('hsub').textContent='Horaires du '+fr(day,{weekday:'long',day:'numeric',month:'long'});
-    const rows=await Promise.all(cities.map(async([name,id])=>{let sh=['—','—'];try{sh=await shab(id,a,b)}catch(e){}try{const j=await zman(id,a,b);const tz=j.location.tzid;ZD[id]={j,tz,dk};return [name,id,KEYS.map(k=>fmt(j.times[k][dk],tz)).concat(sh)]}catch(e){return [name,id,['—','—','—','—','—'].concat(sh)]}}));
+    const rows=await Promise.all(cities.map(async([name,id])=>{let sh=['—','—'];try{sh=await shab(id,a,b)}catch(e){}const lieu=/^c\d+$/.test(String(id))?String(id).slice(1):(await LIEUX)[id];if(lieu){try{const z=await zc(lieu,dk);const fz=await zc(lieu,weekDay(day,5)),sz=await zc(lieu,weekDay(day,6));ZD[id]={z,dk};let cin=pick(fz,/Allumage|bougies/i),cout=pick(sz,/Fin du Chabbat|Fin de (la )?f[êe]te/i);
+        if(!cin||!cout){ /* entrée / sortie absentes du flux : repli sur l'API Hebcal */
+          let geo=/^c\d+$/.test(String(id))?await geoOf(name):id;
+          if(geo){try{const h=await shab(geo,a,b);if(!cin&&h[0]&&h[0]!=='—')cin=h[0];if(!cout&&h[1]&&h[1]!=='—')cout=h[1]}catch(e){}}}
+        return [name,id,[pick(z,/Misheyakir|Talit/i),pick(z,/fin du Ch[ée]ma/i),pick(z,/Guedola/i),pick(z,/Chkiah|Coucher/i),pick(z,/Tset|Tomb[ée]e de la nuit/i),cin,cout].map(hm)]}catch(e){}}
+      let gid=id;
+      if(/^c\d+$/.test(String(id))){gid=await geoOf(name);if(!gid)return [name,id,['—','—','—','—','—','—','—']];try{sh=await shab(gid,a,b)}catch(e){}}
+      try{const j=await zman(gid,a,b);const tz=j.location.tzid;ZD[id]={j,tz,dk};return [name,id,KEYS.map(k=>fmt(j.times[k][dk],tz)).concat(sh)]}catch(e){return [name,id,['—','—','—','—','—'].concat(sh)]}}));
     const mine=(()=>{try{return localStorage.getItem('parcity')}catch(e){return null}})();
     rows.sort((x,y)=>(String(y[1])===mine)-(String(x[1])===mine)); // sa ville en premier
     const dayLabel=fr(day,{weekday:'long',day:'numeric',month:'long'});
-    body.innerHTML=rows.map(([n,id,v])=>'<tr data-z="'+id+'"'+(String(id)===mine?' class="me"':'')+'><td>'+n+'<span class="zch" aria-hidden="true">▾</span>'+(DEF.some(d=>d[1]===id)?'':'<span class="rm" title="Retirer" data-id="'+id+'">✕</span>')+'</td>'+'<td class="sect">Horaires</td>'+v.slice(0,5).map(cell).join('')+'<td class="sect sect2">Horaires de Chabbat</td>'+v.slice(5).map((x,i)=>cell(x,i+5)).join('')+'</tr><tr class="zdetrow" id="zd'+id+'"><td colspan="10">'+zdet(id,n,dayLabel)+'</td></tr>').join('');
+    body.innerHTML=rows.map(([n,id,v])=>'<tr data-z="'+id+'"'+(String(id)===mine?' class="me"':'')+'><td>'+n+'<span class="zch" aria-hidden="true">▾</span>'+(ABO&&ALL.some(c=>c[1]===id)?'<span class="mymail" data-id="'+id+'" data-n="'+n.replace(/"/g,'')+'" title="Recevoir les horaires de cette ville par e-mail">✉</span>':'')+(DEF.some(d=>d[1]===id)?'':'<span class="rm" title="Retirer" data-id="'+id+'">✕</span>')+'</td>'+'<td class="sect">Horaires</td>'+v.slice(0,5).map(cell).join('')+'<td class="sect sect2">Horaires de Chabbat</td>'+v.slice(5).map((x,i)=>cell(x,i+5)).join('')+'</tr><tr class="zdetrow" id="zd'+id+'"><td colspan="10">'+zdet(id,n,dayLabel)+'</td></tr>').join('');
     body.classList.remove('loading');
+    body.querySelectorAll('.mymail').forEach(x=>x.onclick=async e=>{e.stopPropagation();e.preventDefault();try{const r=await fetch('/api/shabbat-city',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:ABO,city:x.dataset.id})});const j=await r.json();aboNote(r.ok?'✓ C\'est fait : vous recevrez désormais les horaires de Chabbat de <b>'+j.city+'</b> par e-mail.':(j.error||'Impossible de modifier la ville.'),r.ok)}catch(err){aboNote('Impossible de modifier la ville pour le moment.',false)}});
     body.querySelectorAll('.rm').forEach(x=>x.onclick=()=>{cities=cities.filter(c=>String(c[1])!==x.dataset.id);save();render()});
   }
   // menu des villes proposées (groupées)
   (function(){const sel=document.getElementById('citysel');const groups={};ALL.forEach(c=>{(groups[c[4]]=groups[c[4]]||[]).push(c)});
     for(const g of ['Israël','France','Europe','Afrique','Amériques','Océanie']){if(!groups[g])continue;const og=document.createElement('optgroup');og.label=g;groups[g].forEach(c=>{const o=document.createElement('option');o.value=c[1];o.textContent=c[0];og.appendChild(o)});sel.appendChild(og)}
     sel.onchange=()=>{const id=+sel.value;if(!id)return;const c=ALL.find(x=>x[1]===id);if(c&&!cities.some(x=>x[1]===id))cities.push([c[0],id]);save();sel.value='';render()}})();
+  const ABO=(()=>{try{const m=location.search.match(/[?&]abo=([A-Za-z0-9_-]+)/);if(m){sessionStorage.setItem('abo',m[1]);return m[1]}return sessionStorage.getItem('abo')}catch(e){return null}})();
+  function aboNote(txt,ok){let el=document.getElementById('abonote');if(!el){el=document.createElement('div');el.id='abonote';el.className='geonote';const m=document.querySelector('.hmany');m.parentNode.insertBefore(el,m)}el.style.background=ok===false?'#fdecea':'#e8f5ee';el.style.borderColor=ok===false?'#e8b4ad':'#a9d6bb';el.style.color=ok===false?'#8a2a22':'#1c5a3a';el.innerHTML=txt}
+  if(ABO)aboNote('<b>✉ Changer la ville de vos e-mails</b>Cliquez sur l\'enveloppe ✉ à côté d\'une ville de la liste pour recevoir ses horaires de Chabbat dans vos e-mails.',null);
+  function geoNote(name,km,gps){let el=document.getElementById('geonote');if(!el){el=document.createElement('div');el.id='geonote';el.className='geonote';const m=document.querySelector('.hmany');m.parentNode.insertBefore(el,m)}
+    let mv='';try{const g=JSON.parse(localStorage.getItem('geoinfo')||'{}');if(g.moved)mv=' (mise à jour : vous avez changé de lieu)'}catch(e){}
+    el.innerHTML='<b>Ville de référence détectée : '+name+mv+'</b>'+(gps&&km>1?'<small> · à environ '+km+' km de vous</small>':'')+'<span>Vérifiez que c\'est la bonne ville de référence pour ne pas vous tromper dans les horaires'+(gps&&km>15?' : à '+km+' km, l\'écart peut atteindre quelques minutes (montagne).':'.')+' Pour changer, choisissez votre ville ci-dessous.</span>'}
+  try{const gi=JSON.parse(localStorage.getItem('geoinfo')||'null');if(gi&&gi.n)geoNote(gi.n,gi.km,gi.gps)}catch(e){}
   // ville du visiteur : position GPS du téléphone, demandée UNE SEULE fois (le choix est mémorisé, on ne redemande plus)
   (function(){
-    try{if(localStorage.getItem('geoAsked'))return;localStorage.setItem('geoAsked','1')}catch(e){return}
-    if(!navigator.geolocation)return;
-    navigator.geolocation.getCurrentPosition(function(pos){
+    var SIM=(location.search.match(/[?&]simgeo=(-?[\d.]+),(-?[\d.]+)/)||null); /* aperçu : ?simgeo=46.2,6.14 simule une position */
+    try{if(!SIM){if(localStorage.getItem('geoAsked'))return;localStorage.setItem('geoAsked','1')}}catch(e){return}
+    if(!SIM&&!navigator.geolocation)return;
+    (SIM?function(ok){ok({coords:{latitude:+SIM[1],longitude:+SIM[2]}})}:function(ok,ko,o){navigator.geolocation.getCurrentPosition(ok,ko,o)})(function(pos){
       var lat=pos.coords.latitude,lon=pos.coords.longitude,k=Math.cos(lat*Math.PI/180),best=null,bd=1e9;
       ALL.forEach(function(c){var d=Math.pow(c[2]-lat,2)+Math.pow((c[3]-lon)*k,2);if(d<bd){bd=d;best=c}});
-      if(!best||Math.sqrt(bd)*111>150)return; // aucune ville proche : on garde la détection par IP
+      if(!best||Math.sqrt(bd)*111>600)return; // vraiment trop loin : on garde la détection par IP
+      var km=Math.max(1,Math.round(Math.sqrt(bd)*111));
       try{localStorage.setItem('parcity',String(best[1]))}catch(e){}
       if(!cities.some(function(c){return c[1]===best[1]})){cities.push([best[0],best[1]]);save()}
-      var n=document.getElementById('hnote');if(n){var o=n.querySelector('.loc');if(o){if(o.nextSibling&&o.nextSibling.nodeName==='BR')o.nextSibling.remove();o.remove()}
-        n.insertAdjacentHTML('afterbegin','<span class="loc">📍 Ville détectée : <b>'+best[0]+'</b></span><br>')}
+      try{localStorage.setItem('geoinfo',JSON.stringify({n:best[0],km:km,gps:1}))}catch(e){}
+      geoNote(best[0],km,true);
       render();
     },function(){},{timeout:12000,maximumAge:86400000});
   })();
   // ville du visiteur : géolocalisation par IP (sans permission), Paris par défaut
   (function(){let has=null;try{has=localStorage.getItem('parcity')}catch(e){}if(has)return;
-    const done=(id,name)=>{try{localStorage.setItem('parcity',String(id))}catch(e){}if(!cities.some(c=>c[1]===id)){cities.push([name,id]);save()}const n=document.getElementById('hnote');if(n)n.insertAdjacentHTML('afterbegin','<span class="loc">📍 Ville détectée : <b>'+name+'</b> · <a href="#" id="locno">ce n\'est pas ma ville</a></span><br>');render();
+    const done=(id,name)=>{try{localStorage.setItem('parcity',String(id))}catch(e){}if(!cities.some(c=>c[1]===id)){cities.push([name,id]);save()}try{localStorage.setItem('geoinfo',JSON.stringify({n:name,km:0,gps:0}))}catch(e){}geoNote(name,0,false);render();
       const a=document.getElementById('locno');if(a)a.onclick=e=>{e.preventDefault();try{localStorage.setItem('parcity','2988507')}catch(e){}document.getElementById('cityq').focus();render()}};
     fetch('https://ipwho.is/').then(r=>r.json()).then(j=>{if(!j||!j.success||typeof j.latitude!=='number'){done(2988507,'Paris');return}
       const d2=(a,b)=>(a[2]-j.latitude)**2+((a[3]-j.longitude)*Math.cos(j.latitude*Math.PI/180))**2;
@@ -796,8 +830,15 @@ document.getElementById('y').textContent=new Date().getFullYear();
   // ajout de ville (autocomplétion Hebcal)
   const q=document.getElementById('cityq'),sg=document.getElementById('sugg');let t;
   q.addEventListener('input',()=>{clearTimeout(t);const v=q.value.trim();if(v.length<2){sg.style.display='none';return}
-    t=setTimeout(async()=>{try{const r=await (await fetch('https://www.hebcal.com/complete.php?q='+encodeURIComponent(v))).json();const list=r.filter(x=>x.id&&x.geo==='geoname'||x.id).slice(0,8);sg.innerHTML=list.map(x=>'<div data-id="'+x.id+'" data-n="'+x.value.replace(/"/g,'')+'">'+x.value+'</div>').join('');sg.style.display=list.length?'block':'none';
-      sg.querySelectorAll('div').forEach(d=>d.onclick=()=>{const id=+d.dataset.id,n=d.dataset.n.split(',')[0];if(!cities.some(c=>c[1]===id))cities.push([n,id]);save();q.value='';sg.style.display='none';render()});}catch(e){sg.style.display='none'}},250)});
+    t=setTimeout(async()=>{try{
+      const nz=x=>x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),nv=nz(v);
+      const VIL=await (VILLES||(VILLES=fetch('/chabad-villes.json').then(r=>r.json()).catch(()=>[])));
+      const ch=VIL.filter(x=>nz(x[1]).includes(nv)).sort((a,b)=>nz(a[1]).startsWith(nv)===nz(b[1]).startsWith(nv)?0:nz(a[1]).startsWith(nv)?-1:1).slice(0,8).map(x=>({id:'c'+x[0],value:x[1],ch:1}));
+      let hc=[];try{hc=(await (await fetch('https://www.hebcal.com/complete.php?q='+encodeURIComponent(v))).json()).filter(x=>x.id).slice(0,4)}catch(e){}
+      const list=ch.concat(hc.filter(x=>!ch.some(c=>nz(c.value.split(',')[0])===nz(x.value.split(',')[0])))).slice(0,10);
+      sg.innerHTML=list.map(x=>'<div data-id="'+x.id+'" data-n="'+x.value.replace(/"/g,'')+'">'+x.value+'</div>').join('');sg.style.display=list.length?'block':'none';
+      sg.querySelectorAll('div').forEach(d=>d.onclick=()=>{const id=/^c/.test(d.dataset.id)?d.dataset.id:+d.dataset.id,n=d.dataset.n.split(',')[0];if(!cities.some(c=>c[1]===id))cities.push([n,id]);save();q.value='';sg.style.display='none';render()});}catch(e){sg.style.display='none'}},250)});
+  let VILLES=null;
   document.addEventListener('click',e=>{if(!e.target.closest('.cityadd'))sg.style.display='none'});
   render();
 })();

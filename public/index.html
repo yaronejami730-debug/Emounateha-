@@ -477,11 +477,15 @@ body{overflow-x:hidden}
 </style>
 <link rel="stylesheet" href="/mobile.css">
 <link rel="stylesheet" href="/fade.css?v=3">
-<link rel="stylesheet" href="/typo.css?v=44">
+<link rel="stylesheet" href="/typo.css?v=65">
 <script src="/typo.js?v=5" defer></script>
-<script src="/hanouka-annonce.js?v=38" defer></script>
-<script src="/ecrire-rabbi.js?v=14" defer></script>
+<script src="/apercu-video.js?v=1" defer></script>
+<script src="/video-feed.js?v=5" defer></script>
+<script src="/geoloc.js?v=1" defer></script>
+<script src="/hanouka-annonce.js?v=40" defer></script>
+<script src="/ecrire-rabbi.js?v=27" defer></script>
 <script src="/partager.js?v=1" defer></script>
+<script>/* apercuscroll : en aperçu jeudi, descend vers la carte des horaires */if(/apercu=jeudi/.test(location.search))addEventListener("load",function(){setTimeout(function(){var c=document.getElementById("paracha");if(c)window.scrollTo(0,Math.max(0,c.getBoundingClientRect().top+scrollY-170))},1200)})</script>
 <script src="/wa-bouton.js?v=2" defer></script>
 </head>
 <body>
@@ -503,10 +507,10 @@ body{overflow-x:hidden}
 </header>
 
 <section class="qa" aria-label="Accès rapides"><div class="wrap">
-  <a href="/colis/"><img class="qi" src="/tuiles/colis.png?v=3" alt="" width="40" height="40" loading="eager"><span>Colis de Chabbat<small>Offrir un colis</small></span></a>
-  <a href="/torah/"><img class="qi" src="/tuiles/torah.png?v=3" alt="" width="40" height="40" loading="eager"><span>Vidéos et cours<small>Chaque jour</small></span></a>
-  <a href="/horaires/"><img class="qi" src="/tuiles/horaires.png?v=3" alt="" width="40" height="40" loading="eager"><span>Horaires<small>Chabbat, 54 villes</small></span></a>
-  <a href="https://wa.me/33669670770" target="_blank" rel="noopener"><img class="qi" src="/tuiles/ecrire.png?v=3" alt="" width="40" height="40" loading="eager"><span>Nous écrire<small>Sur WhatsApp</small></span></a>
+  <a href="/colis/"><img class="qi" src="/tuiles/colis.png?v=4" alt="" width="40" height="40" loading="eager"><span>Colis de Chabbat<small>Offrir un colis</small></span></a>
+  <a href="/torah/"><img class="qi" src="/tuiles/torah.png?v=4" alt="" width="40" height="40" loading="eager"><span>Diffusion de la Torah<small>Vidéo et cours chaque jour</small></span></a>
+  <a href="/horaires/"><img class="qi" src="/tuiles/horaires.png?v=4" alt="" width="40" height="40" loading="eager"><span>Horaires<small>Chabbat, 54 villes</small></span></a>
+  <a href="https://wa.me/33669670770" target="_blank" rel="noopener"><img class="qi" src="/tuiles/ecrire.png?v=4" alt="" width="40" height="40" loading="eager"><span>Nous écrire<small>Sur WhatsApp</small></span></a>
 </div></section>
 <section class="parsec" id="paracha" hidden><div class="wrap"><div class="parcard" id="parcard">
   <div class="pk"><svg class="torah" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#c4a24a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><rect x="45" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><path d="M14.5 12V7M14.5 52v5M49.5 12V7M49.5 52v5"/><path d="M19 16h26v32H19z" fill="#fff"/><path d="M25 24h14M25 30h14M25 36h10" stroke="#1f6a72"/></g><circle cx="14.5" cy="6" r="2.6" fill="#e4cd8a"/><circle cx="49.5" cy="6" r="2.6" fill="#e4cd8a"/></svg><div><span class="plab">Paracha de la semaine</span><b id="parname">…</b><small id="parheb" dir="rtl"></small></div></div>
@@ -532,10 +536,10 @@ body{overflow-x:hidden}
     <div class="slider">
       <div class="slides" id="slides">
         <div class="slide" data-t="Nos actions" data-s="Un accompagnement concret, du premier repas jusqu'au retour à l'autonomie."><div class="wrap"><div class="grid">
-      <div class="card"><div class="ic"><img src="/tuiles/act-reinsertion.png?v=1" alt="" width="48" height="48" loading="lazy"></div><h3>Réinsertion sociale</h3><p>Un suivi personnalisé pour retrouver un équilibre et une place dans la société.</p></div>
-      <div class="card"><div class="ic"><img src="/tuiles/act-vetements.png?v=1" alt="" width="48" height="48" loading="lazy"></div><h3>Vêtements &amp; soins</h3><p>De nouveaux vêtements, une coiffure : se sentir bien pour repartir du bon pied.</p></div>
-      <div class="card"><div class="ic"><img src="/tuiles/act-toit.png?v=1" alt="" width="48" height="48" loading="lazy"></div><h3>Un toit sur la tête</h3><p>Aider à trouver un logement et à sortir de la rue durablement.</p></div>
-      <div class="card"><div class="ic"><img src="/tuiles/act-soutien.png?v=1" alt="" width="48" height="48" loading="lazy"></div><h3>Soutien moral &amp; financier</h3><p>Une écoute, un accompagnement et une aide matérielle quand c'est le plus difficile.</p></div>
+      <div class="card"><div class="ic"><img src="/tuiles/act-reinsertion.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Réinsertion sociale</h3><p>Un suivi personnalisé pour retrouver un équilibre et une place dans la société.</p></div>
+      <div class="card"><div class="ic"><img src="/tuiles/act-vetements.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Vêtements &amp; soins</h3><p>De nouveaux vêtements, une coiffure : se sentir bien pour repartir du bon pied.</p></div>
+      <div class="card"><div class="ic"><img src="/tuiles/act-toit.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Un toit sur la tête</h3><p>Aider à trouver un logement et à sortir de la rue durablement.</p></div>
+      <div class="card"><div class="ic"><img src="/tuiles/act-soutien.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Soutien moral &amp; financier</h3><p>Une écoute, un accompagnement et une aide matérielle quand c'est le plus difficile.</p></div>
     </div></div></div>
       </div>
       
@@ -548,9 +552,9 @@ body{overflow-x:hidden}
   <div class="wrap">
     <div class="title"><h2>Comment nous aider</h2><p>Trois façons simples d'allumer une lumière.</p></div>
     <div class="steps">
-      <a class="step stlink" href="/don/"><h3>Faire un don</h3><p>Un don en ligne, sécurisé, sur notre page allodons. Chaque montant compte.</p></a>
-      <a class="step stlink" href="https://wa.me/33669670770" target="_blank" rel="noopener"><h3>Nous écrire</h3><p>Une question, une idée, une famille à aider&nbsp;? Écrivez-nous sur WhatsApp.</p></a>
-      <button class="step stlink" type="button" id="sharebtn"><h3>Partager</h3><p>Faites connaître Émounatéha autour de vous, sur nos réseaux et dans vos cercles.</p></button>
+      <a class="step stlink" href="/don/"><img class="sti" src="/tuiles/step-don.png?v=1" alt="" width="56" height="56"><h3>Faire un don</h3><p>Un don en ligne, sécurisé, sur notre page allodons. Chaque montant compte.</p></a>
+      <a class="step stlink" href="https://wa.me/33669670770" target="_blank" rel="noopener"><img class="sti" src="/tuiles/step-ecrire.png?v=1" alt="" width="56" height="56"><h3>Nous écrire</h3><p>Une question, une idée, une famille à aider&nbsp;? Écrivez-nous sur WhatsApp.</p></a>
+      <button class="step stlink" type="button" id="sharebtn"><img class="sti" src="/tuiles/step-partager.png?v=1" alt="" width="56" height="56"><h3>Partager</h3><p>Faites connaître Émounatéha autour de vous, sur nos réseaux et dans vos cercles.</p></button>
     </div>
   </div>
 </section>
@@ -594,7 +598,8 @@ body{overflow-x:hidden}
 // ---- paracha de la semaine + horaires de Chabbat (Hebcal), ville au choix
 (function(){const c=document.getElementById('parcard');if(!c)return;
  const villes=[['Paris',2988507,18],['Lyon',2996944,18],['Marseille',2995469,18],['Nice',2990440,18],['Strasbourg',2973783,18],['Toulouse',2972315,18],['Bordeaux',3031582,18],['Lille',2998324,18],['Genève',2660646,18],['Bruxelles',2800866,18],['Yérouchalayim',281184,40],['Tel Aviv-Netanya',293397,18],['New York',5128581,18],['Montréal',6077243,18],['Miami',4164138,18],['Los Angeles',5368361,18],['Londres',2643743,18]];
- const sel=document.getElementById('parcity');villes.forEach(v=>{const o=document.createElement('option');o.value=v[1];o.textContent=v[0];sel.appendChild(o)});
+ const sel=document.getElementById('parcity');
+ try{const gi=JSON.parse(localStorage.getItem('geoinfo')||'null');if(gi&&gi.n){const c=document.getElementById('parcard');if(c){const w=document.createElement('p');w.id='geowarn';w.innerHTML='Ville de référence détectée : <b>'+gi.n+'</b>'+(gi.moved?' — mise à jour, vous avez changé de lieu':'')+(gi.gps&&gi.km>1?' (à environ '+gi.km+' km de vous)':'')+'. Vérifiez bien que c’est la bonne ville de référence pour ne pas vous tromper dans les horaires.';c.parentNode.appendChild(w)}}}catch(e){}villes.forEach(v=>{const o=document.createElement('option');o.value=v[1];o.textContent=v[0];sel.appendChild(o)});
  let cur=(()=>{try{return localStorage.getItem('parcity')}catch(e){return null}})();if(!villes.some(v=>String(v[1])===cur))cur='2988507';sel.value=cur;
  const f=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
  const sec=document.getElementById('paracha');
@@ -610,14 +615,34 @@ body{overflow-x:hidden}
  function load(){const v=villes.find(x=>String(x[1])===sel.value)||villes[0];const k='par'+v[1]+new Date().toDateString();
    try{const s=sessionStorage.getItem(k);if(s){fill(JSON.parse(s));return}}catch(e){}
    ['parin','parout'].forEach(id=>f(id,'…'));
+   /* parachat : serveur (Hebcal, mise en cache), même pour toutes les villes ; sert aussi si l'appel par ville échoue */
+   const PP=fetch('/api/parasha?id='+v[1]).then(r=>r.ok?r.json():null).catch(()=>null);
+   const withPar=d=>PP.then(x=>{if(x&&x.p){d.p=x.p;d.ph=x.ph||d.ph}return d});
    fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid='+v[1]+'&M=on&b='+v[2]+'&lg=fr').then(r=>r.json()).then(j=>{
      const tz=(j.location&&j.location.tzid)||'Europe/Paris';const it=j.items||[];
      const p=it.find(x=>x.category==='parashat'),ca=it.find(x=>x.category==='candles'),ha=it.find(x=>x.category==='havdalah'),hol=it.find(x=>x.category==='holiday'&&x.yomtov);
      const hm=s=>new Date(s).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:tz}).replace(':',' h ');
      const dj=s=>new Date(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:tz});
      const d={ph:((p?p.hebrew:(hol?hol.hebrew:''))||'').replace(/^פרשת\s*/,''),p:p?p.title.replace(/^Parachah?\s*/i,'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H'):(hol?hol.title:'—'),ci:ca?hm(ca.date):'—',cid:ca?dj(ca.date):'',ho:ha?hm(ha.date):'—',hod:ha?dj(ha.date):'',note:'Cliquez pour changer de ville · allumage '+v[2]+' min avant le coucher'};
-     d.hav=ha?ha.date:'';fill(d);try{sessionStorage.setItem(k,JSON.stringify(d))}catch(e){}
-   }).catch(()=>fill({p:'—',ph:'',ci:'—',cid:'',ho:'—',hod:'',note:''}));
+     d.hav=ha?ha.date:'';
+     /* horaires d'allumage et de sortie : flux RSS fr.chabad.org (source unique) ; repli Hebcal si la ville n'a pas de lieu Chabad */
+     const dayOf=x=>x?String(x).slice(0,10):'';
+     fetch('/chabad-lieux.json').then(r=>r.json()).then(L=>{const lieu=L[v[1]];if(!lieu)return;
+       const t=(day,re)=>fetch('/api/zmanim?id='+lieu+'&date='+day).then(r=>r.json()).then(z=>{const i=(z.items||[]).find(x=>re.test(x.label));return i?i.time.replace(/^0/,'').replace(':',' h '):null});
+       return PP.then(x=>{
+         const sat=x&&x.day?x.day:dayOf(ha&&ha.date),fri=x&&x.day?(()=>{const q=new Date(x.day+'T12:00:00');q.setDate(q.getDate()-1);return q.getFullYear()+'-'+String(q.getMonth()+1).padStart(2,'0')+'-'+String(q.getDate()).padStart(2,'0')})():dayOf(ca&&ca.date);
+         const dl=y=>new Date(y+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+         if(x&&x.day){d.cid=dl(fri);d.hod=dl(sat)}
+         return Promise.all([fri?t(fri,/Allumage|bougies/i):null,sat?t(sat,/Fin du Chabbat|Fin de (la )?f[êe]te/i):null]).then(([a,b])=>{if(a)d.ci=a;if(b)d.ho=b})})}).catch(()=>{}).then(()=>withPar(d)).then(()=>{fill(d);try{sessionStorage.setItem(k,JSON.stringify(d))}catch(e){}});
+   }).catch(()=>{
+     /* Hebcal indisponible : le flux fr.chabad.org prend le relais (sans la parachat) */
+     fetch('/chabad-lieux.json').then(r=>r.json()).then(L=>{const lieu=L[v[1]];if(!lieu)throw 0;
+       const now=new Date(),fri=new Date(now);fri.setDate(now.getDate()+((5-now.getDay()+7)%7));const sat=new Date(fri);sat.setDate(fri.getDate()+1);
+       const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+       const dj=d=>d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+       const t=(d,re)=>fetch('/api/zmanim?id='+lieu+'&date='+ymd(d)).then(r=>r.json()).then(z=>{const i=(z.items||[]).find(x=>re.test(x.label));return i?i.time.replace(/^0/,'').replace(':',' h '):'—'});
+       return Promise.all([t(fri,/Allumage|bougies/i),t(sat,/Fin du Chabbat|Fin de (la )?f[êe]te/i)]).then(([a,b])=>withPar({p:'—',ph:'',ci:a,cid:dj(fri),ho:b,hod:dj(sat),note:'Cliquez pour changer de ville · allumage '+v[2]+' min avant le coucher'}).then(fill))
+     }).catch(()=>withPar({p:'—',ph:'',ci:'—',cid:'',ho:'—',hod:'',note:''}).then(fill))});
  }
  sel.addEventListener('change',()=>{try{localStorage.setItem('parcity',sel.value)}catch(e){};load()});
  load();
@@ -703,7 +728,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
     const hasDoc=d.has_image!==false;
     el.innerHTML='<div class="dcard"><div class="dhead"><div class="dkick">Diffusion du jour</div><h3>'+esc(d.name||"Machia'h Now")+'</h3><div class="when">'+esc(dt)+'</div></div>'+
       '<div class="dbody'+(hasDoc&&d.youtube?'':' solo')+'">'+(hasDoc?'<div class="dcol"><div class="dlab">📄 Le document</div><div class="dprev"><img src="'+src+'" alt="Diffusion du '+esc(dt)+'" loading="lazy"><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>':'')+
-      (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" data-yt="'+id+'" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>'+
+      (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" data-yt="'+id+'" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>'+
       '<div class="dmore"><a class="btn gold" href="/torah/">Voir plus de diffusions</a></div></div>';
     el.querySelectorAll('.ytplay').forEach(x=>x.addEventListener('click',()=>openVid(x.dataset.yt,esc(dt))));
     el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));

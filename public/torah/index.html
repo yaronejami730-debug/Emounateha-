@@ -414,8 +414,10 @@ body{overflow-x:hidden}
 </style>
 <link rel="stylesheet" href="/mobile.css">
 <link rel="stylesheet" href="/fade.css?v=3">
-<link rel="stylesheet" href="/typo.css?v=44">
+<link rel="stylesheet" href="/typo.css?v=65">
 <script src="/typo.js?v=5" defer></script>
+<script src="/apercu-video.js?v=1" defer></script>
+<script src="/video-feed.js?v=5" defer></script>
 <script src="/wa-bouton.js?v=2" defer></script>
 </head>
 <body>
@@ -707,12 +709,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     setTimeout(drawHayomCanvases,0);
     el.innerHTML='<div class="dkick">Diffusion du jour</div><h2>'+esc(d.name||"Machia'h Now")+'</h2><div class="when">'+esc(dj(d.day))+'<span class="dhe" id="dhe"></span><span class="dph" id="dph"></span></div>'+
       '<div class="tbody'+(d.youtube?'':' solo')+'"><div><div class="dlab"><svg class="dico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#f5c400" stroke="#c99a00" stroke-width="1"/><rect x="8" y="11" width="8" height="7" rx="1" fill="#fff"/></svg> Hayom Yom du jour</div><div class="dprev" onclick="openLb(\''+src+'\',\''+esc(dj(d.day))+'\')"><img src="'+src+'" alt=""><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
-      (id?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" onclick="openVm(\''+id+'\',\''+esc(dj(d.day))+'\')" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>';}
+      (id?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" onclick="openVm(\''+id+'\',\''+esc(dj(d.day))+'\')" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>';}
   function renderArch(){const el=document.getElementById('archives');if(!el)return;let out='';let n=0;
     for(const m of months){if(mois&&m.key!==mois)continue;let cards='';
       for(const x of m.items){const id=ytId(x.youtube),src='/diffusion/'+x.id+'.jpg',cap=dj(x.day);
         if(filter!=='video'&&x.has_image!==false)cards+='<div class="it" onclick="openLb(\''+src+'\',\''+esc(cap)+'\')"><div class="th"><img src="'+src+'" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.name||"Machia'h Now")+'</small></div></div>';
-        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="https://i.ytimg.com/vi/'+id+'/hqdefault.jpg" alt="" loading="lazy" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg\'"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.has_image===false&&x.name?x.name:'Vidéo de Tanya')+'</small></div></div>';}
+        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="https://i.ytimg.com/vi/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.has_image===false&&x.name?x.name:'Vidéo de Tanya')+'</small></div></div>';}
       if(cards){n++;out+='<div class="month">'+esc(dm(m.key))+'</div><div class="grid4">'+cards+'</div>';}}
     el.innerHTML=out||'<div class="empty">Rien dans cette sélection.</div>';}
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');filter=b.dataset.f;renderArch()}));

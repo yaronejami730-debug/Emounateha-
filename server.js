@@ -41,7 +41,7 @@ function defaultDb() {
       id: uid(), holiday: 'hanouka', name: 'Hanouka — Appel aux dons', subject: '{{prenom}}, allumez une lumière avec Émounatéha 🕎',
       preheader: 'Ensemble, rendons Hanouka lumineux pour les familles dans le besoin.',
       title: 'Allumons ensemble la lumière de Hanouka',
-      body: DEFAULT_BODY, buttonText: 'Faire un don', buttonUrl: 'https://www.allodons.fr/emounateha',
+      body: DEFAULT_BODY, buttonText: 'Faire un don', buttonUrl: 'https://hannouka.allodons.fr/emounateha',
       color: '#1f6a72', accent: '#c4a24a', createdAt: now()
     }],
     campaigns: [],
@@ -156,7 +156,7 @@ function renderEmail(t, contact) {
   const paras = fill(t.body, c).split(/\n{2,}/).map(p =>
     `<p class="ink" style="margin:0 0 16px;font-size:16px;line-height:1.65;color:#111827;">${esc(p.trim()).replace(/\n/g, '<br>')}</p>`).join('');
   const logo = logoSrc
-    ? `<img src="${esc(logoSrc)}" alt="${esc(s.orgName)}" width="230" style="display:block;margin:0 auto;width:230px;height:auto;">`
+    ? `<img src="${esc(logoSrc)}" alt="${esc(s.orgName)}" width="120" style="display:block;margin:0 auto;width:120px;height:auto;">`
     : '';
   const button = t.buttonText && t.buttonUrl
     ? `<table role="presentation" align="center" style="margin:28px auto 8px;"><tr><td style="background:${accent};border-radius:999px;">
@@ -206,13 +206,13 @@ ${t.extraCss || ''}
 <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(fill(t.preheader, c))}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f1;"><tr><td align="center" class="outer" style="padding:24px 12px;">
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:600px;width:100%;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">
-  <tr><td class="hdr" background="${abase}/header2.jpg" bgcolor="#1f6a72" style="background:#1f6a72 url('${abase}/header2.jpg') center top/cover no-repeat;padding:26px 24px 30px;text-align:center;">
-    <div lang="he" dir="rtl" style="text-align:right;color:${accent};font-size:13px;margin-bottom:6px;">בס״ד</div>
+  <tr><td class="hdr" background="${abase}/header2.jpg" bgcolor="#1f6a72" style="background:#1f6a72 url('${abase}/header2.jpg') center top/cover no-repeat;padding:12px 20px 16px;text-align:center;">
+    <div lang="he" dir="rtl" style="text-align:right;color:${accent};font-size:13px;margin-bottom:0;line-height:1;">בס״ד</div>
     ${logo}
-    <div style="font-family:'Cinzel',Georgia,serif;font-size:30px;font-weight:bold;color:${accent};letter-spacing:2px;margin-top:14px;">${esc(s.orgName.toUpperCase())}</div>
-    <div class="he" lang="he" dir="rtl" style="font-family:'Frank Ruhl Libre','David',serif;font-weight:900;font-size:28px;color:#fff;letter-spacing:2px;margin-top:2px;">אמונתך</div>
-    <div style="height:2px;width:90px;background:${accent};margin:14px auto 12px;"></div>
-    <div style="font-size:13px;color:#d8ecea;">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</div></td></tr>
+    <div style="font-family:'Cinzel',Georgia,serif;font-size:22px;font-weight:bold;color:${accent};letter-spacing:2px;margin-top:6px;line-height:1.1;">${esc(s.orgName.toUpperCase())}</div>
+    <div class="he" lang="he" dir="rtl" style="font-family:'Frank Ruhl Libre','David',serif;font-weight:900;font-size:20px;color:#fff;letter-spacing:2px;margin-top:2px;line-height:1.1;">אמונתך</div>
+    <div style="height:2px;width:70px;background:${accent};margin:8px auto 7px;"></div>
+    <div style="font-size:12px;color:#d8ecea;">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</div></td></tr>
   <tr><td class="bgp pad" ${patAttr} style="${pat}padding:${t.extraHtml ? '30px 24px 10px' : '40px 36px 12px'};">
     <h1 class="ttl" style="margin:0 0 22px;font-family:Georgia,serif;font-size:28px;line-height:1.25;color:${color};text-align:center;">${esc(fill(t.title, c))}</h1>
     ${paras}${t.extraHtml || ''}${button}
@@ -249,7 +249,7 @@ function smsPhone(p) { // -> format Brevo : indicatif + numéro, sans + (ex. 337
 const smsFill = (t, r) => t.replace(/\{\{\s*prenom\s*\}\}/gi, (r.firstName || '').trim()).replace(/\{\{\s*nom\s*\}\}/gi, (r.lastName || '').trim()).replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
 
 // ---------- Brevo ----------
-async function brevoSend({ to, toName, subject, html, replyToEmail, replyToName }) {
+async function brevoSend({ to, toName, subject, html, text, replyToEmail, replyToName }) {
   const s = db.settings;
   if (!s.brevoApiKey) return { simulated: true, messageId: 'sim-' + uid() };
   if (!s.senderEmail) throw new Error('Email expéditeur manquant (Réglages)');
@@ -260,7 +260,7 @@ async function brevoSend({ to, toName, subject, html, replyToEmail, replyToName 
       sender: { name: s.senderName || s.orgName, email: s.senderEmail },
       to: [{ email: to, name: toName || undefined }],
       ...(replyToEmail ? { replyTo: { email: replyToEmail, name: replyToName || undefined } } : s.replyTo ? { replyTo: { email: s.replyTo, name: s.senderName || s.orgName } } : {}),
-      subject, htmlContent: html
+      subject, ...(text ? { textContent: text } : { htmlContent: html })
     })
   });
   const j = await res.json().catch(() => ({}));
@@ -481,12 +481,37 @@ const ymdTz = (iso, tz) => new Date(iso).toLocaleDateString('sv-SE', { timeZone:
 const SKIP_FETE = /^(Hag HaBanot|Roch Hachanah LaBehemot|Lel Selihot|Yom HaAliyah|Family Day|Sigd|Yom HaShoah VeHaGevurah)/i;
 
 // horaires + fêtes des `days` prochains jours pour une ville (API Hebcal)
+let calCache = null;
+async function getCal() {
+  if (calCache && Date.now() - calCache.at < 12 * 3600 * 1000) return calCache.v;
+  const base = ((db && db.settings && db.settings.publicUrl) || 'https://www.emounateha.fr').replace(/\/$/, '');
+  const r = await fetch(base + '/calendrier-hebraique.json'); if (!r.ok) return null;
+  const v = await r.json(); calCache = { at: Date.now(), v }; return v;
+}
+const tmTxt = (e, tz) => e && e.txt ? e.txt.replace(':', ' h ') : fmtH(e.at, tz);
 async function hebcalWeek(city, days = 8, shiftDays = 0) {
   const t0 = Date.now() + shiftDays * 86400000;
   const start = parisDay(t0), end = parisDay(t0 + days * 86400000);
   const u = `https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=on&geonameid=${city[1]}&M=on&b=${city[2]}&lg=fr&i=${ISRAEL.has(city[1]) ? 'on' : 'off'}&start=${start}&end=${end}`;
-  const r = await fetch(u); if (!r.ok) throw new Error('Hebcal ' + r.status);
-  const j = await r.json(); const tz = (j.location && j.location.tzid) || 'Europe/Paris';
+  let j = null;
+  try { const r = await fetch(u); if (r.ok) j = await r.json(); } catch (e) { j = null; }
+  if (!j || !Array.isArray(j.items)) {
+    // Hebcal en panne : le flux Chabad.org prend le relais (sans la parachat, qu'il ne donne pas)
+    const lieu = CHABAD_LIEUX[String(city[1])];
+    if (!lieu) throw new Error('Hebcal indisponible');
+    j = { location: { tzid: 'UTC' }, items: [] };
+    for (let t = new Date(start + 'T12:00:00Z').getTime(), last = new Date(end + 'T12:00:00Z').getTime(); t <= last; t += 86400000) {
+      const day = parisDay(t), wd = new Date(day + 'T12:00:00Z').getUTCDay();
+      if (wd !== 5 && wd !== 6) continue;
+      try {
+        const z = await chabadZmanim(lieu, day, city[2]);
+        const it = z.items.find(x => wd === 5 ? /Allumage|bougies/i.test(x.label) : /Fin du Chabbat|Fin de (la )?f[êe]te/i.test(x.label));
+        if (it) j.items.push({ category: wd === 5 ? 'candles' : 'havdalah', date: day + 'T' + it.time + ':00' });
+      } catch (e) { /* jour ignoré */ }
+    }
+    if (!j.items.length) throw new Error('Hebcal et Chabad indisponibles');
+  }
+  const tz = (j.location && j.location.tzid) || 'Europe/Paris';
   const ev = [];
   for (const it of j.items || []) {
     const day = String(it.date).slice(0, 10);
@@ -499,6 +524,33 @@ async function hebcalWeek(city, days = 8, shiftDays = 0) {
       let t = clean(it.title).split(':')[0].replace(/\s*\(.*\)$/, '').trim();
       t = t.replace(/^Erev\s+(.+)$/i, 'Veille de $1');
       if (!ev.some(e => e.kind === 'fete' && e.day === day && e.title === t)) ev.push({ day, kind: 'fete', title: t, yomtov: !!it.yomtov });
+    }
+  }
+  // Roch Hodech : depuis le calendrier hébraïque du site (1 ou 2 jours), sinon Hebcal
+  try {
+    const cal = await getCal();
+    if (cal) {
+      const shift = (d, n) => parisDay(new Date(d + 'T12:00:00Z').getTime() + n * 86400000);
+      const rh = [];
+      for (let t = new Date(start + 'T12:00:00Z').getTime(), last = new Date(end + 'T12:00:00Z').getTime(); t <= last; t += 86400000) {
+        const day = parisDay(t), e = cal[day]; if (!e) continue;
+        if (e[2] === 30) { const nx = cal[shift(day, 1)]; if (nx && nx[2] === 1) rh.push({ day, kind: 'rh', title: nx[3] }); }
+        else if (e[2] === 1 && e[3] !== 'Tichri') rh.push({ day, kind: 'rh', title: e[3] });
+      }
+      for (let i = ev.length - 1; i >= 0; i--) if (ev[i].kind === 'rh') ev.splice(i, 1);
+      ev.push(...rh);
+    }
+  } catch (e) { /* on garde Hebcal */ }
+  // horaires d'allumage / sortie : flux RSS Chabad.org (source unique)
+  const lieu = CHABAD_LIEUX[String(city[1])];
+  if (lieu) {
+    for (const e of ev) {
+      if (e.kind !== 'candles' && e.kind !== 'havdalah') continue;
+      try {
+        const z = await chabadZmanim(lieu, e.day, city[2]);
+        const it = z.items.find(x => e.kind === 'candles' ? /Allumage|bougies/i.test(x.label) : /Fin du Chabbat|Fin de (la )?f[êe]te|Sortie|Havdala/i.test(x.label));
+        if (it && /^\d{1,2}:\d{2}$/.test(it.time)) e.txt = it.time;
+      } catch (err) { /* repli : horaire Hebcal */ }
     }
   }
   ev.sort((a, b) => (a.day + (a.at || '')).localeCompare(b.day + (b.at || '')));
@@ -524,7 +576,7 @@ function chabbatTemplate(city, wk, mode, contact) {
   const hr = `<div style="height:1px;background:${G};margin:16px 0;line-height:1px;font-size:1px;">&nbsp;</div>`;
   const cell = (kind, e, border) => `<td width="50%" valign="top" class="${kind === 'in' ? 'cb-in' : 'cb-in2'}" style="padding:4px 4px;text-align:center;${border ? 'border-left:1px solid ' + G + ';' : ''}">
       <div style="font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:#8a9a9d;">${kind === 'in' ? '<span class="cb-flame">🕯️</span> Entrée' : '<span class="cb-flame">✨</span> Sortie'}</div>
-      ${e ? `<div class="cb-time" style="font-family:Georgia,serif;font-size:36px;line-height:1.1;font-weight:bold;color:${T};margin:6px 0 3px;white-space:nowrap;">${esc(fmtH(e.at, tz)).replace(/ /g, '&nbsp;')}</div><div class="cb-date" style="font-size:12px;letter-spacing:0;white-space:nowrap;color:#51666a;">${esc(fmtD(e.at, tz))}</div>` : '<div style="font-size:22px;color:#c3cfd1;margin-top:10px;">—</div>'}</td>`;
+      ${e ? `<div class="cb-time" style="font-family:Georgia,serif;font-size:36px;line-height:1.1;font-weight:bold;color:${T};margin:6px 0 3px;white-space:nowrap;">${esc(tmTxt(e, tz)).replace(/ /g, '&nbsp;')}</div><div class="cb-date" style="font-size:12px;letter-spacing:0;white-space:nowrap;color:#51666a;">${esc(fmtD(e.at, tz))}</div>` : '<div style="font-size:22px;color:#c3cfd1;margin-top:10px;">—</div>'}</td>`;
   const pairs = []; let open = null;
   for (const e of ev) { if (e.kind === 'candles') { if (open) pairs.push({ i: open }); open = e; } else if (e.kind === 'havdalah') { pairs.push({ i: open, o: e }); open = null; } }
   if (open) pairs.push({ i: open });
@@ -544,16 +596,16 @@ function chabbatTemplate(city, wk, mode, contact) {
   const dTxt = g => g.days.length === 1 ? fmtD(g.days[0] + 'T12:00:00', tz) : cap1(new Date(g.days[0] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', timeZone: tz })) + ' et ' + new Date(g.days[g.days.length - 1] + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz });
   const fl = grp.length ? hr + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + grp.map(f => `<tr><td style="padding:5px 8px;font-size:14px;color:#51666a;">${esc(dTxt(f))}</td><td style="padding:5px 8px;font-size:14px;font-weight:bold;color:${T};text-align:right;">🕎 ${esc(f.title)}</td></tr>`).join('') + '</table>' : '';
   const card = head + sched + rh + fl + hr +
-    `<p class="ink" style="margin:0 0 4px;font-size:12px;line-height:1.5;color:#8a9a9d;text-align:center;">Horaires Hebcal (Baal HaTanya) pour ${esc(city[0])}. Consultez votre Rav pour l'usage de votre communauté.</p>`;
+    `<p class="ink" style="margin:0 0 2px;font-size:10px;line-height:1.4;color:#b9c2c4 !important;text-align:center;">Source : fr.chabad.org</p>`;
   const ytNow = mode === 'yomtov';
-  const subject = ytNow ? `🕯️ Ce soir : allumage des bougies à ${firstCandle ? fmtH(firstCandle.at, tz) : ''} — ${city[0]}`
+  const subject = ytNow ? `🕯️ Ce soir : allumage des bougies à ${firstCandle ? tmTxt(firstCandle, tz) : ''} — ${city[0]}`
     : `Horaires de Chabbat — ${city[0]}${par ? ' · ' + par.title : ''}`;
   const intro = ytNow ? 'Ce soir, nous entrons dans la fête. Voici les horaires pour ' + city[0] + ' :'
     : `Voici les horaires de Chabbat${grp.length ? ' et des fêtes' : ''} de cette semaine pour ${city[0]} :`;
-  return { subject, preheader: firstCandle ? `Allumage des bougies : ${fmtD(firstCandle.at, tz)} à ${fmtH(firstCandle.at, tz)}` : 'Les horaires de la semaine',
+  return { subject, preheader: firstCandle ? `Allumage des bougies : ${fmtD(firstCandle.at, tz)} à ${tmTxt(firstCandle, tz)}` : 'Les horaires de la semaine',
     title: ytNow ? 'Bonne fête !' : 'Chabbat Chalom !', body: salutation(contact) + '\n\n' + intro, extraHtml: card,
     extraCss: '@keyframes cb-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes cb-flame{0%{opacity:.72;transform:scale(.94)}100%{opacity:1;transform:scale(1.1)}}@keyframes cb-glow{0%,100%{opacity:.85}50%{opacity:1}}.cb-in{animation:cb-rise .8s ease both}.cb-in2{animation:cb-rise .8s .3s ease both}.cb-flame{display:inline-block;animation:cb-flame 1.3s ease-in-out infinite alternate}.cb-rh{animation:cb-glow 3s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.cb-in,.cb-in2,.cb-flame,.cb-rh{animation:none}}',
-    buttonText: 'Toutes les villes', buttonSmall: true, buttonUrl: (db.settings.publicUrl || '').replace(/\/$/, '') + '/horaires/', color: '#1f6a72', accent: '#c4a24a' };
+    buttonText: 'Changer de ville', buttonSmall: true, buttonUrl: (db.settings.publicUrl || '').replace(/\/$/, '') + '/horaires/' + (contact && contact.id && contact.id !== 'preview' && contact.id !== 'test' ? '?abo=' + encodeURIComponent(contact.id) : ''), color: '#1f6a72', accent: '#c4a24a' };
 }
 
 async function sendChabbat(contact, key, mode, cache) {
@@ -645,25 +697,99 @@ async function rabbiLetter(req, res) {
   letterHits.set(ip, [...hits, t0]);
   const b = await readBody(req);
   if (b.website) return send(res, 200, { ok: true }); // champ piège
-  const clip = (v, n) => String(v || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const clip = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n); // pas de retrait de < > : le HTML du récapitulatif est échappé, le texte simple n'en a pas besoin
   const name = clip(b.name, 90), heb = clip(b.heb, 60), mother = clip(b.mother, 60), city = clip(b.city, 60), phone = clip(b.phone, 30);
   const email = String(b.email || '').trim().toLowerCase().slice(0, 120);
-  const message = String(b.message || '').replace(/[<>]/g, '').trim().slice(0, 4000);
-  if (!name || !heb || !mother || message.length < 5) return send(res, 400, { error: 'Merci de remplir tous les champs obligatoires.' });
+  const message = String(b.message || '').trim().slice(0, 4000);
+  if (!name || !heb || !mother || !city || phone.replace(/\D/g, '').length < 6 || message.length < 5) return send(res, 400, { error: 'Tous les champs sont obligatoires.' });
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Adresse email invalide.' });
   if (!b.consent) return send(res, 400, { error: 'Merci de cocher l\'autorisation d\'envoi.' });
-  const to = envVar('RABBI_LETTER_TO') || db.settings.rabbiLetterTo || 'ohel@ohelchabad.org';
   const e = esc;
-  const html = renderEmail({ subject: 'Lettre pour le Rabbi', preheader: 'Lettre transmise depuis le site Émounatéha', title: 'Lettre pour le Rabbi', color: '#1f6a72', accent: '#c4a24a',
-    body: 'Lettre envoyée par le formulaire du site Émounatéha.\n\nNom : ' + name + '\nPrénom hébraïque : ' + heb + '\nPrénom hébraïque de la mère : ' + mother + '\nVille : ' + (city || '—') + '\nEmail : ' + email + '\nTéléphone : ' + (phone || '—') + '\n\nDemande :\n' + message }, { firstName: '', lastName: '', email: to, id: 'letter' });
+  const to = envVar('RABBI_LETTER_TO') || db.settings.rabbiLetterTo || 'ohel@ohelchabad.org';
+  // email en texte simple (pas de HTML), lisible tel quel par l'Ohel
+  const text = 'Lettre pour le Rabbi\n\nNom et prénom : ' + name + '\nPrénom hébraïque : ' + heb + '\nPrénom hébraïque de la mère : ' + mother + '\nEmail : ' + email + (city ? '\nVille : ' + city : '') + (phone ? '\nTéléphone : ' + phone : '') + '\n\nLettre :\n\n' + message + '\n';
   try {
-    await brevoSend({ to, subject: 'Lettre pour le Rabbi — ' + name, html, replyToEmail: email, replyToName: name });
-    // copie de confirmation pour l'expéditeur
-    const copy = renderEmail({ subject: 'Votre lettre a été transmise', preheader: 'Copie de votre lettre', title: 'Votre lettre a été transmise', color: '#1f6a72', accent: '#c4a24a',
-      body: 'Bonjour ' + name + ',\n\nNous avons bien transmis votre lettre. Voici la copie de ce que vous avez écrit :\n\n' + message + '\n\nQue D.ieu vous bénisse.' }, { firstName: name, lastName: '', email, id: 'letter-copy' });
-    await brevoSend({ to: email, toName: name, subject: 'Votre lettre au Rabbi a été transmise', html: copy }).catch(() => {});
+    await brevoSend({ to, subject: 'Lettre pour le Rabbi — ' + name, text, replyToEmail: email, replyToName: name });
+    // mail de récapitulatif pour l'expéditeur (HTML) : nom, prénoms, lettre ; l'Ohel, lui, reçoit du texte simple
+    const base = (db.settings.publicUrl || 'https://www.emounateha.fr').replace(/\/$/, '');
+    const row = (k, v) => `<tr><td style="padding:4px 10px 4px 0;font-size:13px;color:#6b7280;vertical-align:top;white-space:nowrap;">${e(k)}</td><td style="padding:4px 0;font-size:15px;color:#111827;">${e(v)}</td></tr>`;
+    const recap = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;width:100%;">${row('Nom et prénom', name)}${row('Prénom hébraïque', heb)}${row('Prénom hébraïque de la mère', mother)}${row('Ville', city)}${row('Email', email)}${row('Téléphone', phone)}</table>` +
+      `<div style="margin:0 0 6px;padding:14px 16px;border-left:3px solid #c4a24a;background:#fbf6e6;border-radius:6px;font-size:15px;line-height:1.6;color:#111827;white-space:pre-wrap;">${e(message)}</div>`;
+    const copy = renderEmail({ subject: 'Votre lettre a bien été envoyée au Ohel', preheader: 'Votre lettre a bien été envoyée au Ohel', title: 'Votre lettre a bien été envoyée', color: '#1f6a72', accent: '#c4a24a',
+      body: 'Bonjour ' + name + ',\n\nVotre lettre a bien été envoyée au Ohel. Voici le récapitulatif de ce que vous avez écrit :',
+      extraHtml: recap, buttonText: 'Participer à nos missions', buttonUrl: base + '/don/' }, { firstName: name, lastName: '', email, id: 'letter-copy' });
+    await brevoSend({ to: email, toName: name, subject: 'Votre lettre a bien été envoyée au Ohel', html: copy }).catch(() => {});
+    res.setHeader('Cache-Control', 'no-store');
     send(res, 200, { ok: true });
-  } catch (err) { console.error('Lettre Rabbi', err.message); send(res, 502, { error: 'L\'envoi a échoué. Réessayez dans un instant.' }); }
+  } catch (err) { console.error('Lettre Rabbi : échec d\'envoi'); /* jamais le contenu ni l'erreur détaillée (peut citer le texte) */ send(res, 502, { error: 'L\'envoi a échoué. Réessayez dans un instant.' }); }
+}
+
+
+const CHABAD_LIEUX = {"281184":"247","293397":"531","294801":"689","295629":"699","294071":"694","295530":"688","295277":"687","293322":"697","2988507":"394","2969679":"1187","2996944":"310","2995469":"322","2990440":"677","3028808":"678","2972315":"638","3031582":"70","2998324":"707","2973783":"759","2660646":"190","2657896":"611","2800866":"86","2803138":"24","2643743":"300","2643123":"316","3173435":"332","3169070":"449","3117735":"314","3128760":"44","2553604":"109","2464470":"547","993800":"248","5128581":"370","4164138":"331","5368361":"304","4930956":"71","6077243":"345","6167865":"540","3530597":"330","3435910":"90","3448439":"476","2147714":"523","2158177":"327","2976043":"394","3022530":"394","3031137":"394"}; // geonameid -> locationId Chabad.org (villes sans entrée : repli Hebcal)
+// ---------- Horaires halakhiques : flux RSS de fr.chabad.org (source unique : site, mails, tableau) ----------
+const zCache = new Map();
+const decEnt = t => String(t || '').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n)).replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+// renvoie { loc, hebrew, items:[{label, time}] } pour un lieu Chabad (locationId) et un jour (YYYY-MM-DD)
+async function chabadZmanim(id, ymd, before = 18) {
+  id = String(id).replace(/\D/g, ''); if (!id) throw new Error('lieu inconnu');
+  const key = id + '|' + ymd + '|' + before, hit = zCache.get(key);
+  if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
+  const [y, m, d] = ymd.split('-');
+  const u = `https://fr.chabad.org/tools/rss/zmanim.xml?locationId=${id}&locationType=1&bDef=0&before=${before}&tdate=${+m}/${+d}/${y}`;
+  let r, t;
+  for (let i = 0; i < 3; i++) {
+    r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Safari/605.1.15' } });
+    if (r.status !== 429 && r.status < 500) break;
+    await new Promise(x => setTimeout(x, 500 * (i + 1)));
+  }
+  if (!r.ok) throw new Error('Chabad ' + r.status);
+  t = await r.text();
+  const head = t.match(/<title>Zemanim - Horaires Halakhiques pour ([^<]*?) pour [^<]*<\/title>/);
+  const items = [...t.matchAll(/<item>[\s\S]*?<category>([^<]*)<\/category>[\s\S]*?<title>([^<]*)<\/title>/g)].map(x => {
+    const time = decEnt(x[1]).trim(), label = decEnt(x[2]).replace(/\s*-\s*[0-9:]+(?:\s*min\.)?\s*--.*$/, '').trim();
+    return { label, time };
+  }).filter(x => x.label && x.time);
+  if (!items.length) throw new Error('aucun horaire');
+  const v = { loc: head ? decEnt(head[1]).trim() : '', hebrew: decEnt((t.match(/<hebrew_date>([^<]*)<\/hebrew_date>/) || [])[1] || ''), items };
+  zCache.set(key, { at: Date.now(), v });
+  return v;
+}
+
+
+// ---------- Parachat de la semaine (Hebcal), côté serveur : fiable, mise en cache, indépendante de la ville ----------
+const parCache = new Map();
+async function parashaFor(id) {
+  const il = ISRAEL.has(Number(id)) ? 1 : 0;
+  const wd = new Date(parisDay(Date.now()) + 'T12:00:00Z').getUTCDay(), h = parisHour();
+  const add = wd === 6 ? (h >= 21 ? 7 : 0) : (6 - wd + 7) % 7;
+  const sat = parisDay(Date.now() + add * 86400000);
+  const key = sat + '|' + il, hit = parCache.get(key);
+  if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
+  const r = await fetch(`https://www.hebcal.com/hebcal?v=1&cfg=json&s=on&maj=on&min=off&mod=off&nx=off&mf=off&i=${il ? 'on' : 'off'}&lg=fr&start=${sat}&end=${sat}`);
+  if (!r.ok) throw new Error('Hebcal ' + r.status);
+  const j = await r.json(), it = j.items || [];
+  const p = it.find(x => x.category === 'parashat'), hol = it.find(x => x.category === 'holiday' && x.yomtov);
+  const v = { day: sat, p: p ? clean(p.title).replace(/^Parachah?\s*/i, '') : (hol ? clean(hol.title) : ''), ph: ((p ? p.hebrew : (hol ? hol.hebrew : '')) || '').replace(/^פרשת\s*/, '') };
+  if (!v.p) throw new Error('parachat introuvable');
+  parCache.set(key, { at: Date.now(), v });
+  return v;
+}
+
+
+// changer la ville de son abonnement aux horaires de Chabbat (lien reçu dans le mail : l'identifiant du contact fait office de clé, comme pour la désinscription)
+async function shabbatCity(req, res) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const nowMs = Date.now(), hits = (subHits.get('c' + ip) || []).filter(t => nowMs - t < 3600000);
+  if (hits.length >= 20) return send(res, 429, { error: 'Trop de tentatives.' });
+  subHits.set('c' + ip, [...hits, nowMs]);
+  const b = await readBody(req);
+  const c = db.contacts.find(x => x.id === String(b.id || ''));
+  if (!c) return send(res, 404, { error: 'Abonnement introuvable.' });
+  const city = CITIES.find(x => String(x[1]) === String(b.city));
+  if (!city) return send(res, 400, { error: 'Cette ville n\'est pas disponible pour les e-mails.' });
+  c.tags = [...new Set([...(c.tags || []).filter(t => !/^ville:/.test(t)), 'chabbat', 'ville:' + city[1]])];
+  save();
+  return send(res, 200, { ok: true, city: city[0] });
 }
 
 // ---------- HTTP ----------
@@ -1180,7 +1306,17 @@ async function handle(req, res) {
       console.log('AlloDons webhook :', ev.type || '(sans type)');
       return send(res, 200, { ok: true });
     }
+    if (url.pathname === '/api/parasha' && req.method === 'GET') { // public : parachat de la semaine
+      try { const v = await parashaFor(url.searchParams.get('id')); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, 502, { error: 'Parachat indisponible' }); }
+    }
+    if (url.pathname === '/api/zmanim' && req.method === 'GET') { // public : horaires du flux RSS Chabad (id Chabad + jour)
+      try { const v = await chabadZmanim(url.searchParams.get('id'), /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('date') || '') ? url.searchParams.get('date') : parisDay(Date.now()), +url.searchParams.get('before') || 18);
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, 502, { error: 'Horaires indisponibles' }); }
+    }
     if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
+    if (url.pathname === '/api/shabbat-city' && req.method === 'POST') return shabbatCity(req, res);
     if (url.pathname === '/api/rabbi-letter' && req.method === 'POST') return rabbiLetter(req, res);
     if (url.pathname === '/api/pay-session' && req.method === 'POST') { // public : ouvre une session de paiement AlloDons et renvoie son adresse
       const key = envVar('ALLODONS_KEY');
@@ -1289,6 +1425,7 @@ if (require.main === module) {
 }
 module.exports = handle;
 module.exports.loadDb = loadDb;
+module.exports.chabadZmanim = chabadZmanim;
 module.exports.campaignPlan = (id) => { const c = db.campaigns.find(x => x.id === id); return c ? { plan: campaignPlan(c), stats: campaignStats(c) } : null; };
 module.exports.sendChabbatTest = async (to, cityId, mode) => { const city = cityById(cityId); const dow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' })).getDay(); const wk = await hebcalWeek(city, 8, (4 - dow + 7) % 7); /* un test se lit comme le mail du jeudi, même envoyé un autre jour */ const c = { id: 'test', firstName: 'Yarone', lastName: 'Jami', email: to, tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); const r = await brevoSend({ to, subject: '[TEST] ' + t.subject, html: renderEmail(t, c) }); return { subject: t.subject, result: r.simulated ? 'simulé (pas de clé Brevo)' : 'envoyé' }; };
 module.exports.chabbatHtml = async (cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'preview', firstName: 'Yarone', lastName: 'Jami', email: 'exemple@email.com', tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); return { subject: t.subject, html: renderEmail(t, c) }; };
