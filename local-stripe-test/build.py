@@ -295,7 +295,7 @@ HTML = r"""
 
     <div class="dn-panel" id="p3">
       <h2 class="dn-h">Paiement sécurisé</h2>
-      <p class="dn-diag" id="exDiag">Portefeuilles (Apple Pay / Google Pay) : détection en cours…</p>
+      <p class="dn-diag" id="exDiag" hidden>Portefeuilles (Apple Pay / Google Pay) : détection en cours…</p>
       <div class="dn-paysum"><span id="paySum">—</span><i>🔒 Stripe</i></div>
       <div id="exwrap" style="display:none">
         <div class="dn-lab" style="margin-top:6px">Paiement express</div>
@@ -587,6 +587,7 @@ $('go').onclick = act;
 $('f').addEventListener('submit', e => { e.preventDefault(); act(); });
 $('back').onclick = () => { elements = null; $('payel').innerHTML = ''; goPanel(panel === 3 ? 2 : 1); };
 
+if (/[?&]diag=1/.test(location.search)) $('exDiag').hidden = false;
 function renderRes(o) {
   let em = '';
   if (o.email && o.email.skipped) em = 'Aucun email demandé.';
