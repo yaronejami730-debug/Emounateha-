@@ -84,6 +84,15 @@ async function donEmail(d) {   // { prenom, montant(centimes), dateDon, affectat
   <p style="margin:0 0 4px;text-align:center;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#9a7a22;font-weight:bold;">${d.mensuel ? 'Votre don mensuel' : 'Votre don'}</p>
   <p class="big" style="margin:0 0 18px;text-align:center;font-family:Georgia,serif;font-size:46px;line-height:1.1;color:${color};">${amount}${d.mensuel ? '<span style="font-size:18px;color:#6b7d80;"> / mois</span>' : ''}</p>
   <p style="margin:0 0 20px;font-size:16px;line-height:1.65;color:#111827;text-align:center;">Votre générosité permet à ${esc(s.orgName)} de continuer à aider des familles et des personnes dans le besoin : repas, colis, hébergement, soutien et accompagnement vers l'autonomie.</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;background:#f5ecd6;border-radius:18px;"><tr>
+    <td valign="top" style="padding:14px 0 0 16px;width:34px;font-family:Georgia,serif;font-size:58px;line-height:.9;color:${accent};font-weight:bold;">&ldquo;</td>
+    <td style="padding:16px 6px 16px 6px;text-align:center;font-family:Arial,Helvetica,sans-serif;text-transform:uppercase;line-height:1.45;">
+      <div style="font-size:13.5px;color:#3a3a3a;font-weight:600;">En pratiquant la tsédaka, nous honorons son héritage</div>
+      <div style="font-size:15.5px;color:${color};font-weight:800;margin:3px 0;">et contribuons à la construction d'un monde</div>
+      <div style="font-size:13.5px;color:#3a3a3a;font-weight:600;">empreint de bienveillance, d'unité et de générosité.</div>
+    </td>
+    <td valign="bottom" style="padding:0 16px 4px 0;width:34px;font-family:Georgia,serif;font-size:58px;line-height:.9;color:${accent};font-weight:bold;text-align:right;">&rdquo;</td>
+  </tr></table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6faf9;border:1px solid #dbe8e8;border-radius:12px;margin:0 0 6px;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     ${row('Montant', amount + (d.mensuel ? ' / mois' : ''))}${row('Date', esc(date))}${d.affectation ? row('Affectation', esc(d.affectation)) : ''}${row('Mode de paiement', esc(d.mode))}${d.mensuel && d.echeance ? row('Échéance', 'n°' + d.echeance) : ''}${row('Reçu fiscal n°', esc(d.numero), true)}
   </table></td></tr></table>
@@ -96,7 +105,7 @@ async function donEmail(d) {   // { prenom, montant(centimes), dateDon, affectat
   <p style="margin:14px 0 6px;text-align:center;font-size:13.5px;color:#51666a;">Une question sur votre don ou votre reçu ? Répondez simplement à cet email<br>ou appelez-nous au ${esc(s.phone || '')}.</p>`;
   return { subject: `${d.test ? '[TEST] ' : ''}Merci pour votre don de ${amount.replace(' ', ' ')}${d.mensuel ? ' par mois' : ''} — votre reçu fiscal`,
     html: shell(s, inner, { preheader: `Votre don de ${amount.replace(' ', ' ')} est bien reçu. Votre reçu fiscal est joint à cet email.`, testBanner: !!d.test }).replace('{{pied}}', `Vous recevez cet email car vous avez fait un don à ${esc(s.orgName)}. C'est un message de confirmation, pas une lettre d'information.<br>Vos données servent uniquement à établir et conserver votre reçu fiscal.`),
-    text: `Merci pour votre don de ${amount.replace(' ', ' ')}${d.mensuel ? ' par mois' : ''} à ${s.orgName} (${date}).\n${d.affectation ? 'Affectation : ' + d.affectation + '.\n' : ''}Votre reçu fiscal ${d.numero} est joint à cet email (PDF). Conservez-le : il vous sera demandé en cas de contrôle.${d.spaceUrl ? '\nRetrouvez tous vos reçus : ' + d.spaceUrl : ''}` };
+    text: `Merci pour votre don de ${amount.replace(' ', ' ')}${d.mensuel ? ' par mois' : ''} à ${s.orgName} (${date}).\n${d.affectation ? 'Affectation : ' + d.affectation + '.\n' : ''}« En pratiquant la tsédaka, nous honorons son héritage et contribuons à la construction d'un monde empreint de bienveillance, d'unité et de générosité. »\nVotre reçu fiscal ${d.numero} est joint à cet email (PDF). Conservez-le : il vous sera demandé en cas de contrôle.${d.spaceUrl ? '\nRetrouvez tous vos reçus : ' + d.spaceUrl : ''}` };
 }
 
 module.exports = { settings, isFake, send, otpEmail, donEmail };
