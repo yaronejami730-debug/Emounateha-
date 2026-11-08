@@ -271,7 +271,7 @@ app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res)
 app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); res.setHeader('Referrer-Policy', 'no-referrer'); next(); });
 // simulation de date (test) : ?date=2027-02-01, seulement depuis l'ordinateur local, jamais via le tunnel
 const simDate = req => { const l = /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(req.headers.host || '') && !req.headers['cf-connecting-ip']; const d = String(req.query.date || ''); return l && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00:00') : new Date(); };
-app.get('/api/config', async (req, res) => res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: await affectations(simDate(req)) }));
+app.get('/api/config', async (req, res) => res.json({ paypal: /(^|,)\s*paypal\b/.test(process.env.PAYMENT_METHODS || ''), publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: await affectations(simDate(req)) }));
 
 // 1) paiement : don ponctuel (PaymentIntent) ou mensuel (abonnement Stripe) sur le compte Stripe de test
 // recherche d'entreprise par SIRET / SIREN (API publique recherche-entreprises.api.gouv.fr, sans clé)
@@ -307,7 +307,7 @@ app.post('/api/intent', async (req, res) => {
         metadata: { ...meta, siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0' }, expand: ['latest_invoice.payment_intent'] });
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
-      const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: ['card'], description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
+      const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours

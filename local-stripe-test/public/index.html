@@ -1271,7 +1271,7 @@ async function act() {
         $('paySum').textContent = money(payAmount / 100) + (payMen ? ' par mois' : '') + ' · ' + ($('aff').value || 'Don');
         elements.create('payment', { layout: { type: 'tabs' }, wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } }).mount('#payel');
         // Apple Pay / Google Pay : bouton express au-dessus de la carte (visible seulement si l'appareil et le domaine le permettent)
-        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, layout: { maxColumns: 1, maxRows: 4 }, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'never', amazonPay: 'never' } });
+        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, layout: { maxColumns: 1, maxRows: 4 }, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: (cfg && cfg.paypal && !payMen) ? 'auto' : 'never', amazonPay: 'never' } });
         ex.mount('#exel');
         ex.on('loaderror', ev => { $('exDiag').textContent = 'Erreur Apple Pay / Google Pay : ' + ((ev.error && (ev.error.message || ev.error.code)) || JSON.stringify(ev)); window.__exErr = ev; });
         setTimeout(() => { if (!window.__exReady && !window.__exErr) $('exDiag').textContent = 'Portefeuilles : aucune réponse de Stripe après 6 s'; }, 6000);
@@ -1299,6 +1299,15 @@ async function act() {
   } catch (e) { show(e.message); } finally { busy = false; $('go').disabled = false; }
 }
 $('go').onclick = act;
+// retour après une redirection (PayPal, 3D Secure…) : Stripe renvoie ?payment_intent=…&redirect_status=…
+(function () {
+  const q = new URLSearchParams(location.search), id = q.get('payment_intent'), st = q.get('redirect_status');
+  if (!id || !/^pi_[A-Za-z0-9]+$/.test(id)) return;
+  history.replaceState(null, '', location.pathname);
+  if (st !== 'succeeded') { setTimeout(() => show(st === 'failed' ? 'Le paiement a été refusé. Vous pouvez réessayer.' : 'Paiement non abouti. Vous pouvez réessayer.'), 300); return; }
+  const go = () => withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/don-cerfa/api/finalize', { id })).then(renderRes).catch(e => show(e.message));
+  if (document.readyState === 'complete') go(); else addEventListener('load', go);
+})();
 $('f').addEventListener('submit', e => { e.preventDefault(); act(); });
 $('back').onclick = () => { elements = null; $('payel').innerHTML = ''; goPanel(panel === 3 ? 2 : 1); };
 
