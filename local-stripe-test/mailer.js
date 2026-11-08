@@ -38,9 +38,9 @@ function shell(s, inner, { preheader = '', testBanner = false } = {}) {
   const wa = (s.phone || '').replace(/\D/g, '').replace(/^0/, '33');
   const ico = (href, name, alt) => `<a href="${esc(href)}" style="display:inline-block;margin:0 4px;text-decoration:none;"><img src="${abase}/icon-${name}.png" width="26" height="26" alt="${alt}" style="display:inline-block;border:0;"></a>`;
   const icons = [s.instagramUrl && ico(s.instagramUrl, 'instagram', 'Instagram'), s.facebookUrl && ico(s.facebookUrl, 'facebook', 'Facebook'), s.tiktokUrl && ico(s.tiktokUrl, 'tiktok', 'TikTok'), s.youtubeUrl && ico(s.youtubeUrl, 'youtube', 'YouTube'), s.phone && ico('https://wa.me/' + wa, 'whatsapp', 'WhatsApp')].filter(Boolean).join('');
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${esc(s.orgName)}</title>
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${esc(s.orgName)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;900&display=swap" rel="stylesheet">
-<style>@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;900&display=swap');:root{color-scheme:light only}.he{font-family:'Frank Ruhl Libre','David',serif !important}@media only screen and (max-width:620px){.outer{padding:0 !important}.card{border-radius:0 !important}.pad{padding-left:18px !important;padding-right:18px !important}.big{font-size:40px !important}.code{font-size:34px !important;letter-spacing:6px !important}}</style></head>
+<style>@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;900&display=swap');:root{color-scheme:light only}a[x-apple-data-detectors],u+#body a,#MessageViewBody a{color:inherit!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;line-height:inherit!important;pointer-events:none}.he{font-family:'Frank Ruhl Libre','David',serif !important}@media only screen and (max-width:620px){.outer{padding:0 !important}.card{border-radius:0 !important}.pad{padding-left:18px !important;padding-right:18px !important}.big{font-size:40px !important}.code{font-size:34px !important;letter-spacing:6px !important}}</style></head>
 <body bgcolor="#eef2f1" style="margin:0;padding:0;background:#eef2f1;font-family:Arial,Helvetica,sans-serif;">
 <span style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${esc(preheader)}${'&#847;&zwnj;&nbsp;'.repeat(120)}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f1;"><tr><td align="center" class="outer" style="padding:24px 12px;">
@@ -56,7 +56,7 @@ ${testBanner ? '<tr><td align="center" style="background:#8a1f1f;color:#ffffff;f
 <tr><td class="pad" ${patAttr} style="${pat}padding:32px 34px 14px;">${inner}</td></tr>
 <tr><td class="pad" ${patAttr} style="${pat}padding:22px 34px 28px;text-align:center;border-top:1px solid #eef0f3;">
   <div style="margin:0 0 12px;text-align:center;">${icons}</div>
-  <p style="margin:0 0 6px;font-size:12px;color:#6b7280;">${esc(s.orgName)} · Association à but non lucratif · SIREN 930 755 558 · 76 boulevard Félix Faure, 93300 Aubervilliers</p>
+  <p style="margin:0 0 6px;font-size:12px;color:#6b7280;">${esc(s.orgName)} · Association à but non lucratif · SIREN 930&#8203; 755&#8203; 558 · 76&#8203; boulevard Félix&#8203; Faure, 93&#8203;300 Auber&#8203;villiers</p>
   <p style="margin:0;font-size:11.5px;color:#9ca3af;">{{pied}}</p>
 </td></tr></table></td></tr></table></body></html>`;
 }
