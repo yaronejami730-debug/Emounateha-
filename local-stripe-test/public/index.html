@@ -400,6 +400,32 @@ body{overflow-x:hidden}
 #pm .pmfb p{color:var(--mut);margin-bottom:14px}
 #pm .pmok{display:none;text-align:center;padding:34px 18px}
 #pm .pmok h3{font:400 26px 'Bree Serif',serif;color:var(--teal);margin-bottom:6px}
+
+/* ---- étape 1 façon AlloDons : carte centrée, logo rond, montants en tuiles, cadres à étiquette ---- */
+.ad-brand{text-align:center;margin:4px 0 22px}
+.ad-logo{display:grid;place-items:center;width:132px;height:132px;margin:0 auto 14px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px var(--gold-l),0 8px 24px rgba(20,60,66,.14)}
+.ad-logo img{width:80%;height:80%;object-fit:contain;border-radius:50%}
+.ad-brand b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(28px,6.5vw,36px);letter-spacing:.5px;color:var(--teal)}
+.ad-brand small{display:block;margin-top:4px;font-size:14px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold)}
+#p1 > #h1,#p1 > #fs{display:none}
+#p1 .dn-amts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
+#p1 .dn-amts button{height:62px;border-radius:16px;border:2px solid #d3e0e0;background:#fff;font-family:'Bree Serif',serif;font-weight:400;font-size:22px;color:var(--teal);box-shadow:0 2px 8px rgba(20,60,66,.05);cursor:pointer}
+#p1 .dn-amts button.on,#p1 .dn-amts button[aria-pressed=true]{background:linear-gradient(180deg,var(--gold-l),var(--gold));border-color:var(--gold);color:#1b2b2d;box-shadow:0 8px 20px rgba(196,162,74,.35)}
+.ad-box{display:block;border:2px solid #d3e0e0;border-radius:16px;padding:12px 18px 10px;margin:0 0 14px;background:#fff;cursor:text}
+.ad-box:focus-within{border-color:var(--teal)}
+.ad-box input,.ad-box select{border:0!important;box-shadow:none!important;padding-left:0!important;background-color:transparent!important;height:auto!important;min-height:0!important;border-radius:0!important}
+.ad-box #montant{font-family:'Bree Serif',serif!important;font-size:26px!important;color:var(--teal)!important;padding:2px 0 0!important}
+.ad-k{display:block;font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut)}
+.ad-box .dn-other{display:flex;align-items:center;border:0;padding:0;margin:0;background:none;box-shadow:none}
+.ad-box .dn-other input{flex:1;border:0;outline:0;padding:4px 0 0;font-family:'Bree Serif',serif;font-size:26px;font-weight:400;color:var(--teal);background:none;min-width:0;box-shadow:none}
+.ad-box .dn-other span{font-family:'Bree Serif',serif;font-size:24px;color:var(--teal)}
+#p1 .dn-freq{display:grid;grid-template-columns:1fr 1fr;gap:0;background:#e9f2f2;border-radius:99px;padding:5px;margin:0 0 14px}
+#p1 .dn-freq label{margin:0}
+#p1 .dn-freq input{position:absolute;opacity:0}
+#p1 .dn-freq span{display:block;text-align:center;padding:13px 6px;border-radius:99px;font-size:16.5px;font-weight:600;color:var(--mut);cursor:pointer;border:0;background:none}
+#p1 .dn-freq input:checked+span{background:var(--teal);color:#fff;box-shadow:0 4px 12px rgba(31,106,114,.3)}
+.ad-sel select{display:block;width:100%;border:0;outline:0;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f6a72' stroke-width='2.4'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right center/22px no-repeat;-webkit-appearance:none;appearance:none;padding:4px 30px 2px 0;font:inherit;font-size:19px;font-weight:700;color:var(--teal)}
+#go{height:58px!important;font-size:18px!important}
 </style>
 <link rel="stylesheet" href="/mobile.css">
 <link rel="stylesheet" href="/fade.css?v=3">
@@ -776,26 +802,25 @@ body{overflow-x:hidden}
     </div>
 
     <div class="dn-panel on" id="p1">
+      <div class="ad-brand"><span class="ad-logo"><img src="/don-cerfa/emblem.png" alt="Émounatéha"></span><b>ÉMOUNATÉHA</b><small>Émounatéha en action</small></div>
       <h2 class="dn-h" id="h1">Votre don</h2>
       <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal vous est envoyé par email.</p>
-      <div class="dn-lab first">1 · Pour quoi souhaitez-vous donner ?</div>
-      <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don"></div>
+      <div id="amtBox">
+      <div class="dn-amts" id="amts"><button type="button" data-v="26">26 €</button><button type="button" data-v="52">52 €</button><button type="button" data-v="126">126 €</button><button type="button" data-v="252">252 €</button><button type="button" data-v="770">770 €</button><button type="button" data-v="1540">1 540 €</button></div>
+      <label class="ad-box" for="montant"><span class="ad-k">Autre montant</span><span class="dn-other"><input id="montant" inputmode="decimal" placeholder="0" aria-label="Autre montant"><span>€</span></span></label>
+      </div>
+      <div id="gFreq">
+        <div class="dn-freq"><label><input type="radio" name="freq" value="ponctuel" checked><span>Don ponctuel</span></label><label><input type="radio" name="freq" value="mensuel"><span>Mensuel</span></label></div>
+        <p class="dn-sub" id="freqHint" style="display:none">Prélèvement chaque mois, jusqu'à ce que vous l'arrêtiez. Un reçu fiscal est établi pour chaque prélèvement.</p>
+      </div>
+      <label class="ad-box ad-sel" for="affSel"><span class="ad-k">Pour quoi donnez-vous ?</span><select id="affSel" aria-label="Affectation du don"></select></label>
+      <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don" hidden></div>
       <input type="hidden" id="aff">
       <div id="actBox" hidden>
-        <div class="dn-lab" id="actLab">2 · Comment souhaitez-vous participer ?</div>
+        <div class="dn-lab" id="actLab">Comment souhaitez-vous participer ?</div>
         <div id="acts"></div>
         <div class="dn-actfree"><label for="libre">Ajouter un don libre <small>facultatif</small></label><div class="dn-other"><input id="libre" inputmode="decimal" placeholder="Montant libre" aria-label="Don libre"><span>€</span></div></div>
         <div class="dn-acttotal"><span>Total</span><b id="actTotal">0 €</b></div>
-      </div>
-      <div id="amtBox">
-      <div class="dn-lab">2 · Quel montant ?</div>
-      <div class="dn-amts" id="amts"><button type="button" data-v="26">26 €</button><button type="button" data-v="52">52 €</button><button type="button" data-v="126">126 €</button><button type="button" data-v="252">252 €</button><button type="button" data-v="770">770 €</button><button type="button" data-v="1540">1 540 €</button></div>
-      <div class="dn-other"><input id="montant" inputmode="decimal" placeholder="Autre montant" aria-label="Autre montant"><span>€</span></div>
-      </div>
-      <div id="gFreq">
-        <div class="dn-lab">3 · Une fois ou chaque mois ?</div>
-        <div class="dn-freq"><label><input type="radio" name="freq" value="ponctuel" checked><span>Ponctuel</span></label><label><input type="radio" name="freq" value="mensuel"><span>Mensuel</span></label></div>
-        <p class="dn-sub" id="freqHint" style="display:none">Prélèvement chaque mois, jusqu'à ce que vous l'arrêtiez. Un reçu fiscal est établi pour chaque prélèvement.</p>
       </div>
       <div id="gSans" style="display:none">
         <div class="dn-lab">Le versement reçu</div>
@@ -999,6 +1024,8 @@ function buildChips(list) {
     return '<label class="dn-chip"><input type="radio" name="affr" value="' + esc(a.label) + '"' + chk + '><span><span class="dn-ic">' + ICONS[ICONKEY(a.label)] + '</span><em>' + esc(main) + extra + '</em><i></i></span></label>';
   }).join('');
   document.querySelectorAll('input[name=affr]').forEach(r => r.onchange = () => applyAff(true));
+  const sel = $('affSel');   // liste déroulante façon AlloDons : pilote les cartes (cachées)
+  if (sel) { sel.innerHTML = list.map((a, i) => '<option value="' + i + '">' + esc(a.kind === 'fete' ? a.label + (a.montant ? ' · ' + a.montant + ' €' : '') : splitLab(a.label)[0]) + '</option>').join(''); sel.onchange = () => pickAff(+sel.value); }
   applyAff(false);
 }
 // applique le choix : texte envoyé au serveur, choix Chabbat / fête pour les colis, montant suggéré (seulement quand le donateur touche une carte)
@@ -1031,6 +1058,7 @@ function renderActs(it) {
 }
 function applyAff(suggest) {
   const r = document.querySelector('input[name=affr]:checked'); if (!r) return; const it = AFFITEMS[r.value] || { label: r.value };
+  { const all = [...document.querySelectorAll('input[name=affr]')], sel = $('affSel'); if (sel) sel.value = String(all.indexOf(r)); }
   $('aff').value = it.label;
   const fete = it.kind === 'fete' && it.actions && it.actions.length && mode !== 'sans';
   $('actBox').hidden = !fete; $('amtBox').hidden = !!fete; $('gFreq').style.display = fete ? 'none' : '';
