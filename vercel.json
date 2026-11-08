@@ -13,6 +13,10 @@
       "destination": "https://emounateha-don.vercel.app/"
     },
     {
+      "source": "/don-cerfa/",
+      "destination": "https://emounateha-don.vercel.app/"
+    },
+    {
       "source": "/don-cerfa/:path*",
       "destination": "https://emounateha-don.vercel.app/:path*"
     },
