@@ -191,7 +191,7 @@ app.post('/api/intent', async (req, res) => {
         metadata: { ...meta, siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0' }, expand: ['latest_invoice.payment_intent'] });
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
-      const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: ['card', 'paypal'], description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
+      const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: ['card'], description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); d.pending[id] = { ...don, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);

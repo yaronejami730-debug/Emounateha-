@@ -21,6 +21,15 @@ CSS_ACCT = r'''
 .dn-row input{flex:1;min-width:0}
 .dn-btn.sm{flex:none;height:46px;font-size:14.5px;padding:0 16px;margin:0;white-space:nowrap}
 #dn input.dn-otp{height:56px;font-family:'Courier New',monospace;font-size:28px;letter-spacing:12px;text-align:center;font-weight:700}
+.dn-acct-box{position:relative;padding:22px 20px 20px;border:1px solid #e3d29c;border-radius:22px;box-shadow:0 14px 40px rgba(20,60,66,.14)}
+.dn-acct-h{justify-content:flex-start;gap:12px;margin:0 0 8px;padding-right:36px}
+.dn-ico{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:linear-gradient(180deg,#f3e6b8,#e2c878);color:#14464e;flex:none}
+.dn-acct-h b{font-size:21px}
+.dn-acct-box .dn-x{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;font-size:13px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;background:#eef3f3;color:#51666a;border:0;cursor:pointer}
+.dn-acct-box .dn-acct-p{font-size:14px;margin:0 0 14px}
+#dn .dn-acct-box .dn-row input{height:54px;min-height:54px;font-size:16px;border-radius:14px;padding:0 18px;box-sizing:border-box}
+#dn .dn-acct-box .dn-row{gap:10px}
+.dn-acct-box .dn-btn.sm{height:52px;padding:0 22px;white-space:nowrap}
 .dn-acct-err{font-size:13.5px;color:#8a2a22;background:#fdecea;border-radius:10px;padding:8px 11px;margin:8px 0 0}
 .dn-acct-in{display:flex;align-items:center;gap:11px;justify-content:center;background:#effaf3;border:1px solid #bfe3cf;border-radius:16px;padding:10px 14px;max-width:560px;margin:0 auto}
 .dn-av{width:34px;height:34px;border-radius:50%;background:#2c8a5a;color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
@@ -224,9 +233,9 @@ HTML = r"""
   <div class="dn-acct" id="acct">
     <div id="acctOut" class="dn-acct-out"><span>Déjà donateur ?</span><button type="button" id="acctOpen" class="dn-link">Se connecter</button><span>pour remplir le formulaire automatiquement</span></div>
     <div id="acctBox" class="dn-acct-box" hidden>
-      <div class="dn-acct-h"><b>Se connecter</b><button type="button" id="acctClose" class="dn-x" aria-label="Fermer">✕</button></div>
-      <p class="dn-acct-p">Entrez votre email : vous recevez un code à 6 chiffres. Pas de mot de passe. Vos informations se remplissent toutes seules. Pas encore de compte ? Il est créé à la première connexion.</p>
-      <div id="lgStep1"><label for="lgEmail">Votre email</label><div class="dn-row"><input id="lgEmail" type="email" inputmode="email" autocomplete="email"><button type="button" id="lgSend" class="dn-btn sm">Recevoir mon code</button></div></div>
+      <button type="button" id="acctClose" class="dn-x" aria-label="Fermer">✕</button><div class="dn-acct-h"><span class="dn-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 6 8-6"/></svg></span><b>Se connecter</b></div>
+      <p class="dn-acct-p">Un code à 6 chiffres vous est envoyé par email. Pas de mot de passe : votre compte se crée à la première connexion.</p>
+      <div id="lgStep1"><div class="dn-row"><input id="lgEmail" type="email" inputmode="email" autocomplete="email" placeholder="Votre adresse email" aria-label="Votre adresse email"><button type="button" id="lgSend" class="dn-btn sm">Recevoir mon code</button></div></div>
       <div id="lgStep2" hidden><p class="dn-acct-p">Code envoyé à <b id="lgTo"></b> · <button type="button" class="dn-link" id="lgChange">changer d'email</button></p>
         <label for="lgCode">Code à 6 chiffres</label><input id="lgCode" class="dn-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······">
         <p class="dn-sub"><button type="button" class="dn-link" id="lgResend">Renvoyer le code</button> <span id="lgDev"></span></p></div>
@@ -556,7 +565,7 @@ async function act() {
         $('paySum').textContent = money(payAmount / 100) + (payMen ? ' par mois' : '') + ' · ' + ($('aff').value || 'Don');
         elements.create('payment', { layout: { type: 'tabs' }, wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } }).mount('#payel');
         // Apple Pay / Google Pay : bouton express au-dessus de la carte (visible seulement si l'appareil et le domaine le permettent)
-        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, layout: { maxColumns: 1, maxRows: 4 }, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'auto', amazonPay: 'never' } });
+        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, layout: { maxColumns: 1, maxRows: 4 }, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'never', amazonPay: 'never' } });
         ex.mount('#exel');
         ex.on('loaderror', ev => { $('exDiag').textContent = 'Erreur Apple Pay / Google Pay : ' + ((ev.error && (ev.error.message || ev.error.code)) || JSON.stringify(ev)); window.__exErr = ev; });
         setTimeout(() => { if (!window.__exReady && !window.__exErr) $('exDiag').textContent = 'Portefeuilles : aucune réponse de Stripe après 6 s'; }, 6000);
