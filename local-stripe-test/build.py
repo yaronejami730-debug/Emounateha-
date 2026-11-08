@@ -46,6 +46,10 @@ CSS_ACCT = r'''
 .dn-pcard.on .ic{background:var(--gold-l)}
 .dn-pcard.add small{color:var(--teal);font-weight:600}
 .dn-conn .dn-type{display:none}
+.dn-savep{display:none}.dn-conn .dn-savep{display:block}.dn-conn .dn-guestsave{display:none}
+.dn-guestsave{font-size:13.5px;color:#51666a;background:#f3f8f7;border-radius:12px;padding:10px 12px}
+.dn-siretmsg{display:block;min-height:18px;margin-top:6px;font-size:13px;color:#51666a}.dn-siretmsg.ok{color:#1d6b43}.dn-siretmsg.ko{color:#8a2a22}
+.dn-hint{margin:0 0 14px;padding:11px 13px;border-radius:12px;background:#fff8e1;border:1px solid #ecdca0;color:#6b5412;font-size:13.5px;line-height:1.5}
 .dn-profs{display:none}.dn-conn .dn-profs{display:block}
 .dn-savep{display:none}.dn-conn .dn-savep{display:block}
 #dn input[readonly]{background:#f3f7f7;color:#51666a}
@@ -290,17 +294,19 @@ HTML = r"""
       <p class="dn-p">Elles figurent sur votre reçu fiscal.</p>
       <div class="dn-profs" id="profSwitch"><div class="dn-lab" style="margin-top:0">Je donne avec mon profil</div><div class="dn-pcards" id="profCards"></div></div>
       <div class="dn-type">
-        <label><input type="radio" name="type" value="particulier" checked><span>Personne physique<small>particulier</small></span></label>
-        <label><input type="radio" name="type" value="entreprise"><span>Personne morale<small>entreprise, organisme</small></span></label>
+        <label><input type="radio" name="type" value="particulier" checked><span>Particulier<small>je donne en mon nom</small></span></label>
+        <label><input type="radio" name="type" value="entreprise"><span>Professionnel<small>entreprise, association…</small></span></label>
       </div>
+      <p class="dn-hint" id="profHint" hidden></p>
       <div class="dn-g">
         <div id="gPart" class="dn-full dn-g" style="padding:0">
           <div><label for="prenom">Prénom</label><input id="prenom" autocomplete="given-name"></div>
           <div><label for="nom">Nom</label><input id="nom" autocomplete="family-name"></div>
         </div>
         <div id="gEnt" class="dn-full dn-g" style="padding:0;display:none">
+          <div class="dn-full"><label for="siret">Numéro SIRET <span style="font-weight:400;color:#51666a">(ou SIREN)</span></label><input id="siret" inputmode="numeric" autocomplete="off" placeholder="14 chiffres : tout se remplit tout seul"><small id="siretMsg" class="dn-siretmsg"></small></div>
           <div><label for="rs">Raison sociale</label><input id="rs" autocomplete="organization"></div>
-          <div><label for="siren">SIREN <span style="font-weight:400;color:#51666a">(facultatif)</span></label><input id="siren" inputmode="numeric" placeholder="9 chiffres"></div>
+          <div><label for="siren">SIREN</label><input id="siren" inputmode="numeric" placeholder="9 chiffres"></div>
         </div>
         <div class="dn-full dn-ac">
           <label for="adr">Adresse</label>
@@ -311,6 +317,7 @@ HTML = r"""
         <div><label for="cp">Code postal</label><input id="cp" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
         <div><label for="ville">Ville</label><input id="ville" autocomplete="address-level2"></div>
         <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
+        <div class="dn-full dn-guestsave" id="guestSave"><span>Pour retrouver ces informations la prochaine fois, <button type="button" class="dn-link" id="guestLogin">connectez-vous</button> (un code par email, sans mot de passe).</span></div>
         <div class="dn-full dn-savep"><label class="dn-ck"><input id="saveProf" type="checkbox" checked><span>Enregistrer ces informations dans mon espace donateur<small>Pour ne plus avoir à les retaper</small></span></label></div>
         <div class="dn-full"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email<small id="smtp"></small></span></label></div>
       </div>
@@ -457,7 +464,7 @@ function setMode(m) {
   $('h1').textContent = m === 'carte' ? 'Choisissez votre don' : 'Don reçu';
   upSum(); goPanel(1);
 }
-document.querySelectorAll('input[name=type]').forEach(r => r.onchange = () => { setType(isEnt()); upSum(); });
+document.querySelectorAll('input[name=type]').forEach(r => r.onchange = () => { setType(isEnt()); updHint(); upSum(); });
 document.querySelectorAll('input[name=freq]').forEach(r => r.onchange = () => { $('freqHint').style.display = isMen() ? 'block' : 'none'; upSum(); });
 $('amts').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('montant').value = b.dataset.v; mark(); upSum(); };
 ['montant', 'prenom', 'nom', 'rs', 'adr', 'cp', 'ville', 'email'].forEach(i => $(i).addEventListener('input', () => { if (i === 'montant') mark(); upSum(); }));
@@ -471,19 +478,42 @@ const PROFNAME = k => k === 'pro' ? 'Professionnel' : 'Particulier';
 const profLine = (k, p) => !p ? 'Ajouter ce profil' : (k === 'pro' ? p.raisonSociale : (p.prenom + ' ' + p.nom));
 function fillProfile(k) {
   const p = me && me.profiles && me.profiles[k], ent = k === 'pro'; setType(ent);
-  $('prenom').value = p && !ent ? p.prenom : ''; $('nom').value = p && !ent ? p.nom : ''; $('rs').value = p && ent ? p.raisonSociale : ''; $('siren').value = p && ent ? (p.siren || '') : '';
+  $('prenom').value = p && !ent ? p.prenom : ''; $('nom').value = p && !ent ? p.nom : ''; $('rs').value = p && ent ? p.raisonSociale : ''; $('siren').value = p && ent ? (p.siren || '') : ''; $('siret').value = ''; $('siretMsg').textContent = '';
   $('adr').value = p ? p.adresse : ''; $('cp').value = p ? p.cp : ''; $('ville').value = p ? p.ville : '';
   if (me) { $('email').value = me.email; }
   renderProfiles(); upSum();
 }
+let siretSeq = 0;
+async function siretLookup() {
+  const q = $('siret').value.replace(/\s/g, ''), m = $('siretMsg'), n = ++siretSeq;
+  m.className = 'dn-siretmsg'; m.textContent = '';
+  if (!/^(\d{9}|\d{14})$/.test(q)) { if (q.length > 0 && !/^\d+$/.test(q)) { m.className = 'dn-siretmsg ko'; m.textContent = 'Chiffres uniquement.'; } return; }
+  m.textContent = 'Recherche de votre entreprise…';
+  try {
+    const r = await fetch('/api/siret?q=' + q), j = await r.json(); if (n !== siretSeq) return;
+    if (!r.ok) throw new Error(j.error || 'Introuvable');
+    $('rs').value = j.nom; $('siren').value = j.siren; if (j.adresse) $('adr').value = j.adresse; if (j.cp) $('cp').value = j.cp; if (j.ville) $('ville').value = j.ville;
+    m.className = 'dn-siretmsg ok'; m.textContent = '✓ ' + j.nom + ' — vérifiez et modifiez si besoin.'; upSum();
+  } catch (e) { if (n !== siretSeq) return; m.className = 'dn-siretmsg ko'; m.textContent = e.message + ' Vous pouvez remplir les champs à la main.'; }
+}
+$('siret').addEventListener('input', siretLookup);
+function updHint() {
+  const h = $('profHint'), k = isEnt() ? 'pro' : 'particulier', saved = me && me.profiles && me.profiles[k];
+  let t = '';
+  if (me && !saved) t = k === 'pro' ? 'Complétez votre profil professionnel (raison sociale, SIREN, adresse). Il sera enregistré pour vos prochains dons.' : 'Complétez votre profil particulier. Il sera enregistré pour vos prochains dons.';
+  else if (!me && k === 'pro') t = 'Renseignez les informations de votre structure : elles figureront sur le reçu fiscal.';
+  h.textContent = t; h.hidden = !t;
+}
 function curKind() { return isEnt() ? 'pro' : 'particulier'; }
 function renderProfiles() {
+  updHint();
   if (!me) return;
   const cur = curKind();
   $('profCards').innerHTML = ['particulier', 'pro'].map(k => { const p = me.profiles && me.profiles[k]; return '<button type="button" class="dn-pcard' + (cur === k ? ' on' : '') + (p ? '' : ' add') + '" data-k="' + k + '"><span class="ic">' + (k === 'pro' ? '🏢' : '👤') + '</span><span style="min-width:0"><b>' + PROFNAME(k) + '</b><small>' + esc(profLine(k, p)) + '</small></span></button>'; }).join('');
   document.querySelectorAll('#profCards .dn-pcard').forEach(b => b.onclick = () => fillProfile(b.dataset.k));
 }
 function renderAcct() {
+  updHint();
   $('f').classList.toggle('dn-conn', !!me);
   $('acctOut').hidden = !!me; $('acctIn').hidden = !me; if (me) { $('acctBox').hidden = true; $('acctEmail').textContent = me.email; }
   $('email').readOnly = !!me; if (me) $('email').value = me.email;
@@ -507,6 +537,7 @@ async function lgVerify() {
   try { await api('POST', '/api/auth/verify', { email: lgEmail, code }); await loadMe(); afterLogin(); }
   catch (e) { lgShowErr(e.message); $('lgCode').select(); }
 }
+$('guestLogin').onclick = () => { $('acctOpen').click(); try { $('acct').scrollIntoView({ block: 'center' }); } catch (e) {} };
 $('acctOpen').onclick = () => { $('acctBox').hidden = false; $('acctOut').hidden = true; $('lgStep1').hidden = false; $('lgStep2').hidden = true; lgShowErr(''); $('lgEmail').focus(); };
 $('acctClose').onclick = () => { $('acctBox').hidden = true; $('acctOut').hidden = !!me; };
 $('lgSend').onclick = lgRequest; $('lgEmail').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); lgRequest(); } });
@@ -554,6 +585,7 @@ async function post(url, data) {
 function check1() { if (nf($('montant').value) < 1) throw new Error('Choisissez un montant (1 € minimum).'); }
 function check2() {
   if (isEnt() ? !$('rs').value.trim() : !($('prenom').value.trim() && $('nom').value.trim())) throw new Error(isEnt() ? 'Indiquez la raison sociale.' : 'Indiquez votre prénom et votre nom.');
+  if (isEnt() && !/^\d{9}$/.test($('siren').value.replace(/\s/g, ''))) throw new Error('Indiquez le SIREN de votre structure (9 chiffres).');
   if ($('adr').value.trim().length < 3) throw new Error('Indiquez votre adresse.');
   if (!/^\d{5}$/.test($('cp').value.trim())) throw new Error('Code postal : 5 chiffres.');
   if ($('ville').value.trim().length < 2) throw new Error('Indiquez la ville.');

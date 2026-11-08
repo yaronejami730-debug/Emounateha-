@@ -46,6 +46,7 @@ function validerDonateur(b) {
   if (type === 'particulier' && (!clean(b.prenom, 60) || !clean(b.nom, 60))) throw new Error('Prénom et nom requis');
   if (type === 'entreprise' && !nom) throw new Error('Raison sociale requise');
   const siren = String(b.siren || '').replace(/\s/g, '');
+  if (type === 'entreprise' && !siren) throw new Error('SIREN requis pour un don professionnel');
   if (type === 'entreprise' && siren && !sirenValide(siren)) throw new Error('SIREN invalide (9 chiffres)');
   const rue = clean(b.adresse, 140), cp = clean(b.cp, 10), ville = clean(b.ville, 80);
   if (rue.length < 3 || !/^\d{5}$/.test(cp) || ville.length < 2) throw new Error('Adresse complète requise (rue, code postal à 5 chiffres, ville)');
@@ -176,6 +177,23 @@ app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow')
 app.get('/api/config', (req, res) => res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: AFFECT }));
 
 // 1) paiement : don ponctuel (PaymentIntent) ou mensuel (abonnement Stripe) sur le compte Stripe de test
+// recherche d'entreprise par SIRET / SIREN (API publique recherche-entreprises.api.gouv.fr, sans clé)
+const tcase = t => String(t || '').toLowerCase().replace(/(^|[\s'’-])([a-zà-ÿ])/g, (m, p, c) => p + c.toUpperCase());
+app.get('/api/siret', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').replace(/\s/g, '');
+    if (!/^(\d{9}|\d{14})$/.test(q)) return res.status(400).json({ error: 'Saisissez 9 chiffres (SIREN) ou 14 chiffres (SIRET).' });
+    const r = await fetch('https://recherche-entreprises.api.gouv.fr/search?per_page=1&q=' + q, { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) throw new Error('service indisponible');
+    const x = ((await r.json()).results || [])[0];
+    if (!x || (q.length === 9 ? x.siren !== q : !String(x.siege && x.siege.siret) .startsWith(q.slice(0, 9)))) return res.status(404).json({ error: 'Aucune entreprise trouvée pour ce numéro.' });
+    const e = (q.length === 14 && (x.matching_etablissements || []).find(m => m.siret === q)) || x.siege || {};
+    const rue = [e.numero_voie, e.indice_repetition, e.type_voie, e.libelle_voie].filter(Boolean).join(' ') || String(e.adresse || '').replace(/\s*\d{5}.*$/, '');
+    if (!(x.nom_raison_sociale || x.nom_complet)) return res.status(404).json({ error: 'Entreprise non diffusible : remplissez les champs à la main.' });
+    res.json({ siren: x.siren, siret: e.siret || '', nom: tcase(x.nom_raison_sociale || x.nom_complet), adresse: tcase(rue), cp: e.code_postal || '', ville: tcase(e.libelle_commune || '') });
+  } catch (e) { res.status(502).json({ error: 'Recherche impossible pour le moment. Remplissez les champs à la main.' }); }
+});
+
 app.post('/api/intent', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
