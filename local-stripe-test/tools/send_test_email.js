@@ -16,9 +16,13 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
   const stripe = require('stripe')(envf.STRIPE_SECRET_KEY); const BASE = 'http://127.0.0.1:' + (envf.PORT || 3100);
   const post = async (u, b) => { const r = await fetch(BASE + u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }); const j = await r.json(); if (!r.ok) throw new Error(u + ' : ' + j.error); return j; };
   const donor = { type: 'particulier', prenom: 'Yarone', nom: 'Jami', adresse: '12 rue de la Paix', cp: '75002', ville: 'Paris', email: TO, montant: '126', frequence: 'ponctuel', affectation: 'Colis de Chabbat et de fêtes', envoyerEmail: false };
-  const it = await post('/api/intent', donor);
-  await stripe.paymentIntents.confirm(it.id, { payment_method: 'pm_card_visa', return_url: BASE + '/' });
-  const rc = await post('/api/finalize', { id: it.id });
+  let rc;
+  if (process.env.REUSE) { const d = JSON.parse(fs.readFileSync(path.join(ROOT, 'data.json'), 'utf8')); rc = Object.values(d.receipts).filter(r => r.montant === 12600 && !r.mensuel).pop(); if (!rc) throw new Error('Aucun reçu de 126 € à réutiliser'); console.log('reçu réutilisé :', rc.numero); }
+  else {
+    const it = await post('/api/intent', donor);
+    await stripe.paymentIntents.confirm(it.id, { payment_method: 'pm_card_visa', return_url: BASE + '/' });
+    rc = await post('/api/finalize', { id: it.id });
+  }
   const pdfPath = path.join(ROOT, rc.pdf.replace(/^\//, '')); const pdf = fs.readFileSync(pdfPath);
   console.log('reçu créé :', rc.numero, '| PDF', Math.round(pdf.length / 1024), 'Ko');
 
@@ -59,9 +63,9 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
       ${row('Montant', '126,00 €')}${row('Date', esc(date))}${row('Affectation', 'Colis de Chabbat et de fêtes')}${row('Mode de paiement', 'Paiement en ligne')}${row('Reçu fiscal n°', esc(rc.numero), true)}
     </table></td></tr></table>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#fff8e6;border:1px solid #efd9a0;border-radius:12px;"><tr><td style="padding:14px 18px;">
-    <p style="margin:0 0 4px;font-size:15px;font-weight:bold;color:#7a5f14;">📎 Votre reçu fiscal est joint à cet email</p>
-    <p style="margin:0;font-size:13.5px;line-height:1.55;color:#4a4a3a;">Le PDF « Reçu fiscal (CERFA) » vous permet de bénéficier d'une réduction d'impôt. <b>Conservez-le</b> : il vous sera demandé en cas de contrôle. Il n'est pas à joindre à votre déclaration.</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;"><tr><td style="padding:16px 4px 0;border-top:1px solid #dfe8e8;text-align:center;">
+    <p style="margin:0 0 6px;font-size:15px;font-weight:bold;color:#14272a;">Votre reçu fiscal est en pièce jointe (PDF)</p>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7d80;">Il vous permet de bénéficier d'une réduction d'impôt. Conservez-le : il vous sera demandé en cas de contrôle. Il n'est pas à joindre à votre déclaration de revenus.</p>
   </td></tr></table>
   <table role="presentation" align="center" style="margin:26px auto 8px;"><tr><td style="background:${accent};border-radius:999px;"><a href="${site}/" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:bold;color:#1b2b2d;text-decoration:none;font-family:Arial,sans-serif;">Découvrir nos actions</a></td></tr></table>
   <p style="margin:14px 0 6px;text-align:center;font-size:13.5px;color:#51666a;">Une question sur votre don ou votre reçu ? Répondez simplement à cet email<br>ou appelez-nous au ${esc(s.phone || '')}.</p>
