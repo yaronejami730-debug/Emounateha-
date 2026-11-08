@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "description": "Page de test LOCALE : paiement Stripe (mode test) + reçu fiscal CERFA en PDF + envoi par email. Non publiée, liée à aucune page du site.",
-  "scripts": { "start": "node server.js" },
-  "dependencies": { "express": "^4.21.2", "nodemailer": "^6.9.16", "puppeteer-core": "^23.9.0", "stripe": "^17.4.0" }
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "nodemailer": "^10.4.0",
+    "puppeteer-core": "^25.16.0",
+    "stripe": "^17.4.0"
+  }
 }

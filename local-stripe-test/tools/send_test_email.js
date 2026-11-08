@@ -17,13 +17,13 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
   const post = async (u, b) => { const r = await fetch(BASE + u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }); const j = await r.json(); if (!r.ok) throw new Error(u + ' : ' + j.error); return j; };
   const donor = { type: 'particulier', prenom: 'Yarone', nom: 'Jami', adresse: '12 rue de la Paix', cp: '75002', ville: 'Paris', email: TO, montant: '126', frequence: 'ponctuel', affectation: 'Colis de Chabbat et de fêtes', envoyerEmail: false };
   let rc;
-  if (process.env.REUSE) { const d = JSON.parse(fs.readFileSync(path.join(ROOT, 'data.json'), 'utf8')); rc = Object.values(d.receipts).filter(r => r.montant === 12600 && !r.mensuel).pop(); if (!rc) throw new Error('Aucun reçu de 126 € à réutiliser'); console.log('reçu réutilisé :', rc.numero); }
+  if (process.env.REUSE) { const d = JSON.parse(require('../vault').readFile(path.join(ROOT, 'data.json')).toString('utf8')); rc = Object.values(d.receipts).filter(r => r.montant === 12600 && !r.mensuel).pop(); if (!rc) throw new Error('Aucun reçu de 126 € à réutiliser'); console.log('reçu réutilisé :', rc.numero); }
   else {
     const it = await post('/api/intent', donor);
     await stripe.paymentIntents.confirm(it.id, { payment_method: 'pm_card_visa', return_url: BASE + '/' });
     rc = await post('/api/finalize', { id: it.id });
   }
-  const pdfPath = path.join(ROOT, rc.pdf.replace(/^\//, '')); const pdf = fs.readFileSync(pdfPath);
+  const pdfPath = path.join(ROOT, rc.pdf.replace(/^\//, '')); const pdf = require('../vault').readFile(pdfPath);
   console.log('reçu créé :', rc.numero, '| PDF', Math.round(pdf.length / 1024), 'Ko');
 
   // 2) réglages Brevo / identité visuelle du CRM (la clé reste en mémoire)

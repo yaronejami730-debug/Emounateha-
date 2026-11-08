@@ -91,6 +91,14 @@ Tout le code est dans le sous-dossier `local-stripe-test/`.
 - **Sécurité** : code à usage unique, limitation de débit, cookie de session, vérification de même origine, liens PDF signés (HMAC) ou session propriétaire. Le code est renvoyé à l'écran (`devCode`) **uniquement en local**.
 - **Limites** : e-mail réel du code non testé sur une vraie adresse ; `PUBLIC_URL` non défini (pas de bouton « Retrouver mes reçus » dans l'e-mail) ; stockage encore en fichier local (à passer sur Supabase).
 
+## 5ter. Sécurité et vérifications (8 novembre 2026, local uniquement)
+- **Chiffrement au repos** (AES-256-GCM, `vault.js`) : `data.json`, tous les PDF et les `.eml` sont illisibles sans la clé `DATA_KEY` (dans `.env`, hors Git). **À sauvegarder** : sans elle, les données sont perdues. Un fichier modifié, renommé ou en clair forgé est refusé.
+- **En-têtes** : CSP, anti-clic (X-Frame-Options), nosniff, HSTS via HTTPS ; **anti-CSRF** sur toute requête qui modifie quelque chose ; limite de débit sur le tunnel ; 3 PDF maximum en même temps ; paiements en attente effacés après 3 jours.
+- **Dépendances** : `npm audit` = 0 vulnérabilité (puppeteer-core, nodemailer mis à jour).
+- **Tests** (scripts hors dépôt) : ~150 vérifications — validations, cartes refusées, 3D Secure, paiements simultanés (aucun doublon ni trou de numéro), mensualités (horloge Stripe), comptes, isolement entre donateurs, fichiers non exposés, injection HTML, parcours complets dans le navigateur (mobile et ordinateur).
+- **Bugs trouvés puis corrigés** : paiement carte bloqué (adresse.state), montants en lettres faux (77-79, 97-99, quatre-vingt mille, cent mille), reçu du 2e mois jamais créé (identifiant d'abonnement).
+- **Reste à faire avant la mise en ligne** : base de données Supabase (chiffrement des colonnes + accès restreint), mot de passe du back-office, validation du CERFA par l'expert-comptable, hébergement, clés Stripe réelles.
+
 ## 6. Points d'attention connus
 - **Apple Pay / Google Pay** : le bouton ne se charge **que si Link est activé** sur le compte Stripe, et si l'on n'ajoute pas les réglages d'affichage `buttonTheme` / `layout` (ils bloquent le chargement). Link est donc activé ; sa ligne « paiement rapide avec Link » apparaît dans le formulaire de carte.
 - Apple Pay exige un **domaine HTTPS réel** (pas `localhost`). En test, c'est l'adresse du tunnel qui est enregistrée chez Stripe ; elle change à chaque nouveau tunnel.

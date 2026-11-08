@@ -1,7 +1,7 @@
 /* Espace donateur : connexion par code à 6 chiffres (sans mot de passe), profils particulier / professionnel,
    liste des reçus par année, téléchargement protégé des PDF.
    Données dans data.json : users, sessions, otps, urlSecret (jamais commité). */
-const fs = require('fs'), path = require('path'), crypto = require('crypto');
+const fs = require('fs'), path = require('path'), crypto = require('crypto'), vault = require('./vault');
 
 module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer }) {
   const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
@@ -141,7 +141,8 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
       const e = Number(req.query.e), s = String(req.query.s || ''); let ok = e > Date.now() / 1000 && safeEq(s, sig(f, e));
       if (!ok) { const ses = getSession(req); if (ses) { const base = f.replace(/\.eml$/, '.pdf'); ok = Object.values(load().receipts || {}).some(r => r.file === base && r.donorEmail === ses.email); } }
       if (!ok) return res.status(403).type('text').send('Lien expiré ou non autorisé. Reconnectez-vous à votre espace donateur.');
-      res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('Content-Disposition', 'inline'); if (f.endsWith('.eml')) res.type('message/rfc822'); else res.type('application/pdf'); res.sendFile(p);
+      let buf; try { buf = vault.readFile(p); } catch (e) { console.error('[recus] fichier illisible', f); return res.status(500).end(); }
+      res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Content-Disposition', 'inline'); if (f.endsWith('.eml')) res.type('message/rfc822'); else res.type('application/pdf'); res.send(buf);
     });
   }
   return { mount, getSession, publicReceipt, signUrl, saveProfileFromForm, kindOf, cleanProfile };

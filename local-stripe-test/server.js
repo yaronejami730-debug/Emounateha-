@@ -7,6 +7,7 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const puppeteer = require('puppeteer-core');
 const { montantEnLettres } = require('./nombreEnLettres');
+const vault = require('./vault');
 
 // --- variables d'environnement (.env local, jamais publié) ---
 try {
@@ -14,6 +15,7 @@ try {
     const m = l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/); if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
   }
 } catch (e) {}
+vault.ensureKey(path.join(__dirname, '.env'));
 const ASSO = JSON.parse(fs.readFileSync(path.join(__dirname, 'asso.config.json'), 'utf8'));
 const PORT = Number(process.env.PORT || 3100);
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -21,14 +23,17 @@ const PREFIX = process.env.NUM_PREFIX || 'TEST';
 const DATA = path.join(__dirname, 'data.json');
 const RECUS = path.join(__dirname, 'recus');
 const TEMPLATE_PATH = path.join(__dirname, 'templates', 'cerfa.html');
-fs.mkdirSync(RECUS, { recursive: true });
+fs.mkdirSync(RECUS, { recursive: true, mode: 0o700 });
 
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 if (stripe && !/^sk_test_/.test(process.env.STRIPE_SECRET_KEY)) { console.error('Clé Stripe non TEST : arrêt par sécurité.'); process.exit(1); }
 
 // --- petit stockage local (numéros de reçu, dons en attente, reçus déjà générés) ---
-const load = () => { try { return JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch (e) { return { counters: {}, pending: {}, receipts: {} }; } };
-const save = d => { const t = DATA + '.tmp'; fs.writeFileSync(t, JSON.stringify(d, null, 1)); fs.renameSync(t, DATA); };
+const load = () => {
+  if (!fs.existsSync(DATA)) return { counters: {}, pending: {}, receipts: {} };
+  return JSON.parse(vault.readFile(DATA).toString('utf8'));      // fichier illisible ou modifié : on s'arrête plutôt que d'écraser les données
+};
+const save = d => vault.writeFile(DATA, JSON.stringify(d));       // data.json est chiffré (AES-256-GCM)
 function nextNumero(annee) { const d = load(); d.counters[annee] = (d.counters[annee] || 0) + 1; save(d); return `${PREFIX}-${annee}-${String(d.counters[annee]).padStart(4, '0')}`; }
 
 // --- validation ---
@@ -88,9 +93,16 @@ function remplir(don, numero) {
 }
 let browserP = null;
 const browser = () => browserP || (browserP = puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--disable-gpu'] }));
+let pdfActifs = 0; const pdfAttente = [];                          // au plus 3 PDF fabriqués en même temps (évite de saturer l'ordinateur)
+const pdfPlace = () => pdfActifs < 3 ? (pdfActifs++, Promise.resolve()) : new Promise(r => pdfAttente.push(r));
+const pdfLibere = () => { const n = pdfAttente.shift(); if (n) n(); else pdfActifs--; };
 async function pdf(html, file) {
+  await pdfPlace();
+  try { return await pdf1(html, file); } finally { pdfLibere(); }
+}
+async function pdf1(html, file) {
   const b = await browser(), page = await b.newPage();
-  try { await page.setContent(html, { waitUntil: 'load' }); await page.pdf({ path: file, format: 'A4', printBackground: true }); } finally { await page.close(); }
+  try { await page.setContent(html, { waitUntil: 'load' }); vault.writeFile(file, Buffer.from(await page.pdf({ format: 'A4', printBackground: true }))); } finally { await page.close(); }
 }
 
 // --- email : vrai envoi si SMTP configuré, sinon fichier .eml (ouvrable dans Mail) ---
@@ -98,11 +110,11 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   if (don && !mailer.isFake(to)) {     // vraie adresse : email Brevo (modèle unique pour tous les dons), reçu en pièce jointe
     const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance,
       spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
-    if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${numero}.pdf`, content: fs.readFileSync(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
+    if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${numero}.pdf`, content: vault.readFile(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
   }
   const subject = `[TEST] Votre reçu fiscal ${numero} — ${ASSO.nom}`;
   const text = `Bonjour ${nom},\n\nMerci pour votre don à ${ASSO.nom}. Vous trouverez ci-joint votre reçu fiscal ${numero}.${aff ? `\nAffectation de votre don : ${aff}.` : ''}${mensuel ? '\nVotre don est mensuel : un reçu vous sera adressé pour chaque prélèvement.' : ''}\n\n(Message de TEST : aucun argent réel, reçu sans valeur fiscale.)\n\nCordialement,\n${ASSO.nom}\n${ASSO.telephone} · ${ASSO.email}`;
-  const attachments = [{ filename: `Recu-fiscal-${numero}.pdf`, path: pdfFile, contentType: 'application/pdf' }];
+  const attachments = [{ filename: `Recu-fiscal-${numero}.pdf`, content: vault.readFile(pdfFile), contentType: 'application/pdf' }];
   const from = process.env.MAIL_FROM || `${ASSO.nom} <${ASSO.email}>`;
   if (process.env.SMTP_HOST) {
     const t = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined });
@@ -112,7 +124,7 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   const t = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: 'unix' });
   const info = await t.sendMail({ from, to, subject, text, attachments });
   const eml = path.basename(pdfFile).replace(/\.pdf$/, '.eml');
-  fs.writeFileSync(path.join(RECUS, eml), info.message);
+  vault.writeFile(path.join(RECUS, eml), info.message);
   return { sent: false, eml: '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
 }
 
@@ -125,6 +137,9 @@ async function fabriquer(don, { envoyerEmail }) {
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
   return out;
 }
+
+// chiffre ce qui était resté en clair (data.json, PDF, .eml)
+try { vault.setAllowPlain(true); const n = vault.migrateDir(RECUS); if (fs.existsSync(DATA)) save(load()); vault.setAllowPlain(false); if (n) console.log(`[sécurité] ${n} fichier(s) existant(s) chiffré(s)`); } catch (e) { console.error('[sécurité] migration impossible :', e.message); process.exit(1); }
 
 // --- serveur ---
 const app = express();
@@ -142,6 +157,24 @@ app.use((req, res, next) => {
     arr.push(now); hits.set(ip, arr);
   }
   next();
+});
+// --- en-têtes de sécurité (navigateur) ---
+const STRIPE_H = 'https://*.stripe.com https://*.stripe.network https://*.stripecdn.com https://*.hcaptcha.com https://hcaptcha.com';
+const CSP = ["default-src 'self'", `script-src 'self' 'unsafe-inline' ${STRIPE_H} https://pay.google.com`, "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: https:", `connect-src 'self' ${STRIPE_H} https://fonts.googleapis.com https://data.geopf.fr https://www.hebcal.com https://pay.google.com`, `frame-src ${STRIPE_H} https://pay.google.com`,
+  "media-src 'self' https:", "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'"].join('; ');
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', CSP); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), usb=()'); res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  if (/https/i.test(String(req.headers['x-forwarded-proto'] || ''))) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  next();
+});
+// --- une page d'un autre site ne peut rien envoyer (anti-CSRF) : toute requête qui modifie quelque chose doit venir de ce site ---
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/webhook') return next();   // le webhook est protégé par la signature Stripe
+  const o = req.headers.origin; if (!o) return next();
+  try { if (new URL(o).host === req.headers.host) return next(); } catch (e) {}
+  res.status(403).json({ error: 'Origine non autorisée' });
 });
 app.use((req, res, next) => { if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('.html') || req.path.endsWith('/'))) res.setHeader('Cache-Control', 'no-store');
   if (req.headers['cf-connecting-ip'] && (req.path === '/' || req.path.startsWith('/api/'))) console.log('[tunnel]', new Date().toISOString().slice(11, 19), req.method, req.path, '|', String(req.headers['user-agent'] || '').replace(/\(([^)]*)\)/, (m, g) => '(' + g.slice(0, 40) + ')').slice(0, 110)); next(); });
@@ -214,7 +247,8 @@ app.post('/api/intent', async (req, res) => {
       const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: ['card'], description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
       id = pi.id; clientSecret = pi.client_secret;
     }
-    const d = load(); d.pending[id] = { ...don, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
+    const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
+    d.pending[id] = { ...don, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
