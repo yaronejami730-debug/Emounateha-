@@ -456,6 +456,10 @@ body{overflow-x:hidden}
 .dn-chip input:checked+span{border-color:var(--gold);background:#fff8e6;box-shadow:0 6px 16px rgba(196,162,74,.25)}
 .dn-chip input:checked+span i{border-color:var(--teal);background:var(--teal)}
 .dn-chip input:checked+span i::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.dn-chip.fete span{border-color:#e3c46b;background:linear-gradient(180deg,#fffaf0,#fff3d2)}
+.dn-soon{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;background:var(--teal);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.2px;vertical-align:1px}
+.dn-colis{margin:-2px 0 4px 18px;padding:10px 12px;border-left:3px solid var(--gold);background:#fffdf7;border-radius:0 12px 12px 0}
+.dn-chip2 span{min-height:42px}
 .dn-g{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 .dn-full{grid-column:1/-1}
 #dn label{display:block;font-size:13px;font-weight:600;color:#24505a;margin:0 0 6px}
@@ -921,12 +925,31 @@ function setType(ent) { document.querySelector('input[name=type][value=' + (ent 
 
 // affectation : cartes à toucher
 const ICON = a => /colis/i.test(a) ? '/tuiles/colis.png' : /toit/i.test(a) ? '/tuiles/act-toit.png' : /soutien/i.test(a) ? '/tuiles/act-soutien.png' : /insertion/i.test(a) ? '/tuiles/act-reinsertion.png' : /tement/i.test(a) ? '/tuiles/act-vetements.png' : '/logo.png';
+let AFFITEMS = {};
+const joursTxt = j => j <= 0 ? (j === 0 ? "aujourd'hui" : 'en cours') : (j === 1 ? 'demain' : 'dans ' + j + ' jours');
 function buildChips(list) {
-  $('chips').innerHTML = list.map((a, i) => '<label class="dn-chip"><input type="radio" name="affr" value="' + esc(a) + '"' + (i === 0 ? ' checked' : '') + '><span><img src="' + ICON(a) + '" alt=""><em>' + esc(a) + '</em><i></i></span></label>').join('');
-  $('aff').value = list[0] || '';
-  document.querySelectorAll('input[name=affr]').forEach(r => r.onchange = () => { $('aff').value = r.value; upSum(); });
+  list = (list || []).map(a => typeof a === 'string' ? { label: a, kind: 'base' } : a);
+  AFFITEMS = {}; list.forEach(a => AFFITEMS[a.label] = a);
+  $('chips').innerHTML = list.map((a, i) => {
+    const soon = a.kind === 'fete' ? '<b class="dn-soon">' + esc(joursTxt(a.jours)) + '</b>' : '';
+    const sub = a.kind === 'colis' ? '<div class="dn-colis" id="colisBox" hidden><div class="dn-sub" style="margin:0 0 6px">C’est pour quoi ?</div>' + a.sub.map((c, n) => '<label class="dn-chip dn-chip2"><input type="radio" name="colis" value="' + esc(c.label) + '" data-m="' + c.montant + '"' + (n === 0 ? ' checked' : '') + '><span><em>' + esc(c.label) + ' · ' + c.montant + ' €</em><i></i></span></label>').join('') + '</div>' : '';
+    return '<label class="dn-chip' + (a.kind === 'fete' ? ' fete' : '') + '"><input type="radio" name="affr" value="' + esc(a.label) + '"' + (i === 0 ? ' checked' : '') + '><span><img src="' + ICON(a.label) + '" alt=""><em>' + esc(a.label) + soon + '</em><i></i></span></label>' + sub;
+  }).join('');
+  document.querySelectorAll('input[name=affr]').forEach(r => r.onchange = () => applyAff(true));
+  document.querySelectorAll('input[name=colis]').forEach(r => r.onchange = () => applyAff(true));
+  applyAff(false);
 }
-function pickAff(i) { const r = document.querySelectorAll('input[name=affr]')[i]; if (r) { r.checked = true; $('aff').value = r.value; } }
+// applique le choix : texte envoyé au serveur, choix Chabbat / fête pour les colis, montant suggéré (seulement quand le donateur touche une carte)
+function applyAff(suggest) {
+  const r = document.querySelector('input[name=affr]:checked'); if (!r) return; const it = AFFITEMS[r.value] || { label: r.value, kind: 'base' };
+  const box = $('colisBox'); if (box) box.hidden = it.kind !== 'colis';
+  let m = null;
+  if (it.kind === 'colis') { const c = document.querySelector('input[name=colis]:checked'); $('aff').value = c.value; m = c.dataset.m; }
+  else { $('aff').value = it.label; m = it.montant; }
+  if (suggest && m) { $('montant').value = String(m); mark(); }
+  upSum();
+}
+function pickAff(i) { const r = document.querySelectorAll('input[name=affr]')[i]; if (r) { r.checked = true; applyAff(false); } }
 
 // données au hasard (test)
 const R = a => a[Math.floor(Math.random() * a.length)];
@@ -946,7 +969,8 @@ function fillRandom() {
 const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []);
   $('smtp').textContent = c.smtp ? '' : 'Sans SMTP : fichier .eml à ouvrir dans Mail';
-  fillRandom(); if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
+  fillRandom(); pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
+  if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
   return c;
 });
 // Stripe.js : chargé à la demande, et on attend qu'il soit prêt avant d'ouvrir le paiement

@@ -43,8 +43,42 @@ function sirenValide(s) { s = String(s).replace(/\s/g, ''); if (!/^\d{9}$/.test(
 const mailer = require('./mailer');
 const acc = require('./accounts')({ load, save, RECUS, clean, sirenValide, mailer });
 const MODES = ['Virement bancaire', 'Chèque', 'Espèces', 'Carte bancaire (Stripe, test)'];
-const AFFECT = ['Là où le besoin est le plus grand', 'Colis de Chabbat et de fêtes', 'Un toit sur la tête (nuits d\'hôtel)', 'Soutien moral et financier', 'Réinsertion sociale', 'Vêtements et soins'];
-const affectation = b => (AFFECT.includes(b.affectation) ? b.affectation : AFFECT[0]);
+// --- À quoi affecter le don ---
+// Les fêtes s'ouvrent AVANT leur date (« avant » = nombre de jours) et se ferment à la fête (Hanouka : à la fin des 8 jours).
+// Les dates viennent du calendrier du site (holidays.json). Pour régler un délai : changer « avant » ci-dessous.
+const FETES = [
+  { label: 'Colis de Roch Hachana', re: /^Roch Hachanah \d{4}$/, avant: 60, montant: 130 },
+  { label: 'Kapparot (Yom Kippour)', re: /^Yom Kippour$/, avant: 30 },
+  { label: 'Colis de Souccot', re: /^Soukkot I$/, avant: 30, montant: 130 },
+  { label: 'Colis de Hanouka', re: /^Hanoukah$/, avant: 60, apres: 8, montant: 130 },
+  { label: 'Colis de Pourim', re: /^Pourim$/, avant: 60, montant: 130 },
+  { label: 'Colis de Pessah', re: /^Pessah I$/, avant: 60, montant: 130 },
+  { label: "Lag ba'Omer", re: /^Lag ba.Omer$/, avant: 30 },
+  { label: "Colis de Chavou'ot", re: /^Chavou.ot I$/, avant: 60, montant: 130 },
+];
+const COLIS_CHABBAT = { label: 'Colis de Chabbat', kind: 'base', montant: 80 };   // toute l'année. Le colis de fête (130 €) n'existe QUE sous la forme d'une carte de fête ouverte (Hanouka, Pourim…)
+const AFFECT_BASE = ['Là où le besoin est le plus grand', 'Colis de Chabbat', "Un toit sur la tête (nuits d'hôtel)", 'Réinsertion sociale', "L'aide à la scolarité", "L'aide à l'éducation", 'Soutien moral et financier', 'Vêtements et soins'];
+const AFFECT_ANCIEN = ['Colis de Chabbat et de fêtes', 'Colis alimentaires', 'Colis de fête'];   // anciens reçus et anciens liens : toujours acceptés
+const AFFECT_DEFAUT = AFFECT_BASE[0];
+let calCache = { at: 0, list: [] };
+async function calendrier() {
+  if (Date.now() - calCache.at < 6 * 3600e3 && calCache.list.length) return calCache.list;
+  try { const r = await fetch('http://127.0.0.1:3000/holidays.json', { signal: AbortSignal.timeout(3000) }); const l = await r.json(); if (Array.isArray(l) && l.length) calCache = { at: Date.now(), list: l }; else calCache.at = Date.now() - 5 * 60e3; }
+  catch (e) { calCache.at = Date.now() - 5 * 60e3; }      // site local indisponible : on réessaie dans 5 minutes
+  return calCache.list;
+}
+async function affectations(now = new Date()) {
+  const cal = await calendrier(), j0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()), fetes = [];
+  for (const f of FETES) {
+    const h = cal.filter(x => !x.chabad && f.re.test(x.title)).map(x => ({ ...x, jours: Math.round((Date.parse(x.date + 'T00:00:00Z') - j0) / 86400000) })).find(x => x.jours >= -(f.apres || 0));
+    if (h && h.jours <= f.avant) fetes.push({ label: f.label, kind: 'fete', date: h.date, jours: h.jours, montant: f.montant || null });
+  }
+  fetes.sort((a, b) => a.jours - b.jours);
+  const base = AFFECT_BASE.map(l => l === COLIS_CHABBAT.label ? COLIS_CHABBAT : { label: l, kind: 'base' });
+  return [...fetes, ...base];
+}
+async function affectationsOk() { const l = await affectations(); return new Set([...l.map(a => a.label), ...AFFECT_ANCIEN]); }
+const affectation = (b, ok) => (ok.has(b.affectation) ? b.affectation : AFFECT_DEFAUT);
 function validerDonateur(b) {
   const type = b.type === 'entreprise' ? 'entreprise' : 'particulier';
   const nom = type === 'entreprise' ? clean(b.raisonSociale, 120) : [clean(b.prenom, 60), clean(b.nom, 60).toUpperCase()].filter(Boolean).join(' ');
@@ -209,7 +243,9 @@ acc.mount(app);                                   // /api/auth/*, /api/me*, /rec
 // fichier de vérification Apple Pay (Apple le réclame à la racine du domaine, dans .well-known)
 app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res) => res.type('text/plain').sendFile(path.join(__dirname, 'apple-pay', 'apple-developer-merchantid-domain-association')));
 app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); res.setHeader('Referrer-Policy', 'no-referrer'); next(); });
-app.get('/api/config', (req, res) => res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: AFFECT }));
+// simulation de date (test) : ?date=2027-02-01, seulement depuis l'ordinateur local, jamais via le tunnel
+const simDate = req => { const l = /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(req.headers.host || '') && !req.headers['cf-connecting-ip']; const d = String(req.query.date || ''); return l && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00:00') : new Date(); };
+app.get('/api/config', async (req, res) => res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: await affectations(simDate(req)) }));
 
 // 1) paiement : don ponctuel (PaymentIntent) ou mensuel (abonnement Stripe) sur le compte Stripe de test
 // recherche d'entreprise par SIRET / SIREN (API publique recherche-entreprises.api.gouv.fr, sans clé)
@@ -234,7 +270,7 @@ app.post('/api/intent', async (req, res) => {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
     const sess = acc.getSession(req), don = validerDonateur(req.body);
     if (sess) don.email = sess.email;                       // connecté : le reçu est rattaché au compte
-    const mensuel = req.body.frequence === 'mensuel', aff = affectation(req.body);
+    const mensuel = req.body.frequence === 'mensuel', aff = affectation(req.body, await affectationsOk());
     const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel' };
     let id, clientSecret, subscription = null;
     if (mensuel) {
@@ -285,7 +321,7 @@ app.post('/api/recu', async (req, res) => {
     const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide');
     const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || dt > new Date()) throw new Error('Date du don invalide (pas dans le futur)');
     if (dt.getFullYear() < new Date().getFullYear() - 1) throw new Error('Date trop ancienne pour cette page de test');
-    res.json(acc.publicReceipt(await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: affectation(req.body) }, { envoyerEmail: !!req.body.envoyerEmail })));
+    res.json(acc.publicReceipt(await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: affectation(req.body, await affectationsOk()) }, { envoyerEmail: !!req.body.envoyerEmail })));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 // (les PDF ne sont plus servis publiquement : voir accounts.js, liens signés ou propriétaire connecté)
