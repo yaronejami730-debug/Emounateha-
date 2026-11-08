@@ -3,7 +3,7 @@
     "api/index.js": {
       "maxDuration": 60,
       "memory": 2048,
-      "includeFiles": "{templates/**,asso.config.json,fetes.config.json,logo-asso*.png,apple-pay/**,public/emblem.png,node_modules/@sparticuz/chromium/bin/**}"
+      "includeFiles": "{templates/**,asso.config.json,fetes.config.json,logo-asso*.png,apple-pay/**,public/emblem.png,logo-recu.png,node_modules/@sparticuz/chromium/bin/**}"
     }
   },
   "rewrites": [
