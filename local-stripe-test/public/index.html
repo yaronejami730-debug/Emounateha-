@@ -434,9 +434,11 @@ body{overflow-x:hidden}
 @keyframes dnIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
 .dn-h{font-family:'Bree Serif',serif;font-size:21px;color:var(--teal);margin:12px 0 3px;line-height:1.15}
 .dn-p{color:#51666a;font-size:13.5px;margin:0 0 12px}
-.dn-lab{font-size:11.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#9a7a22;margin:16px 0 8px}
+.dn-lab{font-size:12px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#9a7a22;margin:26px 0 10px}
+.dn-lab.first{margin-top:14px}
+.dn-tools{display:none}.test-on .dn-tools{display:flex}
 .dn-amts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}
-.dn-amts button{border:2px solid #d3e0e0;background:#fff;border-radius:14px;height:52px;font-family:'Bree Serif',serif;font-size:19px;color:var(--teal);cursor:pointer;transition:.18s;line-height:1;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.dn-amts button{border:2px solid #d3e0e0;background:#fff;border-radius:16px;height:60px;font-family:'Bree Serif',serif;font-size:22px;color:var(--teal);cursor:pointer;transition:.18s;line-height:1;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .dn-amts button:active{transform:scale(.96)}
 .dn-amts button.on{background:linear-gradient(180deg,var(--gold-l),var(--gold));border-color:var(--gold);color:#1b2b2d;box-shadow:0 8px 20px rgba(196,162,74,.42)}
 .dn-other{position:relative}.dn-other input{padding-right:46px;font-weight:600}.dn-other span{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--teal)}
@@ -445,21 +447,55 @@ body{overflow-x:hidden}
 .dn-freq span{display:block;text-align:center;padding:10px 8px;border-radius:99px;font-weight:700;font-size:14.5px;color:var(--teal);transition:.2s}
 .dn-freq input:checked+span{background:#fff;box-shadow:0 3px 10px rgba(20,60,66,.18)}
 .dn-sub{font-size:12.5px;color:#51666a;margin:8px 4px 0}
-/* affectation : cartes à toucher */
-.dn-chips{display:grid;gap:9px}
-.dn-chip{margin:0!important;cursor:pointer;display:block!important}
+/* affectation : tuiles à toucher (2 colonnes), carte de fête en grand */
+.dn-chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dn-chip{margin:0!important;cursor:pointer;display:block!important;position:relative}
 .dn-chip input{position:absolute;opacity:0;pointer-events:none;width:auto!important}
-.dn-chip span{display:flex;align-items:center;gap:11px;padding:7px 12px;border:2px solid #d3e0e0;border-radius:14px;background:#fff;transition:.18s;min-height:48px}
-.dn-chip img{width:28px;height:28px;object-fit:contain;flex:none}
-.dn-chip em{font-style:normal;font-weight:600;font-size:14px;color:#24505a;line-height:1.25;flex:1}
-.dn-chip i{width:20px;height:20px;border-radius:50%;border:2px solid #cbd9d9;flex:none;transition:.18s;position:relative}
-.dn-chip input:checked+span{border-color:var(--gold);background:#fff8e6;box-shadow:0 6px 16px rgba(196,162,74,.25)}
+.dn-chip>span{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:9px;text-align:center;padding:16px 10px 14px;min-height:118px;border:2px solid #dbe6e6;border-radius:18px;background:#fff;transition:.18s;height:100%}
+.dn-chip:hover>span{border-color:#b9d0d0;transform:translateY(-1px)}
+.dn-ic{width:46px;height:46px;border-radius:50%;background:#e8f2f1;color:#1f6a72;display:grid;place-items:center;flex:none;transition:.18s}
+.dn-ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dn-chip em{font-style:normal;font-weight:700;font-size:14px;color:#1d4a53;line-height:1.25}
+.dn-chip em small{display:block;font-weight:500;font-size:12px;color:#6a7f83;margin-top:2px}
+.dn-chip i{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;border:2px solid #cbd9d9;transition:.18s}
+.dn-chip input:checked+span{border-color:var(--gold);background:linear-gradient(180deg,#fffdf6,#fff6dc);box-shadow:0 8px 22px rgba(196,162,74,.25)}
+.dn-chip input:checked+span .dn-ic{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:#1b2b2d}
 .dn-chip input:checked+span i{border-color:var(--teal);background:var(--teal)}
 .dn-chip input:checked+span i::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
-.dn-chip.fete span{border-color:#e3c46b;background:linear-gradient(180deg,#fffaf0,#fff3d2)}
-.dn-soon{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;background:var(--teal);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.2px;vertical-align:1px}
-.dn-colis{margin:-2px 0 4px 18px;padding:10px 12px;border-left:3px solid var(--gold);background:#fffdf7;border-radius:0 12px 12px 0}
-.dn-chip2 span{min-height:42px}
+/* fête qui approche : grande carte pleine largeur */
+.dn-chip.fete{grid-column:1/-1}
+.dn-chip.fete>span{flex-direction:row;text-align:left;gap:16px;padding:18px 18px;min-height:0;border-color:#e0c468;background:linear-gradient(135deg,#fffaf0,#fff0c8)}
+.dn-chip.fete .dn-ic{width:62px;height:62px;background:#fff;box-shadow:0 4px 12px rgba(196,162,74,.35)}
+.dn-chip.fete .dn-ic img{width:44px;height:44px;object-fit:contain}
+.dn-chip.fete em{font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:#14464e;flex:1}
+.dn-chip.fete em small{font-family:'Inter',sans-serif;font-size:13px;color:#7a5f14;margin-top:4px;font-weight:600}
+.dn-chip.fete i{top:14px;right:14px}
+.dn-soon{display:inline-block;margin-bottom:5px;padding:3px 10px;border-radius:99px;background:var(--teal);color:#fff;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.3px}
+.dn-colis{grid-column:1/-1}
+.dn-chip2>span{flex-direction:row;min-height:42px;padding:8px 12px}
+/* actions d'une fête (comme les lignes « Je participe… » d'AlloDons, en plus simple) */
+.dn-act{border:2px solid #dbe6e6;border-radius:18px;background:#fff;margin-bottom:10px;transition:.18s;overflow:hidden}
+.dn-act.on{border-color:var(--gold);background:linear-gradient(180deg,#fffdf6,#fff8e2);box-shadow:0 8px 22px rgba(196,162,74,.2)}
+#dn .dn-actrow{display:flex!important;flex-direction:row;gap:13px;align-items:flex-start;padding:15px 16px;cursor:pointer;margin:0!important}
+#dn .dn-actfree label{display:flex;align-items:baseline}
+.dn-actrow input{position:absolute;opacity:0;pointer-events:none;width:auto!important}
+.dn-actrow .bx{display:block;box-sizing:border-box;flex:none;width:24px;height:24px;min-width:24px;border-radius:8px;border:2px solid #c3d3d3;background:#fff;margin-top:1px;position:relative;transition:.18s}
+.dn-act.on .bx{background:var(--teal);border-color:var(--teal)}
+.dn-act.on .bx::after{content:"";position:absolute;left:7px;top:2px;width:6px;height:12px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.dn-actrow .tx b{display:block;font-size:15px;line-height:1.3;color:#14464e}
+.dn-actrow .tx small{display:block;margin-top:3px;font-size:13px;color:#6a7f83;line-height:1.4}
+.dn-actamt{padding:0 16px 15px 53px}
+.dn-actamt .dn-other{margin:0 0 9px}
+.dn-actq{display:flex;gap:7px;flex-wrap:wrap}
+.dn-actq button{border:1.5px solid #d3e0e0;background:#fff;color:var(--teal);font:inherit;font-weight:700;font-size:13.5px;border-radius:99px;padding:7px 14px;cursor:pointer}
+.dn-actq button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.dn-actfree{margin-top:4px}
+.dn-actfree label{font-weight:700;font-size:14.5px;color:#14464e;margin:6px 0 8px;display:block}
+.dn-actfree label small{font-weight:500;color:#6a7f83;margin-left:6px}
+.dn-acttotal{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 18px;border-radius:16px;background:#14464e;color:#fff}
+.dn-acttotal span{font-size:14px;letter-spacing:.6px;text-transform:uppercase;opacity:.85}
+.dn-acttotal b{font-family:'Bree Serif',serif;font-weight:400;font-size:26px}
+#actBox[hidden],#amtBox[hidden]{display:none!important}
 .dn-g{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 .dn-full{grid-column:1/-1}
 #dn label{display:block;font-size:13px;font-weight:600;color:#24505a;margin:0 0 6px}
@@ -564,7 +600,7 @@ body{overflow-x:hidden}
   .dn-btn{height:50px}
   .dn-h{font-size:20px}
 }
-@media(max-width:420px){.dn-g{grid-template-columns:1fr}.dn-tabs{width:100%}.dn-tab{flex:1;padding:10px 6px;font-size:13px}.dn-rand{width:100%}.dn-amts button{font-size:18px;height:48px}.dn-steps li{font-size:11.5px}}
+@media(max-width:420px){.dn-g{grid-template-columns:1fr}.dn-tabs{width:100%}.dn-tab{flex:1;padding:10px 6px;font-size:13px}.dn-rand{width:100%}.dn-amts button{font-size:19px;height:54px}.dn-steps li{font-size:11.5px}}
 
 /* compte donateur */
 #dn [hidden],.dn-acct [hidden],.dn-acct[hidden]{display:none!important}
@@ -740,12 +776,24 @@ body{overflow-x:hidden}
     </div>
 
     <div class="dn-panel on" id="p1">
-      <h2 class="dn-h" id="h1">Choisissez votre don</h2>
+      <h2 class="dn-h" id="h1">Votre don</h2>
       <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal vous est envoyé par email.</p>
+      <div class="dn-lab first">1 · Pour quoi souhaitez-vous donner ?</div>
+      <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don"></div>
+      <input type="hidden" id="aff">
+      <div id="actBox" hidden>
+        <div class="dn-lab" id="actLab">2 · Comment souhaitez-vous participer ?</div>
+        <div id="acts"></div>
+        <div class="dn-actfree"><label for="libre">Ajouter un don libre <small>facultatif</small></label><div class="dn-other"><input id="libre" inputmode="decimal" placeholder="Montant libre" aria-label="Don libre"><span>€</span></div></div>
+        <div class="dn-acttotal"><span>Total</span><b id="actTotal">0 €</b></div>
+      </div>
+      <div id="amtBox">
+      <div class="dn-lab">2 · Quel montant ?</div>
       <div class="dn-amts" id="amts"><button type="button" data-v="26">26 €</button><button type="button" data-v="52">52 €</button><button type="button" data-v="126">126 €</button><button type="button" data-v="252">252 €</button><button type="button" data-v="770">770 €</button><button type="button" data-v="1540">1 540 €</button></div>
       <div class="dn-other"><input id="montant" inputmode="decimal" placeholder="Autre montant" aria-label="Autre montant"><span>€</span></div>
+      </div>
       <div id="gFreq">
-        <div class="dn-lab">Je fais un don</div>
+        <div class="dn-lab">3 · Une fois ou chaque mois ?</div>
         <div class="dn-freq"><label><input type="radio" name="freq" value="ponctuel" checked><span>Ponctuel</span></label><label><input type="radio" name="freq" value="mensuel"><span>Mensuel</span></label></div>
         <p class="dn-sub" id="freqHint" style="display:none">Prélèvement chaque mois, jusqu'à ce que vous l'arrêtiez. Un reçu fiscal est établi pour chaque prélèvement.</p>
       </div>
@@ -756,9 +804,6 @@ body{overflow-x:hidden}
           <div><label for="dt">Date du don</label><input id="dt" type="date"></div>
         </div>
       </div>
-      <div class="dn-lab">À quoi affectez-vous votre don ?</div>
-      <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don"></div>
-      <input type="hidden" id="aff">
     </div>
 
     <div class="dn-panel" id="p2">
@@ -924,29 +969,73 @@ function mark() { document.querySelectorAll('#amts button').forEach(b => b.class
 function setType(ent) { document.querySelector('input[name=type][value=' + (ent ? 'entreprise' : 'particulier') + ']').checked = true; $('gPart').style.display = ent ? 'none' : 'grid'; $('gEnt').style.display = ent ? 'grid' : 'none'; }
 
 // affectation : cartes à toucher
-const ICON = a => /colis/i.test(a) ? '/tuiles/colis.png' : /toit/i.test(a) ? '/tuiles/act-toit.png' : /soutien/i.test(a) ? '/tuiles/act-soutien.png' : /insertion/i.test(a) ? '/tuiles/act-reinsertion.png' : /tement/i.test(a) ? '/tuiles/act-vetements.png' : '/logo.png';
+const SV = p => '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
+const ICONS = {
+  heart: SV('<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>'),
+  box: SV('<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>'),
+  home: SV('<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>'),
+  work: SV('<rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>'),
+  book: SV('<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'),
+  cap: SV('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>'),
+  chat: SV('<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/><path d="M9 11.5c0-1 .8-1.7 1.6-1.7.6 0 1 .3 1.4.8.4-.5.8-.8 1.4-.8.9 0 1.6.7 1.6 1.7 0 1.6-3 3.2-3 3.2s-3-1.6-3-3.2z"/>'),
+  shirt: SV('<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>'),
+  star: SV('<path d="m12 3 1.9 5.8H20l-4.9 3.6 1.9 5.8-5-3.6-5 3.6 1.9-5.8L4 8.8h6.1z"/>')
+};
+const ICONKEY = a => /colis/i.test(a) ? 'box' : /toit/i.test(a) ? 'home' : /soutien/i.test(a) ? 'chat' : /insertion/i.test(a) ? 'work' : /tement/i.test(a) ? 'shirt' : /scolarit/i.test(a) ? 'book' : /ducation/i.test(a) ? 'cap' : /kapparot|omer/i.test(a) ? 'star' : 'heart';
+const splitLab = a => { const m = /^(.*?)\s*\((.*)\)\s*$/.exec(a); return m ? [m[1], m[2]] : [a, '']; };
 let AFFITEMS = {};
 const joursTxt = j => j <= 0 ? (j === 0 ? "aujourd'hui" : 'en cours') : (j === 1 ? 'demain' : 'dans ' + j + ' jours');
 function buildChips(list) {
   list = (list || []).map(a => typeof a === 'string' ? { label: a, kind: 'base' } : a);
   AFFITEMS = {}; list.forEach(a => AFFITEMS[a.label] = a);
   $('chips').innerHTML = list.map((a, i) => {
-    const soon = a.kind === 'fete' ? '<b class="dn-soon">' + esc(joursTxt(a.jours)) + '</b>' : '';
-    const sub = a.kind === 'colis' ? '<div class="dn-colis" id="colisBox" hidden><div class="dn-sub" style="margin:0 0 6px">C’est pour quoi ?</div>' + a.sub.map((c, n) => '<label class="dn-chip dn-chip2"><input type="radio" name="colis" value="' + esc(c.label) + '" data-m="' + c.montant + '"' + (n === 0 ? ' checked' : '') + '><span><em>' + esc(c.label) + ' · ' + c.montant + ' €</em><i></i></span></label>').join('') + '</div>' : '';
-    return '<label class="dn-chip' + (a.kind === 'fete' ? ' fete' : '') + '"><input type="radio" name="affr" value="' + esc(a.label) + '"' + (i === 0 ? ' checked' : '') + '><span><img src="' + ICON(a.label) + '" alt=""><em>' + esc(a.label) + soon + '</em><i></i></span></label>' + sub;
+    const [main, note] = splitLab(a.label), chk = i === 0 ? ' checked' : '';
+    if (a.kind === 'fete') {
+      const sub = a.montant ? 'Un colis de fête pour une famille · ' + a.montant + ' €' : 'Participez à cette occasion';
+      const ico = a.montant ? '<img src="/tuiles/colis.png" alt="">' : ICONS.star;
+      return '<label class="dn-chip fete"><input type="radio" name="affr" value="' + esc(a.label) + '"' + chk + '><span><span class="dn-ic">' + ico + '</span><em><b class="dn-soon">' + esc(joursTxt(a.jours)) + '</b><br>' + esc(main) + (note ? ' <small style="display:inline">(' + esc(note) + ')</small>' : '') + '<small>' + sub + '</small></em><i></i></span></label>';
+    }
+    const extra = a.montant ? '<small>' + a.montant + ' €</small>' : (note ? '<small>' + esc(note) + '</small>' : '');
+    return '<label class="dn-chip"><input type="radio" name="affr" value="' + esc(a.label) + '"' + chk + '><span><span class="dn-ic">' + ICONS[ICONKEY(a.label)] + '</span><em>' + esc(main) + extra + '</em><i></i></span></label>';
   }).join('');
   document.querySelectorAll('input[name=affr]').forEach(r => r.onchange = () => applyAff(true));
-  document.querySelectorAll('input[name=colis]').forEach(r => r.onchange = () => applyAff(true));
   applyAff(false);
 }
 // applique le choix : texte envoyé au serveur, choix Chabbat / fête pour les colis, montant suggéré (seulement quand le donateur touche une carte)
+let ACTS = {};              // actions cochées : { id: montant en texte }
+const eurTxt = v => { const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) && n > 0 ? n : 0; };
+function actTotal() {
+  let t = 0; Object.values(ACTS).forEach(v => t += eurTxt(v)); t += eurTxt($('libre').value);
+  t = Math.round(t * 100) / 100;
+  $('actTotal').textContent = t ? money(t) : '0 €';
+  $('montant').value = t ? String(t).replace('.', ',') : ''; upSum();
+}
+function renderActs(it) {
+  ACTS = {}; $('libre').value = '';
+  $('actLab').textContent = '2 · Comment souhaitez-vous participer ?';
+  $('acts').innerHTML = it.actions.map(a => {
+    const on = (it.defaut || []).includes(a.id); if (on) ACTS[a.id] = a.montant ? String(a.montant) : '';
+    return '<div class="dn-act' + (on ? ' on' : '') + '" data-id="' + esc(a.id) + '"><label class="dn-actrow"><input type="checkbox"' + (on ? ' checked' : '') + '><span class="bx"></span><span class="tx"><b>' + esc(a.label) + '</b>' + (a.desc ? '<small>' + esc(a.desc) + '</small>' : '') + '</span></label>' +
+      '<div class="dn-actamt"' + (on ? '' : ' hidden') + '><div class="dn-other"><input inputmode="decimal" placeholder="Montant libre" aria-label="Montant : ' + esc(a.court) + '" value="' + (on && a.montant ? a.montant : '') + '"><span>€</span></div><div class="dn-actq">' +
+      (a.montant ? [1, 2, 3, 5] : [10, 20, 50, 100]).map(n => { const v = a.montant ? a.montant * n : n; return '<button type="button" data-v="' + v + '">' + (a.montant ? n + ' × ' : '') + v + ' €</button>'; }).join('') + '</div></div></div>';
+  }).join('');
+  document.querySelectorAll('#acts .dn-act').forEach(box => {
+    const id = box.dataset.id, a = it.actions.find(x => x.id === id), cb = box.querySelector('input[type=checkbox]'), inp = box.querySelector('.dn-actamt input'), amt = box.querySelector('.dn-actamt');
+    const sync = () => { box.querySelectorAll('.dn-actq button').forEach(b => b.classList.toggle('on', b.dataset.v === inp.value.trim())); };
+    cb.onchange = () => { box.classList.toggle('on', cb.checked); amt.hidden = !cb.checked; if (cb.checked) { if (!inp.value && a.montant) inp.value = a.montant; ACTS[id] = inp.value; if (!inp.value) setTimeout(() => inp.focus(), 50); } else delete ACTS[id]; sync(); actTotal(); };
+    inp.oninput = () => { ACTS[id] = inp.value; sync(); actTotal(); };
+    box.querySelectorAll('.dn-actq button').forEach(b => b.onclick = () => { inp.value = b.dataset.v; ACTS[id] = inp.value; sync(); actTotal(); });
+    sync();
+  });
+  $('libre').oninput = actTotal; actTotal();
+}
 function applyAff(suggest) {
-  const r = document.querySelector('input[name=affr]:checked'); if (!r) return; const it = AFFITEMS[r.value] || { label: r.value, kind: 'base' };
-  const box = $('colisBox'); if (box) box.hidden = it.kind !== 'colis';
-  let m = null;
-  if (it.kind === 'colis') { const c = document.querySelector('input[name=colis]:checked'); $('aff').value = c.value; m = c.dataset.m; }
-  else { $('aff').value = it.label; m = it.montant; }
-  if (suggest && m) { $('montant').value = String(m); mark(); }
+  const r = document.querySelector('input[name=affr]:checked'); if (!r) return; const it = AFFITEMS[r.value] || { label: r.value };
+  $('aff').value = it.label;
+  const fete = it.kind === 'fete' && it.actions && it.actions.length && mode !== 'sans';
+  $('actBox').hidden = !fete; $('amtBox').hidden = !!fete; $('gFreq').style.display = fete ? 'none' : '';
+  if (fete) { if ($('actBox').dataset.for !== it.label || suggest) { $('actBox').dataset.for = it.label; renderActs(it); } document.querySelector('input[name=freq][value=ponctuel]').checked = true; $('freqHint').style.display = 'none'; }
+  else { $('actBox').dataset.for = ''; if (suggest && it.montant) { $('montant').value = String(it.montant); mark(); } }
   upSum();
 }
 function pickAff(i) { const r = document.querySelectorAll('input[name=affr]')[i]; if (r) { r.checked = true; applyAff(false); } }
@@ -969,7 +1058,8 @@ function fillRandom() {
 const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []);
   $('smtp').textContent = c.smtp ? '' : 'Sans SMTP : fichier .eml à ouvrir dans Mail';
-  fillRandom(); pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
+  if (mode === 'sans' || /[?&]test=1/.test(location.search)) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
+  pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
   return c;
 });
@@ -1109,13 +1199,21 @@ function body() {
   return { type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
     adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value, montant: $('montant').value,
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
-    frequence: document.querySelector('input[name=freq]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked) };
+    frequence: document.querySelector('input[name=freq]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked),
+    ...(!$('actBox').hidden ? { lignes: Object.entries(ACTS).map(([id, m]) => ({ id, montant: m })), libre: $('libre').value } : {}) };
 }
 async function post(url, data) {
   const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status); return j;
 }
-function check1() { if (nf($('montant').value) < 1) throw new Error('Choisissez un montant (1 € minimum).'); }
+function check1() {
+  if (!$('actBox').hidden) {
+    const vide = Object.entries(ACTS).find(([, m]) => !(eurTxt(m) > 0)); if (vide) throw new Error('Indiquez un montant pour chaque action cochée.');
+    if (!(nf($('montant').value) >= 1)) throw new Error('Cochez au moins une action ou ajoutez un don libre.');
+    return;
+  }
+  if (nf($('montant').value) < 1) throw new Error('Choisissez un montant (1 € minimum).');
+}
 function check2() {
   if (isEnt() ? !$('rs').value.trim() : !($('prenom').value.trim() && $('nom').value.trim())) throw new Error(isEnt() ? 'Indiquez la raison sociale.' : 'Indiquez votre prénom et votre nom.');
   if (isEnt() && !/^\d{9}$/.test($('siren').value.replace(/\s/g, ''))) throw new Error('Indiquez le SIREN de votre structure (9 chiffres).');
@@ -1190,7 +1288,7 @@ function renderRes(o) {
     '<h3>Merci pour votre don !</h3>' +
     '<p class="dn-thx">Votre générosité aide directement les familles que nous accompagnons.</p>' +
     '<div class="dn-recap"><div class="dn-amt">' + eur(o.montant) + (o.mensuel ? '<small> par mois</small>' : '') + '</div>' +
-      (o.affectation ? row('Affectation', esc(o.affectation)) : '') +
+      (o.lignes && o.lignes.length ? o.lignes.map(l => row(esc(l.label), eur(l.montant))).join('') : (o.affectation ? row('Affectation', esc(o.affectation)) : '')) +
       row('Paiement', o.mensuel ? 'Don mensuel · 1re échéance' : 'Don ponctuel') +
       row('Reçu fiscal', 'n° ' + esc(o.numero)) + '</div>' +
     (em ? '<p class="dn-mail">' + em + '</p>' : '') +

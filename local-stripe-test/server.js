@@ -46,16 +46,12 @@ const MODES = ['Virement bancaire', 'Chèque', 'Espèces', 'Carte bancaire (Stri
 // --- À quoi affecter le don ---
 // Les fêtes s'ouvrent AVANT leur date (« avant » = nombre de jours) et se ferment à la fête (Hanouka : à la fin des 8 jours).
 // Les dates viennent du calendrier du site (holidays.json). Pour régler un délai : changer « avant » ci-dessous.
-const FETES = [
-  { label: 'Colis de Roch Hachana', re: /^Roch Hachanah \d{4}$/, avant: 60, montant: 130 },
-  { label: 'Kapparot (Yom Kippour)', re: /^Yom Kippour$/, avant: 30 },
-  { label: 'Colis de Souccot', re: /^Soukkot I$/, avant: 30, montant: 130 },
-  { label: 'Colis de Hanouka', re: /^Hanoukah$/, avant: 60, apres: 8, montant: 130 },
-  { label: 'Colis de Pourim', re: /^Pourim$/, avant: 60, montant: 130 },
-  { label: 'Colis de Pessah', re: /^Pessah I$/, avant: 60, montant: 130 },
-  { label: "Lag ba'Omer", re: /^Lag ba.Omer$/, avant: 30 },
-  { label: "Colis de Chavou'ot", re: /^Chavou.ot I$/, avant: 60, montant: 130 },
-];
+const FETES_FILE = path.join(__dirname, 'fetes.config.json');   // modifiable à la main : délais, actions de chaque fête, montants proposés
+let fetesCache = { m: 0, list: [] };
+function fetesConfig() {
+  try { const m = fs.statSync(FETES_FILE).mtimeMs; if (m !== fetesCache.m) fetesCache = { m, list: JSON.parse(fs.readFileSync(FETES_FILE, 'utf8')).fetes.map(f => ({ ...f, re: new RegExp(f.match) })) }; } catch (e) { console.error('[fetes] fichier illisible, ancienne version conservée :', e.message); }
+  return fetesCache.list;
+}
 const COLIS_CHABBAT = { label: 'Colis de Chabbat', kind: 'base', montant: 80 };   // toute l'année. Le colis de fête (130 €) n'existe QUE sous la forme d'une carte de fête ouverte (Hanouka, Pourim…)
 const AFFECT_BASE = ['Là où le besoin est le plus grand', 'Colis de Chabbat', "Un toit sur la tête (nuits d'hôtel)", 'Réinsertion sociale', "L'aide à la scolarité", "L'aide à l'éducation", 'Soutien moral et financier', 'Vêtements et soins'];
 const AFFECT_ANCIEN = ['Colis de Chabbat et de fêtes', 'Colis alimentaires', 'Colis de fête'];   // anciens reçus et anciens liens : toujours acceptés
@@ -69,13 +65,31 @@ async function calendrier() {
 }
 async function affectations(now = new Date()) {
   const cal = await calendrier(), j0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()), fetes = [];
-  for (const f of FETES) {
+  for (const f of fetesConfig()) {
     const h = cal.filter(x => !x.chabad && f.re.test(x.title)).map(x => ({ ...x, jours: Math.round((Date.parse(x.date + 'T00:00:00Z') - j0) / 86400000) })).find(x => x.jours >= -(f.apres || 0));
-    if (h && h.jours <= f.avant) fetes.push({ label: f.label, kind: 'fete', date: h.date, jours: h.jours, montant: f.montant || null });
+    if (h && h.jours <= f.avant) fetes.push({ label: f.label, kind: 'fete', titre: f.titre || f.label, date: h.date, jours: h.jours, actions: f.actions || [], defaut: f.defaut || [] });
   }
   fetes.sort((a, b) => a.jours - b.jours);
   const base = AFFECT_BASE.map(l => l === COLIS_CHABBAT.label ? COLIS_CHABBAT : { label: l, kind: 'base' });
   return [...fetes, ...base];
+}
+// don « fête » : plusieurs actions cumulables + don libre. Le total est TOUJOURS recalculé ici (jamais pris tel quel du navigateur).
+async function lignesFete(b) {
+  if (b.lignes !== undefined && !Array.isArray(b.lignes)) throw new Error('Choix invalide');
+  if (!Array.isArray(b.lignes) && !(Number(b.libre) > 0)) return null;
+  const f = (await affectations()).find(a => a.kind === 'fete' && a.label === b.affectation);
+  if (!f) throw new Error("Cette fête n'est pas ouverte aux dons en ce moment.");
+  const eur = v => { const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) ? Math.round(n * 100) : NaN; };
+  const lignes = [], vu = new Set();
+  for (const l of (Array.isArray(b.lignes) ? b.lignes : []).slice(0, 12)) {
+    const a = f.actions.find(x => x.id === String(l && l.id)); if (!a || vu.has(a.id)) throw new Error('Choix invalide');
+    const c = eur(l.montant); if (!(c >= 100 && c <= 10000000)) throw new Error('Montant invalide pour « ' + a.court + ' » (de 1 € à 100 000 €)');
+    vu.add(a.id); lignes.push({ id: a.id, label: a.court, montant: c });
+  }
+  if (b.libre !== undefined && b.libre !== '' && Number(String(b.libre).replace(',', '.')) !== 0) { const c = eur(b.libre); if (!(c >= 100 && c <= 10000000)) throw new Error('Don libre invalide (de 1 € à 100 000 €)'); lignes.push({ id: 'libre', label: 'Don libre', montant: c }); }
+  if (!lignes.length) throw new Error('Choisissez au moins une action.');
+  const total = lignes.reduce((t, l) => t + l.montant, 0); if (total > 10000000) throw new Error('Montant invalide (de 1 € à 100 000 €)');
+  return { lignes, total, affectation: (f.titre + ' : ' + lignes.map(l => l.label).join(', ')).slice(0, 78) };
 }
 async function affectationsOk() { const l = await affectations(); return new Set([...l.map(a => a.label), ...AFFECT_ANCIEN]); }
 const affectation = (b, ok) => (ok.has(b.affectation) ? b.affectation : AFFECT_DEFAUT);
@@ -268,9 +282,10 @@ app.get('/api/siret', async (req, res) => {
 app.post('/api/intent', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
+    const fete = await lignesFete(req.body); if (fete) { req.body.montant = fete.total / 100; req.body.frequence = 'ponctuel'; }
     const sess = acc.getSession(req), don = validerDonateur(req.body);
     if (sess) don.email = sess.email;                       // connecté : le reçu est rattaché au compte
-    const mensuel = req.body.frequence === 'mensuel', aff = affectation(req.body, await affectationsOk());
+    const mensuel = req.body.frequence === 'mensuel', aff = fete ? fete.affectation : affectation(req.body, await affectationsOk());
     const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel' };
     let id, clientSecret, subscription = null;
     if (mensuel) {
@@ -284,7 +299,7 @@ app.post('/api/intent', async (req, res) => {
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
-    d.pending[id] = { ...don, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
+    d.pending[id] = { ...don, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, lignes: fete ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -300,7 +315,7 @@ async function receiptForPayment(id) {
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
     const out = await fabriquer({ ...p, echeance: 1, mode: p.mensuel ? 'Carte bancaire (Stripe, test) — don mensuel, 1re échéance' : MODES[3], dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
-    out.affectation = p.affectation; out.mensuel = !!p.mensuel;
+    out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.lignes) out.lignes = p.lignes;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id]; save(d2);
     if (p.owner && p.saveProfile) acc.saveProfileFromForm(p.owner, p.type, p.form);   // « enregistrer mes informations »
     return out;

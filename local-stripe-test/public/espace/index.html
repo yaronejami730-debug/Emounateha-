@@ -434,9 +434,11 @@ body{overflow-x:hidden}
 @keyframes dnIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
 .dn-h{font-family:'Bree Serif',serif;font-size:21px;color:var(--teal);margin:12px 0 3px;line-height:1.15}
 .dn-p{color:#51666a;font-size:13.5px;margin:0 0 12px}
-.dn-lab{font-size:11.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#9a7a22;margin:16px 0 8px}
+.dn-lab{font-size:12px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#9a7a22;margin:26px 0 10px}
+.dn-lab.first{margin-top:14px}
+.dn-tools{display:none}.test-on .dn-tools{display:flex}
 .dn-amts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}
-.dn-amts button{border:2px solid #d3e0e0;background:#fff;border-radius:14px;height:52px;font-family:'Bree Serif',serif;font-size:19px;color:var(--teal);cursor:pointer;transition:.18s;line-height:1;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.dn-amts button{border:2px solid #d3e0e0;background:#fff;border-radius:16px;height:60px;font-family:'Bree Serif',serif;font-size:22px;color:var(--teal);cursor:pointer;transition:.18s;line-height:1;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .dn-amts button:active{transform:scale(.96)}
 .dn-amts button.on{background:linear-gradient(180deg,var(--gold-l),var(--gold));border-color:var(--gold);color:#1b2b2d;box-shadow:0 8px 20px rgba(196,162,74,.42)}
 .dn-other{position:relative}.dn-other input{padding-right:46px;font-weight:600}.dn-other span{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--teal)}
@@ -445,21 +447,55 @@ body{overflow-x:hidden}
 .dn-freq span{display:block;text-align:center;padding:10px 8px;border-radius:99px;font-weight:700;font-size:14.5px;color:var(--teal);transition:.2s}
 .dn-freq input:checked+span{background:#fff;box-shadow:0 3px 10px rgba(20,60,66,.18)}
 .dn-sub{font-size:12.5px;color:#51666a;margin:8px 4px 0}
-/* affectation : cartes à toucher */
-.dn-chips{display:grid;gap:9px}
-.dn-chip{margin:0!important;cursor:pointer;display:block!important}
+/* affectation : tuiles à toucher (2 colonnes), carte de fête en grand */
+.dn-chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dn-chip{margin:0!important;cursor:pointer;display:block!important;position:relative}
 .dn-chip input{position:absolute;opacity:0;pointer-events:none;width:auto!important}
-.dn-chip span{display:flex;align-items:center;gap:11px;padding:7px 12px;border:2px solid #d3e0e0;border-radius:14px;background:#fff;transition:.18s;min-height:48px}
-.dn-chip img{width:28px;height:28px;object-fit:contain;flex:none}
-.dn-chip em{font-style:normal;font-weight:600;font-size:14px;color:#24505a;line-height:1.25;flex:1}
-.dn-chip i{width:20px;height:20px;border-radius:50%;border:2px solid #cbd9d9;flex:none;transition:.18s;position:relative}
-.dn-chip input:checked+span{border-color:var(--gold);background:#fff8e6;box-shadow:0 6px 16px rgba(196,162,74,.25)}
+.dn-chip>span{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:9px;text-align:center;padding:16px 10px 14px;min-height:118px;border:2px solid #dbe6e6;border-radius:18px;background:#fff;transition:.18s;height:100%}
+.dn-chip:hover>span{border-color:#b9d0d0;transform:translateY(-1px)}
+.dn-ic{width:46px;height:46px;border-radius:50%;background:#e8f2f1;color:#1f6a72;display:grid;place-items:center;flex:none;transition:.18s}
+.dn-ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dn-chip em{font-style:normal;font-weight:700;font-size:14px;color:#1d4a53;line-height:1.25}
+.dn-chip em small{display:block;font-weight:500;font-size:12px;color:#6a7f83;margin-top:2px}
+.dn-chip i{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;border:2px solid #cbd9d9;transition:.18s}
+.dn-chip input:checked+span{border-color:var(--gold);background:linear-gradient(180deg,#fffdf6,#fff6dc);box-shadow:0 8px 22px rgba(196,162,74,.25)}
+.dn-chip input:checked+span .dn-ic{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:#1b2b2d}
 .dn-chip input:checked+span i{border-color:var(--teal);background:var(--teal)}
 .dn-chip input:checked+span i::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
-.dn-chip.fete span{border-color:#e3c46b;background:linear-gradient(180deg,#fffaf0,#fff3d2)}
-.dn-soon{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;background:var(--teal);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.2px;vertical-align:1px}
-.dn-colis{margin:-2px 0 4px 18px;padding:10px 12px;border-left:3px solid var(--gold);background:#fffdf7;border-radius:0 12px 12px 0}
-.dn-chip2 span{min-height:42px}
+/* fête qui approche : grande carte pleine largeur */
+.dn-chip.fete{grid-column:1/-1}
+.dn-chip.fete>span{flex-direction:row;text-align:left;gap:16px;padding:18px 18px;min-height:0;border-color:#e0c468;background:linear-gradient(135deg,#fffaf0,#fff0c8)}
+.dn-chip.fete .dn-ic{width:62px;height:62px;background:#fff;box-shadow:0 4px 12px rgba(196,162,74,.35)}
+.dn-chip.fete .dn-ic img{width:44px;height:44px;object-fit:contain}
+.dn-chip.fete em{font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:#14464e;flex:1}
+.dn-chip.fete em small{font-family:'Inter',sans-serif;font-size:13px;color:#7a5f14;margin-top:4px;font-weight:600}
+.dn-chip.fete i{top:14px;right:14px}
+.dn-soon{display:inline-block;margin-bottom:5px;padding:3px 10px;border-radius:99px;background:var(--teal);color:#fff;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.3px}
+.dn-colis{grid-column:1/-1}
+.dn-chip2>span{flex-direction:row;min-height:42px;padding:8px 12px}
+/* actions d'une fête (comme les lignes « Je participe… » d'AlloDons, en plus simple) */
+.dn-act{border:2px solid #dbe6e6;border-radius:18px;background:#fff;margin-bottom:10px;transition:.18s;overflow:hidden}
+.dn-act.on{border-color:var(--gold);background:linear-gradient(180deg,#fffdf6,#fff8e2);box-shadow:0 8px 22px rgba(196,162,74,.2)}
+#dn .dn-actrow{display:flex!important;flex-direction:row;gap:13px;align-items:flex-start;padding:15px 16px;cursor:pointer;margin:0!important}
+#dn .dn-actfree label{display:flex;align-items:baseline}
+.dn-actrow input{position:absolute;opacity:0;pointer-events:none;width:auto!important}
+.dn-actrow .bx{display:block;box-sizing:border-box;flex:none;width:24px;height:24px;min-width:24px;border-radius:8px;border:2px solid #c3d3d3;background:#fff;margin-top:1px;position:relative;transition:.18s}
+.dn-act.on .bx{background:var(--teal);border-color:var(--teal)}
+.dn-act.on .bx::after{content:"";position:absolute;left:7px;top:2px;width:6px;height:12px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.dn-actrow .tx b{display:block;font-size:15px;line-height:1.3;color:#14464e}
+.dn-actrow .tx small{display:block;margin-top:3px;font-size:13px;color:#6a7f83;line-height:1.4}
+.dn-actamt{padding:0 16px 15px 53px}
+.dn-actamt .dn-other{margin:0 0 9px}
+.dn-actq{display:flex;gap:7px;flex-wrap:wrap}
+.dn-actq button{border:1.5px solid #d3e0e0;background:#fff;color:var(--teal);font:inherit;font-weight:700;font-size:13.5px;border-radius:99px;padding:7px 14px;cursor:pointer}
+.dn-actq button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.dn-actfree{margin-top:4px}
+.dn-actfree label{font-weight:700;font-size:14.5px;color:#14464e;margin:6px 0 8px;display:block}
+.dn-actfree label small{font-weight:500;color:#6a7f83;margin-left:6px}
+.dn-acttotal{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 18px;border-radius:16px;background:#14464e;color:#fff}
+.dn-acttotal span{font-size:14px;letter-spacing:.6px;text-transform:uppercase;opacity:.85}
+.dn-acttotal b{font-family:'Bree Serif',serif;font-weight:400;font-size:26px}
+#actBox[hidden],#amtBox[hidden]{display:none!important}
 .dn-g{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 .dn-full{grid-column:1/-1}
 #dn label{display:block;font-size:13px;font-weight:600;color:#24505a;margin:0 0 6px}
@@ -564,7 +600,7 @@ body{overflow-x:hidden}
   .dn-btn{height:50px}
   .dn-h{font-size:20px}
 }
-@media(max-width:420px){.dn-g{grid-template-columns:1fr}.dn-tabs{width:100%}.dn-tab{flex:1;padding:10px 6px;font-size:13px}.dn-rand{width:100%}.dn-amts button{font-size:18px;height:48px}.dn-steps li{font-size:11.5px}}
+@media(max-width:420px){.dn-g{grid-template-columns:1fr}.dn-tabs{width:100%}.dn-tab{flex:1;padding:10px 6px;font-size:13px}.dn-rand{width:100%}.dn-amts button{font-size:19px;height:54px}.dn-steps li{font-size:11.5px}}
 
 /* compte donateur */
 #dn [hidden],.dn-acct [hidden],.dn-acct[hidden]{display:none!important}
