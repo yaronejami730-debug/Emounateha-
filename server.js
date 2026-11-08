@@ -271,6 +271,78 @@ async function brevoSend({ to, toName, subject, html, text, replyToEmail, replyT
 
 // ---------- Robot YouTube : nouvelle vidéo sur la chaîne Tanya => entrée dans la diffusion du jour ----------
 const YT_CHANNEL = 'UCoKYPjSFFtZ4LmO2ceHTU8g'; // @Tanya26770
+
+// ---------- Vidéos des colis : chaîne YouTube d'Émounatéha, classées par fête d'après le titre ----------
+const COLIS_CHANNEL = 'UCwfjah4RK77QAmkr55cRaxw'; // @EmounatehaRaba-h4b
+const COLIS_RULES = [
+  ['chabbat', /chabb?at|shabb?at|chabat/],
+  ['roch-hachana', /ro(ch|sh)\s*-?\s*(ha)?\s*-?\s*(ashana|hachana|hashana|chana)|nouvel\s+an/],
+  ['simhat-torah', /sim[ck]?h?a?t?\s*-?\s*tora|simchat/],
+  ['hanouka', /han+ou?[ck]+a|hanuk|hannouk/],
+  ['pourim', /pourim|purim/],
+  ['pessah', /pess?a[ch]*h?|pessach|paque|pâque|matsa|matza/],
+];
+// vidéos déjà connues (le flux YouTube ne garde que les 15 dernières) : { id, titre }
+const COLIS_KNOWN = [
+  ['JT4mw7ZoMfM', 'B"H #association EMOUNATEHA #pessah fête de la liberté N24'],
+  ['tQV3gzJzqKQ', 'B"H #association EMOUNATEHA #pourim Samea’h N23'],
+  ['Bf0UHi2-ujg', 'BH #association EMOUNATEHA Diffuserlemiraclede #hanouka vidéo#22 Colis pour CHABBAT'],
+  ['bxaWSIIfFZo', 'B"H #association EMOUNATEHA COLIS POUR ROSH ASHANA N21'],
+  ['RQZZU7glieI', 'B"H #association EMOUNATEHA Num.20 COLIS POUR PESSA’H'],
+  ['pzY0qjlcAtc', 'B"H #association EMOUNATEHA COLIS POURIM ET CHABBAT N19'],
+  ['C0w21MYejKg', '#2024 #5784 PRÉPARATION-DISTRIBUTION num 2 -ASSOCIATION EMOUNATEHA-  Colis pour Chabat- #association'],
+  ['ewA9uGEiTAY', 'B"H #association EMOUNATEHA QR CODE Mission: HÉBERGEMENT'],
+  ['jkwWoFx26v8', 'B’’H #association EMOUNATEHA Campagne de Soutien #5785 AIDER NOUS À LES AIDER'],
+];
+let _chanCache = null;
+async function channelVideos() { // toutes les vidéos connues de la chaîne, de la plus récente à la plus ancienne : [{ id, title, at }]
+  if (_chanCache && Date.now() - _chanCache.at < 30 * 60000) return _chanCache.list;
+  const items = new Map();
+  COLIS_KNOWN.forEach(([id, title], i) => items.set(id, { title, at: 0 - i }));
+  try {
+    const r = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=' + COLIS_CHANNEL);
+    if (r.ok) {
+      const x = await r.text();
+      for (const m of x.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+        const id = (m[1].match(/<yt:videoId>([^<]+)</) || [])[1], title = (m[1].match(/<title>([^<]*)</) || [])[1] || '';
+        const at = Date.parse((m[1].match(/<published>([^<]+)</) || [])[1] || '') || 0;
+        if (id) items.set(id, { title: title.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'"), at });
+      }
+    }
+  } catch (e) { console.error('Chaîne vidéos', e.message); }
+  const list = [...items.entries()].map(([id, v]) => ({ id, title: v.title, at: v.at })).sort((a, b) => b.at - a.at);
+  _chanCache = { at: Date.now(), list };
+  return list;
+}
+const noAccent = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function cleanTitle(t) { // retire hashtags, B"H, numéros « N24 », nom de l'association
+  let c = String(t).replace(/#\S*/g, ' ').replace(/\bB\W{0,2}H\b/gi, ' ').replace(/ASSOCIATION\s+EMOUNATEHA/gi, ' ').replace(/\bEMOUNATEHA\b/gi, ' ').replace(/Diffuserlemiraclede/gi, 'Diffuser le miracle de').replace(/\bQR\s*CODE\b/gi, ' ')
+    .replace(/\bN(um)?\.?\s*\d+\b/gi, ' ').replace(/\bnum[ée]ro\s*\d+\b/gi, ' ').replace(/\bvid[ée]o\s*\d+\b/gi, ' ').replace(/\bnum\s*\d+\b/gi, ' ').replace(/@\S+/g, ' ')
+    .replace(/[-–—]+\s*(?=[-–—]|$)/g, ' ').replace(/\s+/g, ' ').replace(/^[\s:\-–—]+|[\s:\-–—]+$/g, '').trim();
+  const letters = c.replace(/[^A-Za-zÀ-ÿ]/g, '');
+  if (letters && (c.replace(/[^A-ZÀ-Þ]/g, '').length / letters.length) > 0.6) c = c.toLowerCase();
+  c = c.charAt(0).toUpperCase() + c.slice(1);
+  return c || String(t).trim();
+}
+async function colisVideos() { // { fête: [id…] }
+  const out = {};
+  COLIS_RULES.forEach(([k]) => out[k] = []);
+  (await channelVideos()).forEach(v => { const t = noAccent(v.title); COLIS_RULES.forEach(([k, re]) => { if (re.test(t)) out[k].push(v.id); }); });
+  return out;
+}
+// les 4 actions de l'association : vidéos rangées d'après les mots du titre
+const ACTION_RULES = [
+  ['reinsertion', /insertion|emploi|travail|formation|stage|autonomie|reconversion|metier/],
+  ['vetements', /vetement|habit|coiffure|coiffeur|barbier|friperie|soins?\b|beaute|relooking/],
+  ['toit', /hebergement|logement|toit|\bsdf\b|\brue\b|abri|appartement|loger/],
+  ['soutien', /soutien|campagne|aider nous|ecoute|accompagnement|ecouter/],
+];
+async function actionVideos() { // { action: [{ id, title }] }
+  const out = {};
+  ACTION_RULES.forEach(([k]) => out[k] = []);
+  (await channelVideos()).forEach(v => { const t = noAccent(v.title); ACTION_RULES.forEach(([k, re]) => { if (re.test(t)) out[k].push({ id: v.id, title: cleanTitle(v.title) }); }); });
+  return out;
+}
 let ytLast = 0;
 async function syncYoutube(force = false) {
   if (!pool) return { skipped: 'pas de base' };
@@ -1309,6 +1381,14 @@ async function handle(req, res) {
     if (url.pathname === '/api/parasha' && req.method === 'GET') { // public : parachat de la semaine
       try { const v = await parashaFor(url.searchParams.get('id')); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Parachat indisponible' }); }
+    }
+    if (url.pathname === '/api/colis-videos' && req.method === 'GET') { // public : vidéos de la chaîne Émounatéha rangées par fête (colis)
+      try { const v = await colisVideos(); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, 502, { error: 'Vidéos indisponibles' }); }
+    }
+    if (url.pathname === '/api/action-videos' && req.method === 'GET') { // public : vidéos de la chaîne rangées par action (réinsertion, vêtements, toit, soutien)
+      try { const v = await actionVideos(); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, 502, { error: 'Vidéos indisponibles' }); }
     }
     if (url.pathname === '/api/zmanim' && req.method === 'GET') { // public : horaires du flux RSS Chabad (id Chabad + jour)
       try { const v = await chabadZmanim(url.searchParams.get('id'), /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('date') || '') ? url.searchParams.get('date') : parisDay(Date.now()), +url.searchParams.get('before') || 18);

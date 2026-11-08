@@ -2,13 +2,13 @@
 (function(){
 if(!window.matchMedia||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
 var st=document.createElement('style');
-st.textContent='.apv{position:absolute;top:0;left:50%;height:100%;width:177.78%;max-width:none;transform:translateX(-50%);border:0;pointer-events:none;background:#000;opacity:0;transition:opacity .35s;z-index:1}.apv.on{opacity:1}.apv-on::after{opacity:0!important;transition:opacity .2s}.th.v,.yt.ytplay{position:relative;overflow:hidden}';
+st.textContent='.apv{position:absolute;top:0;left:50%;height:100%;width:177.78%;max-width:none;transform:translateX(-50%);border:0;pointer-events:none;background:#000;opacity:0;transition:opacity .35s;z-index:1}.apv.on{opacity:1}.apv-on::after{opacity:0!important;transition:opacity .2s}.th.v,.yt.ytplay,.cv{position:relative;overflow:hidden}.yt .apv{left:0;width:100%;height:100%;transform:none}';
 document.head.appendChild(st);
 var cur=null,tm=null,stop=null;
 function idOf(el){var i=el.querySelector('img');var m=i&&i.src.match(/\/vi\/([A-Za-z0-9_-]{11})\//);return m?m[1]:null}
 function end(){clearTimeout(tm);clearTimeout(stop);if(cur){var f=cur.f,b=cur.b;b.classList.remove('apv-on');f.classList.remove('on');setTimeout(function(){f.remove()},350);cur=null}}
 document.addEventListener('mouseover',function(e){
-  var b=e.target.closest&&e.target.closest('.th.v,.yt.ytplay');if(!b||(cur&&cur.b===b))return;
+  var b=e.target.closest&&e.target.closest('.th.v,.yt.ytplay,.cv');if(!b||(cur&&cur.b===b))return;
   end();var id=idOf(b);if(!id)return;
   tm=setTimeout(function(){
     var f=document.createElement('iframe');f.className='apv';f.setAttribute('aria-hidden','true');f.setAttribute('tabindex','-1');f.allow='autoplay';
@@ -18,5 +18,5 @@ document.addEventListener('mouseover',function(e){
     stop=setTimeout(end,15000);
   },400);
 },true);
-document.addEventListener('mouseout',function(e){var b=e.target.closest&&e.target.closest('.th.v,.yt.ytplay');if(!b)return;if(e.relatedTarget&&b.contains(e.relatedTarget))return;if(cur&&cur.b===b||tm)end()},true);
+document.addEventListener('mouseout',function(e){var b=e.target.closest&&e.target.closest('.th.v,.yt.ytplay,.cv');if(!b)return;if(e.relatedTarget&&b.contains(e.relatedTarget))return;if(cur&&cur.b===b||tm)end()},true);
 })();

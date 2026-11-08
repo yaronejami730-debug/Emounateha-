@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Soutien moral &amp; financier — Émounatéha</title>
+<meta name="description" content="Soutien moral et financier : Émounatéha apporte une écoute, un accompagnement et une aide matérielle aux familles quand c'est le plus difficile. Découvrez l'action en vidéo.">
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:#fff url(/bg.png) repeat;line-height:1.65}
+h1,h2,h3{font-family:'Bree Serif',Georgia,serif;font-weight:400}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+/* hero */
+.hero{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:10px 0 24px;position:relative}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:4px}
+.top a{text-decoration:none;font-weight:700;background:var(--gold);border:1.5px solid var(--gold);color:#1b2b2d;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:10px 22px;border-radius:99px;font-size:15px}
+.top a:hover{background:var(--gold-l);border-color:var(--gold-l)}
+.top .bsd{font-size:26px;font-weight:600;color:var(--gold-l);text-shadow:0 1px 6px rgba(0,0,0,.3);line-height:1}
+.hero img{width:clamp(100px,11vw,190px);display:block;margin:0 auto 4px;animation:logoIn 1.1s cubic-bezier(.2,.8,.2,1) both,spin 40s linear 1.1s infinite;filter:drop-shadow(0 6px 18px rgba(0,0,0,.25))}
+.hero h1{font-size:clamp(22px,3.4vw,32px);line-height:1.15;color:var(--gold);letter-spacing:1.5px;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.he{font-size:clamp(15px,2.2vw,19px);letter-spacing:6px;margin:0 0 6px}
+.rule{width:90px;height:2px;background:var(--gold);margin:0 auto 6px}
+.slogan{font-size:clamp(12px,2.4vw,15px);opacity:.95}
+.quote{font-family:'Bree Serif',serif;font-size:clamp(14px,2.2vw,18px);max-width:640px;margin:10px auto 8px;line-height:1.35}
+.btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;text-decoration:none;font-weight:600;padding:9px 20px;border-radius:99px;font-size:14px;transition:.2s}
+.btn.gold{background:var(--gold);color:#1b2b2d}
+.btn.gold:hover{background:var(--gold-l);transform:translateY(-2px)}
+.btn.line{border:2px solid #fff;color:#fff}
+.btn.line:hover{background:#fff;color:var(--teal)}
+@keyframes logoIn{from{opacity:0;transform:scale(.7) rotate(-8deg)}to{opacity:1;transform:none}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.hero img{animation:none}}
+
+/* boutons : effet léger au survol */
+.btn,.top a{transition:transform .2s,background .2s,box-shadow .2s}
+.btn:hover,.top a:hover{transform:translateY(-2px)}
+
+
+/* colis : onglets */
+.ctabs{display:flex;gap:10px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin:0 auto 28px}
+.ctab{font:inherit;cursor:pointer;border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);padding:8px 18px;border-radius:99px;font-weight:600;font-size:14px;line-height:1.2;transition:.2s;white-space:nowrap}
+.ctab:hover{border-color:var(--teal)}
+.ctab.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+.ctab.feat{font-weight:800}
+.tabwrap{display:flex;flex-direction:column;align-items:center}
+.tabwrap small{margin-top:4px;font-weight:700;font-size:9.5px;color:var(--gold);letter-spacing:.5px;text-transform:uppercase}
+/* colis de Chabbat */
+.colis{display:grid;gap:34px;grid-template-columns:minmax(0,230px) minmax(0,1fr);align-items:center}
+.colis img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:18px;box-shadow:0 14px 36px rgba(20,60,66,.2);display:block}
+.colis h3{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(24px,4vw,32px);color:var(--teal);margin-bottom:8px}
+.colis ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 18px;margin:16px 0 22px}
+.colis li{padding-left:22px;position:relative;color:#2b4044}
+.colis li::before{content:"";position:absolute;left:0;top:.62em;width:9px;height:9px;border-radius:50%;background:var(--gold)}
+.cvids{margin-top:22px}
+.cvl{font-weight:700;color:var(--teal);font-size:14px;margin-bottom:8px}
+.cvrow{display:flex;gap:12px;flex-wrap:wrap}
+.cv{position:relative;width:118px;aspect-ratio:9/16;border:0;padding:0;border-radius:12px;overflow:hidden;background:#000;cursor:pointer;box-shadow:0 6px 18px rgba(20,60,66,.18)}
+.colis .cv img{position:absolute;left:50%;top:0;height:100%;width:auto;max-width:none;transform:translateX(-50%);aspect-ratio:auto;border-radius:0;box-shadow:none}
+.cvrow .more{display:none}.cvrow.all .more{display:block}
+.cvmore{margin-top:12px;font:inherit;font-weight:600;font-size:14px;color:var(--teal);background:#fff;border:1.5px solid #cfe0e1;border-radius:99px;padding:9px 18px;cursor:pointer}
+.cvmore:hover{border-color:var(--teal)}
+.cvp{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;background:rgba(196,162,74,.95);box-shadow:0 3px 10px rgba(0,0,0,.4)}
+.cvp::after{content:"";position:absolute;left:15px;top:11px;border-style:solid;border-width:8px 0 8px 13px;border-color:transparent transparent transparent #1b2b2d}
+.cv .apv{left:0;width:100%;height:100%;transform:none}
+.apv-on .cvp{opacity:0}
+#vp{position:fixed;inset:0;z-index:120;display:none;background:#0b1e21;flex-direction:column}
+#vp.on{display:flex}
+#vp .vpbar{flex:none;height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+#vp .vpc{color:#cfe6e3;font-size:14px;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#vp .vpx{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:var(--teal);font-size:18px;cursor:pointer}
+#vp .vpbody{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+#vp .vpf{height:100%;max-height:100%;aspect-ratio:9/16;max-width:100%;background:#000}
+#vp iframe{width:100%;height:100%;border:0;display:block}
+#vp .vpfoot{flex:none;display:flex;justify-content:center;padding:4px 16px calc(14px + env(safe-area-inset-bottom))}
+#vp .vpdon{width:100%;max-width:360px;text-align:center;cursor:pointer}
+#vp .vpbody{gap:16px}
+#vp .vpdonbox{display:none;flex:none;width:min(440px,92vw);max-height:100%;overflow:auto;background:#fff;border-radius:14px;padding:6px;-webkit-overflow-scrolling:touch}
+#vp.don .vpdonbox{display:block}
+#vp .vpdonbox iframe{width:100%;height:600px;border:0;display:block}
+#vp .vpdfb{display:none;text-align:center;padding:26px 16px}
+@media(max-width:820px){#vp.don .vpbody{flex-direction:column;align-items:center;justify-content:flex-start;overflow:auto}#vp.don .vpf{flex:none;height:min(58vh,500px)}#vp .vpdonbox{width:100%;max-width:440px}}
+.price{display:inline-flex;align-items:baseline;gap:10px;background:#fff;border:1px solid #e3ecec;border-radius:12px;padding:8px 16px;margin-bottom:20px;box-shadow:0 6px 24px rgba(20,60,66,.07)}
+.price b{font-family:'Bree Serif',serif;font-weight:400;font-size:30px;color:var(--teal);line-height:1}
+.price span{color:var(--mut);font-size:14px;display:inline-flex;align-items:center;gap:8px}
+.price .uber{height:17px;width:auto;display:block}
+@media(max-width:820px){.colis{grid-template-columns:1fr}.colis img{max-width:230px;margin:0 auto}}
+
+/* carrousel nos actions / diffusion : pleine largeur, défilement à la main, sans rebords */
+.slider{position:relative;width:100vw;margin-left:calc(50% - 50vw);overflow:hidden}
+.slides{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;gap:0;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;transition:height .6s cubic-bezier(.4,0,.2,1)}
+.slides::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;min-width:100%;scroll-snap-align:start;scroll-snap-stop:always;padding:0}
+.sbtn{display:none}
+.slide>.wrap{padding-top:6px;padding-bottom:6px}
+.sbtn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.94);color:var(--teal);font-size:26px;line-height:1;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.22);z-index:3}
+.sbtn:hover{background:var(--teal);color:#fff}
+.sbtn.prev{left:12px}.sbtn.next{right:12px}
+.dots{display:flex;gap:8px;justify-content:center;padding:14px 0 4px}
+.dots button{width:9px;height:9px;border-radius:50%;border:0;background:#c5d6d7;cursor:pointer;padding:0}
+.dots button.on{background:var(--teal);width:26px;border-radius:9px}
+.dslide{display:flex;justify-content:center;padding:4px 16px 10px}
+.dcard{width:100%;max-width:960px;background:#fff;border:1px solid #e3ecec;border-radius:20px;padding:26px 28px 30px;box-shadow:0 10px 30px rgba(20,60,66,.08)}
+.dhead{text-align:center;margin-bottom:20px}
+.dkick{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.dhead h3{font-family:'Bree Serif',serif;font-weight:400;font-size:28px;color:var(--teal);margin:0 0 4px;line-height:1.2}
+.dhead .when{color:var(--mut);font-size:14px;text-transform:capitalize}
+.dbody{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;justify-content:center;align-items:start}
+.dbody.solo{grid-template-columns:minmax(0,620px)}
+.dlab{font-weight:700;color:var(--teal);font-size:14px;margin-bottom:8px}
+.dprev{position:relative;background:#f5f8f8;height:586px;overflow:hidden;cursor:zoom-in;border:1px solid #e3ecec;border-radius:14px}
+.dprev img{display:block;width:100%;height:100%;object-fit:cover;object-position:top center}
+.dfade{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.96))}
+.dopen{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);border:1.5px solid var(--teal);background:#fff;color:var(--teal);font:inherit;font-weight:600;font-size:13px;padding:9px 18px;border-radius:99px;cursor:pointer}
+.dopen:hover{background:var(--teal);color:#fff}
+.yt{position:relative;background:#000;aspect-ratio:9/16;border-radius:14px;overflow:hidden}
+.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ytlink{display:inline-flex;align-items:center;padding:10px 16px;border:1px solid #e3ecec;color:var(--teal);font-weight:600;text-decoration:none}
+#lb{position:fixed;inset:0;background:#0b1e21;z-index:100;display:none;overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(64px + env(safe-area-inset-top)) 10px calc(24px + env(safe-area-inset-bottom))}
+#lb.on{display:block}
+#lb .lbbar{position:fixed;top:0;left:0;right:0;z-index:2;height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0 16px;background:#0b1e21;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-between;gap:10px}
+#lb .lbc{color:#cfe6e3;font-size:14px;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lb .lbx{flex-shrink:0;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:var(--teal);font-size:18px;line-height:1;cursor:pointer}
+#lb .lbs{max-width:900px;margin:0 auto}
+#lb img{display:block;width:100%;height:auto;background:#fff;border-radius:10px}
+@media(max-width:820px){.dslide{padding:4px 12px 10px}.dprev{height:300px}.sbtn{display:none}
+  .dots{gap:4px}.dots button{position:relative;margin:0 4px}.dots button::before{content:"";position:absolute;inset:-16px -8px}}
+/* tablette (601-820) : affiche + texte côte à côte, colis en deux colonnes */
+@media(min-width:601px) and (max-width:820px){
+  .dbody{grid-template-columns:minmax(0,1fr) 280px;gap:18px}.dprev{height:498px}
+  .colis{grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:26px;align-items:start}
+  .colis img{max-width:none;margin:0}
+  .colis ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ctab{padding:10px 18px}
+}
+
+/* petits écrans : tout est resserré */
+@media(max-width:600px){
+  .ctabs{flex-wrap:wrap;overflow:visible;justify-content:center;gap:8px;padding:0;margin:0 0 20px}
+  .hero{padding:10px 0 24px}
+  .hero img{width:92px;margin-bottom:4px}
+  .hero h1{font-size:22px;letter-spacing:1px}
+  .he{font-size:14px;letter-spacing:4px}
+  .slogan{font-size:11px}
+  .quote{font-size:14px;margin:12px auto}
+  .btn{padding:13px 20px;font-size:14px}
+  .top .bsd{font-size:20px}
+  .title{margin-bottom:24px}.title h2{font-size:24px}.title p{font-size:14px}
+  .sec-nav a{font-size:12px;padding:12px 10px}
+  .card h3,.step h3{font-size:17px}.card p,.step p{font-size:13.5px}
+  .card .ic{width:42px;height:42px;margin-bottom:10px}
+  .social{gap:12px}.social img{width:44px;height:44px}
+  .contactline a{display:inline-block;padding:10px 2px}
+  footer a{display:inline-block;padding:9px 4px}
+  .contactline{font-size:13px}.contactline span{margin:0 6px}
+  .ctab{padding:11px 15px;font-size:13px}
+  .colis h3{font-size:22px}.colis li{font-size:14px}
+  .price b{font-size:24px}.price{padding:6px 12px}
+  .colis{gap:18px}.colis img{max-width:200px;aspect-ratio:1/1}
+  .dslide{padding:4px 8px 10px}.dcard{padding:16px 12px 20px}.dhead h3{font-size:22px}.dbody{grid-template-columns:1fr;gap:18px}.dbody.solo{grid-template-columns:1fr}.dprev{height:380px}.yt{max-width:320px;margin:0 auto}.ytl{margin:16px 0 8px}.dopen{padding:12px 18px}
+  footer{padding:26px 16px;font-size:12px}footer .legal{font-size:12px}
+  .don{padding:30px 16px}.don h2{font-size:24px}
+}
+
+/* pied de page compact */
+footer{line-height:1.45}
+footer p{margin:0}
+footer p+p{margin-top:4px}
+footer .sir{margin-top:6px}
+footer .legal{margin-top:8px;gap:4px 14px}
+footer .dev{margin-top:10px;padding-top:8px}
+
+/* date du jour (civile + hébraïque, Hebcal) en haut de l'en-tête */
+.hdate{font-size:13px;color:#fff;opacity:.92;text-align:left;line-height:1.3}
+.hdate b{display:block;font-weight:600;color:var(--gold-l);font-size:14px}
+.hdate i{display:block;font-style:normal;font-weight:700;color:var(--gold-l);font-size:12.5px;margin-top:2px}
+@media(max-width:600px){.hdate{font-size:11px}.hdate b{font-size:12.5px}}
+
+/* ---- barre de menu : tout en haut, sur toutes les pages ---- */
+.sec-nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid #e3ecec}
+.sec-nav .wrap{display:flex;align-items:center;gap:6px;min-height:52px}
+.sec-nav .links{display:flex;gap:4px;justify-content:center;flex:1;overflow-x:auto;scrollbar-width:none}
+.sec-nav .links a{white-space:nowrap;text-decoration:none;font-weight:600;font-size:14px;color:var(--teal);padding:14px 12px;border-bottom:3px solid transparent}
+.sec-nav .links a:hover{border-color:var(--gold)}
+.sec-nav .links a.ndon{background:var(--gold);color:#1b2b2d;border-radius:99px;padding:8px 16px;margin:8px 0 8px 8px;border:0}
+.sec-nav .links a.ndon:hover{background:var(--gold-l)}
+.nbrand{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;color:var(--teal);font-size:15px;flex-shrink:0}
+.nbrand img{width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--gold)}
+.ndate{display:none;margin-left:auto;font-size:12px;color:var(--teal);font-weight:600;white-space:nowrap;direction:rtl}
+.burger{display:none;width:42px;height:42px;border:0;background:none;cursor:pointer;padding:10px;flex-direction:column;justify-content:space-between;flex-shrink:0}
+.burger span{display:block;height:3px;border-radius:3px;background:var(--teal);transition:.25s}
+@media(max-width:800px){
+  .sec-nav .wrap{justify-content:space-between;padding:0 6px 0 12px}
+  .ndate{display:block}
+  .burger{display:flex}
+  .sec-nav .links{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;flex-direction:column;gap:0;max-height:calc(100vh - 52px);overflow:auto;box-shadow:0 12px 24px rgba(20,60,66,.15);border-top:1px solid #e3ecec;padding:4px 10px 12px}
+  .sec-nav.open .links{display:flex}
+  .sec-nav .links a{padding:14px 10px;font-size:16px;border-bottom:1px solid #eef3f3}
+  .sec-nav .links a.ndon{margin:10px 0 0;text-align:center;padding:12px}
+  .sec-nav.open .burger span:nth-child(1){transform:translateY(8.5px) rotate(45deg)}
+  .sec-nav.open .burger span:nth-child(2){opacity:0}
+  .sec-nav.open .burger span:nth-child(3){transform:translateY(-8.5px) rotate(-45deg)}
+}
+
+/* étapes */
+.steps{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));counter-reset:s}
+.step{position:relative;background:rgba(255,255,255,.94);border:1px solid #e3ecec;border-radius:18px;padding:34px 24px 26px;box-shadow:0 6px 24px rgba(20,60,66,.07);counter-increment:s}
+.step::before{content:counter(s);position:absolute;top:-18px;left:24px;width:38px;height:38px;border-radius:50%;background:var(--gold);color:#1b2b2d;font-family:'Bree Serif',serif;font-size:20px;display:grid;place-items:center}
+.step h3{color:var(--teal);font-size:20px;margin-bottom:6px}.step p{color:var(--mut);font-size:15px}
+/* icônes réseaux */
+.social{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.social img{width:42px;height:42px;border-radius:50%;display:block;transition:.2s}
+.social a:hover img{transform:translateY(-3px)}
+/* sections */
+section{padding:56px 0}
+.title{text-align:center;margin-bottom:38px}
+.title h2{font-size:clamp(24px,4vw,34px);color:var(--teal)}
+.title p{color:var(--mut);max-width:620px;margin:10px auto 0}
+.title::after{content:"";display:block;width:70px;height:3px;background:var(--gold);margin:16px auto 0;border-radius:2px}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.card{background:rgba(255,255,255,.94);border:1px solid #e3ecec;border-radius:18px;padding:28px 24px;box-shadow:0 6px 24px rgba(20,60,66,.07)}
+.card .ic{width:50px;height:50px;border-radius:12px;background:#e6f0f0;color:var(--teal);display:grid;place-items:center;margin-bottom:14px}
+.card h3{font-size:21px;color:var(--teal);margin-bottom:6px}
+.card p{color:var(--mut);font-size:15px}
+.about{max-width:760px;margin:0 auto;text-align:center;font-size:18px;color:#2b4044}
+.about b{color:var(--teal)}
+/* don */
+.don{background:var(--teal) url(/header.jpg) center/cover;color:#fff;text-align:center;border-radius:26px;padding:56px 24px;box-shadow:0 14px 40px rgba(20,60,66,.25)}
+.don h2{font-size:clamp(28px,5vw,40px);color:var(--gold-l);margin-bottom:10px}
+.don p{max-width:560px;margin:0 auto 26px;opacity:.95}
+/* contact */
+.contact{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));text-align:center}
+.contact a{text-decoration:none}
+.contact .card{transition:.2s}
+.contact .card:hover{transform:translateY(-3px);border-color:var(--gold)}
+.contact strong{display:block;color:var(--teal);font-family:'Bree Serif',serif;font-size:19px;margin-bottom:4px}
+footer{background:#1f6a72 url(/header.jpg) center/cover;color:#e7f1f1;text-align:center;padding:26px 22px 22px;font-size:13px;position:relative}
+footer::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+footer b{color:var(--gold-l)}
+footer a{color:#e7f1f1;text-decoration:none}footer a:hover{color:var(--gold-l);text-decoration:underline}
+footer .legal{display:flex;gap:6px 18px;justify-content:center;flex-wrap:wrap;margin-top:14px;font-size:13px}
+footer .sir{margin-top:10px;font-size:13px;color:#d3e6e7}
+footer .dev{margin-top:14px;font-size:12px;color:#b9d3d4;padding-top:12px;border-top:1px solid rgba(255,255,255,.15)}footer .dev a{color:#b9d3d4}footer .dev b{color:#e4cd8a;font-weight:600}
+.contactline{text-align:center;margin-top:16px;font-size:15px}
+.contactline a{color:var(--teal);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.contactline span{margin:0 12px;color:var(--gold)}
+@media(max-width:600px){section{padding:40px 0}.wrap{padding:0 16px}.he{letter-spacing:5px;font-size:17px}.btns{flex-direction:column;align-items:stretch}.btn{text-align:center}.card{padding:22px 18px}.about{font-size:16px}.don{padding:38px 18px;border-radius:20px}}
+img{max-width:100%;height:auto}
+body{overflow-x:hidden}
+
+/* iPhone : barre fondue dans l'en-tête (même fond), date au centre, menu à droite */
+@media(max-width:800px){
+  .sec-nav{background:#1f6a72 url(/header.jpg) center top/cover;border-bottom:0;box-shadow:none}
+  .sec-nav .wrap{position:relative;justify-content:center;min-height:50px;padding:0 6px}
+  .nbrand{display:none}
+  .ndate{display:block;margin:0;text-align:center;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35);line-height:1.2;direction:ltr;padding:6px 44px 6px 44px}
+  .ndate b{display:block;font-size:14px;font-weight:700;color:var(--gold-l);direction:rtl}
+  .ndate small{display:block;font-size:11.5px;font-weight:500;opacity:.95}
+  .burger{position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+  .burger span{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .sec-nav.open .burger span{background:#fff}
+  .hero .top .hdate,.pagehead .top .hdate{visibility:hidden}
+  .hero{padding-top:0}.hero .top{margin-bottom:0}
+}
+
+/* barre de menu fondue dans le fond vert (toutes tailles) */
+.sec-nav{background:#1f6a72 url(/header.jpg) center top/cover;border-bottom:0;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.sec-nav .links a{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.sec-nav .links a:hover{border-color:var(--gold-l)}
+.sec-nav .links a.ndon{color:#1b2b2d;text-shadow:none}
+.nbrand{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+@media(max-width:800px){.sec-nav .links{background:#1f6a72 url(/header.jpg) center/cover;border-top:1px solid rgba(255,255,255,.2)}.sec-nav .links a{border-bottom:1px solid rgba(255,255,255,.15)}}
+
+/* barre transparente par-dessus l'en-tête ; fond vert uni seulement une fois la page défilée */
+.sec-nav{background:transparent;box-shadow:none;margin-bottom:-52px;transition:background .25s,box-shadow .25s}
+.sec-nav.scrolled{background:#1f6a72;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.hero,.pagehead{padding-top:58px}
+@media(max-width:800px){.sec-nav{background:transparent;margin-bottom:-50px}.sec-nav.scrolled,.sec-nav.open{background:#1f6a72}.sec-nav .links{background:#1f6a72}.hero,.pagehead{padding-top:56px}.hero .top{display:none}}
+/* carte paracha : sous l'en-tête, sans chevauchement */
+.parsec{margin-top:0;padding:26px 0 0}
+@media(max-width:800px){.parsec{padding:14px 12px 0}}
+
+/* barre toujours transparente ; au défilement, les liens passent en vert foncé pour rester lisibles */
+.sec-nav.scrolled{background:transparent;box-shadow:none}
+.sec-nav.scrolled .links a{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .links a.ndon{color:#1b2b2d}
+.sec-nav.scrolled .nbrand{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .burger span{background:var(--teal);box-shadow:none}
+.sec-nav.scrolled .ndate{color:var(--teal);text-shadow:none}.sec-nav.scrolled .ndate b{color:var(--teal)}
+@media(max-width:800px){.sec-nav.scrolled{background:transparent}.sec-nav.open,.sec-nav.scrolled.open{background:#1f6a72}}
+/* paracha : trois lignes nettes */
+.pk>div{display:flex;flex-direction:column;gap:2px}
+#parname{display:block}
+#parheb{display:block;font-family:'Bree Serif',serif;font-size:20px;line-height:1.15;color:var(--teal);opacity:1;direction:rtl;text-align:left;margin:0}
+@media(max-width:800px){#parheb{font-size:17px}}
+
+/* barre transparente : date à gauche, menu au centre, Faire un don, בס״ד à droite ; plus de petit logo */
+.nbrand{display:none!important}
+.sec-nav .wrap{position:relative;min-height:56px}
+.ndate{display:block;margin:0;text-align:left;line-height:1.2;direction:ltr;flex-shrink:0;min-width:150px}
+.ndate b{display:block;font-size:13px;font-weight:700;color:var(--gold-l);direction:rtl;text-align:left}
+.ndate small{display:block;font-size:11px;font-weight:500;color:#fff;opacity:.95}
+.sec-nav.scrolled .ndate b{color:var(--gold)}.sec-nav.scrolled .ndate small{color:var(--teal)}
+.nbsd{font-size:24px;font-weight:600;color:var(--gold-l);text-shadow:0 1px 6px rgba(0,0,0,.3);line-height:1;margin-left:10px;flex-shrink:0}
+.sec-nav.scrolled .nbsd{color:var(--gold);text-shadow:none}
+.hero .top{display:none}
+.hero{padding-top:62px}
+.hero img{margin-top:0}
+@media(max-width:800px){
+  .sec-nav .wrap{justify-content:space-between;padding:0 6px 0 10px}
+  .nbsd{font-size:18px;margin:0;order:0}
+  .ndate{text-align:center;min-width:0;order:1;position:absolute;left:50%;transform:translateX(-50%)}
+  .ndate b{text-align:center;font-size:14px}.ndate small{font-size:11.5px}
+  .burger{order:2;position:static;transform:none}
+  .hero{padding-top:58px}
+}
+
+/* barre : plus large, liens compacts, בס״ד tout à droite */
+.sec-nav .wrap{max-width:1280px;gap:8px}
+.sec-nav .links{overflow:visible;flex:1;justify-content:center;gap:0;min-width:0}
+.sec-nav .links a{font-size:13.5px;padding:14px 9px}
+.sec-nav .links a.ndon{margin-left:10px;padding:8px 14px}
+.nbsd{margin-left:6px}
+.ndate{min-width:140px}
+@media(max-width:1100px){.sec-nav .links a{font-size:12.5px;padding:14px 7px}.ndate{min-width:120px}.ndate b{font-size:12px}.ndate small{font-size:10px}}
+
+/* barre : date | liens | בס״ד | ≡ ; plus de bouton Faire un don dans la barre */
+.ndate{order:0}.sec-nav .links{order:1}.nbsd{order:2;margin-left:auto}.burger{order:3}
+.sec-nav .links a.ndon{display:none}
+@media(max-width:800px){.nbsd{order:0;margin:0}.ndate{order:1}.burger{order:3}.sec-nav .links{order:4}}
+
+/* menu déroulant (≡) sur toutes les tailles, y compris ordinateur */
+.burger{display:flex;order:3;position:static;transform:none;margin-left:6px}
+.sec-nav .links{display:none;position:absolute;top:100%;right:0;left:auto;width:min(360px,100%);background:#1f6a72;flex-direction:column;gap:0;max-height:calc(100vh - 56px);overflow:auto;box-shadow:0 14px 30px rgba(0,0,0,.28);border-radius:0 0 16px 16px;padding:6px 10px 12px;order:4}
+.sec-nav.open .links{display:flex}
+.sec-nav .links a{color:#fff!important;text-shadow:none;padding:13px 12px;font-size:15px;border-bottom:1px solid rgba(255,255,255,.14);border-left:0}
+.sec-nav .links a:last-child{border-bottom:0}
+.sec-nav .links a:hover{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.08);border-radius:8px}
+.sec-nav.open .burger span:nth-child(1){transform:translateY(8.5px) rotate(45deg)}
+.sec-nav.open .burger span:nth-child(2){opacity:0}
+.sec-nav.open .burger span:nth-child(3){transform:translateY(-8.5px) rotate(-45deg)}
+.sec-nav .wrap{justify-content:space-between}
+.nbsd{margin-left:0;order:2}
+.sec-nav.scrolled .burger span{background:var(--teal)}
+@media(max-width:800px){.sec-nav .links{left:0;right:0;width:100%;border-radius:0}}
+/* en-tête : plus de boutons */
+.hero .btns{display:none}
+.hero{padding-bottom:96px}
+@media(max-width:800px){.hero{padding-bottom:72px}}
+
+/* téléphone : ≡ à gauche, date au centre, בס״ד à droite ; en-tête plus grand et plus lisible */
+@media(max-width:800px){
+  .sec-nav .wrap{justify-content:space-between;min-height:54px}
+  .burger{order:0;margin:0}
+  .ndate{order:1;position:absolute;left:50%;transform:translateX(-50%);text-align:center}
+  .nbsd{order:2;margin:0;font-size:20px}
+  .sec-nav .links{order:4;left:0;right:0;width:100%;border-radius:0}
+  .hero{padding-top:64px;padding-bottom:78px}
+  .hero img{width:150px;margin-bottom:8px}
+  .hero h1{font-size:28px;letter-spacing:1.5px}
+  .he{font-size:17px;letter-spacing:5px}
+  .slogan{font-size:13px}
+  .quote{font-size:16px;margin:14px auto 10px}
+  .rebbe{font-size:13.5px;line-height:1.5}
+  .rebbe cite{font-size:11px}
+}
+@media(max-width:420px){.hero img{width:136px}.hero h1{font-size:26px}}
+
+@media(max-width:800px){
+  .hero img{width:185px;margin-bottom:10px}
+  .hero h1{font-size:33px;letter-spacing:2px}
+  .he{font-size:20px;letter-spacing:6px}
+  .slogan{font-size:14.5px}
+  .quote{font-size:18px;margin:16px auto 12px;line-height:1.35}
+  .rebbe{font-size:15px;line-height:1.5}
+  .rebbe cite{font-size:12px}
+  .hero{padding-bottom:84px}
+}
+@media(max-width:420px){.hero img{width:170px}.hero h1{font-size:30px}}
+
+/* module de paiement (formulaire AlloDons intégré) */
+#pm{position:fixed;inset:0;z-index:120;display:none;background:rgba(8,26,30,.94);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(64px + env(safe-area-inset-top)) 10px calc(24px + env(safe-area-inset-bottom))}
+#pm.on{display:block}
+#pm .pmbar{position:fixed;top:0;left:0;right:0;z-index:2;height:calc(54px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0 16px;background:#0b1e21;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-between;gap:10px}
+#pm .pmt{color:#e9f4f4;font:400 17px/1.2 'Bree Serif',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pm .pmx{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:var(--teal);font-size:18px;cursor:pointer}
+#pm .pmbox{max-width:520px;margin:0 auto;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+#pm .pmnote{display:flex;gap:10px;align-items:center;padding:12px 16px;background:#f5f8f8;border-bottom:1px solid #e3ecec;font-size:14px;color:#2b4044;line-height:1.4}
+#pm .pmnote b{font:400 22px/1 'Bree Serif',serif;color:var(--teal);white-space:nowrap}
+#pm iframe{display:block;width:100%;min-height:560px;border:0}
+#pm .pmfb{display:none;text-align:center;padding:26px 18px}
+#pm .pmfb p{color:var(--mut);margin-bottom:14px}
+#pm .pmok{display:none;text-align:center;padding:34px 18px}
+#pm .pmok h3{font:400 26px 'Bree Serif',serif;color:var(--teal);margin-bottom:6px}
+</style>
+<link rel="stylesheet" href="/mobile.css">
+<link rel="stylesheet" href="/fade.css?v=3">
+<link rel="stylesheet" href="/typo.css?v=65">
+<script src="/typo.js?v=5" defer></script>
+<script src="/wa-bouton.js?v=2" defer></script>
+<!-- seo:start -->
+<link rel="canonical" href="https://www.emounateha.fr/soutien-moral-et-financier/">
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Émounatéha">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:url" content="https://www.emounateha.fr/soutien-moral-et-financier/">
+<meta property="og:title" content="Soutien moral &amp; financier — Émounatéha">
+<meta property="og:description" content="Soutien moral et financier : Émounatéha apporte une écoute, un accompagnement et une aide matérielle aux familles quand c'est le plus difficile. Découvrez l'action en vidéo.">
+<meta property="og:image" content="https://www.emounateha.fr/logo.png">
+<meta property="og:image:alt" content="Logo Émounatéha">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Soutien moral &amp; financier — Émounatéha">
+<meta name="twitter:description" content="Soutien moral et financier : Émounatéha apporte une écoute, un accompagnement et une aide matérielle aux familles quand c'est le plus difficile. Découvrez l'action en vidéo.">
+<meta name="twitter:image" content="https://www.emounateha.fr/logo.png">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "NGO", "@id": "https://www.emounateha.fr/#org", "name": "Émounatéha", "alternateName": ["Emounateha", "אמונתך"], "url": "https://www.emounateha.fr/", "logo": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png"}, "image": "https://www.emounateha.fr/logo.png", "description": "Association à but non lucratif d'aide aux familles dans le besoin : colis de Chabbat et de fêtes, réinsertion sociale, vêtements, logement, soutien moral et financier, diffusion de la Torah.", "email": "emounateha770@gmail.com", "telephone": "+33669670770", "identifier": [{"@type": "PropertyValue", "propertyID": "SIRET", "value": "93075555800010"}, {"@type": "PropertyValue", "propertyID": "RNA", "value": "W931028738"}], "areaServed": {"@type": "Country", "name": "France"}, "nonprofitStatus": "NonprofitType", "sameAs": ["https://www.instagram.com/emounateha", "https://www.tiktok.com/@emounateha", "https://youtube.com/@emounateharaba-h4b", "https://www.facebook.com/share/1HhyHMPNPd/"], "contactPoint": [{"@type": "ContactPoint", "contactType": "customer service", "telephone": "+33669670770", "email": "emounateha770@gmail.com", "availableLanguage": ["fr", "he"]}], "potentialAction": {"@type": "DonateAction", "target": "https://www.emounateha.fr/don/"}}, {"@type": "WebSite", "@id": "https://www.emounateha.fr/#site", "url": "https://www.emounateha.fr/", "name": "Émounatéha", "inLanguage": "fr-FR", "publisher": {"@id": "https://www.emounateha.fr/#org"}}, {"@type": "WebPage", "@id": "https://www.emounateha.fr/soutien-moral-et-financier/#page", "url": "https://www.emounateha.fr/soutien-moral-et-financier/", "name": "Soutien moral & financier — Émounatéha", "description": "Soutien moral et financier : Émounatéha apporte une écoute, un accompagnement et une aide matérielle aux familles quand c'est le plus difficile. Découvrez l'action en vidéo.", "inLanguage": "fr-FR", "isPartOf": {"@id": "https://www.emounateha.fr/#site"}, "about": {"@id": "https://www.emounateha.fr/#org"}, "primaryImageOfPage": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://www.emounateha.fr/"}, {"@type": "ListItem", "position": 2, "name": "Soutien moral & financier", "item": "https://www.emounateha.fr/soutien-moral-et-financier/"}]}]}</script>
+<!-- seo:end -->
+<script src="/appel.js?v=4" defer></script>
+<style>
+.aicon{display:block;width:76px;height:76px;margin:0 auto 6px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.28));animation:aFloat 5s ease-in-out infinite}
+@keyframes aFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+#story{padding:46px 0 10px}
+.story{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:46px;align-items:center;max-width:960px;margin:0 auto}
+.kick{font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.story h2{font-size:clamp(26px,4.2vw,38px);line-height:1.15;color:var(--teal);margin-bottom:16px}
+.story p{font-size:17px;color:#2b4044;margin-bottom:14px}
+.story p:last-of-type{margin-bottom:0}
+.storyrule{width:64px;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold-l));margin:0 0 18px}
+.feat{display:flex;flex-direction:column;align-items:center;gap:12px}
+.feat .cv{width:min(300px,100%);border-radius:18px;box-shadow:0 18px 44px rgba(20,60,66,.28)}
+.feat .cv img{position:absolute;left:50%;top:0;height:100%;width:auto;max-width:none;transform:translateX(-50%)}
+.feat .cvp{width:62px;height:62px;margin:-31px 0 0 -31px}
+.feat .cvp::after{left:25px;top:18px;border-width:13px 0 13px 21px}
+.feat .flab{font-weight:700;color:var(--teal);font-size:14px;text-align:center}
+.feat .ftit{font-family:'Bree Serif',serif;font-size:19px;color:var(--teal);text-align:center;line-height:1.25;max-width:300px}
+.art{width:min(300px,100%);aspect-ratio:9/12;border-radius:22px;background:linear-gradient(160deg,#1f6a72 0%,#14525c 60%,#c4a24a 160%);display:grid;place-items:center;text-align:center;color:#fff;padding:26px;box-shadow:0 18px 44px rgba(20,60,66,.28)}
+.art img{width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.3));margin-bottom:14px}
+.art b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:var(--gold-l);margin-bottom:6px}
+.art span{font-size:14px;opacity:.92}
+.art a{color:#fff;font-weight:600;text-decoration:underline;text-decoration-color:var(--gold)}
+#pts{padding:40px 0 20px}
+.pts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:960px;margin:0 auto}
+.pt{background:rgba(255,255,255,.95);border:1px solid #e3ecec;border-radius:18px;padding:26px 22px;box-shadow:0 6px 24px rgba(20,60,66,.07);transition:transform .25s,box-shadow .25s,border-color .25s}
+.pt:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(20,60,66,.14);border-color:var(--gold)}
+.pt .n{width:38px;height:38px;border-radius:50%;background:var(--gold);color:#1b2b2d;font-family:'Bree Serif',serif;font-size:19px;display:grid;place-items:center;margin-bottom:12px}
+.pt h3{font-size:19px;color:var(--teal);margin-bottom:6px;line-height:1.2}
+.pt p{font-size:15px;color:var(--mut)}
+.rq{max-width:760px;margin:34px auto 0;text-align:center;padding:26px 24px;border-radius:20px;background:linear-gradient(135deg,#14525c,#1f6a72);color:#fff;box-shadow:0 14px 36px rgba(20,60,66,.22)}
+.rq q{display:block;font-family:'Bree Serif',serif;font-size:clamp(17px,2.6vw,22px);line-height:1.4;quotes:"« " " »"}
+.rq cite{display:block;margin-top:10px;font-style:normal;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-l)}
+#lib{padding:34px 0 10px}
+#lib h2{text-align:center;font-size:clamp(22px,3.4vw,28px);color:var(--teal);margin-bottom:6px}
+#lib .sub{text-align:center;color:var(--mut);margin-bottom:22px;font-size:15px}
+.libgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:22px 16px;max-width:900px;margin:0 auto}
+.lv{width:150px}
+.lv .cv{width:100%}
+.lv .cv img{position:absolute;left:50%;top:0;height:100%;width:auto;max-width:none;transform:translateX(-50%)}
+.lv .cap{margin-top:8px;font-size:13.5px;line-height:1.3;color:var(--ink)}
+.libyt{text-align:center;margin-top:26px}
+#act{padding:34px 0 10px}
+.cta{max-width:820px;margin:0 auto;text-align:center;padding:34px 24px;border-radius:24px;background:#fff;border:1px solid #e3ecec;box-shadow:0 14px 40px rgba(20,60,66,.1);position:relative;overflow:hidden}
+.cta::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+.cta h2{font-size:clamp(24px,3.8vw,32px);color:var(--teal);margin-bottom:8px}
+.cta p{color:var(--mut);max-width:520px;margin:0 auto 20px}
+.cta .btns{gap:12px}
+.cta .btn{padding:12px 26px;font-size:15px}
+.cta .btn.alt{border:2px solid var(--teal);color:var(--teal)}
+.cta .btn.alt:hover{background:var(--teal);color:#fff}
+.cta small{display:block;margin-top:14px;font-size:12.5px;color:var(--mut)}
+#more{padding:34px 0 50px}
+#more h2{text-align:center;font-size:clamp(22px,3.4vw,28px);color:var(--teal);margin-bottom:18px}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;max-width:960px;margin:0 auto}
+.mc{display:block;text-decoration:none;background:rgba(255,255,255,.95);border:1px solid #e3ecec;border-radius:16px;padding:18px 14px;text-align:center;box-shadow:0 6px 20px rgba(20,60,66,.07);transition:transform .25s,border-color .25s,box-shadow .25s}
+.mc:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 14px 30px rgba(20,60,66,.14)}
+.mc img{width:44px;height:44px;object-fit:contain;display:block;margin:0 auto 8px}
+.mc b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:16px;color:var(--teal);line-height:1.2}
+.js .rv{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease;transition-delay:var(--d,0s)}
+.js .rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.aicon{animation:none}.js .rv{opacity:1;transform:none;transition:none}}
+@media(max-width:820px){
+  .story{grid-template-columns:1fr;gap:26px}
+  .story .txt{text-align:center}.storyrule{margin:0 auto 18px}
+  .pts{grid-template-columns:1fr}
+  .mgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){#story{padding-top:34px}.story p{font-size:16px}.aicon{width:62px;height:62px}.cta{padding:28px 16px}}
+</style>
+<noscript><style>.rv{opacity:1!important;transform:none!important}</style></noscript>
+</head>
+<body>
+<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
+<header class="pagehead"><div class="wrap"><img class="aicon" src="/tuiles/act-soutien.png?v=3" alt="" width="76" height="76"><h1>Soutien moral &amp; financier</h1><p>Une écoute, un accompagnement et une aide matérielle quand c'est le plus difficile.</p></div></header>
+<style>
+.pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:76px 0 34px;position:relative}
+.pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+.pagehead h1{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(28px,4.5vw,42px);color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.25)}.pagehead p{opacity:.95;margin-top:6px}
+#colis{padding-top:34px}#colis .title{display:none}
+.ctabs{margin-bottom:26px}
+.colis{grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:34px}
+@media(max-width:820px){.pagehead{padding-top:70px;padding-bottom:26px}#colis{padding-top:18px}.colis{grid-template-columns:1fr;gap:16px}.colis img{max-width:220px}}
+</style>
+
+<style>#colis{padding-top:46px}#colis .title{display:none}</style>
+
+
+<style>#colis{padding-top:46px}
+.rebbe{margin:0 auto 14px;max-width:680px;font-family:'Bree Serif',serif;font-style:italic;font-size:clamp(12.5px,1.4vw,14.5px);line-height:1.5;color:#fff;opacity:.95;padding:0 10px}
+.rebbe cite{display:block;margin-top:6px;font-style:normal;font-family:Inter,sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold-l)}
+@media(max-width:600px){.rebbe{font-size:12.5px;margin-bottom:14px}}
+
+/* téléphone : aucune barre de défilement visible */
+@media(max-width:800px){
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  *::-webkit-scrollbar{display:none;width:0;height:0}
+}
+
+/* ordinateur : liens visibles dans la barre ; téléphone : menu ≡ */
+@media(min-width:801px){
+  .burger{display:none!important}
+  .sec-nav .links{display:flex!important;position:static;width:auto;background:transparent;flex-direction:row;gap:0;max-height:none;overflow:visible;box-shadow:none;border-radius:0;padding:0;justify-content:center;flex:1}
+  .sec-nav .links a{color:#fff!important;text-shadow:0 1px 4px rgba(0,0,0,.3);padding:14px 11px;font-size:14px;border-bottom:3px solid transparent;border-left:0}
+  .sec-nav .links a:hover{border-color:var(--gold-l);background:transparent;border-radius:0}
+  .sec-nav.scrolled .links a{color:var(--teal)!important;text-shadow:none}
+  .sec-nav.scrolled .links a:hover{border-color:var(--gold)}
+}
+
+/* ordinateur : date à gauche | liens au centre | בס״ד tout à droite */
+@media(min-width:801px){
+  .sec-nav .wrap{display:flex;align-items:center;justify-content:space-between}
+  .ndate{order:0;margin:0;min-width:170px}
+  .sec-nav .links{order:1;flex:1}
+  .nbsd{order:2;margin:0 0 0 12px;min-width:60px;text-align:right}
+}
+
+/* ordinateur : côtés de même largeur pour que les liens soient centrés sur la page */
+@media(min-width:801px){.ndate,.nbsd{flex:0 0 190px;min-width:190px}.nbsd{text-align:right}}
+
+/* ordinateur : date plus lisible, logo plus grand */
+@media(min-width:801px){
+  .ndate b{font-size:16px}.ndate small{font-size:13px}
+  .ndate,.nbsd{flex:0 0 230px;min-width:230px}
+  .nbsd{font-size:28px}
+  .hero img{width:clamp(150px,15vw,250px)}
+}
+
+/* au défilement : fond blanc translucide pour rester lisible sur la page */
+.sec-nav.scrolled{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 14px rgba(20,60,66,.14)}
+.sec-nav.scrolled .links a{color:var(--teal)!important}
+.sec-nav.scrolled .ndate b,.sec-nav.scrolled .nbsd{color:var(--gold)}
+.sec-nav.scrolled .ndate small{color:var(--teal)}
+@media(max-width:800px){.sec-nav.scrolled{background:rgba(255,255,255,.94)}.sec-nav.scrolled.open,.sec-nav.open{background:#1f6a72}.sec-nav.open .ndate b,.sec-nav.open .nbsd{color:var(--gold-l)}.sec-nav.open .ndate small{color:#fff}.sec-nav.open .burger span{background:#fff}}
+
+/* air entre la ligne dorée et les onglets */
+#colis{padding-top:64px}
+.ctabs{margin-bottom:36px}
+@media(max-width:800px){#colis{padding-top:40px}.ctabs{margin-bottom:26px}}
+</style>
+<section id="story"><div class="wrap"><div class="story"><div class="txt rv"><div class="kick">Notre action</div><h2>Ne jamais rester seul quand c'est difficile</h2><div class="storyrule"></div><p>Dans les moments les plus durs, on a d'abord besoin que quelqu'un écoute. Émounatéha apporte une écoute attentive, un accompagnement humain et, quand il le faut, une aide matérielle et financière.</p><p>Colis de Chabbat et de fêtes livrés directement aux familles, soutien moral, présence : chaque geste compte, et chaque don permet d'en faire davantage.</p></div><div class="feat rv" id="feat" style="--d:.15s"></div></div></div></section><section id="pts"><div class="wrap"><div class="pts"><div class="pt rv" style="--d:0.00s"><div class="n">1</div><h3>Une écoute</h3><p>Un soutien moral et psychologique, quand on en a le plus besoin.</p></div><div class="pt rv" style="--d:0.12s"><div class="n">2</div><h3>Un accompagnement</h3><p>Une présence humaine à vos côtés, au fil du temps.</p></div><div class="pt rv" style="--d:0.24s"><div class="n">3</div><h3>Une aide matérielle</h3><p>Des colis alimentaires pour Chabbat et les fêtes, livrés aux familles.</p></div></div><div class="rq rv"><q>Rien n'est jamais perdu. On peut toujours réparer.</q><cite>Rabbi de Loubavitch</cite></div></div></section><section id="lib" hidden><div class="wrap"><h2 class="rv">Les vidéos</h2><p class="sub rv">Des images de terrain, pour comprendre notre action.</p><div class="libgrid" id="libGrid" aria-live="polite"></div><div class="libyt rv"><a class="btn line" style="color:var(--teal);border-color:var(--teal)" href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener">Toutes nos vidéos sur YouTube</a></div></div></section><section id="act"><div class="wrap"><div class="cta rv"><h2>Aidez-nous à les aider</h2><p>Chaque don permet d'accompagner une personne ou une famille, du premier repas jusqu'au retour à l'autonomie.</p><div class="btns"><a class="btn gold" href="/don/">Faire un don</a><a class="btn alt" href="/colis/">Offrir un colis</a></div><small>Paiement sécurisé · reçu fiscal envoyé par email</small></div></div></section><section id="more"><div class="wrap"><h2 class="rv">Découvrir aussi</h2><div class="mgrid"><a class="mc rv" style="--d:0.00s" href="/reinsertion-sociale/"><img src="/tuiles/act-reinsertion.png?v=3" alt="" width="44" height="44" loading="lazy"><b>Réinsertion sociale</b></a><a class="mc rv" style="--d:0.10s" href="/vetements-et-soins/"><img src="/tuiles/act-vetements.png?v=3" alt="" width="44" height="44" loading="lazy"><b>Vêtements &amp; soins</b></a><a class="mc rv" style="--d:0.20s" href="/un-toit-sur-la-tete/"><img src="/tuiles/act-toit.png?v=3" alt="" width="44" height="44" loading="lazy"><b>Un toit sur la tête</b></a><a class="mc rv" style="--d:0.3s" href="/colis/"><img src="/tuiles/colis.png?v=1" alt="" width="44" height="44" loading="lazy"><b>Les colis</b></a></div></div></section>
+<footer>
+  <p><b>Émounatéha</b> · Association à but non lucratif</p>
+  <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
+  <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
+  <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
+  <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
+  <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
+</footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear();
+const ACTION='soutien',ART={"icon": "act-soutien.png", "name": "Soutien moral & financier", "msg": "Les vidéos de cette action arrivent bientôt."};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const vbtn=v=>'<button type="button" class="cv" data-id="'+v.id+'" data-t="'+esc(v.title)+'" aria-label="Lire : '+esc(v.title)+'"><img src="https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg" alt="" loading="lazy"><span class="cvp" aria-hidden="true"></span></button>';
+function renderLib(list){const feat=document.getElementById('feat'),lib=document.getElementById('lib'),g=document.getElementById('libGrid');
+  if(!list||!list.length){feat.innerHTML='<div class="art"><div><img src="/tuiles/'+ART.icon+'?v=3" alt=""><b>'+esc(ART.name)+'</b><span>'+ART.msg+' <a href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener">Voir la chaîne</a></span></div></div>';lib.hidden=true;return}
+  const f=list[0];feat.innerHTML=vbtn(f)+'<div class="flab">▶ En vidéo</div><div class="ftit">'+esc(f.title)+'</div>';
+  const rest=list.slice(1);
+  if(rest.length){lib.hidden=false;g.innerHTML=rest.map(v=>'<div class="lv rv">'+vbtn(v)+'<div class="cap">'+esc(v.title)+'</div></div>').join('')}else lib.hidden=true;
+  document.querySelectorAll('#feat .cv,#libGrid .cv').forEach(b=>b.addEventListener('click',()=>openVid(b.dataset.id,b.dataset.t,ACTION,0,'www')));
+  reveal()}
+// apparition douce au défilement
+let io=null;function reveal(){const els=document.querySelectorAll('.rv:not(.in)');if(!('IntersectionObserver' in window)){els.forEach(e=>e.classList.add('in'));return}
+  io=io||new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}}),{threshold:.12,rootMargin:'0px 0px -6% 0px'});els.forEach(e=>io.observe(e))}
+document.documentElement.classList.add('js');reveal();
+// vidéos de la chaîne Émounatéha rangées automatiquement par action d'après leur titre
+fetch('/api/action-videos').then(r=>r.json()).then(j=>renderLib(j[ACTION])).catch(()=>renderLib(null));
+function openVid(id,cap,k,price,sub){let v=document.getElementById('vp');if(!v){v=document.createElement('div');v.id='vp';v.innerHTML='<div class="vpbar"><span class="vpc"></span><button class="vpx" aria-label="Fermer">✕</button></div><div class="vpbody"><div class="vpf"><iframe title="Vidéo YouTube" allow="accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div><div class="vpdonbox"><div class="vpdonf"></div><div class="vpdfb"><p style="margin-bottom:14px;color:#51666a">Le formulaire ne s\'affiche pas ici.</p><a class="btn gold vpdlink" href="https://www.allodons.fr/emounateha" target="_blank" rel="noopener">Payer sur la page sécurisée</a></div></div></div><div class="vpfoot"><a class="btn gold vpdon" href="/don/">♥ Soutenir cette action</a></div>';document.body.appendChild(v);v.addEventListener('click',e=>{const d=e.target.closest&&e.target.closest('.vpdon');if(d){e.preventDefault();toggleVpDon(d);return}if(e.target===v||e.target.classList.contains('vpbody')||e.target.classList.contains('vpx'))closeVid()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVid()})}
+  v.querySelector('iframe').src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&playsinline=1&rel=0';v.querySelector('.vpc').textContent=cap||'';const bd=v.querySelector('.vpdon');if(bd){bd.dataset.ref=k||'';bd.dataset.sub=sub||'www';bd.dataset.label=bd.textContent;bd.dataset.amount=price||80;bd.textContent='♥ Soutenir cette action'+(price?' · '+price+' €':'');bd.dataset.label=bd.textContent}v.classList.remove('don');const df=v.querySelector('.vpdonf');if(df)df.innerHTML='';v.classList.add('on');document.body.style.overflow='hidden'}
+function toggleVpDon(d){const v=document.getElementById('vp'),on=v.classList.toggle('don'),box=v.querySelector('.vpdonf'),fb=v.querySelector('.vpdfb');
+  d.textContent=on?'✕ Masquer le don':d.dataset.label;
+  if(on&&!box.firstChild){const f=document.createElement('iframe');f.src='https://'+(d.dataset.sub||'www')+'.allodons.fr/embed/emounateha';f.title='Participer au colis';f.allow='payment *';box.appendChild(f);fb.style.display='none';
+    clearTimeout(v._t);v._t=setTimeout(()=>{if(!f.dataset.ok){box.innerHTML='';fb.style.display='block';fb.querySelector('.vpdlink').href='https://'+(d.dataset.sub||'www')+'.allodons.fr/emounateha'}},7000);
+    setTimeout(()=>v.querySelector('.vpdonbox').scrollIntoView({behavior:'smooth',block:'nearest'}),150)}}
+function closeVid(){const v=document.getElementById('vp');if(v){v.classList.remove('on','don');v.querySelector('iframe').src='';const df=v.querySelector('.vpdonf');if(df)df.innerHTML='';const bd=v.querySelector('.vpdon');if(bd&&bd.dataset.label)bd.textContent=bd.dataset.label;document.body.style.overflow=''}}
+addEventListener('message',e=>{if(!/^https:\/\/[a-z0-9-]+\.allodons\.fr$/.test(e.origin))return;const g=document.querySelector('#vp .vpdonf iframe');if(g&&e.data&&e.data.type==='allodons:embed-height'){g.style.height=Math.max(520,e.data.height)+'px';g.dataset.ok=1}});
+(function(){const nav=document.querySelector('.sec-nav'),b=document.getElementById('burger');
+ b.addEventListener('click',()=>{const o=nav.classList.toggle('open');b.setAttribute('aria-expanded',o)});
+ nav.querySelectorAll('.links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');b.setAttribute('aria-expanded',false)}));})();</script>
+<script>/* un clic sur la barre du haut ramène à la page principale (ou en haut de l'accueil) */
+(function(){var n=document.querySelector('.sec-nav');if(!n)return;n.style.cursor='pointer';
+n.addEventListener('click',function(e){if(e.target.closest('.burger,.links,a,button'))return;
+if(location.pathname==='/'||location.pathname==='/index.html')window.scrollTo({top:0,behavior:'smooth'});else location.href='/'})})();</script>
+<script src="/roch-hodech.js" defer></script>
+<script src="/apercu-video.js?v=3" defer></script>
+</body>
+</html>

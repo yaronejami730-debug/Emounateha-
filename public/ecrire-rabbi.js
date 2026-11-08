@@ -25,6 +25,14 @@ function mount(){
   '@media(max-width:600px){#erc{max-height:100dvh;border-radius:20px 20px 0 0}#erc .hd{min-height:96px;padding:14px 16px;justify-content:center}#erc .hd h3{font-size:16px;max-width:56%}#erc .hd::before{right:54px}#erc .hd p{display:none}#erc .x{top:8px;right:8px;width:34px;height:34px}#erc form{padding:12px 14px calc(14px + env(safe-area-inset-bottom))}#erc label{font-size:11.5px;margin-bottom:3px}#erc input[type=text],#erc input[type=email]{padding:10px 12px;font-size:16px}#erc textarea{min-height:50px;padding:10px 12px;font-size:16px}#erc .g{gap:8px}#erc input[type=tel]{padding:10px 12px;font-size:16px;width:100%;box-sizing:border-box;border:1.5px solid #e3d9bd;border-radius:12px;background:#fff}#erc .ck{margin:10px 0 2px;font-size:12px}#erc .send{margin-top:10px;padding:13px}}'+
   '@media(min-width:801px){#erov{align-items:center}#erc{border-radius:24px}}';
   document.head.appendChild(st);
+  /* surbrillance : halo doré qui respire + éclat de lumière qui traverse le bouton */
+  var gl=document.createElement('style');
+  gl.textContent='#ecrirerabbi{position:relative;overflow:hidden;isolation:isolate;animation:erGlow 2.6s ease-in-out infinite}'+
+  '#ecrirerabbi::after{content:"";position:absolute;top:-10%;bottom:-10%;left:-60%;width:38%;background:linear-gradient(105deg,rgba(255,255,255,0),rgba(255,255,255,.8),rgba(255,255,255,0));transform:skewX(-18deg);animation:erShine 4.2s ease-in-out infinite;pointer-events:none}'+
+  '@keyframes erGlow{0%,100%{box-shadow:0 6px 18px rgba(196,162,74,.4),0 0 0 0 rgba(228,205,138,.5)}50%{box-shadow:0 6px 22px rgba(196,162,74,.55),0 0 24px 7px rgba(228,205,138,.8)}}'+
+  '@keyframes erShine{0%,55%{left:-60%}85%,100%{left:130%}}'+
+  '@media(prefers-reduced-motion:reduce){#ecrirerabbi{animation:none;box-shadow:0 6px 22px rgba(196,162,74,.55),0 0 22px 5px rgba(228,205,138,.7)}#ecrirerabbi::after{display:none}}';
+  document.head.appendChild(gl);
   var d=document.createElement('div');d.className='ecr-wrap';
   d.innerHTML='<button id="ecrirerabbi" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>Écrire une lettre au Rabbi</button>';
   w.appendChild(d);d.firstChild.addEventListener('click',open);

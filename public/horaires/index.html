@@ -468,6 +468,7 @@ body{overflow-x:hidden}
 <meta name="twitter:image" content="https://www.emounateha.fr/logo.png">
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "NGO", "@id": "https://www.emounateha.fr/#org", "name": "Émounatéha", "alternateName": ["Emounateha", "אמונתך"], "url": "https://www.emounateha.fr/", "logo": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png"}, "image": "https://www.emounateha.fr/logo.png", "description": "Association à but non lucratif d'aide aux familles dans le besoin : colis de Chabbat et de fêtes, réinsertion sociale, vêtements, logement, soutien moral et financier, diffusion de la Torah.", "email": "emounateha770@gmail.com", "telephone": "+33669670770", "identifier": [{"@type": "PropertyValue", "propertyID": "SIRET", "value": "93075555800010"}, {"@type": "PropertyValue", "propertyID": "RNA", "value": "W931028738"}], "areaServed": {"@type": "Country", "name": "France"}, "nonprofitStatus": "NonprofitType", "sameAs": ["https://www.instagram.com/emounateha", "https://www.tiktok.com/@emounateha", "https://youtube.com/@emounateharaba-h4b", "https://www.facebook.com/share/1HhyHMPNPd/"], "contactPoint": [{"@type": "ContactPoint", "contactType": "customer service", "telephone": "+33669670770", "email": "emounateha770@gmail.com", "availableLanguage": ["fr", "he"]}], "potentialAction": {"@type": "DonateAction", "target": "https://www.emounateha.fr/don/"}}, {"@type": "WebSite", "@id": "https://www.emounateha.fr/#site", "url": "https://www.emounateha.fr/", "name": "Émounatéha", "inLanguage": "fr-FR", "publisher": {"@id": "https://www.emounateha.fr/#org"}}, {"@type": "WebPage", "@id": "https://www.emounateha.fr/horaires/#page", "url": "https://www.emounateha.fr/horaires/", "name": "Horaires de Chabbat et zmanim — Paris et 1 000 villes | Émounatéha", "description": "Entrée et sortie de Chabbat, pose des téfilin, fin du Chéma, Min'ha, Chkia, Tset Hakokhavim : les horaires halakhiques du jour pour Paris, Jérusalem et plus de 1 000 villes. Recevez les horaires de Chabbat par e-mail.", "inLanguage": "fr-FR", "isPartOf": {"@id": "https://www.emounateha.fr/#site"}, "about": {"@id": "https://www.emounateha.fr/#org"}, "primaryImageOfPage": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://www.emounateha.fr/"}, {"@type": "ListItem", "position": 2, "name": "Horaires", "item": "https://www.emounateha.fr/horaires/"}]}]}</script>
 <!-- seo:end -->
+<script src="/appel.js?v=4" defer></script>
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -651,6 +652,8 @@ tr.open .zch{transform:rotate(180deg)}
 .hmany{margin:2px 2px 10px;font-size:13px;line-height:1.45;color:var(--teal);text-align:center}
 #chabbat-mail{margin-top:-34px}
 @media(max-width:800px){#chabbat-mail{margin-top:-14px}}
+/* chiffres des horaires : même police que les prix des colis (Bree Serif) */
+.shc .sht b,.htable td b,.zbox li b{font-family:'Bree Serif',Georgia,serif;font-weight:400;letter-spacing:0}
 </style>
 <section><div class="hw">
   <div class="hbar">
@@ -670,7 +673,7 @@ tr.open .zch{transform:rotate(180deg)}
 <footer>
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
-  <p class="sir">SIRET 930 755 558 00010 · RNA W931028738</p>
+  <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
   <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>

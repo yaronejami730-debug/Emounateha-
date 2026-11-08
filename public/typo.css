@@ -36,8 +36,8 @@ html body .pagehead h1{line-height:1.2;letter-spacing:.05em;font-size:clamp(22px
 }
 /* Nos actions : icônes 3D Pixar (couleurs du site) */
 html body #actions .card .ic{background:none;width:auto;height:auto;border-radius:0;display:block;margin-bottom:8px}
-html body #actions .card .ic img{display:block;width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(120,90,30,.22))}
-@media(max-width:800px){html body #actions .card .ic img{width:52px;height:52px}}
+html body #actions .card .ic img{display:block;width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(120,90,30,.22))}
+@media(max-width:800px){html body #actions .card .ic img{width:40px;height:40px}}
 /* « Accueillons Mashia'h… » en or */
 html body .hero .quote{font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.06em;color:#c4a24a;font-size:clamp(13px,1.7vw,17px);line-height:1.5;text-shadow:0 2px 10px rgba(0,0,0,.25)}
 @media(max-width:800px){html body .hero .quote{font-size:12.5px;letter-spacing:.04em}}

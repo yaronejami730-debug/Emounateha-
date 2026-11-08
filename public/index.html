@@ -205,6 +205,7 @@ section{padding:56px 0}
 .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
 .card{background:rgba(255,255,255,.94);border:1px solid #e3ecec;border-radius:18px;padding:28px 24px;box-shadow:0 6px 24px rgba(20,60,66,.07)}
 .card .ic{width:50px;height:50px;border-radius:12px;background:#e6f0f0;color:var(--teal);display:grid;place-items:center;margin-bottom:14px}
+a.card{display:block;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s}a.card:hover{transform:translateY(-3px);border-color:var(--gold)}
 .card h3{font-size:21px;color:var(--teal);margin-bottom:6px}
 .card p{color:var(--mut);font-size:15px}
 .about{max-width:760px;margin:0 auto;text-align:center;font-size:18px;color:#2b4044}
@@ -476,10 +477,10 @@ body{overflow-x:hidden}
 <link rel="stylesheet" href="/fade.css?v=3">
 <link rel="stylesheet" href="/typo.css?v=65">
 <script src="/typo.js?v=5" defer></script>
-<script src="/apercu-video.js?v=1" defer></script>
+<script src="/apercu-video.js?v=2" defer></script>
 <script src="/geoloc.js?v=1" defer></script>
 <script src="/hanouka-annonce.js?v=40" defer></script>
-<script src="/ecrire-rabbi.js?v=27" defer></script>
+<script src="/ecrire-rabbi.js?v=28" defer></script>
 <script src="/partager.js?v=1" defer></script>
 <script>/* apercuscroll : en aperçu jeudi, descend vers la carte des horaires */if(/apercu=jeudi/.test(location.search))addEventListener("load",function(){setTimeout(function(){var c=document.getElementById("paracha");if(c)window.scrollTo(0,Math.max(0,c.getBoundingClientRect().top+scrollY-170))},1200)})</script>
 <script src="/wa-bouton.js?v=2" defer></script>
@@ -500,6 +501,7 @@ body{overflow-x:hidden}
 <meta name="twitter:image" content="https://www.emounateha.fr/logo.png">
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "NGO", "@id": "https://www.emounateha.fr/#org", "name": "Émounatéha", "alternateName": ["Emounateha", "אמונתך"], "url": "https://www.emounateha.fr/", "logo": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png"}, "image": "https://www.emounateha.fr/logo.png", "description": "Association à but non lucratif d'aide aux familles dans le besoin : colis de Chabbat et de fêtes, réinsertion sociale, vêtements, logement, soutien moral et financier, diffusion de la Torah.", "email": "emounateha770@gmail.com", "telephone": "+33669670770", "identifier": [{"@type": "PropertyValue", "propertyID": "SIRET", "value": "93075555800010"}, {"@type": "PropertyValue", "propertyID": "RNA", "value": "W931028738"}], "areaServed": {"@type": "Country", "name": "France"}, "nonprofitStatus": "NonprofitType", "sameAs": ["https://www.instagram.com/emounateha", "https://www.tiktok.com/@emounateha", "https://youtube.com/@emounateharaba-h4b", "https://www.facebook.com/share/1HhyHMPNPd/"], "contactPoint": [{"@type": "ContactPoint", "contactType": "customer service", "telephone": "+33669670770", "email": "emounateha770@gmail.com", "availableLanguage": ["fr", "he"]}], "potentialAction": {"@type": "DonateAction", "target": "https://www.emounateha.fr/don/"}}, {"@type": "WebSite", "@id": "https://www.emounateha.fr/#site", "url": "https://www.emounateha.fr/", "name": "Émounatéha", "inLanguage": "fr-FR", "publisher": {"@id": "https://www.emounateha.fr/#org"}}, {"@type": "WebPage", "@id": "https://www.emounateha.fr/#page", "url": "https://www.emounateha.fr/", "name": "Émounatéha — Association d'aide aux familles dans le besoin", "description": "Émounatéha, association à but non lucratif : colis de Chabbat et de fêtes, réinsertion sociale, vêtements, logement, soutien moral et financier. Horaires de Chabbat, Torah du jour, faites un don.", "inLanguage": "fr-FR", "isPartOf": {"@id": "https://www.emounateha.fr/#site"}, "about": {"@id": "https://www.emounateha.fr/#org"}, "primaryImageOfPage": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png"}}]}</script>
 <!-- seo:end -->
+<script src="/appel.js?v=4" defer></script>
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="#contact">Contact</a></div></div></nav>
@@ -549,10 +551,10 @@ body{overflow-x:hidden}
     <div class="slider">
       <div class="slides" id="slides">
         <div class="slide" data-t="Nos actions" data-s="Un accompagnement concret, du premier repas jusqu'au retour à l'autonomie."><div class="wrap"><div class="grid">
-      <div class="card"><div class="ic"><img src="/tuiles/act-reinsertion.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Réinsertion sociale</h3><p>Un suivi personnalisé pour retrouver un équilibre et une place dans la société.</p></div>
-      <div class="card"><div class="ic"><img src="/tuiles/act-vetements.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Vêtements &amp; soins</h3><p>De nouveaux vêtements, une coiffure : se sentir bien pour repartir du bon pied.</p></div>
-      <div class="card"><div class="ic"><img src="/tuiles/act-toit.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Un toit sur la tête</h3><p>Aider à trouver un logement et à sortir de la rue durablement.</p></div>
-      <div class="card"><div class="ic"><img src="/tuiles/act-soutien.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Soutien moral &amp; financier</h3><p>Une écoute, un accompagnement et une aide matérielle quand c'est le plus difficile.</p></div>
+      <a class="card" href="/reinsertion-sociale/"><div class="ic"><img src="/tuiles/act-reinsertion.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Réinsertion sociale</h3><p>Un suivi personnalisé pour retrouver un équilibre et une place dans la société.</p></a>
+      <a class="card" href="/vetements-et-soins/"><div class="ic"><img src="/tuiles/act-vetements.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Vêtements &amp; soins</h3><p>De nouveaux vêtements, une coiffure : se sentir bien pour repartir du bon pied.</p></a>
+      <a class="card" href="/un-toit-sur-la-tete/"><div class="ic"><img src="/tuiles/act-toit.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Un toit sur la tête</h3><p>Aider à trouver un logement et à sortir de la rue durablement.</p></a>
+      <a class="card" href="/soutien-moral-et-financier/"><div class="ic"><img src="/tuiles/act-soutien.png?v=3" alt="" width="48" height="48" loading="lazy"></div><h3>Soutien moral &amp; financier</h3><p>Une écoute, un accompagnement et une aide matérielle quand c'est le plus difficile.</p></a>
     </div></div></div>
       </div>
       
@@ -599,7 +601,7 @@ body{overflow-x:hidden}
 <footer>
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
-  <p class="sir">SIRET 930 755 558 00010 · RNA W931028738</p>
+  <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
   <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
