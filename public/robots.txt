@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /crm
+Disallow: /crm/
+Disallow: /api/
+Disallow: /u/
+Disallow: /simulateur/
+
+Sitemap: https://www.emounateha.fr/sitemap.xml
