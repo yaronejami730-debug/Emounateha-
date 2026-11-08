@@ -6,6 +6,76 @@ SITE = os.path.join(HERE, '..', 'public')
 src = open(os.path.join(SITE, 'colis', 'index.html'), encoding='utf-8').read()
 LOCAL = 'http://localhost:3000'   # les liens du menu vont vers le site local
 
+CSS_ACCT = r'''
+/* compte donateur */
+#dn [hidden],.dn-acct [hidden],.dn-acct[hidden]{display:none!important}
+.dn-acct{max-width:1040px;margin:-4px auto 16px}
+.dn-acct-out{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:#51666a;flex-wrap:wrap}
+.dn-link{border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--teal);text-decoration:underline;text-decoration-color:rgba(196,162,74,.8);text-underline-offset:3px;cursor:pointer}
+.dn-acct-box{background:#fff;border:2px solid #e3d29c;border-radius:20px;padding:16px 16px 14px;box-shadow:0 10px 30px rgba(20,60,66,.12);max-width:560px;margin:0 auto}
+.dn-acct-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.dn-acct-h b{font-family:'Bree Serif',serif;font-weight:400;font-size:19px;color:var(--teal)}
+.dn-x{border:0;background:#eef3f3;color:#51666a;width:32px;height:32px;border-radius:50%;font-size:14px;cursor:pointer}
+.dn-acct-p{font-size:13.5px;color:#51666a;margin:0 0 10px;line-height:1.5}
+.dn-row{display:flex;gap:8px;align-items:stretch}
+.dn-row input{flex:1;min-width:0}
+.dn-btn.sm{flex:none;height:46px;font-size:14.5px;padding:0 16px;margin:0;white-space:nowrap}
+#dn input.dn-otp{height:56px;font-family:'Courier New',monospace;font-size:28px;letter-spacing:12px;text-align:center;font-weight:700}
+.dn-acct-err{font-size:13.5px;color:#8a2a22;background:#fdecea;border-radius:10px;padding:8px 11px;margin:8px 0 0}
+.dn-acct-in{display:flex;align-items:center;gap:11px;justify-content:center;background:#effaf3;border:1px solid #bfe3cf;border-radius:16px;padding:10px 14px;max-width:560px;margin:0 auto}
+.dn-av{width:34px;height:34px;border-radius:50%;background:#2c8a5a;color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.dn-acct-in b{display:block;font-size:14.5px;color:#14272a;word-break:break-all}
+.dn-acct-in small{display:block;font-size:12.5px;color:#51666a}
+.dn-acct-in a{color:var(--teal);font-weight:600}
+/* profils façon Uber */
+.dn-pcards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 16px}
+.dn-pcard{display:flex;align-items:center;gap:10px;text-align:left;border:2px solid #d3e0e0;background:#fff;border-radius:16px;padding:11px 12px;font:inherit;cursor:pointer;transition:.18s;min-width:0}
+.dn-pcard .ic{width:38px;height:38px;border-radius:50%;background:#e6f0f0;display:grid;place-items:center;font-size:18px;flex:none}
+.dn-pcard b{display:block;font-size:14.5px;color:#24505a;line-height:1.2}
+.dn-pcard small{display:block;font-size:12px;color:#7f9396;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dn-pcard.on{border-color:var(--gold);background:#fff8e6;box-shadow:0 6px 16px rgba(196,162,74,.25)}
+.dn-pcard.on .ic{background:var(--gold-l)}
+.dn-pcard.add small{color:var(--teal);font-weight:600}
+.dn-conn .dn-type{display:none}
+.dn-profs{display:none}.dn-conn .dn-profs{display:block}
+.dn-savep{display:none}.dn-conn .dn-savep{display:block}
+#dn input[readonly]{background:#f3f7f7;color:#51666a}
+.dn-cta{margin-top:16px;padding:14px;border:1px dashed #cfe0e0;border-radius:16px;background:#f8fbfb;text-align:center}
+.dn-cta p{margin:0 0 4px;font-size:14px;color:#3b5156}
+.dn-cta small{display:block;color:#7f9396;font-size:12px;margin-bottom:8px}
+.dn-cta a{display:inline-block;padding:11px 20px;border-radius:99px;background:var(--teal);color:#fff;font-weight:700;text-decoration:none;font-size:14.5px}
+/* espace donateur */
+.sp-wrap{max-width:760px;margin:0 auto;padding:0 14px}
+.sp-card{background:rgba(255,255,255,.98);border:1px solid #e3ecec;border-radius:22px;box-shadow:0 14px 40px rgba(20,60,66,.12);padding:20px 20px 18px}
+.sp-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.sp-head .dn-av{width:44px;height:44px;font-size:18px;background:var(--teal)}
+.sp-head b{display:block;color:#14272a;font-size:15px;word-break:break-all}
+.sp-head small{color:#7f9396;font-size:12.5px}
+.sp-head .act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.sp-pill{border:1.5px solid #cfe0e0;background:#fff;color:var(--teal);font:inherit;font-weight:700;font-size:13.5px;padding:9px 15px;border-radius:99px;cursor:pointer;text-decoration:none;display:inline-block}
+.sp-pill.gold{background:linear-gradient(180deg,var(--gold-l),var(--gold));border-color:var(--gold);color:#1b2b2d}
+.sp-tabs{display:flex;gap:4px;background:#e6f0f0;padding:4px;border-radius:99px;margin:0 0 16px}
+.sp-tabs button{flex:1;border:0;background:transparent;font:inherit;font-weight:700;font-size:14px;color:var(--teal);padding:11px 8px;border-radius:99px;cursor:pointer}
+.sp-tabs button.on{background:#fff;box-shadow:0 3px 10px rgba(20,60,66,.16);color:#164c52}
+.sp-year{margin:0 0 22px}
+.sp-yh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:2px solid var(--gold);padding-bottom:6px;margin-bottom:6px}
+.sp-yh h3{font-family:'Bree Serif',serif;font-weight:400;font-size:26px;color:var(--teal);margin:0}
+.sp-yh span{font-size:13.5px;color:#51666a;text-align:right}
+.sp-yh span b{color:#14272a}
+.sp-note{font-size:12.5px;color:#7f9396;margin:4px 0 8px}
+.sp-r{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:13px 2px;border-bottom:1px solid #e9eeee}
+.sp-r .l b{display:block;font-size:15px;color:#14272a}
+.sp-r .l small{display:block;font-size:12.5px;color:#7f9396;margin-top:2px}
+.sp-r .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#e6f0f0;color:#24505a;margin-left:6px;vertical-align:1px}
+.sp-r .tag.m{background:#fff3d6;color:#7a5f14}
+.sp-r .amt{font-family:'Bree Serif',serif;font-size:21px;color:var(--teal);text-align:right;line-height:1.1}
+.sp-r .dl{grid-column:1/-1;justify-self:start}
+.sp-empty{text-align:center;padding:26px 8px;color:#51666a}
+.sp-form{border:1px solid #e3ecec;border-radius:18px;padding:14px 14px 12px;margin-bottom:14px;background:#fff}
+.sp-form h4{margin:0 0 10px;font-family:'Bree Serif',serif;font-weight:400;font-size:18px;color:var(--teal);display:flex;align-items:center;gap:8px}
+.sp-ok{font-size:13px;color:#1d6b43;margin:8px 0 0}
+@media(max-width:600px){.dn-pcards{grid-template-columns:1fr}.sp-yh{flex-direction:column;gap:2px}.sp-yh span{text-align:left}.sp-head .act{margin-left:0;width:100%}.dn-row{flex-direction:column}.dn-btn.sm{height:48px}}
+'''
 CSS = r"""
 #wab{display:none!important}
 #dn{padding:20px 0 40px;overflow-x:clip}
@@ -146,10 +216,24 @@ CSS = r"""
 }
 @media(max-width:420px){.dn-g{grid-template-columns:1fr}.dn-tabs{width:100%}.dn-tab{flex:1;padding:10px 6px;font-size:13px}.dn-rand{width:100%}.dn-amts button{font-size:18px;height:48px}.dn-steps li{font-size:11.5px}}
 """
+CSS = CSS + CSS_ACCT
 
 HTML = r"""
 <section id="dn"><div class="dn-wrap">
   <ol class="dn-steps" id="dnSteps"><i class="dn-fill" id="dnFill"></i><li>Votre don</li><li>Coordonnées</li><li id="dnS3">Paiement</li></ol>
+  <div class="dn-acct" id="acct">
+    <div id="acctOut" class="dn-acct-out"><span>Déjà donateur ?</span><button type="button" id="acctOpen" class="dn-link">Se connecter</button><span>pour remplir le formulaire automatiquement</span></div>
+    <div id="acctBox" class="dn-acct-box" hidden>
+      <div class="dn-acct-h"><b>Se connecter</b><button type="button" id="acctClose" class="dn-x" aria-label="Fermer">✕</button></div>
+      <p class="dn-acct-p">Entrez votre email : vous recevez un code à 6 chiffres. Pas de mot de passe. Vos informations se remplissent toutes seules. Pas encore de compte ? Il est créé à la première connexion.</p>
+      <div id="lgStep1"><label for="lgEmail">Votre email</label><div class="dn-row"><input id="lgEmail" type="email" inputmode="email" autocomplete="email"><button type="button" id="lgSend" class="dn-btn sm">Recevoir mon code</button></div></div>
+      <div id="lgStep2" hidden><p class="dn-acct-p">Code envoyé à <b id="lgTo"></b> · <button type="button" class="dn-link" id="lgChange">changer d'email</button></p>
+        <label for="lgCode">Code à 6 chiffres</label><input id="lgCode" class="dn-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······">
+        <p class="dn-sub"><button type="button" class="dn-link" id="lgResend">Renvoyer le code</button> <span id="lgDev"></span></p></div>
+      <p class="dn-acct-err" id="lgErr" hidden></p>
+    </div>
+    <div id="acctIn" class="dn-acct-in" hidden><span class="dn-av">✓</span><div><b id="acctEmail"></b><small>Connecté · <a href="/espace/">Mon espace donateur</a> · <button type="button" class="dn-link" id="acctLogout">Se déconnecter</button></small></div></div>
+  </div>
   <div class="dn-grid">
   <form id="f" class="dn-card dn-form" novalidate autocomplete="on">
     <div class="dn-tools">
@@ -181,6 +265,7 @@ HTML = r"""
     <div class="dn-panel" id="p2">
       <h2 class="dn-h">Vos coordonnées</h2>
       <p class="dn-p">Elles figurent sur votre reçu fiscal.</p>
+      <div class="dn-profs" id="profSwitch"><div class="dn-lab" style="margin-top:0">Je donne avec mon profil</div><div class="dn-pcards" id="profCards"></div></div>
       <div class="dn-type">
         <label><input type="radio" name="type" value="particulier" checked><span>Personne physique<small>particulier</small></span></label>
         <label><input type="radio" name="type" value="entreprise"><span>Personne morale<small>entreprise, organisme</small></span></label>
@@ -203,6 +288,7 @@ HTML = r"""
         <div><label for="cp">Code postal</label><input id="cp" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
         <div><label for="ville">Ville</label><input id="ville" autocomplete="address-level2"></div>
         <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
+        <div class="dn-full dn-savep"><label class="dn-ck"><input id="saveProf" type="checkbox" checked><span>Enregistrer ces informations dans mon espace donateur<small>Pour ne plus avoir à les retaper</small></span></label></div>
         <div class="dn-full"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email<small id="smtp"></small></span></label></div>
       </div>
     </div>
@@ -320,7 +406,7 @@ function fillRandom() {
 const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []);
   $('smtp').textContent = c.smtp ? '' : 'Sans SMTP : fichier .eml à ouvrir dans Mail';
-  fillRandom(); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
+  fillRandom(); if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
   return c;
 });
 // Stripe.js : chargé à la demande, et on attend qu'il soit prêt avant d'ouvrir le paiement
@@ -352,6 +438,59 @@ document.querySelectorAll('input[name=freq]').forEach(r => r.onchange = () => { 
 $('amts').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('montant').value = b.dataset.v; mark(); upSum(); };
 ['montant', 'prenom', 'nom', 'rs', 'adr', 'cp', 'ville', 'email'].forEach(i => $(i).addEventListener('input', () => { if (i === 'montant') mark(); upSum(); }));
 
+
+// ===== compte donateur : connexion par code, profils particulier / professionnel =====
+let me = null, lgEmail = '', resendAt = 0;
+async function api(m, u, b) { const r = await fetch(u, { method: m, headers: { 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined, credentials: 'same-origin' }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status); return j; }
+const lgShowErr = m => { const e = $('lgErr'); e.textContent = m || ''; e.hidden = !m; };
+const PROFNAME = k => k === 'pro' ? 'Professionnel' : 'Particulier';
+const profLine = (k, p) => !p ? 'Ajouter ce profil' : (k === 'pro' ? p.raisonSociale : (p.prenom + ' ' + p.nom));
+function fillProfile(k) {
+  const p = me && me.profiles && me.profiles[k], ent = k === 'pro'; setType(ent);
+  $('prenom').value = p && !ent ? p.prenom : ''; $('nom').value = p && !ent ? p.nom : ''; $('rs').value = p && ent ? p.raisonSociale : ''; $('siren').value = p && ent ? (p.siren || '') : '';
+  $('adr').value = p ? p.adresse : ''; $('cp').value = p ? p.cp : ''; $('ville').value = p ? p.ville : '';
+  if (me) { $('email').value = me.email; }
+  renderProfiles(); upSum();
+}
+function curKind() { return isEnt() ? 'pro' : 'particulier'; }
+function renderProfiles() {
+  if (!me) return;
+  const cur = curKind();
+  $('profCards').innerHTML = ['particulier', 'pro'].map(k => { const p = me.profiles && me.profiles[k]; return '<button type="button" class="dn-pcard' + (cur === k ? ' on' : '') + (p ? '' : ' add') + '" data-k="' + k + '"><span class="ic">' + (k === 'pro' ? '🏢' : '👤') + '</span><span style="min-width:0"><b>' + PROFNAME(k) + '</b><small>' + esc(profLine(k, p)) + '</small></span></button>'; }).join('');
+  document.querySelectorAll('#profCards .dn-pcard').forEach(b => b.onclick = () => fillProfile(b.dataset.k));
+}
+function renderAcct() {
+  $('f').classList.toggle('dn-conn', !!me);
+  $('acctOut').hidden = !!me; $('acctIn').hidden = !me; if (me) { $('acctBox').hidden = true; $('acctEmail').textContent = me.email; }
+  $('email').readOnly = !!me; if (me) $('email').value = me.email;
+  if (me) renderProfiles();
+}
+async function loadMe() { try { me = await api('GET', '/api/me'); } catch (e) { me = null; } renderAcct(); }
+function afterLogin() {
+  const k = (me.last && me.profiles[me.last]) ? me.last : (me.profiles.particulier ? 'particulier' : (me.profiles.pro ? 'pro' : 'particulier'));
+  fillProfile(k); renderAcct(); show('');
+}
+async function lgRequest() {
+  const em = $('lgEmail').value.trim().toLowerCase(); lgShowErr('');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return lgShowErr('Adresse email invalide.');
+  $('lgSend').disabled = true;
+  try { const j = await api('POST', '/api/auth/request', { email: em }); lgEmail = em; resendAt = Date.now() + 30000; $('lgStep1').hidden = true; $('lgStep2').hidden = false; $('lgTo').textContent = em; $('lgCode').value = ''; $('lgCode').focus();
+    $('lgDev').textContent = j.devCode ? '(mode test : code ' + j.devCode + ')' : ''; if (j.devCode) { $('lgCode').value = j.devCode; lgVerify(); } }
+  catch (e) { lgShowErr(e.message); } finally { $('lgSend').disabled = false; }
+}
+async function lgVerify() {
+  const code = $('lgCode').value.replace(/\D/g, ''); if (code.length !== 6) return; lgShowErr('');
+  try { await api('POST', '/api/auth/verify', { email: lgEmail, code }); await loadMe(); afterLogin(); }
+  catch (e) { lgShowErr(e.message); $('lgCode').select(); }
+}
+$('acctOpen').onclick = () => { $('acctBox').hidden = false; $('acctOut').hidden = true; $('lgStep1').hidden = false; $('lgStep2').hidden = true; lgShowErr(''); $('lgEmail').focus(); };
+$('acctClose').onclick = () => { $('acctBox').hidden = true; $('acctOut').hidden = !!me; };
+$('lgSend').onclick = lgRequest; $('lgEmail').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); lgRequest(); } });
+$('lgCode').addEventListener('input', () => { $('lgCode').value = $('lgCode').value.replace(/\D/g, '').slice(0, 6); if ($('lgCode').value.length === 6) lgVerify(); });
+$('lgChange').onclick = () => { $('lgStep1').hidden = false; $('lgStep2').hidden = true; lgShowErr(''); $('lgEmail').focus(); };
+$('lgResend').onclick = () => { const w = resendAt - Date.now(); if (w > 0) return lgShowErr('Patientez ' + Math.ceil(w / 1000) + ' s avant de redemander un code.'); $('lgEmail').value = lgEmail; lgRequest(); };
+$('acctLogout').onclick = async () => { try { await api('POST', '/api/auth/logout'); } catch (e) {} me = null; renderAcct(); $('email').value = ''; };
+
 // autocomplétion des adresses (Base Adresse Nationale, Géoplateforme IGN)
 (function () {
   const inp = $('adr'), list = $('adrList'); let items = [], act = -1, t = null, ctl = null;
@@ -382,7 +521,7 @@ function body() {
   return { type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
     adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value, montant: $('montant').value,
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
-    frequence: document.querySelector('input[name=freq]:checked').value, affectation: $('aff').value };
+    frequence: document.querySelector('input[name=freq]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked) };
 }
 async function post(url, data) {
   const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
@@ -459,6 +598,8 @@ function renderRes(o) {
     '<p><b>' + eur(o.montant) + (o.mensuel ? ' / mois' : '') + '</b> · ' + esc(o.mode) + '</p>' + (o.affectation ? '<p>Affectation : ' + esc(o.affectation) + '</p>' : '') + '<p>' + em + '</p>' +
     '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener">📄 Ouvrir le PDF du CERFA</a>' +
     (o.email && o.email.eml ? '<a class="dn-dl g" href="' + o.email.eml + '">✉️ Ouvrir l\'email (.eml)</a>' : '');
+  $('res').insertAdjacentHTML('beforeend', me ? '<div class="dn-cta"><p>Retrouvez tous vos reçus, classés par année.</p><a href="/espace/">Mon espace donateur</a></div>' : '<div class="dn-cta"><p>Retrouvez tous vos reçus au même endroit.</p><small>Connexion par un simple code envoyé par email, sans mot de passe.</small><a href="/espace/" id="ctaEspace">Accéder à mon espace donateur</a></div>');
+  if ($('ctaEspace')) $('ctaEspace').onclick = () => { try { sessionStorage.setItem('acctEmail', $('email').value.trim()); } catch (e) {} };
   goPanel(4); elements = null; $('payel').innerHTML = '';
 }
 setMode(mode);
@@ -466,12 +607,101 @@ setMode(mode);
 if (/[?&]auto=pay/.test(location.search)) cfgP.then(async () => { await wait(700); await act(); await wait(400); await act(); });
 """
 
+ESP_HTML = r'''
+<section id="dn"><div class="sp-wrap">
+  <div id="spLogin" class="sp-card">
+    <h2 class="dn-h" style="margin-top:0">Se connecter</h2>
+    <p class="dn-p">Entrez votre email : vous recevez un code à 6 chiffres, sans mot de passe. Si vous n'avez pas encore d'espace donateur, il est créé à votre première connexion.</p>
+    <div id="spS1"><label for="spEmail">Votre email</label><div class="dn-row"><input id="spEmail" type="email" inputmode="email" autocomplete="email"><button type="button" id="spSend" class="dn-btn sm">Recevoir mon code</button></div></div>
+    <div id="spS2" hidden><p class="dn-acct-p">Code envoyé à <b id="spTo"></b> · <button type="button" class="dn-link" id="spChange">changer d'email</button></p>
+      <label for="spCode">Code à 6 chiffres</label><input id="spCode" class="dn-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······">
+      <p class="dn-sub"><button type="button" class="dn-link" id="spResend">Renvoyer le code</button> <span id="spDev"></span></p></div>
+    <p class="dn-acct-err" id="spErr" hidden></p>
+  </div>
+  <div id="spApp" hidden>
+    <div class="sp-card">
+      <div class="sp-head"><span class="dn-av">✓</span><div><b id="spMail"></b><small>Espace donateur</small></div><div class="act"><a class="sp-pill gold" href="/">Faire un don</a><button class="sp-pill" id="spOut" type="button">Se déconnecter</button></div></div>
+      <div class="sp-tabs"><button id="spT1" class="on" type="button">Mes reçus</button><button id="spT2" type="button">Mes informations</button></div>
+      <div id="spRec"></div>
+      <div id="spInf" hidden>
+        <p class="sp-note" style="margin-top:0">Ces informations remplissent automatiquement le formulaire de don. Vous pouvez donner en tant que particulier, en tant que professionnel, ou les deux.</p>
+        <form class="sp-form" id="fPart" novalidate><h4>👤 Profil particulier</h4>
+          <div class="dn-g"><div><label for="pPrenom">Prénom</label><input id="pPrenom" autocomplete="given-name"></div><div><label for="pNom">Nom</label><input id="pNom" autocomplete="family-name"></div>
+          <div class="dn-full"><label for="pAdr">Adresse</label><input id="pAdr" autocomplete="street-address"></div><div><label for="pCp">Code postal</label><input id="pCp" inputmode="numeric" maxlength="5"></div><div><label for="pVille">Ville</label><input id="pVille"></div></div>
+          <div class="dn-actions-inline" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="sp-pill gold" type="submit">Enregistrer</button><button class="sp-pill" type="button" id="delPart">Supprimer ce profil</button></div><p class="sp-ok" id="okPart" hidden></p><p class="dn-acct-err" id="erPart" hidden></p></form>
+        <form class="sp-form" id="fPro" novalidate><h4>🏢 Profil professionnel</h4>
+          <div class="dn-g"><div><label for="qRs">Raison sociale</label><input id="qRs" autocomplete="organization"></div><div><label for="qSiren">SIREN <span style="font-weight:400;color:#7f9396">(facultatif)</span></label><input id="qSiren" inputmode="numeric" maxlength="11"></div>
+          <div class="dn-full"><label for="qAdr">Adresse du siège</label><input id="qAdr" autocomplete="street-address"></div><div><label for="qCp">Code postal</label><input id="qCp" inputmode="numeric" maxlength="5"></div><div><label for="qVille">Ville</label><input id="qVille"></div></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="sp-pill gold" type="submit">Enregistrer</button><button class="sp-pill" type="button" id="delPro">Supprimer ce profil</button></div><p class="sp-ok" id="okPro" hidden></p><p class="dn-acct-err" id="erPro" hidden></p></form>
+      </div>
+    </div>
+  </div>
+</div></section>
+'''
+ESP_JS = r'''
+// ===== espace donateur =====
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const eur = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
+async function api(m, u, b) { const r = await fetch(u, { method: m, headers: { 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined, credentials: 'same-origin' }); const j = await r.json().catch(() => ({})); if (!r.ok) { const e = new Error(j.error || 'Erreur ' + r.status); e.status = r.status; throw e; } return j; }
+let em = '', resendAt = 0, me = null;
+const err = m => { const e = $('spErr'); e.textContent = m || ''; e.hidden = !m; };
+async function request() {
+  const v = $('spEmail').value.trim().toLowerCase(); err('');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return err('Adresse email invalide.');
+  $('spSend').disabled = true;
+  try { const j = await api('POST', '/api/auth/request', { email: v }); em = v; resendAt = Date.now() + 30000; $('spS1').hidden = true; $('spS2').hidden = false; $('spTo').textContent = v; $('spCode').value = ''; $('spCode').focus();
+    $('spDev').textContent = j.devCode ? '(mode test : code ' + j.devCode + ')' : ''; if (j.devCode) { $('spCode').value = j.devCode; verify(); } }
+  catch (e) { err(e.message); } finally { $('spSend').disabled = false; }
+}
+async function verify() { const code = $('spCode').value.replace(/\D/g, ''); if (code.length !== 6) return; err(''); try { await api('POST', '/api/auth/verify', { email: em, code }); await start(); } catch (e) { err(e.message); $('spCode').select(); } }
+$('spSend').onclick = request; $('spEmail').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); request(); } });
+$('spCode').addEventListener('input', () => { $('spCode').value = $('spCode').value.replace(/\D/g, '').slice(0, 6); if ($('spCode').value.length === 6) verify(); });
+$('spChange').onclick = () => { $('spS1').hidden = false; $('spS2').hidden = true; err(''); $('spEmail').focus(); };
+$('spResend').onclick = () => { const w = resendAt - Date.now(); if (w > 0) return err('Patientez ' + Math.ceil(w / 1000) + ' s avant de redemander un code.'); $('spEmail').value = em; request(); };
+$('spOut').onclick = async () => { try { await api('POST', '/api/auth/logout'); } catch (e) {} location.reload(); };
+
+function tab(n) { $('spT1').classList.toggle('on', n === 1); $('spT2').classList.toggle('on', n === 2); $('spRec').hidden = n !== 1; $('spInf').hidden = n !== 2; }
+$('spT1').onclick = () => tab(1); $('spT2').onclick = () => tab(2);
+const MOIS = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+function renderReceipts(data) {
+  if (!data.receipts.length) { $('spRec').innerHTML = '<div class="sp-empty"><p style="margin:0 0 12px">Aucun reçu pour l\'instant.</p><a class="sp-pill gold" href="/">Faire un don</a></div>'; return; }
+  const by = {}; data.receipts.forEach(r => (by[r.year] = by[r.year] || []).push(r));
+  $('spRec').innerHTML = '<p class="sp-note" style="margin-top:0">Vos reçus fiscaux, classés par année. Conservez-les : ils vous sont demandés en cas de contrôle.</p>' +
+    data.years.map(y => '<div class="sp-year"><div class="sp-yh"><h3>' + y.year + '</h3><span><b>' + y.count + ' reçu' + (y.count > 1 ? 's' : '') + '</b> · total <b>' + eur(y.total) + '</b></span></div>' +
+      by[y.year].map(r => '<div class="sp-r"><div class="l"><b>' + esc(r.affectation || 'Don') + (r.mensuel ? '<span class="tag m">Mensuel' + (r.echeance ? ' n°' + r.echeance : '') + '</span>' : '') + '<span class="tag">' + (r.type === 'entreprise' ? 'Pro' : 'Particulier') + '</span></b><small>' + MOIS(r.date) + ' · ' + esc(r.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')) + ' · reçu n° ' + esc(r.numero) + '</small></div><div class="amt">' + eur(r.montant) + '</div><a class="sp-pill dl" href="' + r.pdf + '" target="_blank" rel="noopener">Télécharger le reçu (PDF)</a></div>').join('') + '</div>').join('');
+}
+function fillForms() {
+  const p = (me.profiles || {}).particulier || {}, q = (me.profiles || {}).pro || {};
+  $('pPrenom').value = p.prenom || ''; $('pNom').value = p.nom || ''; $('pAdr').value = p.adresse || ''; $('pCp').value = p.cp || ''; $('pVille').value = p.ville || '';
+  $('qRs').value = q.raisonSociale || ''; $('qSiren').value = q.siren || ''; $('qAdr').value = q.adresse || ''; $('qCp').value = q.cp || ''; $('qVille').value = q.ville || '';
+  $('delPart').hidden = !p.nom; $('delPro').hidden = !q.raisonSociale;
+}
+async function saveProfile(kind, data, ok, er) {
+  const o = $(ok), e = $(er); o.hidden = true; e.hidden = true;
+  try { const j = await api('PUT', '/api/me/profile', { kind, data }); me.profiles = j.profiles; fillForms(); o.textContent = '✓ Enregistré. Le formulaire de don se remplira avec ces informations.'; o.hidden = false; }
+  catch (x) { e.textContent = x.message; e.hidden = false; }
+}
+$('fPart').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('particulier', { prenom: $('pPrenom').value, nom: $('pNom').value, adresse: $('pAdr').value, cp: $('pCp').value, ville: $('pVille').value }, 'okPart', 'erPart'); });
+$('fPro').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('pro', { raisonSociale: $('qRs').value, siren: $('qSiren').value, adresse: $('qAdr').value, cp: $('qCp').value, ville: $('qVille').value }, 'okPro', 'erPro'); });
+$('delPart').onclick = async () => { if (!confirm('Supprimer le profil particulier ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/particulier'); me.profiles = j.profiles; fillForms(); };
+$('delPro').onclick = async () => { if (!confirm('Supprimer le profil professionnel ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/pro'); me.profiles = j.profiles; fillForms(); };
+
+async function start() {
+  try { me = await api('GET', '/api/me'); } catch (e) { $('spLogin').hidden = false; $('spApp').hidden = true; return; }
+  $('spLogin').hidden = true; $('spApp').hidden = false; $('spMail').textContent = me.email; fillForms();
+  try { renderReceipts(await api('GET', '/api/me/receipts')); } catch (e) { $('spRec').innerHTML = '<div class="sp-empty">Impossible de charger vos reçus : ' + esc(e.message) + '</div>'; }
+}
+try { const pre = sessionStorage.getItem('acctEmail'); if (pre) { $('spEmail').value = pre; sessionStorage.removeItem('acctEmail'); } } catch (e) {}
+start();
+'''
+
 def build(variant="don"):
     s = src
     # SEO : page de test, jamais indexée
     s = re.sub(r'<!-- seo:start -->.*?<!-- seo:end -->', '<meta name="robots" content="noindex,nofollow">', s, flags=re.S)
-    adm = variant == 'admin'
-    s = re.sub(r'<title>.*?</title>', '<title>%s · Émounatéha</title>' % ('Back-office — reçu sans paiement' if adm else 'Faire un don'), s, count=1, flags=re.S)
+    adm = variant == 'admin'; esp = variant == 'espace'
+    s = re.sub(r'<title>.*?</title>', '<title>%s · Émounatéha</title>' % ('Back-office — reçu sans paiement' if adm else ('Mon espace donateur' if esp else 'Faire un don')), s, count=1, flags=re.S)
     s = re.sub(r'<meta name="description"[^>]*>', '', s, count=1)
     s = re.sub(r'<meta name="theme-color"[^>]*>', '', s)
     s = s.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<meta name="theme-color" content="#ffffff">', 1)
@@ -482,20 +712,25 @@ def build(variant="don"):
     s = re.sub(r'<footer>.*?</footer>', loc, s, count=1, flags=re.S)
     # en-tête de page
     head = re.search(r'<header class="pagehead">.*?</header>', s, re.S).group(0)
-    s = s.replace(head, ('<header class="pagehead"><div class="wrap"><h1>Reçu sans paiement</h1><p>Back-office : générez le reçu fiscal CERFA d\'un don reçu par virement, chèque ou espèces.</p><span class="dn-pill">Back-office · mode test</span></div></header>' if adm else '<header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA vous est envoyé par email, en PDF, dès votre don.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>'))
+    if esp:
+        s = s.replace(head, '<header class="pagehead"><div class="wrap"><h1>Mon espace donateur</h1><p>Retrouvez vos reçus fiscaux, classés par année, et vos informations.</p></div></header>')
+    else:
+        s = s.replace(head, ('<header class="pagehead"><div class="wrap"><h1>Reçu sans paiement</h1><p>Back-office : générez le reçu fiscal CERFA d\'un don reçu par virement, chèque ou espèces.</p><span class="dn-pill">Back-office · mode test</span></div></header>' if adm else '<header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA vous est envoyé par email, en PDF, dès votre don.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>'))
     # contenu
     a = s.index('<section id="colis">'); b = s.index('</section>', a) + len('</section>')
-    s = s[:a] + HTML + s[b:]
+    s = s[:a] + (ESP_HTML if esp else HTML) + s[b:]
+    if adm: s = s.replace('<div class="dn-acct" id="acct">', '<div class="dn-acct" id="acct" style="display:none">')   # pas de connexion donateur dans le back-office
     # script principal : partie commune du site (date, barre au défilement…) + formulaire + menu
     sa = s.index("<script>document.getElementById('y')"); sb = s.index('</script>', sa) + len('</script>')
     p0 = src.index("<script>document.getElementById('y')"); p1 = src.index('const UBER=', p0)
     nav_a = src.index("(function(){const nav=document.querySelector('.sec-nav')"); nav_b = src.index('</script>', nav_a)
-    s = s[:sa] + src[p0:p1] + JS.replace('@@MODE@@', 'sans' if adm else 'carte') + '\n' + src[nav_a:nav_b] + '</script>' + s[sb:]
+    s = s[:sa] + src[p0:p1] + (ESP_JS if esp else JS.replace('@@MODE@@', 'sans' if adm else 'carte')) + '\n' + src[nav_a:nav_b] + '</script>' + s[sb:]
     s = s.replace('</head>', '<style>%s</style>\n</head>' % CSS, 1)
-    out = os.path.join(HERE, 'public', 'backoffice' if adm else '', 'index.html')
+    out = os.path.join(HERE, 'public', 'backoffice' if adm else ('espace' if esp else ''), 'index.html')
     os.makedirs(os.path.dirname(out), exist_ok=True)
     open(out, 'w', encoding='utf-8').write(s)
     print('page construite :', out.replace(HERE, '.'), len(s), 'octets')
 
 build('don')
 build('admin')
+build('espace')

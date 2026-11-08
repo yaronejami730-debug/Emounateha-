@@ -28,13 +28,15 @@ if (stripe && !/^sk_test_/.test(process.env.STRIPE_SECRET_KEY)) { console.error(
 
 // --- petit stockage local (numéros de reçu, dons en attente, reçus déjà générés) ---
 const load = () => { try { return JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch (e) { return { counters: {}, pending: {}, receipts: {} }; } };
-const save = d => fs.writeFileSync(DATA, JSON.stringify(d, null, 1));
+const save = d => { const t = DATA + '.tmp'; fs.writeFileSync(t, JSON.stringify(d, null, 1)); fs.renameSync(t, DATA); };
 function nextNumero(annee) { const d = load(); d.counters[annee] = (d.counters[annee] || 0) + 1; save(d); return `${PREFIX}-${annee}-${String(d.counters[annee]).padStart(4, '0')}`; }
 
 // --- validation ---
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clean = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 function sirenValide(s) { s = String(s).replace(/\s/g, ''); if (!/^\d{9}$/.test(s)) return false; let sum = 0; for (let i = 0; i < 9; i++) { let d = +s[i]; if (i % 2 === 1) { d *= 2; if (d > 9) d -= 9; } sum += d; } return sum % 10 === 0; }
+const mailer = require('./mailer');
+const acc = require('./accounts')({ load, save, RECUS, clean, sirenValide, mailer });
 const MODES = ['Virement bancaire', 'Chèque', 'Espèces', 'Carte bancaire (Stripe, test)'];
 const AFFECT = ['Là où le besoin est le plus grand', 'Colis de Chabbat et de fêtes', 'Un toit sur la tête (nuits d\'hôtel)', 'Soutien moral et financier', 'Réinsertion sociale', 'Vêtements et soins'];
 const affectation = b => (AFFECT.includes(b.affectation) ? b.affectation : AFFECT[0]);
@@ -51,7 +53,7 @@ function validerDonateur(b) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error('Email invalide');
   const montant = Math.round(Number(String(b.montant).replace(',', '.')) * 100);
   if (!Number.isInteger(montant) || montant < 100 || montant > 10000000) throw new Error('Montant invalide (de 1 € à 100 000 €)');
-  return { type, nom, siren: type === 'entreprise' ? siren : '', adresse: `${rue}, ${cp} ${ville}`, ville, email, montant };
+  return { type, nom, siren: type === 'entreprise' ? siren : '', adresse: `${rue}, ${cp} ${ville}`, ville, email, montant, form: { prenom: clean(b.prenom, 60), nom: clean(b.nom, 60), raisonSociale: clean(b.raisonSociale, 120), siren, adresse: rue, cp, ville } };
 }
 
 // --- reçu : HTML -> PDF (Chrome) ---
@@ -91,7 +93,12 @@ async function pdf(html, file) {
 }
 
 // --- email : vrai envoi si SMTP configuré, sinon fichier .eml (ouvrable dans Mail) ---
-async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel }) {
+async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, don }) {
+  if (don && !mailer.isFake(to)) {     // vraie adresse : email Brevo (modèle unique pour tous les dons), reçu en pièce jointe
+    const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance,
+      spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
+    if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${numero}.pdf`, content: fs.readFileSync(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
+  }
   const subject = `[TEST] Votre reçu fiscal ${numero} — ${ASSO.nom}`;
   const text = `Bonjour ${nom},\n\nMerci pour votre don à ${ASSO.nom}. Vous trouverez ci-joint votre reçu fiscal ${numero}.${aff ? `\nAffectation de votre don : ${aff}.` : ''}${mensuel ? '\nVotre don est mensuel : un reçu vous sera adressé pour chaque prélèvement.' : ''}\n\n(Message de TEST : aucun argent réel, reçu sans valeur fiscale.)\n\nCordialement,\n${ASSO.nom}\n${ASSO.telephone} · ${ASSO.email}`;
   const attachments = [{ filename: `Recu-fiscal-${numero}.pdf`, path: pdfFile, contentType: 'application/pdf' }];
@@ -113,8 +120,8 @@ async function fabriquer(don, { envoyerEmail }) {
   const numero = nextNumero(annee);
   const file = path.join(RECUS, `recu_${numero}_${crypto.randomBytes(3).toString('hex')}.pdf`);
   await pdf(remplir(don, numero), file);
-  const out = { numero, pdf: '/recus/' + path.basename(file), montant: don.montant, mode: don.mode };
-  out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel }).catch(e => ({ error: e.message })) : { skipped: true };
+  const out = { numero, pdf: '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
+  out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
   return out;
 }
 
@@ -162,6 +169,7 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
   } catch (e) { console.error('[webhook] erreur', e.message); res.status(500).send('erreur'); }   // Stripe réessaiera plus tard
 });
 app.use(express.json({ limit: '50kb' }));
+acc.mount(app);                                   // /api/auth/*, /api/me*, /recus/:fichier (liens signés)
 // fichier de vérification Apple Pay (Apple le réclame à la racine du domaine, dans .well-known)
 app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res) => res.type('text/plain').sendFile(path.join(__dirname, 'apple-pay', 'apple-developer-merchantid-domain-association')));
 app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); res.setHeader('Referrer-Policy', 'no-referrer'); next(); });
@@ -171,7 +179,8 @@ app.get('/api/config', (req, res) => res.json({ publishableKey: process.env.STRI
 app.post('/api/intent', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
-    const don = validerDonateur(req.body);
+    const sess = acc.getSession(req), don = validerDonateur(req.body);
+    if (sess) don.email = sess.email;                       // connecté : le reçu est rattaché au compte
     const mensuel = req.body.frequence === 'mensuel', aff = affectation(req.body);
     const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel' };
     let id, clientSecret, subscription = null;
@@ -185,7 +194,7 @@ app.post('/api/intent', async (req, res) => {
       const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: ['card'], description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
       id = pi.id; clientSecret = pi.client_secret;
     }
-    const d = load(); d.pending[id] = { ...don, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, at: Date.now() }; save(d);
+    const d = load(); d.pending[id] = { ...don, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -203,6 +212,7 @@ async function receiptForPayment(id) {
     const out = await fabriquer({ ...p, echeance: 1, mode: p.mensuel ? 'Carte bancaire (Stripe, test) — don mensuel, 1re échéance' : MODES[3], dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
     out.affectation = p.affectation; out.mensuel = !!p.mensuel;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id]; save(d2);
+    if (p.owner && p.saveProfile) acc.saveProfileFromForm(p.owner, p.type, p.form);   // « enregistrer mes informations »
     return out;
   })().finally(() => inflight.delete(id));
   inflight.set(id, job); return job;
@@ -211,7 +221,7 @@ app.post('/api/finalize', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré');
     const id = String(req.body.id || ''); if (!/^pi_[A-Za-z0-9]+$/.test(id)) throw new Error('Paiement inconnu');
-    res.json(await receiptForPayment(id));
+    res.json(acc.publicReceipt(await receiptForPayment(id)));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 // 3) reçu SANS paiement (virement, chèque, espèces déjà reçus)
@@ -221,10 +231,10 @@ app.post('/api/recu', async (req, res) => {
     const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide');
     const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || dt > new Date()) throw new Error('Date du don invalide (pas dans le futur)');
     if (dt.getFullYear() < new Date().getFullYear() - 1) throw new Error('Date trop ancienne pour cette page de test');
-    res.json(await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: affectation(req.body) }, { envoyerEmail: !!req.body.envoyerEmail }));
+    res.json(acc.publicReceipt(await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: affectation(req.body) }, { envoyerEmail: !!req.body.envoyerEmail })));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
-app.use('/recus', express.static(RECUS, { index: false, dotfiles: 'deny', setHeaders: (r, f) => { if (f.endsWith('.eml')) r.setHeader('Content-Type', 'message/rfc822'); r.setHeader('Content-Disposition', 'inline'); } }));
+// (les PDF ne sont plus servis publiquement : voir accounts.js, liens signés ou propriétaire connecté)
 const SITE_PUBLIC = path.join(__dirname, '..', 'public');   // css, scripts et images du vrai site
 const SITE = 'http://127.0.0.1:3000';                       // serveur du site local (bandeau Hanouka, date du jour…)
 app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/api/colis-videos', '/api/action-videos'], async (req, res) => {

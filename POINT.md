@@ -84,6 +84,13 @@ Tout le code est dans le sous-dossier `local-stripe-test/`.
 
 ---
 
+## 5bis. Espace donateur (local, test)
+- **Page `/espace/`** : reçus fiscaux et paiements classés par année (total par année, PDF à télécharger), onglet « Mes informations » (profils particulier / professionnel).
+- **Connexion depuis la page de don** : e-mail → « Se connecter » → code à 6 chiffres sur la même page → formulaire pré-rempli. Sans compte : don invité normal, reçu envoyé par e-mail.
+- **Deux profils** (particulier, professionnel), choix du profil qui paie façon Uber ; case « enregistrer ce profil ».
+- **Sécurité** : code à usage unique, limitation de débit, cookie de session, vérification de même origine, liens PDF signés (HMAC) ou session propriétaire. Le code est renvoyé à l'écran (`devCode`) **uniquement en local**.
+- **Limites** : e-mail réel du code non testé sur une vraie adresse ; `PUBLIC_URL` non défini (pas de bouton « Retrouver mes reçus » dans l'e-mail) ; stockage encore en fichier local (à passer sur Supabase).
+
 ## 6. Points d'attention connus
 - **Apple Pay / Google Pay** : le bouton ne se charge **que si Link est activé** sur le compte Stripe, et si l'on n'ajoute pas les réglages d'affichage `buttonTheme` / `layout` (ils bloquent le chargement). Link est donc activé ; sa ligne « paiement rapide avec Link » apparaît dans le formulaire de carte.
 - Apple Pay exige un **domaine HTTPS réel** (pas `localhost`). En test, c'est l'adresse du tunnel qui est enregistrée chez Stripe ; elle change à chaque nouveau tunnel.
