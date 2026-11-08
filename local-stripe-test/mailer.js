@@ -79,33 +79,29 @@ async function donEmail(d) {   // { prenom, montant(centimes), dateDon, affectat
   const color = '#1f6a72', accent = '#c4a24a', site = (s.publicUrl || 'https://www.emounateha.fr').replace(/\/$/, '');
   const date = new Date(d.dateDon).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const amount = (d.montant / 100).toFixed(2).replace('.', ',').replace(',00', '') + ' €';
-  const row = (k, v, last) => `<tr><td style="padding:10px 0;${last ? '' : 'border-bottom:1px solid #e9eeee;'}font-size:13px;color:#6b7d80;width:42%;">${k}</td><td style="padding:10px 0;${last ? '' : 'border-bottom:1px solid #e9eeee;'}font-size:15px;color:#14272a;font-weight:600;text-align:right;">${v}</td></tr>`;
-  const inner = `<div class="he" lang="he" dir="rtl" style="text-align:center;font-family:'Frank Ruhl Libre','David',serif;font-weight:900;font-size:22px;color:${accent};margin-bottom:6px;">תודה רבה</div>
-  <h1 style="margin:0 0 14px;font-family:Georgia,serif;font-size:27px;line-height:1.25;color:${color};text-align:center;">Merci pour votre don${d.prenom ? ', ' + esc(d.prenom) : ''} !</h1>
-  <p style="margin:0 0 4px;text-align:center;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#9a7a22;font-weight:bold;">${d.mensuel ? 'Votre don mensuel' : 'Votre don'}</p>
-  <p class="big" style="margin:0 0 18px;text-align:center;font-family:Georgia,serif;font-size:46px;line-height:1.1;color:${color};">${amount}${d.mensuel ? '<span style="font-size:18px;color:#6b7d80;"> / mois</span>' : ''}</p>
-  <p style="margin:0 0 20px;font-size:16px;line-height:1.65;color:#111827;text-align:center;">Votre générosité permet à ${esc(s.orgName)} de continuer à aider des familles et des personnes dans le besoin : repas, colis, hébergement, soutien et accompagnement vers l'autonomie.</p>
+  const row = (k, v, last) => `<tr><td style="padding:10px 0;${last ? '' : 'border-bottom:1px solid #e9eeee;'}font-size:12px;color:#6b7d80;width:42%;">${k}</td><td style="padding:10px 0;${last ? '' : 'border-bottom:1px solid #e9eeee;'}font-size:13.5px;color:#14272a;font-weight:600;text-align:right;">${v}</td></tr>`;
+  const inner = `<div class="he" lang="he" dir="rtl" style="text-align:center;font-family:'Frank Ruhl Libre','David',serif;font-weight:900;font-size:19px;color:${accent};margin-bottom:4px;">תודה רבה</div>
+  <h1 style="margin:0 0 12px;font-family:Georgia,serif;font-weight:bold;font-size:22px;line-height:1.3;color:${color};text-align:center;">Merci pour votre don${d.prenom ? ', ' + esc(d.prenom) : ''} !</h1>
+  <p style="margin:0 0 2px;text-align:center;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#9a7a22;font-weight:bold;">${d.mensuel ? 'Votre don mensuel' : 'Votre don'}</p>
+  <p class="big" style="margin:0 0 14px;text-align:center;font-family:Georgia,serif;font-weight:bold;font-size:34px;line-height:1.1;color:${color};">${amount}${d.mensuel ? '<span style="font-size:18px;color:#6b7d80;"> / mois</span>' : ''}</p>
+  <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:15px;line-height:1.6;color:#22383b;text-align:center;">Votre générosité permet à ${esc(s.orgName)} de continuer à aider des familles et des personnes dans le besoin : repas, colis, hébergement, soutien et accompagnement vers l'autonomie.</p>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6faf9;border:1px solid #dbe8e8;border-radius:12px;margin:0 0 6px;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     ${row('Montant', amount + (d.mensuel ? ' / mois' : ''))}${row('Date', esc(date))}${d.affectation ? row('Affectation', esc(d.affectation)) : ''}${row('Mode de paiement', esc(d.mode))}${d.mensuel && d.echeance ? row('Échéance', 'n°' + d.echeance) : ''}${row('Reçu fiscal n°', esc(d.numero), true)}
   </table></td></tr></table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;background:#f5ecd6;border-radius:18px;"><tr>
-    <td valign="top" style="padding:14px 0 0 16px;width:34px;font-family:Georgia,serif;font-size:58px;line-height:.9;color:${accent};font-weight:bold;">&ldquo;</td>
-    <td style="padding:16px 6px 16px 6px;text-align:center;font-family:Arial,Helvetica,sans-serif;text-transform:uppercase;line-height:1.45;">
-      <div style="font-size:13.5px;color:#3a3a3a;font-weight:600;">En pratiquant la tsédaka, nous honorons son héritage</div>
-      <div style="font-size:15.5px;color:${color};font-weight:800;margin:3px 0;">et contribuons à la construction d'un monde</div>
-      <div style="font-size:13.5px;color:#3a3a3a;font-weight:600;">empreint de bienveillance, d'unité et de générosité.</div>
+    <td valign="top" style="padding:14px 0 0 16px;width:34px;font-family:Georgia,serif;font-size:44px;line-height:.9;color:${accent};font-weight:bold;">&ldquo;</td>
+    <td style="padding:14px 4px;text-align:center;font-family:Georgia,serif;font-style:italic;line-height:1.5;">
+      <div style="font-size:14px;color:#3a3a3a;">En pratiquant la tsédaka, nous honorons son héritage</div>
+      <div style="font-size:15px;color:${color};font-weight:bold;margin:2px 0;">et contribuons à la construction d'un monde</div>
+      <div style="font-size:14px;color:#3a3a3a;">empreint de bienveillance, d'unité et de générosité.</div>
     </td>
-    <td valign="bottom" style="padding:0 16px 4px 0;width:34px;font-family:Georgia,serif;font-size:58px;line-height:.9;color:${accent};font-weight:bold;text-align:right;">&rdquo;</td>
+    <td valign="bottom" style="padding:0 16px 4px 0;width:34px;font-family:Georgia,serif;font-size:44px;line-height:.9;color:${accent};font-weight:bold;text-align:right;">&rdquo;</td>
   </tr></table>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;"><tr><td style="padding:16px 4px 0;border-top:1px solid #dfe8e8;text-align:center;">
-    <p style="margin:0 0 6px;font-size:15px;font-weight:bold;color:#14272a;">Votre reçu fiscal est en pièce jointe (PDF)</p>
-    <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7d80;">Il vous permet de bénéficier d'une réduction d'impôt. Conservez-le : il vous sera demandé en cas de contrôle. Il n'est pas à joindre à votre déclaration de revenus.</p>
-  </td></tr></table>
-  ${d.spaceUrl ? `<table role="presentation" align="center" style="margin:24px auto 6px;"><tr><td style="background:${accent};border-radius:999px;"><a href="${esc(d.spaceUrl)}" style="display:inline-block;padding:14px 32px;font-size:16px;font-weight:bold;color:#1b2b2d;text-decoration:none;font-family:Arial,sans-serif;">Retrouver tous mes reçus</a></td></tr></table>
-  <p style="margin:6px 0 4px;text-align:center;font-size:12.5px;color:#8a949a;">Connexion par simple code envoyé par email, sans mot de passe.</p>` : `<table role="presentation" align="center" style="margin:24px auto 6px;"><tr><td style="background:${accent};border-radius:999px;"><a href="${site}/" style="display:inline-block;padding:14px 32px;font-size:16px;font-weight:bold;color:#1b2b2d;text-decoration:none;font-family:Arial,sans-serif;">Découvrir nos actions</a></td></tr></table>`}
+  ${d.spaceUrl ? `<table role="presentation" align="center" style="margin:24px auto 6px;"><tr><td style="background:${accent};border-radius:999px;"><a href="${esc(d.spaceUrl)}" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:bold;color:#1b2b2d;text-decoration:none;font-family:Arial,sans-serif;">Retrouver tous mes reçus</a></td></tr></table>
+  <p style="margin:6px 0 4px;text-align:center;font-size:12.5px;color:#8a949a;">Connexion par simple code envoyé par email, sans mot de passe.</p>` : `<table role="presentation" align="center" style="margin:24px auto 6px;"><tr><td style="background:${accent};border-radius:999px;"><a href="${site}/" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:bold;color:#1b2b2d;text-decoration:none;font-family:Arial,sans-serif;">Découvrir nos actions</a></td></tr></table>`}
 `;
-  return { subject: `${d.test ? '[TEST] ' : ''}Merci pour votre don de ${amount.replace(' ', ' ')}${d.mensuel ? ' par mois' : ''} — votre reçu fiscal`,
-    html: shell(s, inner, { preheader: `Votre don de ${amount.replace(' ', ' ')} est bien reçu. Votre reçu fiscal est joint à cet email.`, testBanner: !!d.test }).replace('{{pied}}', `Vous recevez cet email car vous avez fait un don à ${esc(s.orgName)}. C'est un message de confirmation, pas une lettre d'information.<br>Vos données servent uniquement à établir et conserver votre reçu fiscal.`),
+  return { subject: `${d.test ? '[TEST] ' : ''}Merci pour votre don de ${amount.replace(' ', ' ')}${d.mensuel ? ' par mois' : ''}`,
+    html: shell(s, inner, { preheader: `Votre don de ${amount.replace(' ', ' ')} est bien reçu. Merci pour votre générosité.`, testBanner: !!d.test }).replace('{{pied}}', `Vous recevez cet email car vous avez fait un don à ${esc(s.orgName)}. C'est un message de confirmation, pas une lettre d'information.<br>Vos données servent uniquement à établir et conserver votre reçu fiscal.`),
     text: `Merci pour votre don de ${amount.replace(' ', ' ')}${d.mensuel ? ' par mois' : ''} à ${s.orgName} (${date}).\n${d.affectation ? 'Affectation : ' + d.affectation + '.\n' : ''}« En pratiquant la tsédaka, nous honorons son héritage et contribuons à la construction d'un monde empreint de bienveillance, d'unité et de générosité. »\nVotre reçu fiscal ${d.numero} est joint à cet email (PDF). Conservez-le : il vous sera demandé en cas de contrôle.${d.spaceUrl ? '\nRetrouvez tous vos reçus : ' + d.spaceUrl : ''}` };
 }
 
