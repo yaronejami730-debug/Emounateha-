@@ -634,6 +634,12 @@ html body .pagehead{padding-bottom:70px}
 .etr{font-size:16px;line-height:1.75;color:#33464a;text-align:left}
 .vn{font-size:11px;font-weight:700;color:var(--gold);margin:0 4px;font-family:system-ui,sans-serif}
 .etxt.l-he .etr,.etxt.l-tr .ehe{display:none}
+.etxt.l-both .eb{display:none}.etxt:not(.l-both) .eil{display:none}
+.ep{padding:12px 4px;border-bottom:1px solid #eef3f3}
+.ep:last-child{border-bottom:0}
+.eph{margin:0;font-size:22px;line-height:1.85;color:#14282b;font-family:'Frank Ruhl Libre','David Libre',Georgia,serif;text-align:right}
+.ept{margin:6px 0 0;font-size:16px;line-height:1.65;color:#33464a;text-align:left}
+@media(max-width:820px){.eph{font-size:20px}.ept{font-size:15px}}
 
 .eshe{font-family:'Frank Ruhl Libre','David Libre',Georgia,serif;color:var(--gold)}
 .esh{font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:var(--teal);margin:22px 0 8px;text-align:center;border-bottom:1px solid #e3ecec;padding-bottom:6px}
@@ -807,7 +813,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
           else sc.items.forEach(function(i){if(i[k])x+='<p>'+esc(i[k])+'</p>'});
           return x+'</div>';
         }
-        o+=blk('he','ehe','rtl','he')+blk('tr','etr','ltr',j.trLang);
+        // hébreu + français : un passouk en hébreu, puis le même en français
+        var il='<div class="eil">';
+        sc.items.forEach(function(i){il+='<div class="ep">'+(i.he?'<p class="eph" dir="rtl" lang="he">'+(i.n?'<sup class="vn">'+i.n+'</sup>':'')+esc(i.he)+'</p>':'')+(i.tr?'<p class="ept" lang="'+j.trLang+'">'+(i.n?'<sup class="vn">'+i.n+'</sup>':'')+esc(i.tr)+'</p>':'')+'</div>'});
+        o+=il+'</div>'+blk('he','ehe','rtl','he')+blk('tr','etr','ltr',j.trLang);
       });
       if(j.trLang==='en')o+='<p class="enote">Traduction anglaise (Kehot).</p>';
       el.className='etxt l-both';
