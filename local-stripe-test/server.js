@@ -182,7 +182,7 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   const info = await t.sendMail({ from, to, subject, text, attachments });
   const eml = path.basename(pdfFile).replace(/\.pdf$/, '.eml');
   vault.writeFile(path.join(RECUS, eml), info.message);
-  return { sent: false, eml: (process.env.BASE_PATH || '') + '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
+  return { sent: false, eml: (process.env.BASE_PATH ?? (process.env.VERCEL ? '/don-cerfa' : '')) + '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
 }
 
 async function fabriquer(don, { envoyerEmail }) {
@@ -190,7 +190,7 @@ async function fabriquer(don, { envoyerEmail }) {
   const numero = nextNumero(annee);
   const file = path.join(RECUS, `recu_${numero}_${crypto.randomBytes(3).toString('hex')}.pdf`);
   await pdf(remplir(don, numero), file);
-  const out = { numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
+  const out = { numero, pdf: (process.env.BASE_PATH ?? (process.env.VERCEL ? '/don-cerfa' : '')) + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
   return out;
 }

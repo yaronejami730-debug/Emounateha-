@@ -15,7 +15,7 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
   // ---------- liens signés pour les PDF ----------
   function secret() { const d = load(); if (!d.urlSecret) { d.urlSecret = crypto.randomBytes(32).toString('hex'); save(d); } return d.urlSecret; }
   const sig = (file, exp) => crypto.createHmac('sha256', secret()).update(file + '.' + exp).digest('hex').slice(0, 32);
-  function signUrl(file, ttl = 3600) { const f = path.basename(file), e = Math.floor(Date.now() / 1000) + ttl; return `${process.env.BASE_PATH || ''}/recus/${f}?e=${e}&s=${sig(f, e)}`; }
+  function signUrl(file, ttl = 3600) { const f = path.basename(file), e = Math.floor(Date.now() / 1000) + ttl; return `${process.env.BASE_PATH ?? (process.env.VERCEL ? '/don-cerfa' : '')}/recus/${f}?e=${e}&s=${sig(f, e)}`; }
   function publicReceipt(out) {   // les liens renvoyés au navigateur expirent ; le PDF n'est jamais public
     const o = { ...out }; if (o.pdf) o.pdf = signUrl(o.pdf);
     if (o.email && o.email.eml) o.email = { ...o.email, eml: signUrl(o.email.eml) };
