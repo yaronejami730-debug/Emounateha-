@@ -84,7 +84,10 @@ async function donEmail(d) {   // { prenom, montant(centimes), dateDon, affectat
   <p style="margin:0 0 4px;text-align:center;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#9a7a22;font-weight:bold;">${d.mensuel ? 'Votre don mensuel' : 'Votre don'}</p>
   <p class="big" style="margin:0 0 18px;text-align:center;font-family:Georgia,serif;font-size:46px;line-height:1.1;color:${color};">${amount}${d.mensuel ? '<span style="font-size:18px;color:#6b7d80;"> / mois</span>' : ''}</p>
   <p style="margin:0 0 20px;font-size:16px;line-height:1.65;color:#111827;text-align:center;">Votre générosité permet à ${esc(s.orgName)} de continuer à aider des familles et des personnes dans le besoin : repas, colis, hébergement, soutien et accompagnement vers l'autonomie.</p>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;background:#f5ecd6;border-radius:18px;"><tr>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6faf9;border:1px solid #dbe8e8;border-radius:12px;margin:0 0 6px;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    ${row('Montant', amount + (d.mensuel ? ' / mois' : ''))}${row('Date', esc(date))}${d.affectation ? row('Affectation', esc(d.affectation)) : ''}${row('Mode de paiement', esc(d.mode))}${d.mensuel && d.echeance ? row('Échéance', 'n°' + d.echeance) : ''}${row('Reçu fiscal n°', esc(d.numero), true)}
+  </table></td></tr></table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;background:#f5ecd6;border-radius:18px;"><tr>
     <td valign="top" style="padding:14px 0 0 16px;width:34px;font-family:Georgia,serif;font-size:58px;line-height:.9;color:${accent};font-weight:bold;">&ldquo;</td>
     <td style="padding:16px 6px 16px 6px;text-align:center;font-family:Arial,Helvetica,sans-serif;text-transform:uppercase;line-height:1.45;">
       <div style="font-size:13.5px;color:#3a3a3a;font-weight:600;">En pratiquant la tsédaka, nous honorons son héritage</div>
@@ -93,9 +96,6 @@ async function donEmail(d) {   // { prenom, montant(centimes), dateDon, affectat
     </td>
     <td valign="bottom" style="padding:0 16px 4px 0;width:34px;font-family:Georgia,serif;font-size:58px;line-height:.9;color:${accent};font-weight:bold;text-align:right;">&rdquo;</td>
   </tr></table>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6faf9;border:1px solid #dbe8e8;border-radius:12px;margin:0 0 6px;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-    ${row('Montant', amount + (d.mensuel ? ' / mois' : ''))}${row('Date', esc(date))}${d.affectation ? row('Affectation', esc(d.affectation)) : ''}${row('Mode de paiement', esc(d.mode))}${d.mensuel && d.echeance ? row('Échéance', 'n°' + d.echeance) : ''}${row('Reçu fiscal n°', esc(d.numero), true)}
-  </table></td></tr></table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;"><tr><td style="padding:16px 4px 0;border-top:1px solid #dfe8e8;text-align:center;">
     <p style="margin:0 0 6px;font-size:15px;font-weight:bold;color:#14272a;">Votre reçu fiscal est en pièce jointe (PDF)</p>
     <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7d80;">Il vous permet de bénéficier d'une réduction d'impôt. Conservez-le : il vous sera demandé en cas de contrôle. Il n'est pas à joindre à votre déclaration de revenus.</p>
