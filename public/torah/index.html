@@ -608,8 +608,47 @@ html body .pagehead{padding-bottom:70px}
   .today .yt{max-width:none;margin:0;aspect-ratio:9/16;border-radius:12px}
   .today .dfade{height:40px}
 }
+
+/* sous-onglets : Du jour · Houmach · Téhilim · Tanya */
+.stabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 22px}
+.stab{border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);padding:10px 20px;border-radius:99px;font:inherit;font-weight:700;cursor:pointer}
+.stab{display:inline-flex;flex-direction:column;align-items:center;line-height:1.2}
+.stab .sth{font-size:13px;font-weight:600;opacity:.8;font-family:'Frank Ruhl Libre','David Libre',Georgia,serif}
+.stab.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+.etude{max-width:760px;margin:0 auto 30px;background:#fff;border:1px solid #e3ecec;border-radius:18px;box-shadow:0 10px 30px rgba(20,60,66,.1);padding:26px 22px;text-align:center}
+.etude .dkick{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+.etude h2{font-family:'Bree Serif',serif;font-weight:400;font-size:26px;color:var(--teal);margin:6px 0 4px}
+.etude .edate{color:var(--mut);font-size:14px;margin-bottom:16px}
+.etude .eport{font-size:19px;font-weight:600;color:#1d3a3e;margin:0 0 20px}
+.etude .eport{font-size:16px;color:var(--mut);font-weight:600;margin:0 0 6px}
+.etxt{text-align:left;margin-top:10px}
+.etxt .eport{text-align:center}
+.elang{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0 4px}
+.elang button{border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);padding:6px 14px;border-radius:99px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.elang button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+.eb{padding:14px 16px;border-radius:12px;margin:10px 0}
+.eb p{margin:0 0 10px}.eb p:last-child{margin:0}
+.ehe{background:#f7fafa;font-size:22px;line-height:2;color:#14282b;font-family:'Frank Ruhl Libre','David Libre',Georgia,serif;text-align:right}
+.etr{font-size:16px;line-height:1.75;color:#33464a;text-align:left}
+.vn{font-size:11px;font-weight:700;color:var(--gold);margin:0 4px;font-family:system-ui,sans-serif}
+.etxt.l-he .etr,.etxt.l-tr .ehe{display:none}
+
+.eshe{font-family:'Frank Ruhl Libre','David Libre',Georgia,serif;color:var(--gold)}
+.esh{font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:var(--teal);margin:22px 0 8px;text-align:center;border-bottom:1px solid #e3ecec;padding-bottom:6px}
+.ev{position:relative;padding:12px 38px 12px 0;border-bottom:1px solid #f0f4f4}
+.evn{position:absolute;right:0;top:14px;width:28px;text-align:center;font-size:12px;font-weight:700;color:var(--gold)}
+.evh{font-size:22px;line-height:1.9;color:#14282b;font-family:'Frank Ruhl Libre','David Libre',Georgia,serif}
+.evt{margin-top:4px;font-size:15px;line-height:1.6;color:#4a5b5e;text-align:left}
+.enote{text-align:center;color:var(--mut);font-size:12px;margin-top:16px}
+@media(max-width:820px){.etude{padding:20px 14px}.ehe{font-size:20px}.eb{padding:12px}}
+.etude .ebtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.etude .ebtn{display:inline-block;padding:12px 22px;border-radius:99px;background:var(--teal);color:#fff;font-weight:700;text-decoration:none}
+.etude .ebtn.alt{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}
 </style>
 <section><div class="tw">
+  <div class="stabs" role="tablist" aria-label="Étude du jour"><button class="stab on" data-p="jour" role="tab">Diffusion du jour<span class="sth" lang="he" dir="rtl">שיעור היום</span></button><button class="stab" data-p="houmach" role="tab">Houmach<span class="sth" lang="he" dir="rtl">חומש</span></button><button class="stab" data-p="tehilim" role="tab">Téhilim<span class="sth" lang="he" dir="rtl">תהילים</span></button><button class="stab" data-p="tanya" role="tab">Tanya<span class="sth" lang="he" dir="rtl">תניא</span></button></div>
+  <div id="p-etude" class="etude" hidden></div>
+  <div id="p-jour">
   <div class="today" id="today"><div class="empty">Chargement de la diffusion du jour…</div></div>
   <div class="arch">
     <div class="chan"><div class="av" aria-hidden="true"></div><div><h3>Diffusion de la Torah</h3><p>Chaque jour : le Machia'h Now et la vidéo de Tanya.</p></div></div>
@@ -620,6 +659,7 @@ html body .pagehead{padding-bottom:70px}
       <select id="mois"><option value="">Tous les mois</option></select>
     </div>
     <div id="archives"><div class="empty">Chargement…</div></div>
+  </div>
   </div>
 </div></section>
 <div id="vm"><div class="bar"><span id="vmc"></span><button aria-label="Fermer" onclick="closeVm()">✕</button></div>
@@ -735,6 +775,48 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
   (document.getElementById('mois')||{addEventListener(){}}).addEventListener('change',e=>{mois=e.target.value;renderArch()});
   Promise.all([fetch('/diffusion-archives.json').then(r=>r.json()),fetch('/diffusion.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])]).then(([j,today])=>{months=j.months||[];const sel=document.getElementById('mois')||document.createElement('select');months.forEach(m=>{const o=document.createElement('option');o.value=m.key;o.textContent=dm(m.key);sel.appendChild(o)});
     renderToday((today&&today[0])||(months[0]&&months[0].items[0]));renderArch();}).catch(()=>{renderToday(null);(document.getElementById('archives')||{}).innerHTML='<div class="empty">Archives indisponibles.</div>'});
+})();
+
+// ---- sous-onglets : étude du jour (flux RSS Chabad)
+(function(){
+  var tabs=document.querySelectorAll('.stab'),pj=document.getElementById('p-jour'),pe=document.getElementById('p-etude'),data=null,texts={},cur='jour';
+  var esc=function(s){return String(s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  var T={houmach:['Houmach du jour','Houmach avec Rachi'],tehilim:['Téhilim du jour','Psaumes'],tanya:['Tanya du jour','Étude du Tanya']};
+  function clean(d){return String(d||'').replace(/^Today.s (Psalms|Tehillim|Lessons?):\s*/i,'').replace(/\s+with Rashi$/i,' (avec Rachi)')}
+  function draw(){
+    if(cur==='jour'){pj.hidden=false;pe.hidden=true;return}
+    pj.hidden=true;pe.hidden=false;
+    if(!data){pe.innerHTML='<div class="empty">Chargement…</div>';return}
+    var it=data[cur],t=T[cur];
+    if(!it){pe.innerHTML='<div class="empty">Indisponible pour le moment.</div>';return}
+    var d=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    var h='<div class="dkick">'+t[1]+'</div><h2>'+t[0]+'</h2><div class="edate">'+esc(d)+'</div><div class="etxt" id="etxt"><div class="empty">Chargement du texte…</div></div>';
+    pe.innerHTML=h;
+    var tp=cur;
+    (texts[tp]?Promise.resolve(texts[tp]):fetch('/api/etude-texte?type='+tp).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){texts[tp]=j;return j})).then(function(j){
+      if(cur!==tp)return;var el=document.getElementById('etxt');if(!el)return;
+      var o='<p class="eport">'+esc(j.ref)+'</p><div class="elang" role="group"><button type="button" class="on" data-l="both">Hébreu + '+(j.trLang==='fr'?'français':'anglais')+'</button><button type="button" data-l="he">Hébreu</button><button type="button" data-l="tr">'+(j.trLang==='fr'?'Français':'Anglais')+'</button></div>';
+      j.sections.forEach(function(sc){
+        if(sc.head)o+='<h3 class="esh">'+esc(sc.head)+(sc.headHe?' <span class="eshe" lang="he" dir="rtl">· '+esc(sc.headHe)+'</span>':'')+'</h3>';
+        var verse=sc.items.length&&sc.items[0].n>0;
+        function blk(k,cls,dir,lang){
+          var x='<div class="eb '+cls+'" dir="'+dir+'" lang="'+lang+'">';
+          if(verse){x+='<p>';sc.items.forEach(function(i){if(i[k])x+=(i.n?'<sup class="vn">'+i.n+'</sup>':'')+esc(i[k])+' '});x+='</p>'}
+          else sc.items.forEach(function(i){if(i[k])x+='<p>'+esc(i[k])+'</p>'});
+          return x+'</div>';
+        }
+        o+=blk('he','ehe','rtl','he')+blk('tr','etr','ltr',j.trLang);
+      });
+      if(j.trLang==='en')o+='<p class="enote">Traduction anglaise (Kehot).</p>';
+      el.className='etxt l-both';
+      el.innerHTML=o;
+      el.querySelectorAll('.elang button').forEach(function(bt){bt.addEventListener('click',function(){el.querySelectorAll('.elang button').forEach(function(x){x.classList.remove('on')});bt.classList.add('on');el.className='etxt l-'+bt.dataset.l})});
+    }).catch(function(){var el=document.getElementById('etxt');if(el)el.innerHTML='<div class="empty">Texte indisponible pour le moment. Réessayez plus tard.</div>'});
+  }
+  tabs.forEach(function(b){b.addEventListener('click',function(){
+    tabs.forEach(function(x){x.classList.remove('on')});b.classList.add('on');cur=b.dataset.p;draw();
+    if(cur!=='jour'&&!data){data={houmach:1,tehilim:1,tanya:1};draw()}
+  })});
 })();
 </script>
 <script>/* un clic sur la barre du haut ramène à la page principale (ou en haut de l'accueil) */

@@ -828,6 +828,82 @@ async function chabadZmanim(id, ymd, before = 18) {
 }
 
 
+// ---------- Étude du jour (Houmach, Téhilim, Tanya) : flux RSS « Daily Study » de fr.chabad.org ----------
+let etudeCache = null;
+async function chabadEtude() {
+  if (etudeCache && Date.now() - etudeCache.at < 3 * 3600 * 1000) return etudeCache.v;
+  const r = await fetch('https://fr.chabad.org/tools/rss/dailystudy_rss.xml', { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Safari/605.1.15' } });
+  if (!r.ok) throw new Error('Chabad ' + r.status);
+  const t = await r.text();
+  const g = (b, k) => decEnt(((b.match(new RegExp('<' + k + '>([\\s\\S]*?)</' + k + '>')) || [])[1] || '')).replace(/&apos;|&#39;/g, "'").replace(/\s+/g, ' ').trim();
+  const items = [...t.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(x => ({ title: g(x[1], 'title'), desc: g(x[1], 'description'), link: g(x[1], 'link') }));
+  const pick = re => items.find(i => re.test(i.title));
+  const v = { date: g(t, 'title').replace(/^Chabad\.org Daily Study - /, ''), houmach: pick(/Chumash/i) || null, tehilim: pick(/^Daily Tehilim - Psalms$/i) || null, tehilimHeb: pick(/\(Hebrew\)/i) && items.find(i => /Tehilim - Psalms \(Hebrew\)/i.test(i.title)) || null, tanya: pick(/Tanya/i) || null };
+  if (!v.houmach && !v.tehilim && !v.tanya) throw new Error('flux vide');
+  etudeCache = { at: Date.now(), v };
+  return v;
+}
+
+// ---------- Texte intégral de l'étude du jour (Sefaria : hébreu + français pour Houmach/Téhilim, hébreu + anglais pour le Tanya) ----------
+const texteCache = new Map();
+const noAcc = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const cleanTxt = t => decEnt(String(t || '').replace(/<sup[\s\S]*?<\/sup>/g, '').replace(/<i class="footnote"[\s\S]*?<\/i>/g, '').replace(/<[^>]+>/g, '').replace(/&(?:thinsp|nbsp|ensp|emsp);/g, ' ')).replace(/\s+/g, ' ').trim();
+async function sefaria(ref, q) {
+  const r = await fetch('https://www.sefaria.org/api/v3/texts/' + encodeURIComponent(ref) + '?' + q, { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Safari/605.1.15' } });
+  if (!r.ok) throw new Error('Sefaria ' + r.status);
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  const he = (j.versions || []).find(v => v.language === 'he'), tr = (j.versions || []).find(v => v.language !== 'he');
+  return { he: he ? he.text : [], tr: tr ? tr.text : [], trLang: tr && /\[fr\]/.test(tr.versionTitle) ? 'fr' : 'en' };
+}
+// aplatit [[v,v],[v]] ou [v,v] en sections numérotées
+function sections(he, tr, c0, v0, label) {
+  const deep = Array.isArray(he[0]);
+  const chs = deep ? he : [he], trs = deep ? tr : [tr];
+  return chs.map((ch, ci) => ({
+    head: label ? (label + ' ' + (c0 + ci)) : '', headHe: label ? gem(c0 + ci) : '',
+    items: ch.map((h, vi) => ({ n: (ci === 0 ? v0 : 1) + vi, he: cleanTxt(h).replace(/[\u0591-\u05AF\u05BD\u05C0]/g, '').replace(/\s+/g, ' ').trim(), tr: cleanTxt((trs[ci] || [])[vi]) })).filter(x => x.he || x.tr)
+  })).filter(x => x.items.length);
+}
+function gem(n) { // nombre -> lettres hébraïques (135 -> קל״ה)
+  const U = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'], T = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'], H = ['', 'ק', 'ר', 'ש', 'ת'];
+  let r = ''; n = +n;
+  while (n >= 400) { r += 'ת'; n -= 400; }
+  r += H[Math.floor(n / 100)] || ''; n %= 100;
+  if (n === 15) r += 'טו'; else if (n === 16) r += 'טז'; else r += T[Math.floor(n / 10)] + U[n % 10];
+  return r.length > 1 ? r.slice(0, -1) + '״' + r.slice(-1) : r + '׳';
+}
+const LIVRES = { berechit: 'Genesis', bereshit: 'Genesis', chemot: 'Exodus', shemot: 'Exodus', vayikra: 'Leviticus', bamidbar: 'Numbers', devarim: 'Deuteronomy' };
+async function chabadTexte(type) {
+  const hit = texteCache.get(type);
+  if (hit && Date.now() - hit.at < 3 * 3600 * 1000) return hit.v;
+  const e = await chabadEtude(), it = e[type];
+  if (!it) throw new Error('rien aujourd\'hui');
+  let v;
+  if (type === 'houmach') {
+    const m = it.desc.match(/\(([^)\d]+?)\s+(\d+):(\d+)(?:-(?:(\d+):)?(\d+))?\)/); if (!m) throw new Error('portion illisible');
+    const bk = LIVRES[noAcc(m[1]).replace(/[^a-z]/g, '')]; if (!bk) throw new Error('livre inconnu');
+    const c1 = +m[2], v1 = +m[3], c2 = m[4] ? +m[4] : c1, v2 = m[5] ? +m[5] : v1;
+    const x = await sefaria(`${bk} ${c1}:${v1}-${c2 === c1 ? '' : c2 + ':'}${v2}`, 'version=french&version=hebrew');
+    v = { title: 'Houmach', ref: it.desc.replace(/\s+with Rashi$/i, ''), trLang: x.trLang, sections: sections(x.he, x.tr, c1, v1, 'Chapitre') };
+  } else if (type === 'tehilim') {
+    const nums = (it.desc.match(/\d+/g) || []).map(Number); if (!nums.length) throw new Error('portion illisible');
+    const a = Math.min(...nums), b = Math.max(...nums);
+    const x = await sefaria(`Psalms ${a}${b > a ? '-' + b : ''}`, 'version=french&version=hebrew');
+    v = { title: 'Téhilim', ref: b > a ? `Chapitres ${a} à ${b}` : `Chapitre ${a}`, trLang: x.trLang, sections: sections(x.he, x.tr, a, 1, 'Psaume') };
+  } else {
+    const d = it.desc.toLowerCase(), nums = (it.desc.match(/\d+/g) || []).map(Number); if (!nums.length) throw new Error('portion illisible');
+    const part = /kuntres|kuntras|acharon/.test(d) ? ['Part V; Kuntres Acharon', 'Kountrass Aharon'] : /kodesh/.test(d) ? ['Part IV; Iggeret HaKodesh', 'Iguérèt Hakodech'] : /teshuv|techouv/.test(d) ? ['Part III; Iggeret HaTeshuvah', 'Iguérèt Hatéchouva'] : /ichud|yichud/.test(d) ? ['Part II; Shaar HaYichud VehaEmunah', 'Chaar Hayihoud Véhaémouna'] : /likut|likkut|amarim/.test(d) ? ['Part I; Likkutei Amarim', 'Likouteï Amarim'] : null;
+    if (!part) throw new Error('livre du Tanya inconnu');
+    const a = Math.min(...nums), b = Math.max(...nums);
+    const x = await sefaria(`Tanya, ${part[0]} ${a}${b > a ? '-' + b : ''}`, 'version=primary&version=english');
+    v = { title: 'Tanya', ref: part[1] + (b > a ? `, chapitres ${a} à ${b}` : `, chapitre ${a}`), trLang: 'en', sections: sections(x.he, x.tr, a, 1, 'Chapitre').map(sc => ({ head: sc.head, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr })) })) };
+  }
+  if (!v.sections.length) throw new Error('texte vide');
+  texteCache.set(type, { at: Date.now(), v });
+  return v;
+}
+
 // ---------- Parachat de la semaine (Hebcal), côté serveur : fiable, mise en cache, indépendante de la ville ----------
 const parCache = new Map();
 async function parashaFor(id) {
@@ -1389,6 +1465,16 @@ async function handle(req, res) {
     if (url.pathname === '/api/action-videos' && req.method === 'GET') { // public : vidéos de la chaîne rangées par action (réinsertion, vêtements, toit, soutien)
       try { const v = await actionVideos(); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Vidéos indisponibles' }); }
+    }
+    if (url.pathname === '/api/etude-texte' && req.method === 'GET') { // public : texte du jour (Houmach, Téhilim, Tanya)
+      const ty = url.searchParams.get('type');
+      if (!['houmach', 'tehilim', 'tanya'].includes(ty)) return send(res, 400, { error: 'type inconnu' });
+      try { const v = await chabadTexte(ty); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=1800' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
+    }
+    if (url.pathname === '/api/etude' && req.method === 'GET') { // public : étude du jour (flux RSS Chabad)
+      try { const v = await chabadEtude(); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=1800' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, 502, { error: 'Étude indisponible' }); }
     }
     if (url.pathname === '/api/zmanim' && req.method === 'GET') { // public : horaires du flux RSS Chabad (id Chabad + jour)
       try { const v = await chabadZmanim(url.searchParams.get('id'), /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('date') || '') ? url.searchParams.get('date') : parisDay(Date.now()), +url.searchParams.get('before') || 18);
