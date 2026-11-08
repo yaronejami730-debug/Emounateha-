@@ -879,7 +879,43 @@ function gem(n) { // nombre -> lettres hébraïques (135 -> קל״ה)
   return r.length > 1 ? r.slice(0, -1) + '״' + r.slice(-1) : r + '׳';
 }
 const LIVRES = { berechit: 'Genesis', bereshit: 'Genesis', chemot: 'Exodus', shemot: 'Exodus', vayikra: 'Leviticus', bamidbar: 'Numbers', devarim: 'Deuteronomy' };
-async function chabadTexte(type, jour) {
+// ---------- Tanya : traduction française automatique (d'après la version anglaise Kehot, CC BY-NC), via Vercel AI Gateway ----------
+// Faite une seule fois par chapitre puis gardée en base (table etude_trad). En cas d'échec : texte anglais.
+const TRAD_MODEL = process.env.TRAD_MODEL || 'anthropic/claude-sonnet-5.5';
+let tradTable = null;
+async function tradLire(cle) {
+  if (!pool) return null;
+  tradTable = tradTable || pool.query('create table if not exists public.etude_trad (cle text primary key, fr jsonb not null, created_at timestamptz not null default now())').catch(e => { tradTable = null; throw e; });
+  await tradTable;
+  const r = await pool.query('select fr from public.etude_trad where cle = $1', [cle]);
+  return r.rows[0] ? r.rows[0].fr : null;
+}
+async function tradEcrire(cle, fr) { if (pool) await pool.query('insert into public.etude_trad (cle, fr) values ($1, $2) on conflict (cle) do update set fr = excluded.fr', [cle, JSON.stringify(fr)]); }
+async function traduireTanya(items, jeton) {
+  if (!jeton) throw new Error('pas de jeton AI Gateway');
+  const segs = items.map(i => ({ he: i.he, en: i.tr }));
+  const r = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+    method: 'POST', headers: { authorization: 'Bearer ' + jeton, 'content-type': 'application/json' },
+    signal: AbortSignal.timeout(100000),
+    body: JSON.stringify({ model: TRAD_MODEL, temperature: 0.2, max_tokens: 16000, messages: [
+      { role: 'system', content: "Tu traduis le Tanya (l'œuvre de l'Admour Hazaken) en français, pour un public juif francophone habad. Pour chaque segment tu reçois l'original hébreu et sa traduction anglaise (Kehot). Traduis fidèlement le sens en français soutenu et clair, en t'appuyant sur l'hébreu. Translittère les termes hébreux à la française (Hachem, Torah, mitsvot, néchama, 'Hassidout, Ein Sof, Sefirot, Zohar, Arizal…), garde les références entre crochets ou parenthèses. Réponds UNIQUEMENT par un tableau JSON de chaînes, une par segment, dans le même ordre, sans aucun autre texte." },
+      { role: 'user', content: JSON.stringify(segs) }] })
+  });
+  if (!r.ok) throw new Error('AI Gateway ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  const j = await r.json(), txt = String(j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || '');
+  const arr = JSON.parse(txt.slice(txt.indexOf('['), txt.lastIndexOf(']') + 1));
+  if (!Array.isArray(arr) || arr.length !== segs.length) throw new Error('traduction incomplète (' + (arr && arr.length) + '/' + segs.length + ')');
+  return arr.map(x => String(x || '').trim());
+}
+const tradEnCours = new Map();
+async function tanyaFrancais(cle, items, jeton) {
+  const deja = await tradLire(cle).catch(() => null); if (deja && deja.length === items.length) return deja;
+  if (tradEnCours.has(cle)) return tradEnCours.get(cle);
+  const p = traduireTanya(items, jeton).then(async fr => { await tradEcrire(cle, fr).catch(e => console.error('[trad] écriture', e.message)); return fr; }).finally(() => tradEnCours.delete(cle));
+  tradEnCours.set(cle, p); return p;
+}
+
+async function chabadTexte(type, jour, jeton) {
   jour = jourValide(jour);
   const hit = texteCache.get(type + jour);
   if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
@@ -904,9 +940,14 @@ async function chabadTexte(type, jour) {
     const a = Math.min(...nums), b = Math.max(...nums);
     const x = await sefaria(`Tanya, ${part[0]} ${a}${b > a ? '-' + b : ''}`, 'version=primary&version=english');
     v = { title: 'Tanya', ref: part[1] + (b > a ? `, chapitres ${a} à ${b}` : `, chapitre ${a}`), trLang: 'en', sections: sections(x.he, x.tr, a, 1, 'Chapitre').map(sc => ({ head: sc.head, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr })) })) };
+    try {   // anglais -> français (une seule fois par chapitre, gardé en base)
+      const tous = v.sections.flatMap(sc => sc.items), fr = await tanyaFrancais('tanya:' + part[0] + ':' + a + '-' + b, tous, jeton);
+      tous.forEach((it2, k) => { it2.tr = fr[k] || it2.tr; });
+      v.trLang = 'fr'; v.trNote = "Traduction française automatique d'après la version anglaise de Kehot Publication Society (CC BY-NC).";
+    } catch (e) { console.error('[trad] Tanya', e.message); }
   }
   if (!v.sections.length) throw new Error('texte vide');
-  v.jour = jour; texteCache.set(type + jour, { at: Date.now(), v }); if (texteCache.size > 30) texteCache.delete(texteCache.keys().next().value);
+  v.jour = jour; if (!(type === 'tanya' && v.trLang !== 'fr')) texteCache.set(type + jour, { at: Date.now(), v }); if (texteCache.size > 30) texteCache.delete(texteCache.keys().next().value);
   return v;
 }
 
@@ -1475,7 +1516,7 @@ async function handle(req, res) {
     if (url.pathname === '/api/etude-texte' && req.method === 'GET') { // public : texte du jour (Houmach, Téhilim, Tanya)
       const ty = url.searchParams.get('type');
       if (!['houmach', 'tehilim', 'tanya'].includes(ty)) return send(res, 400, { error: 'type inconnu' });
-      try { const v = await chabadTexte(ty, url.searchParams.get('date')); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
+      try { const v = await chabadTexte(ty, url.searchParams.get('date'), process.env.VERCEL_OIDC_TOKEN || req.headers['x-vercel-oidc-token'] || process.env.AI_GATEWAY_API_KEY); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': (ty === 'tanya' && v.trLang !== 'fr') ? 'no-store' : url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
     }
     if (url.pathname === '/api/etude' && req.method === 'GET') { // public : étude du jour (flux RSS Chabad)

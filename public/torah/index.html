@@ -818,7 +818,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
         sc.items.forEach(function(i){il+='<div class="ep">'+(i.he?'<p class="eph" dir="rtl" lang="he">'+(i.n?'<sup class="vn">'+i.n+'</sup>':'')+esc(i.he)+'</p>':'')+(i.tr?'<p class="ept" lang="'+j.trLang+'">'+(i.n?'<sup class="vn">'+i.n+'</sup>':'')+esc(i.tr)+'</p>':'')+'</div>'});
         o+=il+'</div>'+blk('he','ehe','rtl','he')+blk('tr','etr','ltr',j.trLang);
       });
-      if(j.trLang==='en')o+='<p class="enote">Traduction anglaise (Kehot).</p>';
+      if(j.trNote)o+='<p class="enote">'+esc(j.trNote)+'</p>';else if(j.trLang==='en')o+='<p class="enote">Traduction anglaise (Kehot).</p>';
       el.className='etxt l-both';
       el.innerHTML=o;
       el.querySelectorAll('.elang button').forEach(function(bt){bt.addEventListener('click',function(){el.querySelectorAll('.elang button').forEach(function(x){x.classList.remove('on')});bt.classList.add('on');el.className='etxt l-'+bt.dataset.l})});
