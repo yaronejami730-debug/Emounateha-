@@ -735,7 +735,7 @@ function openVm(id,cap){const m=document.getElementById('vm');document.getElemen
 function closeVm(){const m=document.getElementById('vm');m.classList.remove('on');document.getElementById('vmi').src='';document.body.style.overflow=''}
 // ---- don à côté de la vidéo (formulaire AlloDons intégré, sans quitter la page)
 let donLoaded=false;
-function toggleDon(){location.href='https://don.emounateha.fr/';return;const b=document.getElementById('vmdonbox');const on=b.classList.toggle('on');document.getElementById('vmdon').textContent=on?'♥ Masquer le don':'♥ Faire un don pendant la vidéo';
+function toggleDon(){location.href='https://don.emounateha.fr/?aff=besoin&montant=52&express=1&retour='+encodeURIComponent(location.href.split('#')[0]);return;const b=document.getElementById('vmdonbox');const on=b.classList.toggle('on');document.getElementById('vmdon').textContent=on?'♥ Masquer le don':'♥ Faire un don pendant la vidéo';
   if(on&&!donLoaded){donLoaded=true;const f=document.createElement('iframe');f.src='https://www.allodons.fr/embed/emounateha';f.title='Faire un don';f.allow='payment *';f.height=620;document.getElementById('vmdonframe').appendChild(f);
     addEventListener('message',e=>{if(e.origin!=='https://www.allodons.fr')return;if(e.data&&e.data.type==='allodons:embed-height')f.style.height=e.data.height+'px';if(e.data&&e.data.type==='allodons:payment-result'&&e.data.status==='succeeded'){document.querySelector('#vm .dhd span').textContent='Merci de tout cœur pour votre don 🙏'}})}}
 

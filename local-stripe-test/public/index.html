@@ -923,7 +923,7 @@ body{overflow-x:hidden}
   <div class="dn-topbar"><a class="dn-back" href="https://www.emounateha.fr/"><span>←</span> <span class="dn-l">Retourner sur </span>emounateha.fr</a><a class="dn-back dn-esp" href="/espace/"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Espace donateur</a></div>
   <ol class="dn-steps" id="dnSteps"><i class="dn-fill" id="dnFill"></i><li>Votre don</li><li>Coordonnées</li><li id="dnS3">Paiement</li></ol>
   <div class="dn-acct" id="acct">
-    <div id="acctOut" class="dn-acct-out"><span>Déjà donateur ?</span><button type="button" id="acctOpen" class="dn-link">Se connecter</button><span>pour remplir le formulaire automatiquement</span></div>
+    <div id="acctOut" class="dn-acct-out"><span>Déjà donateur ?</span><button type="button" id="acctOpen" class="dn-link">Se connecter</button><span>pour payer en un clic, sans remplir le formulaire</span></div>
     <div id="acctBox" class="dn-acct-box" hidden>
       <button type="button" id="acctClose" class="dn-x" aria-label="Fermer">✕</button><div class="dn-acct-h"><span class="dn-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 6 8-6"/></svg></span><b>Se connecter</b></div>
       <p class="dn-acct-p">Un code à 6 chiffres vous est envoyé par email. Pas de mot de passe : votre compte se crée à la première connexion.</p>
@@ -1279,6 +1279,11 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []); if (!c.live && $('dnTest')) $('dnTest').hidden = false;
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (!c.live && (mode === 'sans' || /[?&]test=1/.test(location.search))) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
+  { // lien depuis la page Torah (ou ailleurs) : ?montant=26|52…&express=1&retour=https://www.emounateha.fr/torah/
+    const q = new URLSearchParams(location.search), m = Number(String(q.get('montant') || '').replace(',', '.'));
+    if (Number.isFinite(m) && m >= 1 && m <= 100000) { $('montant').value = String(m).replace('.', ','); mark(); upSum(); }
+    const ret = q.get('retour') || ''; if (/^https:\/\/(www\.)?emounateha\.fr\//.test(ret)) { const a = document.querySelector('.dn-topbar .dn-back'); if (a) { a.href = ret; a.innerHTML = '<span>←</span> Retour à la vidéo'; } }
+  }
   pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   // ?aff=besoin (ou colis, toit, soutien, insertion, vetement…) : présélection depuis un lien (ex. logo de l'accueil)
   const affQ = (new URLSearchParams(location.search).get('aff') || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -1291,7 +1296,7 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   }
   { // jeudi soir (dès 18 h) et vendredi, heure de Paris : « Colis de Chabbat » est choisi par défaut, même si une fête approche
     const p = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(new Date()), wd = (p.find(x => x.type === 'weekday') || {}).value || '', h = (+((p.find(x => x.type === 'hour') || {}).value || 0)) % 24;
-    if ((/^jeu/i.test(wd) && h >= 18) || /^ven/i.test(wd)) { const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => /^Colis de Chabbat/.test(r.value)); if (i >= 0) pickAff(i); }
+    if (!new URLSearchParams(location.search).get('aff') && ((/^jeu/i.test(wd) && h >= 18) || /^ven/i.test(wd))) { const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => /^Colis de Chabbat/.test(r.value)); if (i >= 0) pickAff(i); }
   }
   { // adresse dédiée à une action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale… présélectionne cette affectation
     const slugOf = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' et ').replace(/^l['’]/, 'l-').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -1542,7 +1547,11 @@ async function act() {
   guestProSave();
   if (busy) return; busy = true; $('go').disabled = true;
   try {
-    if (panel === 1) { check1(); if (!(await confirmMens())) return; goPanel(2); }
+    if (panel === 1) {
+      check1(); if (!(await confirmMens())) return; goPanel(2);
+      // donateur connecté dont les informations sont complètes : on ne les redemande pas, on passe directement au paiement
+      if (me) { let ok = true; try { check2(); } catch (e) { ok = false; } if (ok) { setTimeout(act, 0); return; } }
+    }
     else if (panel === 2) {
       check2();
       if (mode === 'sans') { renderRes(await withLoad('Création de votre reçu fiscal…', () => post('/api/recu', body()))); }
@@ -1607,13 +1616,13 @@ function renderRes(o) {
   const espace = me ? 'Vous pouvez aussi retrouver tous vos reçus directement depuis votre espace donateur.' : 'Vous pouvez aussi retrouver tous vos reçus fiscaux directement depuis votre espace donateur.';
   let em = '';
   if (o.email && o.email.error) em = '<b>L’email n’a pas pu être envoyé</b> (' + esc(o.email.error) + '). Téléchargez votre reçu ci-dessous. ' + espace;
-  else if (o.email && !o.email.skipped) em = '<b>Nous vous avons envoyé un email</b> à ' + to + ', avec votre reçu fiscal (CERFA) en pièce jointe. Conservez-le : il vous sera demandé pour votre déclaration de revenus.<br><br>' + espace;
+  else if (o.email && !o.email.skipped) em = '<b>Nous vous avons envoyé un email</b>' + (to ? ' à ' + to : '') + ', avec votre reçu fiscal (CERFA) en pièce jointe. Conservez-le : il vous sera demandé pour votre déclaration de revenus.<br><br>' + espace;
   else em = espace;
   const row = (k, v) => '<div class="dn-sr"><span>' + k + '</span><b>' + v + '</b></div>';
   $('res').innerHTML = '<img class="dn-logo" src="/logo-asso.png" alt="Émounatéha">' +
     '<h3>Merci pour votre don !</h3>' +
     '<p class="dn-thx">Votre générosité aide directement les familles que nous accompagnons.</p>' +
-    '<div class="dn-recap"><div class="dn-amt">' + eur(o.montant) + (o.mensuel ? '<small> par mois</small>' : '') + '</div>' +
+    '<div class="dn-recap"><div class="dn-amt">' + eur(o.montant) + (o.nb ? '<small> · 1er paiement</small>' : o.mensuel ? '<small> par mois</small>' : '') + '</div>' +
       (o.lignes && o.lignes.length ? o.lignes.map(l => row(esc(l.label), eur(l.montant))).join('') : (o.affectation ? row('Affectation', esc(o.affectation)) : '')) +
       row('Paiement', o.nb ? 'Don en ' + o.nb + ' fois · 1er paiement' : o.mensuel ? 'Don mensuel · 1re échéance' : 'Don ponctuel') + (o.nb ? row('Total du don', eur(o.total) + ' en ' + o.nb + ' mensualités') : '') + (o.mensuel && !o.nb ? row('Durée', o.fin ? 'Jusqu\'au ' + new Date(o.fin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sans limite de durée') : '') +
       row('Reçu fiscal', 'n° ' + esc(o.numero)) + '</div>' +

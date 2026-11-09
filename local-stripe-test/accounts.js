@@ -10,7 +10,7 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
   const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
   const ipOf = req => String(req.headers['cf-connecting-ip'] || req.ip || '');
   const isLocal = req => /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(req.headers.host || '') && !req.headers['cf-connecting-ip'];
-  const SESSION_DAYS = 30, OTP_MIN = 10, OTP_TRIES = 5;
+  const SESSION_DAYS = 180, OTP_MIN = 10, OTP_TRIES = 5;
 
   // ---------- liens signés pour les PDF ----------
   function secret() { const d = load(); if (!d.urlSecret) { d.urlSecret = crypto.randomBytes(32).toString('hex'); save(d); } return d.urlSecret; }
@@ -119,6 +119,10 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
 
     app.get('/api/me', (req, res) => {
       const s = requireUser(req, res); if (!s) return;
+      try {   // connexion gardée : la session est prolongée à chaque visite (au plus une fois par semaine), pour que le donateur reste connecté
+        const t = cookies(req).don_sid, d = load(), ss = (d.sessions || {})[s.hash];
+        if (ss && ss.exp - Date.now() < (SESSION_DAYS - 7) * 86400000) { ss.exp = Date.now() + SESSION_DAYS * 86400000; save(d); setCookie(req, res, t, SESSION_DAYS * 86400); }
+      } catch (e) { /* la session reste valable */ }
       const u = (load().users || {})[s.email] || { profiles: {} };
       res.json({ email: s.email, profiles: profilsVus(u.profiles), last: u.last || null });
     });
