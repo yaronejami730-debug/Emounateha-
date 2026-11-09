@@ -832,6 +832,9 @@ body{overflow-x:hidden}
 .dn-back.on{background:var(--teal);color:#fff;border-color:var(--teal);padding:12px 22px;font-size:15px}
 .dn-retour{text-align:center;margin-top:18px}
 .dn-retour p{margin:10px 0 0;font-size:13px;color:#51666a}
+
+.dn-saved{margin:6px 2px 0;font-size:12.5px;color:#6a7f83}
+.dn-saved .dn-link{font-size:12.5px}
 </style>
 
 <section id="dn"><div class="dn-wrap">
@@ -1207,9 +1210,28 @@ async function siretLookup() {
     if (!r.ok) throw new Error(j.error || 'Introuvable');
     $('rs').value = j.nom; $('siren').value = j.siren; if (j.adresse) $('adr').value = j.adresse; if (j.cp) $('cp').value = j.cp; if (j.ville) $('ville').value = j.ville;
     m.className = 'dn-siretmsg ok'; m.textContent = '✓ ' + j.nom + ' — vérifiez et modifiez si besoin.'; upSum();
+    if (me) saveProNow(); else proSaved('guest');
   } catch (e) { if (n !== siretSeq) return; m.className = 'dn-siretmsg ko'; m.textContent = e.message + ' Vous pouvez remplir les champs à la main.'; }
 }
 $('siret').addEventListener('input', siretLookup);
+// profil professionnel : enregistré tout seul dans l'espace donateur dès que le SIRET a tout rempli ; corrigé = réenregistré
+function proSaved(st, err) {
+  let el = $('proSaved'); if (!el) { $('siretMsg').insertAdjacentHTML('afterend', '<p class="dn-saved" id="proSaved"></p>'); el = $('proSaved'); }
+  if (st === 'ok') { el.innerHTML = '✓ Enregistré dans votre espace donateur · <button type="button" class="dn-link" id="proEdit">Modifier les informations</button>'; $('proEdit').onclick = () => { $('rs').focus(); el.innerHTML = 'Corrigez les champs : la modification est enregistrée automatiquement.'; }; }
+  else if (st === 'guest') { el.innerHTML = '<button type="button" class="dn-link" id="proLogin">Se connecter</button> pour enregistrer ces informations dans votre espace donateur.'; $('proLogin').onclick = () => { const b = $('acctOpen'); if (b) { b.click(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }; }
+  else if (st === 'saving') el.textContent = 'Enregistrement…';
+  else el.textContent = 'Pas encore enregistré : ' + (err || 'informations incomplètes');
+}
+async function saveProNow() {
+  if (!me || !isEnt()) return;
+  proSaved('saving');
+  try {
+    const r = await api('PUT', '/api/me/profile', { kind: 'pro', data: { raisonSociale: $('rs').value, siren: $('siren').value, adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value } });
+    me.profiles = r.profiles; renderProfiles(); proSaved('ok');
+  } catch (e) { proSaved('ko', e.message); }
+}
+let proT = null;
+['rs', 'siren', 'adr', 'cp', 'ville'].forEach(id => $(id).addEventListener('input', () => { if (!me || !isEnt() || !$('proSaved')) return; clearTimeout(proT); proT = setTimeout(saveProNow, 1200); }));
 function updHint() {
   const h = $('profHint'), k = isEnt() ? 'pro' : 'particulier', saved = me && me.profiles && me.profiles[k];
   let t = '';
