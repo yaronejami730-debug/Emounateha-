@@ -443,9 +443,9 @@ body{overflow-x:hidden}
 <link rel="stylesheet" href="/fade.css?v=3">
 <link rel="stylesheet" href="/typo.css?v=65">
 <script src="/typo.js?v=5" defer></script>
-<script src="/wa-bouton.js?v=2" defer></script>
+
 <meta name="robots" content="noindex,nofollow">
-<script src="/appel.js?v=4" defer></script>
+
 <style>
 #wab{display:none!important}
 #dn{padding:20px 0 40px;overflow-x:clip}
@@ -823,9 +823,19 @@ body{overflow-x:hidden}
 
 .dn-actq{display:flex;flex-wrap:wrap;gap:6px}
 .dn-actq button{flex:0 0 auto}
+
+/* don.emounateha.fr : uniquement la partie paiement */
+.sec-nav,.pagehead,.ndate{display:none!important}
+#dn{padding-top:18px!important}
+.dn-back{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:9px 16px;border-radius:99px;border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 2px 8px rgba(20,60,66,.06)}
+.dn-back:hover{border-color:var(--teal)}
+.dn-back.on{background:var(--teal);color:#fff;border-color:var(--teal);padding:12px 22px;font-size:15px}
+.dn-retour{text-align:center;margin-top:18px}
+.dn-retour p{margin:10px 0 0;font-size:13px;color:#51666a}
 </style>
 
 <section id="dn"><div class="dn-wrap">
+  <a class="dn-back" href="https://www.emounateha.fr/"><span>←</span> Retourner sur emounateha.fr</a>
   <ol class="dn-steps" id="dnSteps"><i class="dn-fill" id="dnFill"></i><li>Votre don</li><li>Coordonnées</li><li id="dnS3">Paiement</li></ol>
   <div class="dn-acct" id="acct">
     <div id="acctOut" class="dn-acct-out"><span>Déjà donateur ?</span><button type="button" id="acctOpen" class="dn-link">Se connecter</button><span>pour remplir le formulaire automatiquement</span></div>
@@ -952,7 +962,7 @@ body{overflow-x:hidden}
   </aside>
   </div>
 </div>
-<p class="dn-legal">Émounatéha · association déclarée · SIREN 930 755 558<br><a href="http://localhost:3000/mentions-legales/">Mentions légales</a> · <a href="http://localhost:3000/cgv/">CGV</a></p>
+<p class="dn-legal">Émounatéha · association déclarée · SIREN 930 755 558<br><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a> · <a href="https://www.emounateha.fr/cgv/">CGV</a></p>
 <div class="dn-load" id="dnLoad" role="status" aria-live="polite"><div><img src="/logo.png" alt=""><p id="dnLoadTxt">Un instant…</p><small>Merci de patienter</small></div></div>
 </section>
 
@@ -960,7 +970,7 @@ body{overflow-x:hidden}
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="http://localhost:3000/mentions-legales/">Mentions légales</a><a href="http://localhost:3000/cgv/">CGV</a></div>
+  <div class="legal"><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a><a href="https://www.emounateha.fr/cgv/">CGV</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -1384,6 +1394,9 @@ function renderRes(o) {
     '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Télécharger mon reçu fiscal</a>';
   $('res').insertAdjacentHTML('beforeend', me ? '<a class="dn-esp" href="/espace/">Voir tous mes reçus<span>→</span></a>' : '<a class="dn-esp" href="/espace/" id="ctaEspace">Retrouver tous mes reçus plus tard<span>→</span></a><p class="dn-espn">Connexion par code envoyé par email, sans mot de passe.</p>');
   if ($('ctaEspace')) $('ctaEspace').onclick = () => { try { sessionStorage.setItem('acctEmail', $('email').value.trim()); } catch (e) {} };
+  $('res').insertAdjacentHTML('beforeend', '<div class="dn-retour"><a class="dn-back on" href="https://www.emounateha.fr/">Retourner sur emounateha.fr</a><p id="retTxt">Retour automatique sur le site dans <b id="retN">30</b> s · <button type="button" id="retStop" class="dn-link">rester sur cette page</button></p></div>');
+  let n = 30; const tm = setInterval(() => { n--; const el = $('retN'); if (el) el.textContent = n; if (n <= 0) { clearInterval(tm); location.href = 'https://www.emounateha.fr/'; } }, 1000);
+  $('retStop').onclick = () => { clearInterval(tm); $('retTxt').textContent = 'Vous pouvez télécharger votre reçu, puis revenir sur le site quand vous le souhaitez.'; };
   goPanel(4); elements = null; $('payel').innerHTML = '';
 }
 setMode(mode);
