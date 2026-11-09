@@ -13,22 +13,6 @@
       "destination": "https://emounateha-don.vercel.app/.well-known/apple-developer-merchantid-domain-association"
     },
     {
-      "source": "/don-cerfa",
-      "destination": "https://emounateha-don.vercel.app/"
-    },
-    {
-      "source": "/don-cerfa/",
-      "destination": "https://emounateha-don.vercel.app/"
-    },
-    {
-      "source": "/don-cerfa/:path*/",
-      "destination": "https://emounateha-don.vercel.app/:path*/"
-    },
-    {
-      "source": "/don-cerfa/:path*",
-      "destination": "https://emounateha-don.vercel.app/:path*"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/index.js?__path=/api/$1"
     },
@@ -89,6 +73,18 @@
           "value": "public, max-age=86400, stale-while-revalidate=604800"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/don-cerfa",
+      "destination": "https://don.emounateha.fr/",
+      "permanent": true
+    },
+    {
+      "source": "/don-cerfa/:path*",
+      "destination": "https://don.emounateha.fr/:path*",
+      "permanent": true
     }
   ]
 }

@@ -7,7 +7,7 @@
 <title>Faire un don · Émounatéha</title>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Émounatéha">
-<meta property="og:url" content="https://www.emounateha.fr/don-cerfa/">
+<meta property="og:url" content="https://don.emounateha.fr/">
 <meta property="og:title" content="Faites un don à Émounatéha">
 <meta property="og:description" content="Chaque don aide une famille. Paiement sécurisé, reçu fiscal CERFA envoyé par e-mail.">
 <meta property="og:image" content="https://www.emounateha.fr/og-don.jpg">
@@ -821,7 +821,7 @@ body{overflow-x:hidden}
         <p class="dn-sub"><button type="button" class="dn-link" id="lgResend">Renvoyer le code</button> <span id="lgDev"></span></p></div>
       <p class="dn-acct-err" id="lgErr" hidden></p>
     </div>
-    <div id="acctIn" class="dn-acct-in" hidden><span class="dn-av">✓</span><div><b id="acctEmail"></b><small>Connecté · <a href="/don-cerfa/espace/">Mon espace donateur</a> · <button type="button" class="dn-link" id="acctLogout">Se déconnecter</button></small></div></div>
+    <div id="acctIn" class="dn-acct-in" hidden><span class="dn-av">✓</span><div><b id="acctEmail"></b><small>Connecté · <a href="/espace/">Mon espace donateur</a> · <button type="button" class="dn-link" id="acctLogout">Se déconnecter</button></small></div></div>
   </div>
   <div class="dn-grid">
   <form id="f" class="dn-card dn-form" novalidate autocomplete="on">
@@ -830,7 +830,7 @@ body{overflow-x:hidden}
     </div>
 
     <div class="dn-panel on" id="p1">
-      <div class="ad-brand"><img class="ad-full" src="/don-cerfa/logo-complet.png" alt="Émounatéha — אמונתך"></div>
+      <div class="ad-brand"><img class="ad-full" src="/logo-complet.png" alt="Émounatéha — אמונתך"></div>
       <h2 class="dn-h" id="h1">Votre don</h2>
       <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal vous est envoyé par email.</p>
       <div id="amtBox">
@@ -1111,7 +1111,7 @@ function fillRandom() {
   const m = $('mode'); m.selectedIndex = Math.floor(Math.random() * m.options.length); upSum();
 }
 
-const cfgP = fetch('/don-cerfa/api/config').then(r => r.json()).then(c => {
+const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []);
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (mode === 'sans' || /[?&]test=1/.test(location.search)) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
@@ -1169,7 +1169,7 @@ async function siretLookup() {
   if (!/^(\d{9}|\d{14})$/.test(q)) { if (q.length > 0 && !/^\d+$/.test(q)) { m.className = 'dn-siretmsg ko'; m.textContent = 'Chiffres uniquement.'; } return; }
   m.textContent = 'Recherche de votre entreprise…';
   try {
-    const r = await fetch('/don-cerfa/api/siret?q=' + q), j = await r.json(); if (n !== siretSeq) return;
+    const r = await fetch('/api/siret?q=' + q), j = await r.json(); if (n !== siretSeq) return;
     if (!r.ok) throw new Error(j.error || 'Introuvable');
     $('rs').value = j.nom; $('siren').value = j.siren; if (j.adresse) $('adr').value = j.adresse; if (j.cp) $('cp').value = j.cp; if (j.ville) $('ville').value = j.ville;
     m.className = 'dn-siretmsg ok'; m.textContent = '✓ ' + j.nom + ' — vérifiez et modifiez si besoin.'; upSum();
@@ -1198,7 +1198,7 @@ function renderAcct() {
   $('email').readOnly = !!me; if (me) $('email').value = me.email;
   if (me) renderProfiles();
 }
-async function loadMe() { try { me = await api('GET', '/don-cerfa/api/me'); } catch (e) { me = null; } renderAcct(); }
+async function loadMe() { try { me = await api('GET', '/api/me'); } catch (e) { me = null; } renderAcct(); }
 function afterLogin() {
   const k = (me.last && me.profiles[me.last]) ? me.last : (me.profiles.particulier ? 'particulier' : (me.profiles.pro ? 'pro' : 'particulier'));
   fillProfile(k); renderAcct(); show('');
@@ -1207,13 +1207,13 @@ async function lgRequest() {
   const em = $('lgEmail').value.trim().toLowerCase(); lgShowErr('');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return lgShowErr('Adresse email invalide.');
   $('lgSend').disabled = true;
-  try { const j = await api('POST', '/don-cerfa/api/auth/request', { email: em }); lgEmail = em; resendAt = Date.now() + 30000; $('lgStep1').hidden = true; $('lgStep2').hidden = false; $('lgTo').textContent = em; $('lgCode').value = ''; $('lgCode').focus();
+  try { const j = await api('POST', '/api/auth/request', { email: em }); lgEmail = em; resendAt = Date.now() + 30000; $('lgStep1').hidden = true; $('lgStep2').hidden = false; $('lgTo').textContent = em; $('lgCode').value = ''; $('lgCode').focus();
     $('lgDev').textContent = j.devCode ? '(mode test : code ' + j.devCode + ')' : ''; if (j.devCode) { $('lgCode').value = j.devCode; lgVerify(); } }
   catch (e) { lgShowErr(e.message); } finally { $('lgSend').disabled = false; }
 }
 async function lgVerify() {
   const code = $('lgCode').value.replace(/\D/g, ''); if (code.length !== 6) return; lgShowErr('');
-  try { await api('POST', '/don-cerfa/api/auth/verify', { email: lgEmail, code }); await loadMe(); afterLogin(); }
+  try { await api('POST', '/api/auth/verify', { email: lgEmail, code }); await loadMe(); afterLogin(); }
   catch (e) { lgShowErr(e.message); $('lgCode').select(); }
 }
 $('guestLogin').onclick = () => { $('acctOpen').click(); try { $('acct').scrollIntoView({ block: 'center' }); } catch (e) {} };
@@ -1223,7 +1223,7 @@ $('lgSend').onclick = lgRequest; $('lgEmail').addEventListener('keydown', e => {
 $('lgCode').addEventListener('input', () => { $('lgCode').value = $('lgCode').value.replace(/\D/g, '').slice(0, 6); if ($('lgCode').value.length === 6) lgVerify(); });
 $('lgChange').onclick = () => { $('lgStep1').hidden = false; $('lgStep2').hidden = true; lgShowErr(''); $('lgEmail').focus(); };
 $('lgResend').onclick = () => { const w = resendAt - Date.now(); if (w > 0) return lgShowErr('Patientez ' + Math.ceil(w / 1000) + ' s avant de redemander un code.'); $('lgEmail').value = lgEmail; lgRequest(); };
-$('acctLogout').onclick = async () => { try { await api('POST', '/don-cerfa/api/auth/logout'); } catch (e) {} me = null; renderAcct(); $('email').value = ''; };
+$('acctLogout').onclick = async () => { try { await api('POST', '/api/auth/logout'); } catch (e) {} me = null; renderAcct(); $('email').value = ''; };
 
 // autocomplétion des adresses (Base Adresse Nationale, Géoplateforme IGN)
 (function () {
@@ -1285,10 +1285,10 @@ async function act() {
     if (panel === 1) { check1(); goPanel(2); }
     else if (panel === 2) {
       check2();
-      if (mode === 'sans') { renderRes(await withLoad('Création de votre reçu fiscal…', () => post('/don-cerfa/api/recu', body()))); }
+      if (mode === 'sans') { renderRes(await withLoad('Création de votre reçu fiscal…', () => post('/api/recu', body()))); }
       else {
         await withLoad('Connexion à Stripe…', ensureStripe);
-        const j = await withLoad('Préparation du paiement sécurisé…', () => post('/don-cerfa/api/intent', body()));
+        const j = await withLoad('Préparation du paiement sécurisé…', () => post('/api/intent', body()));
         payAmount = j.montant; payMen = j.mensuel;
         clientSecret = j.clientSecret;
         elements = stripe.elements({ clientSecret: j.clientSecret, fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' }], appearance: {
@@ -1309,7 +1309,7 @@ async function act() {
             const { error, paymentIntent } = await stripe.confirmPayment({ elements, clientSecret, redirect: 'if_required', confirmParams: { return_url: location.href } });
             if (error) throw new Error(error.message || 'Paiement refusé');
             if (!paymentIntent || paymentIntent.status !== 'succeeded') throw new Error('Paiement non abouti');
-            renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/don-cerfa/api/finalize', { id: paymentIntent.id })));
+            renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
           } catch (e) { show(e.message); }
         });
         goPanel(3);
@@ -1321,7 +1321,7 @@ async function act() {
       const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required', confirmParams: { return_url: location.href, payment_method_data: { billing_details: { name: isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()), email: $('email').value.trim(), address: { line1: $('adr').value.trim(), postal_code: $('cp').value.trim(), city: $('ville').value.trim(), state: '', country: 'FR' } } } } });
       if (error) { $('go').textContent = 'Réessayer'; throw new Error(error.message || 'Paiement refusé'); }
       if (!paymentIntent || paymentIntent.status !== 'succeeded') { $('go').textContent = 'Réessayer'; throw new Error('Paiement non abouti (statut : ' + (paymentIntent && paymentIntent.status) + ')'); }
-      renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/don-cerfa/api/finalize', { id: paymentIntent.id })));
+      renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
     }
     else if (panel === 4) { fillRandom(); goPanel(1); }
   } catch (e) { show(e.message); } finally { busy = false; $('go').disabled = false; }
@@ -1333,7 +1333,7 @@ $('go').onclick = act;
   if (!id || !/^pi_[A-Za-z0-9]+$/.test(id)) return;
   history.replaceState(null, '', location.pathname);
   if (st !== 'succeeded') { setTimeout(() => show(st === 'failed' ? 'Le paiement a été refusé. Vous pouvez réessayer.' : 'Paiement non abouti. Vous pouvez réessayer.'), 300); return; }
-  const go = () => withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/don-cerfa/api/finalize', { id })).then(renderRes).catch(e => show(e.message));
+  const go = () => withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id })).then(renderRes).catch(e => show(e.message));
   if (document.readyState === 'complete') go(); else addEventListener('load', go);
 })();
 $('f').addEventListener('submit', e => { e.preventDefault(); act(); });
@@ -1349,7 +1349,7 @@ function renderRes(o) {
   else if (o.email && !o.email.skipped) em = '<b>Nous vous avons envoyé un email</b> à ' + to + ', avec votre reçu fiscal (CERFA) en pièce jointe. Conservez-le : il vous sera demandé pour votre déclaration de revenus.<br><br>' + espace;
   else em = espace;
   const row = (k, v) => '<div class="dn-sr"><span>' + k + '</span><b>' + v + '</b></div>';
-  $('res').innerHTML = '<img class="dn-logo" src="/don-cerfa/logo-asso.png" alt="Émounatéha">' +
+  $('res').innerHTML = '<img class="dn-logo" src="/logo-asso.png" alt="Émounatéha">' +
     '<h3>Merci pour votre don !</h3>' +
     '<p class="dn-thx">Votre générosité aide directement les familles que nous accompagnons.</p>' +
     '<div class="dn-recap"><div class="dn-amt">' + eur(o.montant) + (o.mensuel ? '<small> par mois</small>' : '') + '</div>' +
@@ -1358,7 +1358,7 @@ function renderRes(o) {
       row('Reçu fiscal', 'n° ' + esc(o.numero)) + '</div>' +
     (em ? '<p class="dn-mail">' + em + '</p>' : '') +
     '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Télécharger mon reçu fiscal</a>';
-  $('res').insertAdjacentHTML('beforeend', me ? '<a class="dn-esp" href="/don-cerfa/espace/">Voir tous mes reçus<span>→</span></a>' : '<a class="dn-esp" href="/don-cerfa/espace/" id="ctaEspace">Retrouver tous mes reçus plus tard<span>→</span></a><p class="dn-espn">Connexion par code envoyé par email, sans mot de passe.</p>');
+  $('res').insertAdjacentHTML('beforeend', me ? '<a class="dn-esp" href="/espace/">Voir tous mes reçus<span>→</span></a>' : '<a class="dn-esp" href="/espace/" id="ctaEspace">Retrouver tous mes reçus plus tard<span>→</span></a><p class="dn-espn">Connexion par code envoyé par email, sans mot de passe.</p>');
   if ($('ctaEspace')) $('ctaEspace').onclick = () => { try { sessionStorage.setItem('acctEmail', $('email').value.trim()); } catch (e) {} };
   goPanel(4); elements = null; $('payel').innerHTML = '';
 }

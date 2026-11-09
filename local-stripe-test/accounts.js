@@ -15,7 +15,7 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
   // ---------- liens signés pour les PDF ----------
   function secret() { const d = load(); if (!d.urlSecret) { d.urlSecret = crypto.randomBytes(32).toString('hex'); save(d); } return d.urlSecret; }
   const sig = (file, exp) => crypto.createHmac('sha256', secret()).update(file + '.' + exp).digest('hex').slice(0, 32);
-  function signUrl(file, ttl = 3600) { const f = path.basename(file), e = Math.floor(Date.now() / 1000) + ttl; return `${process.env.BASE_PATH ?? (process.env.VERCEL ? '/don-cerfa' : '')}/recus/${f}?e=${e}&s=${sig(f, e)}`; }
+  function signUrl(file, ttl = 3600) { const f = path.basename(file), e = Math.floor(Date.now() / 1000) + ttl; return `${process.env.BASE_PATH || ''}/recus/${f}?e=${e}&s=${sig(f, e)}`; }
   function publicReceipt(out) {   // les liens renvoyés au navigateur expirent ; le PDF n'est jamais public
     const o = { ...out }; if (o.pdf) o.pdf = signUrl(o.pdf);
     if (o.email && o.email.eml) o.email = { ...o.email, eml: signUrl(o.email.eml) };
@@ -35,7 +35,7 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
   }
   function requireUser(req, res) { const s = getSession(req); if (!s) { res.status(401).json({ error: 'Non connecté' }); return null; } return s; }
   // contrôle d'origine : une page d'un autre site ne peut pas agir au nom du donateur
-  function sameOrigin(req, res) { const o = req.headers.origin; if (o) { try { const h = new URL(o).host; if (h !== req.headers.host && !('www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } catch (e) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } return true; }
+  function sameOrigin(req, res) { const o = req.headers.origin; if (o) { try { const h = new URL(o).host; if (h !== req.headers.host && !('don.emounateha.fr,www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } catch (e) { res.status(403).json({ error: 'Origine non autorisée' }); return false; } } return true; }
 
   // ---------- profils ----------
   function cleanProfile(kind, b) {

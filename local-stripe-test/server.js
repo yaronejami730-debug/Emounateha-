@@ -184,7 +184,7 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   const info = await t.sendMail({ from, to, subject, text, attachments });
   const eml = path.basename(pdfFile).replace(/\.pdf$/, '.eml');
   vault.writeFile(path.join(RECUS, eml), info.message);
-  return { sent: false, eml: (process.env.BASE_PATH ?? (process.env.VERCEL ? '/don-cerfa' : '')) + '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
+  return { sent: false, eml: (process.env.BASE_PATH || '') + '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
 }
 
 async function fabriquer(don, { envoyerEmail }) {
@@ -192,7 +192,7 @@ async function fabriquer(don, { envoyerEmail }) {
   const numero = nextNumero(annee);
   const file = path.join(RECUS, `recu_${numero}_${crypto.randomBytes(3).toString('hex')}.pdf`);
   await pdf(remplir(don, numero), file);
-  const out = { numero, pdf: (process.env.BASE_PATH ?? (process.env.VERCEL ? '/don-cerfa' : '')) + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
+  const out = { numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
   return out;
 }
@@ -203,7 +203,7 @@ try { vault.setAllowPlain(true); const n = vault.migrateDir(RECUS); if (fs.exist
 // --- serveur ---
 const app = express();
 app.disable('x-powered-by');
-// le paiement est servi sous emounateha.fr/don-cerfa (réécriture du site) : on accepte aussi ce préfixe en direct et en local
+// ancien préfixe /don-cerfa (anciens liens) : accepté et ramené à la racine ; le paiement vit sur don.emounateha.fr
 app.use((req, res, next) => { if (req.url === '/don-cerfa' || req.url.startsWith('/don-cerfa/') || req.url.startsWith('/don-cerfa?')) req.url = req.url.slice(10) || '/'; next(); });
 if (process.env.VERCEL) { app.set('trust proxy', true); app.use(require('./store')({ DATA, RECUS })); }   // Vercel : données dans Postgres (voir store.js)
 // --- accès : l'ordinateur local a tous les droits ; via le tunnel HTTPS (*.trycloudflare.com) seule la page de don est ouverte ---
@@ -211,7 +211,7 @@ const hits = new Map();
 app.use((req, res, next) => {
   const host = req.headers.host || '';
   if (!process.env.VERCEL && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !req.headers['cf-connecting-ip']) return next();          // ordinateur local
-  if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST) return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
+  if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST && host !== 'don.emounateha.fr') return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
   if (req.path.startsWith('/backoffice') || req.path === '/api/recu') return res.status(403).type('text').send("Réservé à l'ordinateur local");
   if (req.method === 'POST') {                                                                                           // limite : 30 envois / 10 min / visiteur
     const ip = String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.ip).split(',')[0].trim(), now = Date.now(), arr = (hits.get(ip) || []).filter(t => now - t < 600000);
@@ -235,7 +235,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/webhook') return next();   // le webhook est protégé par la signature Stripe
   const o = req.headers.origin; if (!o) return next();
-  try { const h = new URL(o).host; if (h === req.headers.host || ('www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
+  try { const h = new URL(o).host; if (h === req.headers.host || ('don.emounateha.fr,www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
   res.status(403).json({ error: 'Origine non autorisée' });
 });
 app.use((req, res, next) => { if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('.html') || req.path.endsWith('/'))) res.setHeader('Cache-Control', 'no-store');
@@ -357,7 +357,7 @@ app.post('/api/recu', async (req, res) => {
 });
 // (les PDF ne sont plus servis publiquement : voir accounts.js, liens signés ou propriétaire connecté)
 const SITE_PUBLIC = path.join(__dirname, '..', 'public');   // css, scripts et images du vrai site
-const SITE = 'http://127.0.0.1:3000';                       // serveur du site local (bandeau Hanouka, date du jour…)
+const SITE = process.env.VERCEL ? 'https://www.emounateha.fr' : 'http://127.0.0.1:3000';                       // serveur du site local (bandeau Hanouka, date du jour…)
 app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/api/colis-videos', '/api/action-videos'], async (req, res) => {
   try { const r = await fetch(SITE + req.originalUrl); res.status(r.status).type(r.headers.get('content-type') || 'application/json').send(Buffer.from(await r.arrayBuffer())); }
   catch (e) { res.status(502).json({ error: 'Serveur du site local (port 3000) indisponible' }); }

@@ -838,16 +838,16 @@ async function request() {
   const v = $('spEmail').value.trim().toLowerCase(); err('');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return err('Adresse email invalide.');
   $('spSend').disabled = true;
-  try { const j = await api('POST', '/don-cerfa/api/auth/request', { email: v }); em = v; resendAt = Date.now() + 30000; $('spS1').hidden = true; $('spS2').hidden = false; $('spTo').textContent = v; $('spCode').value = ''; $('spCode').focus();
+  try { const j = await api('POST', '/api/auth/request', { email: v }); em = v; resendAt = Date.now() + 30000; $('spS1').hidden = true; $('spS2').hidden = false; $('spTo').textContent = v; $('spCode').value = ''; $('spCode').focus();
     $('spDev').textContent = j.devCode ? '(mode test : code ' + j.devCode + ')' : ''; if (j.devCode) { $('spCode').value = j.devCode; verify(); } }
   catch (e) { err(e.message); } finally { $('spSend').disabled = false; }
 }
-async function verify() { const code = $('spCode').value.replace(/\D/g, ''); if (code.length !== 6) return; err(''); try { await api('POST', '/don-cerfa/api/auth/verify', { email: em, code }); await start(); } catch (e) { err(e.message); $('spCode').select(); } }
+async function verify() { const code = $('spCode').value.replace(/\D/g, ''); if (code.length !== 6) return; err(''); try { await api('POST', '/api/auth/verify', { email: em, code }); await start(); } catch (e) { err(e.message); $('spCode').select(); } }
 $('spSend').onclick = request; $('spEmail').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); request(); } });
 $('spCode').addEventListener('input', () => { $('spCode').value = $('spCode').value.replace(/\D/g, '').slice(0, 6); if ($('spCode').value.length === 6) verify(); });
 $('spChange').onclick = () => { $('spS1').hidden = false; $('spS2').hidden = true; err(''); $('spEmail').focus(); };
 $('spResend').onclick = () => { const w = resendAt - Date.now(); if (w > 0) return err('Patientez ' + Math.ceil(w / 1000) + ' s avant de redemander un code.'); $('spEmail').value = em; request(); };
-$('spOut').onclick = async () => { try { await api('POST', '/don-cerfa/api/auth/logout'); } catch (e) {} location.reload(); };
+$('spOut').onclick = async () => { try { await api('POST', '/api/auth/logout'); } catch (e) {} location.reload(); };
 
 function tab(n) { $('spT1').classList.toggle('on', n === 1); $('spT2').classList.toggle('on', n === 2); $('spRec').hidden = n !== 1; $('spInf').hidden = n !== 2; }
 $('spT1').onclick = () => tab(1); $('spT2').onclick = () => tab(2);
@@ -867,18 +867,18 @@ function fillForms() {
 }
 async function saveProfile(kind, data, ok, er) {
   const o = $(ok), e = $(er); o.hidden = true; e.hidden = true;
-  try { const j = await api('PUT', '/don-cerfa/api/me/profile', { kind, data }); me.profiles = j.profiles; fillForms(); o.textContent = '✓ Enregistré. Le formulaire de don se remplira avec ces informations.'; o.hidden = false; }
+  try { const j = await api('PUT', '/api/me/profile', { kind, data }); me.profiles = j.profiles; fillForms(); o.textContent = '✓ Enregistré. Le formulaire de don se remplira avec ces informations.'; o.hidden = false; }
   catch (x) { e.textContent = x.message; e.hidden = false; }
 }
 $('fPart').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('particulier', { prenom: $('pPrenom').value, nom: $('pNom').value, adresse: $('pAdr').value, cp: $('pCp').value, ville: $('pVille').value }, 'okPart', 'erPart'); });
 $('fPro').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('pro', { raisonSociale: $('qRs').value, siren: $('qSiren').value, adresse: $('qAdr').value, cp: $('qCp').value, ville: $('qVille').value }, 'okPro', 'erPro'); });
-$('delPart').onclick = async () => { if (!confirm('Supprimer le profil particulier ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/don-cerfa/api/me/profile/particulier'); me.profiles = j.profiles; fillForms(); };
-$('delPro').onclick = async () => { if (!confirm('Supprimer le profil professionnel ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/don-cerfa/api/me/profile/pro'); me.profiles = j.profiles; fillForms(); };
+$('delPart').onclick = async () => { if (!confirm('Supprimer le profil particulier ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/particulier'); me.profiles = j.profiles; fillForms(); };
+$('delPro').onclick = async () => { if (!confirm('Supprimer le profil professionnel ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/pro'); me.profiles = j.profiles; fillForms(); };
 
 async function start() {
-  try { me = await api('GET', '/don-cerfa/api/me'); } catch (e) { $('spLogin').hidden = false; $('spApp').hidden = true; return; }
+  try { me = await api('GET', '/api/me'); } catch (e) { $('spLogin').hidden = false; $('spApp').hidden = true; return; }
   $('spLogin').hidden = true; $('spApp').hidden = false; $('spMail').textContent = me.email; fillForms();
-  try { renderReceipts(await api('GET', '/don-cerfa/api/me/receipts')); } catch (e) { $('spRec').innerHTML = '<div class="sp-empty">Impossible de charger vos reçus : ' + esc(e.message) + '</div>'; }
+  try { renderReceipts(await api('GET', '/api/me/receipts')); } catch (e) { $('spRec').innerHTML = '<div class="sp-empty">Impossible de charger vos reçus : ' + esc(e.message) + '</div>'; }
 }
 try { const pre = sessionStorage.getItem('acctEmail'); if (pre) { $('spEmail').value = pre; sessionStorage.removeItem('acctEmail'); } } catch (e) {}
 start();
