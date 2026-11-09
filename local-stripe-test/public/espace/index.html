@@ -754,15 +754,59 @@ body{overflow-x:hidden}
 @media(max-width:800px){#colis{padding-top:40px}.ctabs{margin-bottom:26px}}
 </style>
 
+<style>
+/* espace donateur : page autonome, sans la barre du site */
+.sec-nav,.pagehead,footer,.ndate{display:none!important}
+html,body{background:linear-gradient(180deg,#eef5f5 0,#f8fbfb 260px,#fff 100%)!important}
+body::before,body::after{display:none!important}
+#dn{padding:18px 0 40px!important;min-height:100vh;background:transparent!important}
+.sp-wrap{max-width:760px;margin:0 auto;padding:0 16px}
+.sp-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.sp-back{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 2px 8px rgba(20,60,66,.06)}
+.sp-back:hover{border-color:var(--teal)}
+.sp-logo{display:block;margin:0 auto 14px;width:132px;height:auto;mix-blend-mode:multiply}
+.sp-auth{max-width:440px;margin:0 auto;background:#fff;border-radius:24px;padding:26px 24px 24px;box-shadow:0 18px 50px rgba(20,60,66,.12);border:1px solid #e3ecec;text-align:center}
+.sp-auth .sp-ic{width:50px;height:50px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;background:#f3eedd;color:#9a7a22}
+.sp-auth h1{font-family:'Bree Serif',serif;font-weight:400;font-size:26px;color:var(--teal);margin:0 0 6px;letter-spacing:0;text-transform:none}
+.sp-auth .sp-lead{margin:0 auto 20px;max-width:340px;font-size:14.5px;line-height:1.5;color:#51666a}
+.sp-auth label{display:block;text-align:left;font-weight:600;font-size:13.5px;color:var(--teal);margin:0 0 6px}
+.sp-auth input#spEmail{width:100%;height:52px;border:1.5px solid #cfe0e1;border-radius:14px;padding:0 16px;font:inherit;font-size:16px;color:#14272a;background:#fff;box-sizing:border-box}
+.sp-auth input:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 3px rgba(31,106,114,.12)}
+.sp-go{display:block;width:100%;height:52px;margin-top:12px;border:0;border-radius:99px;background:linear-gradient(180deg,#e2c77f,#c4a457);color:#1b2b2d;font:inherit;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 8px 20px rgba(196,164,87,.3)}
+.sp-go:disabled{opacity:.6}
+.sp-auth .dn-otp{width:100%;height:60px;box-sizing:border-box;text-align:center;font-size:30px;letter-spacing:12px;font-weight:700;border:1.5px solid #cfe0e1;border-radius:14px;color:#14272a;padding:0 0 0 12px}
+.sp-sent{margin:0 0 16px;font-size:14px;color:#51666a;line-height:1.5}
+.sp-sent b{color:#14272a}
+.sp-links{display:flex;justify-content:center;gap:18px;margin-top:14px;font-size:13.5px}
+.sp-links button{background:none;border:0;padding:4px;color:var(--teal);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer}
+.sp-safe{display:flex;align-items:center;justify-content:center;gap:6px;margin:18px 0 0;font-size:12.5px;color:#7f9396}
+.sp-auth .dn-acct-err{margin:12px 0 0;text-align:center}
+.sp-pitch{max-width:440px;margin:18px auto 0;display:grid;gap:8px}
+.sp-pitch div{display:flex;align-items:center;gap:10px;font-size:14px;color:#33464a;background:rgba(255,255,255,.7);border:1px solid #e3ecec;border-radius:14px;padding:11px 14px}
+.sp-pitch span{flex:0 0 22px;color:var(--teal)}
+@media(max-width:600px){.sp-auth{padding:22px 18px 20px;border-radius:20px}.sp-auth h1{font-size:23px}.sp-back{font-size:13px;padding:8px 13px}}
+</style>
 <section id="dn"><div class="sp-wrap">
-  <div id="spLogin" class="sp-card">
-    <h2 class="dn-h" style="margin-top:0">Se connecter</h2>
-    <p class="dn-p">Entrez votre email : vous recevez un code à 6 chiffres, sans mot de passe. Si vous n'avez pas encore d'espace donateur, il est créé à votre première connexion.</p>
-    <div id="spS1"><label for="spEmail">Votre email</label><div class="dn-row"><input id="spEmail" type="email" inputmode="email" autocomplete="email"><button type="button" id="spSend" class="dn-btn sm">Recevoir mon code</button></div></div>
-    <div id="spS2" hidden><p class="dn-acct-p">Code envoyé à <b id="spTo"></b> · <button type="button" class="dn-link" id="spChange">changer d'email</button></p>
-      <label for="spCode">Code à 6 chiffres</label><input id="spCode" class="dn-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······">
-      <p class="dn-sub"><button type="button" class="dn-link" id="spResend">Renvoyer le code</button> <span id="spDev"></span></p></div>
-    <p class="dn-acct-err" id="spErr" hidden></p>
+  <div class="sp-top"><a class="sp-back" href="https://www.emounateha.fr/"><span>←</span> emounateha.fr</a><a class="sp-back" href="/">Faire un don</a></div>
+  <div id="spLogin">
+    <img class="sp-logo" src="/logo-complet.png" alt="Émounatéha — אמונתך">
+    <div class="sp-auth">
+      <div class="sp-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+      <h1>Mon espace donateur</h1>
+      <p class="sp-lead" id="spLead">Connectez-vous avec votre email : nous vous envoyons un code à 6 chiffres. Votre espace est créé à la première connexion.</p>
+      <div id="spS1"><label for="spEmail">Adresse email</label><input id="spEmail" type="email" inputmode="email" autocomplete="email" placeholder="vous@exemple.fr"><button type="button" id="spSend" class="sp-go">Recevoir mon code</button></div>
+      <div id="spS2" hidden><p class="sp-sent">Code envoyé à <b id="spTo"></b><br>Pensez à vérifier vos courriers indésirables.</p>
+        <input id="spCode" class="dn-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······" aria-label="Code à 6 chiffres">
+        <div class="sp-links"><button type="button" id="spResend">Renvoyer le code</button><button type="button" id="spChange">Changer d'email</button></div>
+        <p class="dn-sub" id="spDev" style="margin:8px 0 0"></p></div>
+      <p class="dn-acct-err" id="spErr" hidden></p>
+      <p class="sp-safe"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> <span>Connexion sécurisée, sans mot de passe</span></p>
+    </div>
+    <div class="sp-pitch">
+      <div><span>🧾</span>Tous vos reçus fiscaux, classés par année</div>
+      <div><span>⚡</span>Formulaire de don rempli automatiquement</div>
+      <div><span>🏢</span>Particulier et sociétés, sur le même compte</div>
+    </div>
   </div>
   <div id="spApp" hidden>
     <div class="sp-card">

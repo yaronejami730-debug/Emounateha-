@@ -830,6 +830,9 @@ body{overflow-x:hidden}
 .dn-back{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:9px 16px;border-radius:99px;border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 2px 8px rgba(20,60,66,.06)}
 .dn-back:hover{border-color:var(--teal)}
 .dn-back.on{background:var(--teal);color:#fff;border-color:var(--teal);padding:12px 22px;font-size:15px}
+.dn-topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 12px}.dn-topbar .dn-back{margin:0}
+.dn-esp{background:#f3eedd!important;border-color:#e2cf98!important;color:#7a5f17!important}
+@media(max-width:560px){.dn-topbar .dn-l{display:none}}
 .dn-retour{text-align:center;margin-top:18px}
 .dn-retour p{margin:10px 0 0;font-size:13px;color:#51666a}
 
@@ -880,7 +883,7 @@ body{overflow-x:hidden}
 </style>
 
 <section id="dn"><div class="dn-wrap">
-  <a class="dn-back" href="https://www.emounateha.fr/"><span>←</span> Retourner sur emounateha.fr</a>
+  <div class="dn-topbar"><a class="dn-back" href="https://www.emounateha.fr/"><span>←</span> <span class="dn-l">Retourner sur </span>emounateha.fr</a><a class="dn-back dn-esp" href="/espace/"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Espace donateur</a></div>
   <ol class="dn-steps" id="dnSteps"><i class="dn-fill" id="dnFill"></i><li>Votre don</li><li>Coordonnées</li><li id="dnS3">Paiement</li></ol>
   <div class="dn-acct" id="acct">
     <div id="acctOut" class="dn-acct-out"><span>Déjà donateur ?</span><button type="button" id="acctOpen" class="dn-link">Se connecter</button><span>pour remplir le formulaire automatiquement</span></div>
