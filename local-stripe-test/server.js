@@ -330,7 +330,11 @@ app.post('/api/intent', async (req, res) => {
         metadata: { ...meta, siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0' }, expand: ['latest_invoice.payment_intent'] });
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
-      const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), description: `Don ${ASSO.nom}${T}`, metadata: meta });
+      const types = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: `Don ${ASSO.nom}${T}`, metadata: meta };
+      let pi;
+      try { pi = await stripe.paymentIntents.create({ ...base, payment_method_types: types }); }
+      catch (e) { // moyen pas encore activé sur le compte Stripe (ex. PayPal non connecté) : on garde la carte (Apple Pay / Google Pay inclus)
+        if (types.length > 1 && /payment.?method|paypal|invalid/i.test(e.message)) { console.error('[intent] repli carte :', e.message); pi = await stripe.paymentIntents.create({ ...base, payment_method_types: ['card'] }); } else throw e; }
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
