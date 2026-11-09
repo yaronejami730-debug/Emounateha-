@@ -447,6 +447,11 @@ body{overflow-x:hidden}
 .art b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:var(--gold-l);margin-bottom:6px}
 .art span{font-size:14px;opacity:.92}
 .art a{color:#fff;font-weight:600;text-decoration:underline;text-decoration-color:var(--gold)}
+.art{aspect-ratio:auto;min-height:420px}
+.art .artact{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.art .artact a{text-decoration:none;text-align:center;padding:12px 18px;font-size:15px}
+.art .artact .gold{background:linear-gradient(180deg,#ecd98f,#c4a24a);color:#1b2b2d;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.art .artact .artcolis{border:1.5px solid rgba(255,255,255,.75);color:#fff}
 #pts{padding:40px 0 20px}
 .pts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:960px;margin:0 auto}
 .pt{background:rgba(255,255,255,.95);border:1px solid #e3ecec;border-radius:18px;padding:26px 22px;box-shadow:0 6px 24px rgba(20,60,66,.07);transition:transform .25s,box-shadow .25s,border-color .25s}
@@ -613,10 +618,11 @@ body{overflow-x:hidden}
 
 
 const ACTION='reinsertion',ART={"icon": "act-reinsertion.png", "name": "Réinsertion sociale", "msg": "Les vidéos de cette action arrivent bientôt."};
+const RET='?retour='+encodeURIComponent(location.href.split('#')[0]),DON='https://don.emounateha.fr/reinsertion-sociale/'+RET,COLIS='https://don.emounateha.fr/colis-de-chabbat/'+RET;   // le don s'ouvre avec cette action déjà choisie, et un lien de retour vers cette page
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const vbtn=v=>'<button type="button" class="cv" data-id="'+v.id+'" data-t="'+esc(v.title)+'" aria-label="Lire : '+esc(v.title)+'"><img src="https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg" alt="" loading="lazy"><span class="cvp" aria-hidden="true"></span></button>';
 function renderLib(list){const feat=document.getElementById('feat'),lib=document.getElementById('lib'),g=document.getElementById('libGrid');
-  if(!list||!list.length){feat.innerHTML='<div class="art"><div><img src="/tuiles/'+ART.icon+'?v=3" alt=""><b>'+esc(ART.name)+'</b><span>'+ART.msg+' <a href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener">Voir la chaîne</a></span></div></div>';lib.hidden=true;return}
+  if(!list||!list.length){feat.innerHTML='<div class="art"><div><img src="/tuiles/'+ART.icon+'?v=3" alt=""><b>'+esc(ART.name)+'</b><span>'+ART.msg+' <a href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener">Voir la chaîne</a></span><div class="artact"><a class="btn gold" href="'+DON+'">♥ Faire un don</a><a class="btn artcolis" href="'+COLIS+'">Offrir un colis</a></div></div></div>';lib.hidden=true;return}
   const f=list[0];feat.innerHTML=vbtn(f)+'<div class="flab">▶ En vidéo</div><div class="ftit">'+esc(f.title)+'</div>';
   const rest=list.slice(1);
   if(rest.length){lib.hidden=false;g.innerHTML=rest.map(v=>'<div class="lv rv">'+vbtn(v)+'<div class="cap">'+esc(v.title)+'</div></div>').join('')}else lib.hidden=true;
