@@ -57,7 +57,7 @@ function envVar(k) {
 }
 const DATABASE_URL = envVar('DATABASE_URL');
 let pool = null;
-if (DATABASE_URL) { const { Pool } = require('pg'); pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: process.env.VERCEL ? 1 : 3, idleTimeoutMillis: process.env.VERCEL ? 3000 : 20000, allowExitOnIdle: true }); }
+if (DATABASE_URL) { const { Pool } = require('pg'); pool = new Pool({ connectionString: DATABASE_URL.replace(/(pooler\.supabase\.com):5432\b/, '$1:6543'), ssl: { rejectUnauthorized: false }, max: process.env.VERCEL ? 1 : 3, idleTimeoutMillis: process.env.VERCEL ? 3000 : 20000, allowExitOnIdle: true }); pool.on('error', e => console.error('[db] connexion perdue', e.message)); }   // pooler Supabase en mode transaction (6543) : le mode session (5432) plafonne à 15 clients
 
 const TABLES = {
   contacts: { email: 'email', firstName: 'first_name', lastName: 'last_name', phone: 'phone', tags: 'tags', status: 'status', notes: 'notes', createdAt: 'created_at' },
