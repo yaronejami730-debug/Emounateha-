@@ -598,6 +598,9 @@ body{overflow-x:hidden}
 .dn-err{display:none;margin-top:16px;padding:13px 15px;border-radius:14px;background:#fdecea;color:#8a2a22;font-size:14.5px;font-weight:500}
 #payel{margin:12px 0}
 #exel{min-height:0;max-width:380px}   /* Apple Pay et Google Pay côte à côte (assez de largeur pour 2 colonnes), pas empilés */
+.embed .dn-topbar,.embed footer,.embed .ad-brand,.embed #rchband,.embed #acctOut .dn-link+span{display:none!important}   /* petite fenêtre : on garde l'essentiel (montant, paiement) */
+.embed #dn{padding-top:12px!important}.embed .dn-wrap{padding-top:0!important}
+.embed .dn-actions{padding-bottom:10px}
 .dn-pmnote{font-size:12.5px;color:#6b7d80;margin:8px 2px 0;line-height:1.4}
 .dn-or{display:flex;align-items:center;gap:10px;margin:16px 0 6px;color:#7f9396;font-size:12.5px;font-weight:600}
 .dn-or::before,.dn-or::after{content:"";flex:1;height:1px;background:#dbe6e6}
@@ -1334,6 +1337,9 @@ function setMode(m) {
 }
 document.querySelectorAll('input[name=type]').forEach(r => r.onchange = () => { setType(isEnt()); updHint(); upSum(); });
 // ---- don mensuel : phrase de récapitulatif (en gras) + fenêtre de confirmation
+const EMBED = /[?&]embed=1/.test(location.search) && window.self !== window.top;   // ouvert dans la petite fenêtre de la page Torah
+if (EMBED) document.body.classList.add('embed');
+let selType = 'card';
 function mensInfo() {
   if (!isMen()) return null;
   const n = +document.querySelector('input[name=duree]:checked').value;
@@ -1567,7 +1573,9 @@ async function act() {
         $('payel').innerHTML = ''; $('exel').innerHTML = ''; $('exwrap').style.display = 'none'; $('cardLab').style.display = '';
         { const n = $('pmNote'); n.hidden = !payMen; n.textContent = payMen ? 'Don mensuel : carte bancaire, Apple Pay et Google Pay. PayPal et Klarna sont réservés aux dons ponctuels.' : ''; }
         $('paySum').textContent = money(payAmount / 100) + (payMen ? ' par mois' : '') + ' · ' + ($('aff').value || 'Don');
-        elements.create('payment', { layout: { type: 'tabs', defaultCollapsed: false }, paymentMethodOrder: ['card', 'paypal', 'klarna'], wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } }).mount('#payel');
+        const pe = elements.create('payment', { layout: { type: 'tabs', defaultCollapsed: false }, paymentMethodOrder: ['card', 'paypal', 'klarna'], wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } });
+        pe.mount('#payel'); selType = 'card';
+        pe.on('change', ev => { selType = (ev.value && ev.value.type) || 'card'; if (EMBED) { const n = $('pmNote'); const red = !/^(card|link)$/.test(selType); if (red) { n.hidden = false; n.textContent = 'PayPal et Klarna s\'ouvrent sur la page de paiement complète : touchez « Payer » pour continuer.'; } else if (!payMen) n.hidden = true; } });
         // Apple Pay / Google Pay : bouton express au-dessus de la carte (visible seulement si l'appareil et le domaine le permettent)
         const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 52, layout: { maxColumns: 2, maxRows: 1 }, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'never', klarna: 'never', amazonPay: 'never' } });
         ex.mount('#exel');
@@ -1587,6 +1595,10 @@ async function act() {
       }
     }
     else if (panel === 3) {
+      if (EMBED && !/^(card|link)$/.test(selType)) {   // PayPal / Klarna redirigent vers leur site : impossible dans une iframe, on ouvre la page de don complète (même montant, même action)
+        const u = new URL(location.href); u.searchParams.delete('embed'); u.searchParams.set('montant', String(payAmount / 100)); u.searchParams.set('express', '1'); if (document.referrer) u.searchParams.set('retour', document.referrer);
+        window.open(u.toString(), '_top'); return;
+      }
       $('go').textContent = 'Paiement en cours…';
       const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required', confirmParams: { return_url: location.href, payment_method_data: { billing_details: { name: isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()), email: $('email').value.trim(), address: { line1: $('adr').value.trim(), postal_code: $('cp').value.trim(), city: $('ville').value.trim(), state: '', country: 'FR' } } } } });
       if (error) { $('go').textContent = 'Réessayer'; throw new Error(error.message || 'Paiement refusé'); }
@@ -1611,6 +1623,7 @@ $('back').onclick = () => { elements = null; $('payel').innerHTML = ''; goPanel(
 
 if (/[?&]diag=1/.test(location.search)) $('exDiag').hidden = false;
 function renderRes(o) {
+  if (EMBED) { try { parent.postMessage({ type: 'don:done' }, '*'); } catch (e) {} }
   const dev = /^(127\.0\.0\.1|localhost)$/.test(location.hostname) || /[?&]diag=1/.test(location.search);
   const to = esc($('email').value.trim());
   const espace = me ? 'Vous pouvez aussi retrouver tous vos reçus directement depuis votre espace donateur.' : 'Vous pouvez aussi retrouver tous vos reçus fiscaux directement depuis votre espace donateur.';
