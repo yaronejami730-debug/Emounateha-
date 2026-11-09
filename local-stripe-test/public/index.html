@@ -1151,7 +1151,14 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []);
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (mode === 'sans' || /[?&]test=1/.test(location.search)) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
-  pickAff(0); if (!$('actBox').hidden) actTotal();   // fête choisie d'office : le total suit les actions cochées
+  pickAff(0);
+  { // ?aff=chabbat|roch-hachana|simhat-torah|hanouka|pourim|pessah|reinsertion|vetements|toit|soutien|scolarite|education : affectation choisie d'office
+    const q = (new URLSearchParams(location.search).get('aff') || '').toLowerCase(), labels = [...document.querySelectorAll('input[name=affr]')].map(r => r.value);
+    const PAT = { 'chabbat': /chabbat/i, 'roch-hachana': /roch hachana/i, 'simhat-torah': /souccot|simhat/i, 'souccot': /souccot/i, 'hanouka': /hanouka/i, 'pourim': /pourim/i, 'pessah': /pessah/i, 'chavouot': /chavou/i,
+      'reinsertion': /insertion/i, 'vetements': /v[êe]tements/i, 'toit': /toit/i, 'soutien': /soutien/i, 'scolarite': /scolarit/i, 'education': /ducation/i };
+    if (q && PAT[q]) { let i = labels.findIndex(l => PAT[q].test(l)); if (i < 0 && /^(roch-hachana|simhat-torah|souccot|hanouka|pourim|pessah|chavouot)$/.test(q)) i = labels.findIndex(l => /chabbat/i.test(l)); if (i >= 0) pickAff(i); }
+  }
+  if (!$('actBox').hidden) actTotal();   // fête choisie d'office : le total suit les actions cochées
   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
   return c;

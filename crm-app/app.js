@@ -89,7 +89,7 @@ async function openFete(k) {
   let t = S.templates.find(x => x.holiday === k);
   if (!t) {
     const f = FETES.find(x => x.k === k);
-    t = await api('POST', '/templates', { holiday: k, name: f.n + ' — appel aux dons', subject: f.subject, preheader: f.pre, title: f.title, body: f.body, buttonText: f.btn, buttonUrl: S.settings.donateUrl || 'https://www.allodons.fr/emounateha', color: '#1f6a72', accent: '#c4a24a' });
+    t = await api('POST', '/templates', { holiday: k, name: f.n + ' — appel aux dons', subject: f.subject, preheader: f.pre, title: f.title, body: f.body, buttonText: f.btn, buttonUrl: S.settings.donateUrl || 'https://don.emounateha.fr/', color: '#1f6a72', accent: '#c4a24a' });
     toast('Template « ' + f.n + ' » créé');
   }
   tplId = t.id; tplDraft = null; await render();
@@ -333,7 +333,7 @@ function campModal(id, preset) {
   campSteps = JSON.parse(JSON.stringify(c.steps));
   modal(`<h2>${id ? 'Modifier' : 'Nouvelle'} campagne</h2>
     <label>Nom</label><input id="k_name" value="${esc(c.name)}" placeholder="Hanouka 2026">
-    <label>Lien du bouton (facultatif : remplace celui du template pour cette campagne)</label><input id="k_btn" value="${esc(c.buttonUrl || '')}" placeholder="https://hannouka.allodons.fr/emounateha?src=hanouka-{{email}}">
+    <label>Lien du bouton (facultatif : remplace celui du template pour cette campagne)</label><input id="k_btn" value="${esc(c.buttonUrl || '')}" placeholder="https://don.emounateha.fr/?aff=hanouka">
     <label>Nom de l'audience</label><input id="k_tag" value="${esc(c.audienceTag)}" placeholder="auto : nom de la campagne">
     <label>Contacts de la campagne (CSV)</label>
     <input type="file" accept=".csv,.txt,.tsv" onchange="readFile(this,'k_csv')">

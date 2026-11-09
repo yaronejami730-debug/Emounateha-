@@ -77,6 +77,21 @@
   ],
   "redirects": [
     {
+      "source": "/don",
+      "destination": "https://don.emounateha.fr/",
+      "permanent": false
+    },
+    {
+      "source": "/don/",
+      "destination": "https://don.emounateha.fr/",
+      "permanent": false
+    },
+    {
+      "source": "/don/:path*",
+      "destination": "https://don.emounateha.fr/",
+      "permanent": false
+    },
+    {
       "source": "/don-cerfa",
       "destination": "https://don.emounateha.fr/",
       "permanent": true

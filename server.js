@@ -32,7 +32,7 @@ function defaultDb() {
       brevoApiKey: '', senderName: 'Emounateha', senderEmail: '',
       dailyLimit: 300, perMinute: 5, hourFrom: 8, hourTo: 21,
       publicUrl: '', logoUrl: '/logo.png', orgName: 'Émounatéha',
-      address: '', donateUrl: 'https://www.allodons.fr/emounateha',
+      address: '', donateUrl: 'https://don.emounateha.fr/',
       phone: '06 69 67 07 70', social: 'emounateha_', minGapHours: 24,
       instagramUrl: 'https://www.instagram.com/emounateha', facebookUrl: 'https://www.facebook.com/share/1HhyHMPNPd/', tiktokUrl: 'https://www.tiktok.com/@emounateha', youtubeUrl: 'https://youtube.com/@emounateharaba-h4b'
     },
@@ -41,7 +41,7 @@ function defaultDb() {
       id: uid(), holiday: 'hanouka', name: 'Hanouka — Appel aux dons', subject: '{{prenom}}, allumez une lumière avec Émounatéha 🕎',
       preheader: 'Ensemble, rendons Hanouka lumineux pour les familles dans le besoin.',
       title: 'Allumons ensemble la lumière de Hanouka',
-      body: DEFAULT_BODY, buttonText: 'Faire un don', buttonUrl: 'https://hannouka.allodons.fr/emounateha',
+      body: DEFAULT_BODY, buttonText: 'Faire un don', buttonUrl: 'https://don.emounateha.fr/?aff=hanouka',
       color: '#1f6a72', accent: '#c4a24a', createdAt: now()
     }],
     campaigns: [],
@@ -794,7 +794,7 @@ async function rabbiLetter(req, res) {
       `<div style="margin:0 0 6px;padding:14px 16px;border-left:3px solid #c4a24a;background:#fbf6e6;border-radius:6px;font-size:15px;line-height:1.6;color:#111827;white-space:pre-wrap;">${e(message)}</div>`;
     const copy = renderEmail({ subject: 'Votre lettre a bien été envoyée au Ohel', preheader: 'Votre lettre a bien été envoyée au Ohel', title: 'Votre lettre a bien été envoyée', color: '#1f6a72', accent: '#c4a24a',
       body: 'Bonjour ' + name + ',\n\nVotre lettre a bien été envoyée au Ohel. Voici le récapitulatif de ce que vous avez écrit :',
-      extraHtml: recap, buttonText: 'Participer à nos missions', buttonUrl: base + '/don/' }, { firstName: name, lastName: '', email, id: 'letter-copy' });
+      extraHtml: recap, buttonText: 'Participer à nos missions', buttonUrl: 'https://don.emounateha.fr/' }, { firstName: name, lastName: '', email, id: 'letter-copy' });
     await brevoSend({ to: email, toName: name, subject: 'Votre lettre a bien été envoyée au Ohel', html: copy }).catch(() => {});
     res.setHeader('Cache-Control', 'no-store');
     send(res, 200, { ok: true });
@@ -1539,25 +1539,7 @@ async function handle(req, res) {
     if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
     if (url.pathname === '/api/shabbat-city' && req.method === 'POST') return shabbatCity(req, res);
     if (url.pathname === '/api/rabbi-letter' && req.method === 'POST') return rabbiLetter(req, res);
-    if (url.pathname === '/api/pay-session' && req.method === 'POST') { // public : ouvre une session de paiement AlloDons et renvoie son adresse
-      const key = envVar('ALLODONS_KEY');
-      if (!key) return send(res, 503, { error: 'Paiement direct non activé', fallback: '/don/' });
-      const b = await readBody(req);
-      const euros = Number(b.amount);
-      if (!Number.isFinite(euros) || euros < 1 || euros > 5000) return send(res, 400, { error: 'Montant invalide (1 à 5000 €)' });
-      const ref = String(b.reference || 'don-site').replace(/[^\w.\- ]/g, '').slice(0, 60) || 'don-site';
-      const base = (db.settings.publicUrl || '').replace(/\/$/, '') || ((SERVERLESS ? 'https://' : 'http://') + req.headers.host);
-      const payload = { amount: Math.round(euros * 100), locale: 'fr', reference: ref, metadata: { source: 'site-emounateha', page: String(b.page || '').slice(0, 40) },
-        success_url: base + '/don/?merci=1', cancel_url: base + '/don/?annule=1' };
-      if (b.monthly) payload.subscription = true;
-      const em = String(b.email || '').trim(); if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) payload.donor = { email: em, first_name: String(b.firstName || '').slice(0, 60), last_name: String(b.lastName || '').slice(0, 60) };
-      try {
-        const r = await fetch('https://www.allodons.fr/api/pay/sessions', { method: 'POST', headers: { authorization: 'Bearer ' + key, 'idempotency-key': crypto.randomUUID(), 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok || !j.url) return send(res, 502, { error: 'AlloDons a refusé la session', detail: j.error || r.status, fallback: '/don/' });
-        return send(res, 200, { url: j.url, id: j.id });
-      } catch (e) { return send(res, 502, { error: 'AlloDons injoignable', fallback: '/don/' }); }
-    }
+    // (ancien paiement AlloDons /api/pay-session retiré : tous les dons passent par don.emounateha.fr)
     if (url.pathname === '/diffusion-archives.json') { // public : toutes les diffusions publiées, groupées par mois
       if (!pool) return send(res, 200, { months: [] });
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });

@@ -4,7 +4,7 @@ var END=new Date('2026-12-07T23:59:59+01:00').getTime(),FIRST=new Date('2026-12-
 if(Date.now()>END)return;
 var d=Math.ceil((FIRST-Date.now())/86400000);
 var cnt=d>1?'dans <b>'+d+' jours</b>':d===1?'<b>demain soir</b>':d===0?'<b>ce soir</b>':'<b>c’est Hanouka</b>';
-var HANOUKA_DON='https://hannouka.allodons.fr/emounateha'; /* don Hanouka (AlloDons) ; le don général reste sur /don/ */
+var HANOUKA_DON='https://don.emounateha.fr/?aff=hanouka'; /* don Hanouka (AlloDons) ; le don général reste sur /don/ */
 var LINK=HANOUKA_DON;
 var css=document.createElement('style');
 css.textContent=
