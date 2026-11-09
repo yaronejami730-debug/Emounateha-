@@ -937,7 +937,7 @@ body{overflow-x:hidden}
             <label><input type="radio" name="duree" value="12"><span><i>12 mois</i></span></label><label><input type="radio" name="duree" value="24"><span><i>24 mois</i></span></label>
             <label><input type="radio" name="duree" value="36"><span><i>36 mois</i></span></label><label><input type="radio" name="duree" value="48"><span><i>48 mois</i></span></label>
           </div>
-          <div id="repBox" style="display:none"><p class="dn-datehint" style="margin:6px 4px 8px">Le montant saisi ci-dessus est :</p>
+          <div id="repBox" style="display:none"><p class="dn-datehint" style="margin:6px 4px 8px">Le montant de votre don est :</p>
             <div class="dn-freq"><label><input type="radio" name="repart" value="mois" checked><span>Par mois</span></label><label><input type="radio" name="repart" value="total"><span>Le total à répartir</span></label></div></div>
           <p class="dn-datehint" id="durHint" style="display:none"></p>
         </div>
@@ -1230,8 +1230,8 @@ function applyAff(suggest) {
   { const all = [...document.querySelectorAll('input[name=affr]')], sel = $('affSel'); if (sel) sel.value = String(all.indexOf(r)); }
   $('aff').value = it.label;
   const fete = it.actions && it.actions.length && mode !== 'sans';   // fête, colis de Chabbat ou action : même présentation (photo, texte, choix)
-  $('actBox').hidden = !fete; $('amtBox').hidden = !!fete; $('gFreq').style.display = fete ? 'none' : '';
-  if (fete) { if ($('actBox').dataset.for !== it.label || suggest) { $('actBox').dataset.for = it.label; renderActs(it); } document.querySelector('input[name=freq][value=ponctuel]').checked = true; $('freqHint').style.display = 'none'; upDur(); }
+  $('actBox').hidden = !fete; $('amtBox').hidden = !!fete; $('gFreq').style.display = '';
+  if (fete) { if ($('actBox').dataset.for !== it.label || suggest) { $('actBox').dataset.for = it.label; renderActs(it); } upDur(); }
   else { $('actBox').dataset.for = ''; if (suggest && it.montant) { $('montant').value = String(it.montant); mark(); } }
   upSum();
 }

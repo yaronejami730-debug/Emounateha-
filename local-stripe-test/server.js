@@ -314,7 +314,7 @@ app.get('/api/siret', async (req, res) => {
 app.post('/api/intent', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
-    const fete = await lignesFete(req.body); if (fete) { req.body.montant = fete.total / 100; req.body.frequence = 'ponctuel'; }
+    const fete = await lignesFete(req.body); if (fete) req.body.montant = fete.total / 100;   // le total est recalculé ici ; le don d'une fête / action peut aussi être mensuel ou réparti en plusieurs fois
     const sess = acc.getSession(req), don = validerDonateur(req.body);
     if (sess) don.email = sess.email;                       // connecté : le reçu est rattaché au compte
     const mensuel = req.body.frequence === 'mensuel', aff = fete ? fete.affectation : affectation(req.body, await affectationsOk());
@@ -362,7 +362,7 @@ app.post('/api/intent', async (req, res) => {
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
-    d.pending[id] = { ...don, amb, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, lignes: fete ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
+    d.pending[id] = { ...don, amb, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
