@@ -950,6 +950,7 @@ body{overflow-x:hidden}
           <div><label for="nom">Nom</label><input id="nom" autocomplete="family-name"></div>
         </div>
         <div id="gEnt" class="dn-full dn-g" style="padding:0;display:none">
+          <div class="dn-full" id="gEntList" hidden></div>
           <div class="dn-full"><label for="siret">Numéro SIRET <span style="font-weight:400;color:#51666a">(ou SIREN)</span></label><input id="siret" inputmode="numeric" autocomplete="off" placeholder="14 chiffres : tout se remplit tout seul"><small id="siretMsg" class="dn-siretmsg"></small></div>
           <div><label for="rs">Raison sociale</label><input id="rs" autocomplete="organization"></div>
           <div><label for="siren">SIREN</label><input id="siren" inputmode="numeric" placeholder="9 chiffres"></div>
@@ -1095,7 +1096,38 @@ function upSum() {
   $('sWho').textContent = who || '—';
 }
 function mark() { document.querySelectorAll('#amts button').forEach(b => b.classList.toggle('on', b.dataset.v === $('montant').value.trim())); }
-function setType(ent) { document.querySelector('input[name=type][value=' + (ent ? 'entreprise' : 'particulier') + ']').checked = true; $('gPart').style.display = ent ? 'none' : 'grid'; $('gEnt').style.display = ent ? 'grid' : 'none'; }
+function setType(ent) { document.querySelector('input[name=type][value=' + (ent ? 'entreprise' : 'particulier') + ']').checked = true; $('gPart').style.display = ent ? 'none' : 'grid'; $('gEnt').style.display = ent ? 'grid' : 'none'; guestProsRender(); }
+// professionnel non connecté : plusieurs sociétés mémorisées sur cet appareil, « Ajouter une autre société »
+let guestPros = []; try { guestPros = JSON.parse(localStorage.getItem('dn_pros') || '[]'); if (!Array.isArray(guestPros)) guestPros = []; } catch (e) { guestPros = []; }
+let guestCur = -1;
+function guestProsRender() {
+  const box = $('gEntList'); if (!box) return;
+  const ent = document.querySelector('input[name=type][value=entreprise]').checked;
+  if ((typeof me !== 'undefined' && me) || !ent) { box.hidden = true; return; }
+  box.hidden = false;
+  const IC = '<svg viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16"/><path d="M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></svg>';
+  box.innerHTML = '<div class="dn-lab" style="margin-top:0">' + (guestPros.length ? 'Vos sociétés' : 'Vous avez plusieurs sociétés ?') + '</div><div class="dn-pcards">' +
+    guestPros.map((p, i) => '<button type="button" class="dn-pcard' + (guestCur === i ? ' on' : '') + '" data-i="' + i + '"><span class="ic">' + IC + '</span><span style="min-width:0"><b>' + esc(p.raisonSociale) + '</b><small>' + esc(p.siren ? 'SIREN ' + p.siren.replace(/(\d{3})(?=\d)/g, '$1 ') : (p.ville || '')) + '</small></span></button>').join('') +
+    '<button type="button" class="dn-pcard add' + (guestCur === -1 && guestPros.length ? ' on' : '') + '" data-i="-1"><span class="ic">＋</span><span style="min-width:0"><b>Ajouter une autre société</b><small>Entreprise, association…</small></span></button></div>';
+  box.querySelectorAll('.dn-pcard').forEach(b => b.onclick = () => guestProPick(+b.dataset.i));
+}
+function guestProSave() {
+  if ((typeof me !== 'undefined' && me) || !document.querySelector('input[name=type][value=entreprise]').checked) return;
+  const p = { raisonSociale: $('rs').value.trim(), siren: $('siren').value.replace(/\s/g, ''), adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value };
+  if (!p.raisonSociale) return;
+  const i = guestPros.findIndex(x => (p.siren && x.siren === p.siren) || x.raisonSociale.toLowerCase() === p.raisonSociale.toLowerCase());
+  if (i >= 0) guestPros[i] = p; else guestPros.push(p);
+  guestCur = i >= 0 ? i : guestPros.length - 1;
+  try { localStorage.setItem('dn_pros', JSON.stringify(guestPros.slice(0, 10))); } catch (e) {}
+}
+function guestProPick(i) {
+  if (i === -1) { guestProSave(); guestCur = -1; ['rs', 'siren', 'siret', 'adr', 'cp', 'ville'].forEach(k => $(k).value = ''); $('siretMsg').textContent = ''; guestProsRender(); upSum(); setTimeout(() => $('siret').focus(), 60); return; }
+  const p = guestPros[i]; if (!p) return; guestCur = i;
+  $('rs').value = p.raisonSociale; $('siren').value = p.siren || ''; $('siret').value = ''; $('siretMsg').textContent = ''; $('adr').value = p.adresse || ''; $('cp').value = p.cp || ''; $('ville').value = p.ville || '';
+  if (p.email && !$('email').value) $('email').value = p.email;
+  guestProsRender(); upSum();
+}
+document.querySelectorAll('input[name=type]').forEach(r => r.addEventListener('change', guestProsRender));
 
 // affectation : cartes à toucher
 const SV = p => '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
@@ -1125,12 +1157,12 @@ function buildChips(list) {
       const ico = a.montant ? '<img src="/tuiles/colis.png" alt="">' : ICONS.star;
       return '<label class="dn-chip fete"><input type="radio" name="affr" value="' + esc(a.label) + '"' + chk + '><span><span class="dn-ic">' + ico + '</span><em><b class="dn-soon">' + esc(joursTxt(a.jours)) + '</b><br>' + esc(main) + (note ? ' <small style="display:inline">(' + esc(note) + ')</small>' : '') + '<small>' + sub + '</small></em><i></i></span></label>';
     }
-    const extra = a.montant ? '<small>' + a.montant + ' €</small>' : (note ? '<small>' + esc(note) + '</small>' : '');
+    const extra = a.sous ? '<small>' + esc(a.sous) + (a.montant ? ' · ' + a.montant + ' €' : '') + '</small>' : (a.montant ? '<small>' + a.montant + ' €</small>' : (note ? '<small>' + esc(note) + '</small>' : ''));
     return '<label class="dn-chip"><input type="radio" name="affr" value="' + esc(a.label) + '"' + chk + '><span><span class="dn-ic">' + ICONS[ICONKEY(a.label)] + '</span><em>' + esc(main) + extra + '</em><i></i></span></label>';
   }).join('');
   document.querySelectorAll('input[name=affr]').forEach(r => r.onchange = () => applyAff(true));
   const sel = $('affSel');   // liste déroulante façon AlloDons : pilote les cartes (cachées)
-  if (sel) { sel.innerHTML = list.map((a, i) => '<option value="' + i + '">' + esc(a.kind === 'fete' ? a.label + (a.montant ? ' · ' + a.montant + ' €' : '') : splitLab(a.label)[0]) + '</option>').join(''); sel.onchange = () => pickAff(+sel.value); }
+  if (sel) { sel.innerHTML = list.map((a, i) => '<option value="' + i + '">' + esc(a.kind === 'fete' ? a.label + (a.montant ? ' · ' + a.montant + ' €' : '') : splitLab(a.label)[0] + (a.sous ? ' — ' + a.sous : '')) + '</option>').join(''); sel.onchange = () => pickAff(+sel.value); }
   applyAff(false);
 }
 // applique le choix : texte envoyé au serveur, choix Chabbat / fête pour les colis, montant suggéré (seulement quand le donateur touche une carte)
@@ -1406,6 +1438,7 @@ function check2() {
 }
 
 async function act() {
+  guestProSave();
   if (busy) return; busy = true; $('go').disabled = true;
   try {
     if (panel === 1) { check1(); goPanel(2); }

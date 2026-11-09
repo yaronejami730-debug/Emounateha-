@@ -1741,6 +1741,11 @@ async function cerfaProxy(req, res, url) {
     if (url.pathname === '/api/cerfa/siret') { const r = await fetch(DON_URL + '/api/siret?q=' + encodeURIComponent(url.searchParams.get('q') || '')); return send(res, r.status, await J(r)); }
     if (url.pathname === '/api/cerfa/config') { const r = await fetch(DON_URL + '/api/config'); return send(res, r.status, await J(r)); }
     if (url.pathname === '/api/cerfa' && req.method === 'GET') { const r = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus') }); return send(res, r.status, await J(r)); }
+    if (url.pathname === '/api/cerfa/supprimer' && req.method === 'POST') {   // reçus de TEST uniquement
+      const b = await readBody(req);
+      const r = await fetch(DON_URL + '/api/admin/supprimer', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/supprimer'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(30000) });
+      return send(res, r.status, await J(r));
+    }
     if (url.pathname === '/api/cerfa' && req.method === 'POST') {
       const b = await readBody(req);
       const r = await fetch(DON_URL + '/api/admin/recu', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/recu'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(110000) });

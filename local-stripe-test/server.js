@@ -65,7 +65,7 @@ function fetesConfig() {
   try { const m = fs.statSync(FETES_FILE).mtimeMs; if (m !== fetesCache.m) fetesCache = { m, list: JSON.parse(fs.readFileSync(FETES_FILE, 'utf8')).fetes.map(f => ({ ...f, re: new RegExp(f.match) })) }; } catch (e) { console.error('[fetes] fichier illisible, ancienne version conservée :', e.message); }
   return fetesCache.list;
 }
-const COLIS_CHABBAT = { label: 'Colis de Chabbat', kind: 'base', montant: 80 };
+const COLIS_CHABBAT = { label: 'Colis de Chabbat', kind: 'base', montant: 80, sous: 'et de fêtes, aux familles' };
 const ACTIONS_FILE = path.join(__dirname, 'actions.config.json'); let actionsCache = { m: 0, map: {} };
 function actionsConfig() {   // présentation des actions et du colis de Chabbat (photo, texte, choix), modifiable à la main
   try { const m = fs.statSync(ACTIONS_FILE).mtimeMs; if (m !== actionsCache.m) actionsCache = { m, map: JSON.parse(fs.readFileSync(ACTIONS_FILE, 'utf8')).actions || {} }; } catch (e) {}
@@ -388,6 +388,19 @@ app.get('/api/admin/recus', (req, res) => {
   const recus = [...Object.entries(d.receipts || {}).map(([k, r]) => ligneRecu(r, k, 'en ligne')), ...Object.entries(d.manuels || {}).map(([k, r]) => ligneRecu(r, k, 'manuel'))]
     .sort((a, b) => String(b.dateDon).localeCompare(String(a.dateDon)) || String(b.numero).localeCompare(String(a.numero)));
   res.json({ recus, modes: MODES.slice(0, 3) });
+});
+// suppression de reçus (uniquement les reçus de TEST, ou une liste précise de numéros TEST-…) : CRM → Dons
+app.post('/api/admin/supprimer', (req, res) => {
+  if (!adminOk(req, res)) return;
+  const asked = Array.isArray(req.body.numeros) ? req.body.numeros.map(String) : null;
+  const vise = n => /^TEST-/i.test(String(n || '')) && (!asked || asked.includes(String(n)));
+  const d = load(), supprimes = [];
+  for (const coll of ['receipts', 'manuels']) for (const [k, r] of Object.entries(d[coll] || {})) if (vise(r.numero)) {
+    supprimes.push(r.numero); delete d[coll][k];
+    if (r.file) { try { fs.unlinkSync(path.join(RECUS, path.basename(r.file))); } catch (e) {} }
+  }
+  if (supprimes.length) save(d);
+  res.json({ ok: true, supprimes });
 });
 app.post('/api/admin/recu', async (req, res) => {
   if (!adminOk(req, res)) return;
