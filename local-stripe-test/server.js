@@ -327,7 +327,8 @@ app.post('/api/intent', async (req, res) => {
     const mois = mensuel ? parseInt(req.body.duree, 10) : 0;   // durée choisie : 12 ou 24 mois (N prélèvements) ; sinon sans limite
     if (mois) {
       if (![12, 24].includes(mois)) throw new Error('Durée du don mensuel invalide.');
-      const f = new Date(Date.now() + 3600000); f.setUTCMonth(f.getUTCMonth() + mois); f.setUTCDate(f.getUTCDate() - 1);   // le (N+1)e prélèvement tombe un jour après : exactement N prélèvements
+      const t0 = new Date(Date.now() + 3600000), mm = t0.getUTCMonth() + mois, dernier = new Date(Date.UTC(t0.getUTCFullYear(), mm + 1, 0)).getUTCDate();   // jour du (N+1)e prélèvement (fin de mois : Stripe prend le dernier jour du mois)
+      const f = new Date(Date.UTC(t0.getUTCFullYear(), mm, Math.min(t0.getUTCDate(), dernier))); f.setUTCDate(f.getUTCDate() - 1);   // la veille : exactement N prélèvements
       fin = f.toISOString().slice(0, 10);
     } else if (mensuel && req.body.duree === 'date') {
       fin = String(req.body.finDate || '');
