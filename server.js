@@ -1618,6 +1618,7 @@ async function handle(req, res) {
       if (SERVERLESS && !envVar('CRM_PASSWORD') && (await usersCount()) === 0) return send(res, 503, { error: 'Aucun compte : définissez CRM_PASSWORD ou invitez un administrateur' });
       if (!(await authorized(req))) return url.pathname.startsWith('/api/') ? send(res, 401, { error: 'Connexion requise' }) : reply(res, 302, '', 'text/plain', { location: '/login' });
     }
+    if (url.pathname === '/api/cerfa' || url.pathname.startsWith('/api/cerfa/')) return await cerfaProxy(req, res, url);
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname.startsWith('/u/')) {
       const c = db.contacts.find(x => x.id === url.pathname.slice(3));
@@ -1634,6 +1635,34 @@ async function handle(req, res) {
     if (isCrm) return reply(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream', { 'cache-control': 'private, max-age=120' });
     send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream');
   } catch (e) { console.error(e); send(res, 500, { error: e.message }); }
+}
+
+
+// ---------- CRM, onglet CERFA : relais vers le serveur des dons (don.emounateha.fr), requêtes signées ----------
+const DON_URL = process.env.DON_URL || 'https://don.emounateha.fr';
+function cerfaSig(method, p) {
+  const ts = Date.now(), key = crypto.createHash('sha256').update('emounateha-cerfa|' + (envVar('CERFA_SECRET') || DATABASE_URL)).digest();
+  return { 'x-cerfa-ts': String(ts), 'x-cerfa-sig': crypto.createHmac('sha256', key).update(ts + '|' + method + '|' + p).digest('hex') };
+}
+async function cerfaProxy(req, res, url) {
+  const J = async r => { const t = await r.text(); try { return JSON.parse(t); } catch (e) { return { error: 'Réponse inattendue du serveur des dons (' + r.status + ')' }; } };
+  try {
+    if (url.pathname === '/api/cerfa/siret') { const r = await fetch(DON_URL + '/api/siret?q=' + encodeURIComponent(url.searchParams.get('q') || '')); return send(res, r.status, await J(r)); }
+    if (url.pathname === '/api/cerfa/config') { const r = await fetch(DON_URL + '/api/config'); return send(res, r.status, await J(r)); }
+    if (url.pathname === '/api/cerfa' && req.method === 'GET') { const r = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus') }); return send(res, r.status, await J(r)); }
+    if (url.pathname === '/api/cerfa' && req.method === 'POST') {
+      const b = await readBody(req);
+      const r = await fetch(DON_URL + '/api/admin/recu', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/recu'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(110000) });
+      return send(res, r.status, await J(r));
+    }
+    if (url.pathname === '/api/cerfa/pdf') {
+      const f = url.searchParams.get('f') || '', r = await fetch(DON_URL + '/api/admin/pdf?f=' + encodeURIComponent(f), { headers: cerfaSig('GET', '/api/admin/pdf') });
+      if (!r.ok) return send(res, r.status, await J(r));
+      res.writeHead(200, { 'content-type': 'application/pdf', 'content-disposition': 'inline; filename="' + f.replace(/[^\w.-]/g, '') + '"', 'cache-control': 'private, no-store' });
+      return res.end(Buffer.from(await r.arrayBuffer()));
+    }
+    return send(res, 404, { error: 'inconnu' });
+  } catch (e) { return send(res, 502, { error: 'Serveur des dons injoignable : ' + e.message }); }
 }
 
 if (require.main === module) {

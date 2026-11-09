@@ -346,11 +346,49 @@ app.post('/api/finalize', async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 // 3) reçu SANS paiement (virement, chèque, espèces déjà reçus)
+// --- CRM (onglet CERFA) : liste des reçus, reçus manuels (virement, chèque, espèces), PDF. Réservé au serveur du site :
+// requête signée HMAC (clé dérivée de CERFA_SECRET, sinon de DATABASE_URL, commune aux deux projets), valable 5 minutes.
+const cerfaKey = () => crypto.createHash('sha256').update('emounateha-cerfa|' + (process.env.CERFA_SECRET || process.env.DATABASE_URL || '')).digest();
+function adminOk(req, res) {
+  const ts = Number(req.headers['x-cerfa-ts'] || 0), sig = String(req.headers['x-cerfa-sig'] || '');
+  const ok = (process.env.CERFA_SECRET || process.env.DATABASE_URL) && Math.abs(Date.now() - ts) < 300000 && /^[0-9a-f]{64}$/.test(sig)
+    && crypto.timingSafeEqual(Buffer.from(sig, 'hex'), crypto.createHmac('sha256', cerfaKey()).update(ts + '|' + req.method + '|' + req.path).digest());
+  if (!ok) res.status(401).json({ error: 'non autorisé' });
+  return !!ok;
+}
+const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent) });
+app.get('/api/admin/recus', (req, res) => {
+  if (!adminOk(req, res)) return;
+  const d = load();
+  const recus = [...Object.entries(d.receipts || {}).map(([k, r]) => ligneRecu(r, k, 'en ligne')), ...Object.entries(d.manuels || {}).map(([k, r]) => ligneRecu(r, k, 'manuel'))]
+    .sort((a, b) => String(b.dateDon).localeCompare(String(a.dateDon)) || String(b.numero).localeCompare(String(a.numero)));
+  res.json({ recus, modes: MODES.slice(0, 3) });
+});
+app.post('/api/admin/recu', async (req, res) => {
+  if (!adminOk(req, res)) return;
+  try {
+    const don = validerDonateur(req.body);
+    const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide (virement, chèque ou espèces)');
+    const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(req.body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
+    if (dt.getFullYear() < new Date().getFullYear() - 1) throw new Error('Date trop ancienne (année en cours ou précédente)');
+    const aff = affectation(req.body, await affectationsOk());
+    const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff }, { envoyerEmail: !!req.body.envoyerEmail });
+    out.tel = clean(req.body.tel, 30); out.affectation = aff; out.manuel = true;
+    const d = load(); d.manuels = d.manuels || {}; d.manuels['m_' + out.numero] = out; save(d);
+    res.json({ ok: true, numero: out.numero, file: out.file, email: out.email });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.get('/api/admin/pdf', (req, res) => {
+  if (!adminOk(req, res)) return;
+  const f = path.basename(String(req.query.f || '')), p = path.join(RECUS, f);
+  if (!/^recu_[\w-]+\.pdf$/.test(f) || !fs.existsSync(p)) return res.status(404).json({ error: 'PDF introuvable' });
+  res.type('application/pdf').send(vault.readFile(p));
+});
 app.post('/api/recu', async (req, res) => {
   try {
     const don = validerDonateur(req.body);
     const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide');
-    const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || dt > new Date()) throw new Error('Date du don invalide (pas dans le futur)');
+    const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(req.body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
     if (dt.getFullYear() < new Date().getFullYear() - 1) throw new Error('Date trop ancienne pour cette page de test');
     res.json(acc.publicReceipt(await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: affectation(req.body, await affectationsOk()) }, { envoyerEmail: !!req.body.envoyerEmail })));
   } catch (e) { res.status(400).json({ error: e.message }); }

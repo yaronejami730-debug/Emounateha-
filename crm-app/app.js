@@ -97,6 +97,13 @@ async function openFete(k) {
 
 // ---------- Views ----------
 const views = {
+  cerfa: () => `<div class="head"><div><h1>Reçus fiscaux (CERFA)</h1><p class="sub">Reçus faits automatiquement par don.emounateha.fr, et reçus manuels (virement, chèque, espèces)</p></div>
+      <button class="btn pri" onclick="cerfaForm()">＋ Nouveau reçu manuel</button></div>
+    <div id="cerfaNew"></div>
+    <div class="card"><div class="row" style="align-items:center"><b class="grow">Tous les reçus</b>
+      <select id="cfFiltre" onchange="cerfaList()" style="width:auto"><option value="">Tous</option><option value="en ligne">En ligne</option><option value="manuel">Manuels</option></select>
+      <input id="cfQ" placeholder="Rechercher un nom, un n°…" oninput="cerfaList()" style="width:220px"></div>
+      <div id="cerfaTab" style="margin-top:10px">Chargement…</div></div>`,
   '': () => {
     const running = S.campaigns.filter(c => c.status === 'running').length;
     const totalSent = S.campaigns.reduce((a, c) => a + c.stats.sent, 0);
@@ -471,6 +478,7 @@ async function render(skipLoad) {
   if (route === 'templates') bindTpl();
   if (route === 'historique') loadHistorique();
   if (route === 'sms') smsInit();
+  if (route === 'cerfa') cerfaInit();
 }
 function renderKeepFocus() {
   const pos = $('#q')?.selectionStart; render(true).then(() => { const q = $('#q'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } });
@@ -750,3 +758,61 @@ views.sms = () => `
       <span style="color:var(--mut);margin:0 6px">ou un test :</span><input id="sms_test" placeholder="06 12 34 56 78" style="width:160px"><button id="sms_tbtn" class="btn" onclick="smsSend(true)">Envoyer un test</button></div>
     <div id="sms_res"></div>
   </div></div>`;
+
+
+// ================= CERFA : liste + reçus manuels =================
+let CF = { recus: [], modes: ['Virement bancaire', 'Chèque', 'Espèces'], affs: [] };
+const eurC = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+async function cerfaInit() {
+  try { const [l, c] = await Promise.all([api('GET', '/cerfa'), api('GET', '/cerfa/config').catch(() => ({ affectations: [] }))]); CF.recus = l.recus || []; if (l.modes) CF.modes = l.modes; CF.affs = (c.affectations || []).map(a => a.label); }
+  catch (e) { $('#cerfaTab').innerHTML = '<p class="hint">Impossible de lire les reçus : ' + esc(e.message) + '</p>'; return; }
+  cerfaList();
+}
+function cerfaList() {
+  const f = ($('#cfFiltre') || {}).value || '', q = (($('#cfQ') || {}).value || '').toLowerCase();
+  const l = CF.recus.filter(r => (!f || r.source === f) && (!q || (r.nom + ' ' + r.numero + ' ' + (r.email || '')).toLowerCase().includes(q)));
+  const tot = l.reduce((t, r) => t + (r.montant || 0), 0);
+  $('#cerfaTab').innerHTML = !l.length ? '<p class="hint">Aucun reçu pour le moment.</p>' : `<div class="hint" style="margin-bottom:8px">${l.length} reçu(s) · total ${eurC(tot)}</div>
+    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>N°</th><th>Date</th><th>Donateur</th><th>Montant</th><th>Mode</th><th>Origine</th><th>E-mail</th><th></th></tr></thead><tbody>
+    ${l.map(r => `<tr><td><b>${esc(r.numero)}</b></td><td>${esc(new Date(r.dateDon).toLocaleDateString('fr-FR'))}</td><td>${esc(r.nom)}<div class="hint">${esc(r.type === 'entreprise' ? 'Professionnel' : 'Particulier')}${r.email ? ' · ' + esc(r.email) : ''}${r.tel ? ' · ' + esc(r.tel) : ''}</div></td>
+      <td>${eurC(r.montant)}</td><td>${esc(String(r.mode || '').split(' — ')[0])}</td><td><span class="pill ${r.source === 'manuel' ? 'warn' : 'ok'}">${esc(r.source)}</span></td><td>${r.emailEnvoye ? '✓ envoyé' : '—'}</td>
+      <td><a class="btn" href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">PDF</a></td></tr>`).join('')}</tbody></table></div>`;
+}
+function cerfaForm() {
+  const today = new Date().toISOString().slice(0, 10);
+  $('#cerfaNew').innerHTML = `<div class="card" style="margin-bottom:16px"><div class="row" style="align-items:center"><b class="grow">Nouveau reçu manuel</b><button class="btn" onclick="$('#cerfaNew').innerHTML=''">Fermer</button></div>
+    <div class="row" style="gap:16px;margin:8px 0"><label style="display:flex;gap:6px;align-items:center;margin:0"><input type="radio" name="cfType" value="particulier" checked onchange="cfType()"> Particulier</label><label style="display:flex;gap:6px;align-items:center;margin:0"><input type="radio" name="cfType" value="entreprise" onchange="cfType()"> Professionnel</label></div>
+    <div id="cfPro" style="display:none"><label>Numéro SIRET (ou SIREN) — tout se remplit tout seul</label><input id="cf_siret" inputmode="numeric" placeholder="14 chiffres" oninput="cfSiret()"><div class="hint" id="cfSiretMsg"></div>
+      <div class="row"><div class="grow"><label>Raison sociale</label><input id="cf_rs"></div><div class="grow"><label>SIREN</label><input id="cf_siren" inputmode="numeric"></div></div></div>
+    <div class="row"><div class="grow"><label>Prénom</label><input id="cf_prenom"></div><div class="grow"><label>Nom</label><input id="cf_nom"></div></div>
+    <div class="row"><div class="grow"><label>E-mail</label><input id="cf_email" type="email"></div><div class="grow"><label>Téléphone</label><input id="cf_tel" inputmode="tel"></div></div>
+    <label>Adresse</label><input id="cf_adr">
+    <div class="row"><div class="grow"><label>Code postal</label><input id="cf_cp" inputmode="numeric" maxlength="5"></div><div class="grow"><label>Ville</label><input id="cf_ville"></div></div>
+    <div class="row"><div class="grow"><label>Montant (€)</label><input id="cf_montant" inputmode="decimal" placeholder="ex. 180"></div><div class="grow"><label>Date du don</label><input id="cf_date" type="date" value="${today}" max="${today}"></div>
+      <div class="grow"><label>Mode de versement</label><select id="cf_mode">${CF.modes.map(m => `<option>${esc(m)}</option>`).join('')}</select></div></div>
+    <label>Affectation</label><select id="cf_aff">${(CF.affs.length ? CF.affs : ['Là où le besoin est le plus grand']).map(a => `<option>${esc(a)}</option>`).join('')}</select>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="cf_env" type="checkbox" checked style="width:auto"> Envoyer le reçu par e-mail au donateur</label>
+    <div class="row" style="margin-top:12px"><span class="grow hint" id="cfMsg"></span><button class="btn pri" id="cfGo" onclick="cerfaCreate()">Générer le reçu (PDF)</button></div></div>`;
+  $('#cerfaNew').scrollIntoView({ behavior: 'smooth' });
+}
+function cfType() { const pro = document.querySelector('input[name=cfType]:checked').value === 'entreprise'; $('#cfPro').style.display = pro ? '' : 'none'; }
+let cfSeq = 0;
+async function cfSiret() {
+  const q = $('#cf_siret').value.replace(/\s/g, ''), m = $('#cfSiretMsg'), n = ++cfSeq; m.textContent = '';
+  if (!/^(\d{9}|\d{14})$/.test(q)) return;
+  m.textContent = 'Recherche…';
+  try { const j = await api('GET', '/cerfa/siret?q=' + q); if (n !== cfSeq) return; $('#cf_rs').value = j.nom || ''; $('#cf_siren').value = j.siren || ''; if (j.adresse) $('#cf_adr').value = j.adresse; if (j.cp) $('#cf_cp').value = j.cp; if (j.ville) $('#cf_ville').value = j.ville; m.textContent = '✓ ' + (j.nom || '') + ' — vérifiez et modifiez si besoin.'; }
+  catch (e) { if (n === cfSeq) m.textContent = e.message + ' — remplissez à la main.'; }
+}
+async function cerfaCreate() {
+  const pro = document.querySelector('input[name=cfType]:checked').value === 'entreprise', v = id => ($('#' + id).value || '').trim();
+  const b = { type: pro ? 'entreprise' : 'particulier', prenom: v('cf_prenom'), nom: v('cf_nom'), raisonSociale: v('cf_rs'), siren: v('cf_siren'), email: v('cf_email'), tel: v('cf_tel'), adresse: v('cf_adr'), cp: v('cf_cp'), ville: v('cf_ville'), montant: v('cf_montant'), dateDon: v('cf_date'), mode: v('cf_mode'), affectation: v('cf_aff'), envoyerEmail: $('#cf_env').checked };
+  $('#cfGo').disabled = true; $('#cfMsg').textContent = 'Fabrication du reçu… (quelques secondes)';
+  try {
+    const r = await api('POST', '/cerfa', b);
+    toast('Reçu ' + r.numero + ' créé' + (r.email && r.email.sent ? ' et envoyé par e-mail' : ''));
+    window.open('/api/cerfa/pdf?f=' + encodeURIComponent(r.file), '_blank');
+    $('#cerfaNew').innerHTML = ''; await cerfaInit();
+  } catch (e) { $('#cfMsg').textContent = e.message; toast(e.message, true); }
+  finally { const g = $('#cfGo'); if (g) g.disabled = false; }
+}

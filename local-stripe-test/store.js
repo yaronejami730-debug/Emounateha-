@@ -25,7 +25,7 @@ module.exports = function createStore({ DATA, RECUS }) {
       await c.query('begin'); await c.query("set local lock_timeout = '25s'"); await c.query('select pg_advisory_xact_lock($1)', [LOCK]);
       const r = await c.query("select value from don_kv where key = 'data.json'");
       if (r.rows[0]) { base = r.rows[0].value; fs.writeFileSync(DATA, base, { mode: 0o600 }); } else { try { fs.unlinkSync(DATA); } catch (e) {} }
-      const m = p.match(/^\/recus\/([^/?]+)$/);
+      const m = p.match(/^\/recus\/([^/?]+)$/) || (p === '/api/admin/pdf' && req.query && req.query.f ? [0, encodeURIComponent(String(req.query.f))] : null);
       if (m) { const f = path.basename(decodeURIComponent(m[1])), rr = await c.query('select value from don_kv where key = $1', ['recus/' + f]); if (rr.rows[0]) fs.writeFileSync(path.join(RECUS, f), rr.rows[0].value, { mode: 0o600 }); }
     } catch (e) {
       console.error('[store] lecture impossible', e.message); try { if (c) { await c.query('rollback'); c.release(); } } catch (x) {}
