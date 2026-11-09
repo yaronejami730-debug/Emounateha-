@@ -55,7 +55,12 @@ function fetesConfig() {
   try { const m = fs.statSync(FETES_FILE).mtimeMs; if (m !== fetesCache.m) fetesCache = { m, list: JSON.parse(fs.readFileSync(FETES_FILE, 'utf8')).fetes.map(f => ({ ...f, re: new RegExp(f.match) })) }; } catch (e) { console.error('[fetes] fichier illisible, ancienne version conservée :', e.message); }
   return fetesCache.list;
 }
-const COLIS_CHABBAT = { label: 'Colis de Chabbat', kind: 'base', montant: 80 };   // toute l'année. Le colis de fête (130 €) n'existe QUE sous la forme d'une carte de fête ouverte (Hanouka, Pourim…)
+const COLIS_CHABBAT = { label: 'Colis de Chabbat', kind: 'base', montant: 80 };
+const ACTIONS_FILE = path.join(__dirname, 'actions.config.json'); let actionsCache = { m: 0, map: {} };
+function actionsConfig() {   // présentation des actions et du colis de Chabbat (photo, texte, choix), modifiable à la main
+  try { const m = fs.statSync(ACTIONS_FILE).mtimeMs; if (m !== actionsCache.m) actionsCache = { m, map: JSON.parse(fs.readFileSync(ACTIONS_FILE, 'utf8')).actions || {} }; } catch (e) {}
+  return actionsCache.map;
+}   // toute l'année. Le colis de fête (130 €) n'existe QUE sous la forme d'une carte de fête ouverte (Hanouka, Pourim…)
 const AFFECT_BASE = ['Là où le besoin est le plus grand', 'Colis de Chabbat', "Un toit sur la tête (nuits d'hôtel)", 'Réinsertion sociale', "L'aide à la scolarité", "L'aide à l'éducation", 'Soutien moral et financier', 'Vêtements et soins'];
 const AFFECT_ANCIEN = ['Colis de Chabbat et de fêtes', 'Colis alimentaires', 'Colis de fête'];   // anciens reçus et anciens liens : toujours acceptés
 const AFFECT_DEFAUT = AFFECT_BASE[0];
@@ -73,15 +78,16 @@ async function affectations(now = new Date()) {
     if (h && h.jours <= f.avant) fetes.push({ label: f.label, kind: 'fete', titre: f.titre || f.label, date: h.date, jours: h.jours, actions: f.actions || [], defaut: f.defaut || [], image: f.image || '', intro: f.intro || '', apropos: f.apropos || [] });
   }
   fetes.sort((a, b) => a.jours - b.jours);
-  const base = AFFECT_BASE.map(l => l === COLIS_CHABBAT.label ? COLIS_CHABBAT : { label: l, kind: 'base' });
+  const AC = actionsConfig();
+  const base = AFFECT_BASE.map(l => { const o = l === COLIS_CHABBAT.label ? { ...COLIS_CHABBAT } : { label: l, kind: 'base' }, c = AC[l]; return c ? { ...o, titre: c.titre || l, image: c.image || '', intro: c.intro || '', apropos: c.apropos || [], actions: c.actions || [], defaut: c.defaut || [] } : o; });
   return [...fetes, ...base];
 }
 // don « fête » : plusieurs actions cumulables + don libre. Le total est TOUJOURS recalculé ici (jamais pris tel quel du navigateur).
 async function lignesFete(b) {
   if (b.lignes !== undefined && !Array.isArray(b.lignes)) throw new Error('Choix invalide');
   if (!Array.isArray(b.lignes) && !(Number(b.libre) > 0)) return null;
-  const f = (await affectations()).find(a => a.kind === 'fete' && a.label === b.affectation);
-  if (!f) throw new Error("Cette fête n'est pas ouverte aux dons en ce moment.");
+  const f = (await affectations()).find(a => a.label === b.affectation && Array.isArray(a.actions) && a.actions.length);
+  if (!f) throw new Error("Cette action n'est pas ouverte aux dons en ce moment.");
   const eur = v => { const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) ? Math.round(n * 100) : NaN; };
   const lignes = [], vu = new Set();
   for (const l of (Array.isArray(b.lignes) ? b.lignes : []).slice(0, 12)) {
@@ -92,7 +98,7 @@ async function lignesFete(b) {
   if (b.libre !== undefined && b.libre !== '' && Number(String(b.libre).replace(',', '.')) !== 0) { const c = eur(b.libre); if (!(c >= 100 && c <= 10000000)) throw new Error('Don libre invalide (de 1 € à 100 000 €)'); lignes.push({ id: 'libre', label: 'Don libre', montant: c }); }
   if (!lignes.length) throw new Error('Choisissez au moins une action.');
   const total = lignes.reduce((t, l) => t + l.montant, 0); if (total > 10000000) throw new Error('Montant invalide (de 1 € à 100 000 €)');
-  return { lignes, total, affectation: (f.titre + ' : ' + lignes.map(l => l.label).join(', ')).slice(0, 78) };
+  return { lignes, total, affectation: (f.kind === 'fete' ? f.titre + ' : ' + lignes.map(l => l.label).join(', ') : f.label).slice(0, 78) };
 }
 async function affectationsOk() { const l = await affectations(); return new Set([...l.map(a => a.label), ...AFFECT_ANCIEN]); }
 const affectation = (b, ok) => (ok.has(b.affectation) ? b.affectation : AFFECT_DEFAUT);

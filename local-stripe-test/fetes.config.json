@@ -23,6 +23,12 @@
           "court": "Soutien aux familles",
           "desc": "Aide au choix de l'association."
         }
+      ],
+      "image": "/fetes/roch-hachana.jpg",
+      "intro": "À l'approche de Roch Hachana, aidez-nous à offrir à chaque famille un colis de fête pour commencer la nouvelle année dans la joie et la dignité.",
+      "apropos": [
+        "Roch Hachana, le Nouvel An juif, ouvre les dix jours de Techouva. On entend le chofar et l'on se souhaite une année bonne et douce.",
+        "Au repas de fête, on trempe la pomme dans le miel, on mange la grenade et d'autres « simanim », signes de bénédiction pour l'année qui commence."
       ]
     },
     {
@@ -47,6 +53,12 @@
           "desc": "Un colis pour une famille.",
           "montant": 130
         }
+      ],
+      "image": "/tuiles/step-don.png",
+      "intro": "À l'approche de Yom Kippour, accomplissez la coutume des Kapparot en faisant un don : il est remis aux familles dans le besoin.",
+      "apropos": [
+        "La veille de Yom Kippour, la coutume des Kapparot se fait aujourd'hui souvent avec de l'argent, donné ensuite à la tsédaka.",
+        "Yom Kippour, le jour du Grand Pardon, est consacré au jeûne, à la prière et au retour vers Hachem."
       ]
     },
     {
@@ -71,6 +83,12 @@
           "court": "Soutien aux familles",
           "desc": "Aide au choix de l'association."
         }
+      ],
+      "image": "/fetes/simhat-torah.jpg",
+      "intro": "Pour Souccot et Simhat Torah, offrez un colis de fête aux familles, avec de quoi faire plaisir aussi aux enfants.",
+      "apropos": [
+        "Souccot rappelle les cabanes du désert : pendant sept jours, on prend ses repas dans la soucca et l'on agite les quatre espèces.",
+        "La fête se termine par Chemini Atséret et Simhat Torah, où l'on danse avec les rouleaux de la Torah."
       ]
     },
     {
@@ -139,6 +157,12 @@
           "desc": "Un colis de fête pour une famille.",
           "montant": 130
         }
+      ],
+      "image": "/fetes/pourim.jpg",
+      "intro": "À Pourim, la fête du partage, participez aux dons aux pauvres, aux colis de nourriture et aux colis de fête pour les familles.",
+      "apropos": [
+        "Pourim célèbre le miracle de la reine Esther : le peuple juif fut sauvé du décret d'Haman.",
+        "On lit la Méguila, on offre des michloah manot à ses amis, on donne des matanot laévionim aux pauvres et l'on partage un repas de fête."
       ]
     },
     {
@@ -169,6 +193,12 @@
           "desc": "Un colis de Pessah pour une famille.",
           "montant": 130
         }
+      ],
+      "image": "/fetes/pessah.jpg",
+      "intro": "Avant Pessa'h, aidez chaque famille à fêter la sortie d'Égypte : ma'hot hitim, matsot et colis de fête.",
+      "apropos": [
+        "Pessa'h, la fête de la liberté, commémore la sortie d'Égypte. Pendant huit jours, on ne mange pas de 'hamets.",
+        "Le Séder, avec les matsot et le récit de la Haggada, réunit les familles autour de la transmission."
       ]
     },
     {
@@ -186,6 +216,11 @@
           "court": "Fête de Lag ba'Omer",
           "desc": "Aide au choix de l'association."
         }
+      ],
+      "image": "/tuiles/step-don.png",
+      "intro": "Pour Lag ba'Omer, participez à la fête et aux activités organisées pour les enfants et les familles.",
+      "apropos": [
+        "Lag ba'Omer, le 33e jour de l'Omer, marque la hilloula de Rabbi Chimon bar Yo'haï : feux de joie, défilés et fêtes pour les enfants."
       ]
     },
     {
@@ -210,6 +245,11 @@
           "court": "Soutien aux familles",
           "desc": "Aide au choix de l'association."
         }
+      ],
+      "image": "/tuiles/step-don.png",
+      "intro": "Pour Chavou'ot, offrez un colis de fête aux familles et soutenez nos actions.",
+      "apropos": [
+        "Chavou'ot célèbre le don de la Torah au mont Sinaï. On lit les Dix Commandements et l'on mange des plats lactés."
       ]
     }
   ]

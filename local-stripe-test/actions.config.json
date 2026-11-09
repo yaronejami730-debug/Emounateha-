@@ -1,0 +1,121 @@
+{
+  "_aide": "Présentation des actions sur la page de don (photo, texte, choix). Les montants des actions sont libres, sauf 'montant' (prix unitaire, ex. colis).",
+  "actions": {
+    "Colis de Chabbat": {
+      "titre": "Colis de Chabbat",
+      "image": "/fetes/chabbat.jpg",
+      "intro": "Chaque semaine, nous préparons des colis pour que des familles aient de quoi célébrer Chabbat dignement : poulet, viande hachée, hallot, vin pour le Kiddouch…",
+      "apropos": [
+        "Chabbat est le cœur de la semaine juive : un jour de repos, de prière et de repas en famille, sanctifié par le Kiddouch sur le vin et les deux hallot."
+      ],
+      "actions": [
+        {
+          "id": "colis",
+          "label": "Je participe à un colis de Chabbat",
+          "court": "Colis de Chabbat",
+          "desc": "Un colis livré directement à une famille.",
+          "montant": 80
+        }
+      ],
+      "defaut": [
+        "colis"
+      ]
+    },
+    "Un toit sur la tête (nuits d'hôtel)": {
+      "titre": "Un toit sur la tête",
+      "image": "/tuiles/act-toit.png",
+      "intro": "Mettre à l'abri ceux qui n'ont plus de logement : des nuits d'hôtel en urgence et un accompagnement pour retrouver un toit.",
+      "actions": [
+        {
+          "id": "toit",
+          "label": "J'offre des nuits d'hôtel",
+          "court": "Nuits d'hôtel",
+          "desc": "Une mise à l'abri immédiate pour une personne ou une famille."
+        }
+      ],
+      "defaut": [
+        "toit"
+      ]
+    },
+    "Réinsertion sociale": {
+      "titre": "Réinsertion sociale",
+      "image": "/tuiles/act-reinsertion.png",
+      "intro": "Accompagner chacun vers l'autonomie : démarches, emploi, confiance retrouvée.",
+      "actions": [
+        {
+          "id": "reinsertion",
+          "label": "Je soutiens la réinsertion sociale",
+          "court": "Réinsertion sociale",
+          "desc": "Un accompagnement concret, du premier repas jusqu'au retour à l'autonomie."
+        }
+      ],
+      "defaut": [
+        "reinsertion"
+      ]
+    },
+    "L'aide à la scolarité": {
+      "titre": "L'aide à la scolarité",
+      "image": "/tuiles/torah.png",
+      "intro": "Aider les enfants des familles en difficulté à suivre leur scolarité dans de bonnes conditions.",
+      "actions": [
+        {
+          "id": "scolarite",
+          "label": "Je soutiens l'aide à la scolarité",
+          "court": "Aide à la scolarité",
+          "desc": "Pour que chaque enfant ait de quoi étudier."
+        }
+      ],
+      "defaut": [
+        "scolarite"
+      ]
+    },
+    "L'aide à l'éducation": {
+      "titre": "L'aide à l'éducation",
+      "image": "/tuiles/torah.png",
+      "intro": "Transmettre et éduquer : soutenir l'éducation des enfants et des jeunes.",
+      "actions": [
+        {
+          "id": "education",
+          "label": "Je soutiens l'aide à l'éducation",
+          "court": "Aide à l'éducation",
+          "desc": "Pour l'éducation et la transmission aux enfants."
+        }
+      ],
+      "defaut": [
+        "education"
+      ]
+    },
+    "Soutien moral et financier": {
+      "titre": "Soutien moral et financier",
+      "image": "/tuiles/act-soutien.png",
+      "intro": "Une écoute bienveillante et une aide concrète quand la vie devient trop lourde.",
+      "actions": [
+        {
+          "id": "soutien",
+          "label": "Je soutiens les familles en difficulté",
+          "court": "Soutien moral et financier",
+          "desc": "Écoute, accompagnement et aide financière."
+        }
+      ],
+      "defaut": [
+        "soutien"
+      ]
+    },
+    "Vêtements et soins": {
+      "titre": "Vêtements & soins",
+      "image": "/tuiles/act-vetements.png",
+      "intro": "Habiller et prendre soin des plus démunis, avec respect et chaleur.",
+      "actions": [
+        {
+          "id": "vetements",
+          "label": "Je participe aux vêtements et aux soins",
+          "court": "Vêtements et soins",
+          "desc": "Vêtements, produits d'hygiène et soins."
+        }
+      ],
+      "defaut": [
+        "vetements"
+      ]
+    }
+  }
+}

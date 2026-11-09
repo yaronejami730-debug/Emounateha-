@@ -811,7 +811,7 @@ body{overflow-x:hidden}
 .fete-hero:empty{display:none}
 .fete-hero{background:linear-gradient(180deg,#fffaf0,#fff);border:1.5px solid #ece3c6;border-radius:18px;padding:14px;margin:4px 0 6px}
 .fh-top{display:flex;gap:14px;align-items:center}
-.fh-top img{width:96px;height:96px;object-fit:cover;border-radius:14px;flex:none;box-shadow:0 4px 12px rgba(20,60,66,.15)}
+.fh-top img{width:96px;height:96px;object-fit:cover;background:#fff;border-radius:14px;flex:none;box-shadow:0 4px 12px rgba(20,60,66,.15)}
 .fh-k{display:inline-block;background:var(--teal);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.4px;padding:3px 10px;border-radius:99px;text-transform:uppercase}
 .fh-t b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:28px;color:var(--teal);margin-top:4px;line-height:1.1}
 .fh-p{margin:12px 0 4px;font-size:14.5px;line-height:1.55;color:#33464a}
@@ -835,6 +835,8 @@ body{overflow-x:hidden}
 
 .dn-saved{margin:6px 2px 0;font-size:12.5px;color:#6a7f83}
 .dn-saved .dn-link{font-size:12.5px}
+
+.fh-top img[src$=".png"]{object-fit:contain;padding:6px;background:#fffaf0}
 </style>
 
 <section id="dn"><div class="dn-wrap">
@@ -1101,7 +1103,7 @@ function renderActs(it) {
   ACTS = {}; $('libre').value = '';
   $('actLab').textContent = 'Comment souhaitez-vous participer ?';
   const hero = $('feteHero');
-  if (hero) hero.innerHTML = (it.image || it.intro) ? ('<div class="fh-top">' + (it.image ? '<img src="' + esc(it.image) + '" alt="">' : '') + '<div class="fh-t"><span class="fh-k">' + esc(joursTxt(it.jours)) + '</span><b>' + esc(it.titre || it.label) + '</b></div></div>' +
+  if (hero) hero.innerHTML = (it.image || it.intro) ? ('<div class="fh-top">' + (it.image ? '<img src="' + esc(it.image) + '" alt="">' : '') + '<div class="fh-t"><span class="fh-k">' + esc(it.jours != null ? joursTxt(it.jours) : (/chabbat/i.test(it.label) ? 'Chaque semaine' : 'Nos actions')) + '</span><b>' + esc(it.titre || it.label) + '</b></div></div>' +
     (it.intro ? '<p class="fh-p">' + esc(it.intro) + '</p>' : '') +
     (it.apropos && it.apropos.length ? '<details class="fh-d"><summary>Qu\'est-ce que ' + esc(it.titre || it.label) + ' ?</summary>' + it.apropos.map(x => '<p>' + esc(x) + '</p>').join('') + '</details>' : '')) : '';
   $('acts').innerHTML = it.actions.map(a => {
@@ -1124,7 +1126,7 @@ function applyAff(suggest) {
   const r = document.querySelector('input[name=affr]:checked'); if (!r) return; const it = AFFITEMS[r.value] || { label: r.value };
   { const all = [...document.querySelectorAll('input[name=affr]')], sel = $('affSel'); if (sel) sel.value = String(all.indexOf(r)); }
   $('aff').value = it.label;
-  const fete = it.kind === 'fete' && it.actions && it.actions.length && mode !== 'sans';
+  const fete = it.actions && it.actions.length && mode !== 'sans';   // fête, colis de Chabbat ou action : même présentation (photo, texte, choix)
   $('actBox').hidden = !fete; $('amtBox').hidden = !!fete; $('gFreq').style.display = fete ? 'none' : '';
   if (fete) { if ($('actBox').dataset.for !== it.label || suggest) { $('actBox').dataset.for = it.label; renderActs(it); } document.querySelector('input[name=freq][value=ponctuel]').checked = true; $('freqHint').style.display = 'none'; }
   else { $('actBox').dataset.for = ''; if (suggest && it.montant) { $('montant').value = String(it.montant); mark(); } }
