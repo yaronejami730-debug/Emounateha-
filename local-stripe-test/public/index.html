@@ -485,11 +485,20 @@ body{overflow-x:hidden}
 .dn-freq span{display:block;text-align:center;padding:10px 8px;border-radius:99px;font-weight:700;font-size:14.5px;color:var(--teal);transition:.2s}
 .dn-freq input:checked+span{background:#fff;box-shadow:0 3px 10px rgba(20,60,66,.18)}
 .dn-sub{font-size:12.5px;color:#51666a;margin:8px 4px 0}
-.dn-dur{margin:10px 0 0;display:grid;gap:8px}
-.dn-dur label{display:flex;align-items:center;gap:10px;margin:0;padding:11px 14px;background:#f6faf9;border:1px solid #dbe8e8;border-radius:12px;font-size:14.5px;font-weight:600;color:#14272a;cursor:pointer}
-.dn-dur input[type=radio]{accent-color:var(--teal);width:18px;height:18px;margin:0;flex:none}
-.dn-dur small{font-weight:400;color:#6b7d80}
-.dn-dur input[type=date]{width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #cfdcdc;border-radius:12px;font:inherit;font-size:16px;background:#fff}
+.dn-dur{margin:12px 0 18px;display:grid;gap:10px}
+.dn-dur label{position:relative;display:block;margin:0;cursor:pointer}
+.dn-dur label input[type=radio]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.dn-dur label>span{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border:1.5px solid #cfdcdc;border-radius:14px;font-size:15.5px;font-weight:700;color:#24505a;line-height:1.25;transition:.15s}
+.dn-dur label>span::before{content:"";flex:none;width:22px;height:22px;border-radius:50%;border:2px solid #9fb6b8;background:#fff;box-sizing:border-box;transition:.15s}
+.dn-dur label i{font-style:normal}
+.dn-dur label small{display:block;font-weight:500;font-size:12.5px;color:#6b7d80;margin-top:2px}
+.dn-dur label input:checked+span{border-color:var(--teal);background:#eef6f6;box-shadow:0 3px 12px rgba(31,106,114,.16)}
+.dn-dur label input:checked+span::before{border-color:var(--teal);background:var(--teal);box-shadow:inset 0 0 0 4px #fff}
+.dn-dur label input:focus-visible+span{outline:3px solid rgba(31,106,114,.35);outline-offset:2px}
+#dn .dn-dur input[type=date]{display:block;width:100%;box-sizing:border-box;height:54px;margin:4px 0 0;padding:0 16px;border:1.5px solid #cfdcdc;border-radius:14px;font:inherit;font-size:16px;color:#14272a;background:#fff;-webkit-appearance:none;appearance:none}
+.dn-dur4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dn-dur4 label>span{padding:13px 14px;font-size:15px}
+.dn-dur .dn-datehint{margin:2px 4px 0;font-size:12.5px;color:#6b7d80}
 /* affectation : tuiles à toucher (2 colonnes), carte de fête en grand */
 .dn-chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dn-chip{margin:0!important;cursor:pointer;display:block!important;position:relative}
@@ -921,9 +930,12 @@ body{overflow-x:hidden}
         <div class="dn-freq"><label><input type="radio" name="freq" value="ponctuel" checked><span>Don ponctuel</span></label><label><input type="radio" name="freq" value="mensuel"><span>Mensuel</span></label></div>
         <p class="dn-sub" id="freqHint" style="display:none">Prélèvement chaque mois. Un reçu fiscal est établi pour chaque prélèvement.</p>
         <div id="durBox" class="dn-dur" style="display:none">
-          <label><input type="radio" name="duree" value="infini" checked><span>Sans limite de durée <small>(jusqu'à ce que vous l'arrêtiez)</small></span></label>
-          <label><input type="radio" name="duree" value="date"><span>Jusqu'à une date</span></label>
-          <input type="date" id="finDate" aria-label="Date du dernier prélèvement" style="display:none">
+          <label><input type="radio" name="duree" value="infini" checked><span><i>Sans limite de durée<small>Jusqu'à ce que vous l'arrêtiez</small></i></span></label>
+          <div class="dn-dur4" role="radiogroup" aria-label="Durée du don mensuel">
+            <label><input type="radio" name="duree" value="12"><span><i>12 mois</i></span></label><label><input type="radio" name="duree" value="24"><span><i>24 mois</i></span></label>
+            <label><input type="radio" name="duree" value="36"><span><i>36 mois</i></span></label><label><input type="radio" name="duree" value="48"><span><i>48 mois</i></span></label>
+          </div>
+          <p class="dn-datehint" id="durHint" style="display:none"></p>
         </div>
       </div>
       <label class="ad-box ad-sel" for="affSel"><span class="ad-k">Pour quoi donnez-vous ?</span><select id="affSel" aria-label="Affectation du don"></select></label>
@@ -1278,8 +1290,7 @@ function setMode(m) {
   upSum(); goPanel(1);
 }
 document.querySelectorAll('input[name=type]').forEach(r => r.onchange = () => { setType(isEnt()); updHint(); upSum(); });
-const upDur = () => { $('durBox').style.display = isMen() ? 'grid' : 'none'; const d = document.querySelector('input[name=duree]:checked').value === 'date'; $('finDate').style.display = d && isMen() ? 'block' : 'none';
-  const t = new Date(Date.now() + 33 * 86400000); $('finDate').min = t.toISOString().slice(0, 10); };
+const upDur = () => { $('durBox').style.display = isMen() ? 'grid' : 'none'; const n = +document.querySelector('input[name=duree]:checked').value, h = $('durHint'); h.style.display = n && isMen() ? 'block' : 'none'; h.textContent = n ? n + ' prélèvements, puis le don s\'arrête automatiquement.' : ''; };
 document.querySelectorAll('input[name=duree]').forEach(r => r.onchange = upDur);
 document.querySelectorAll('input[name=freq]').forEach(r => r.onchange = () => { $('freqHint').style.display = isMen() ? 'block' : 'none'; upDur(); upSum(); });
 $('amts').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('montant').value = b.dataset.v; mark(); upSum(); };
@@ -1426,7 +1437,7 @@ function body() {
   return { amb: AMB, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
     adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value, montant: $('montant').value,
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
-    frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, finDate: $('finDate').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked),
+    frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked),
     ...(!$('actBox').hidden ? { lignes: Object.entries(ACTS).map(([id, m]) => ({ id, montant: m })), libre: $('libre').value } : {}) };
 }
 async function post(url, data) {

@@ -324,7 +324,12 @@ app.post('/api/intent', async (req, res) => {
       if (prev) amb = prev.ambassadeur;
     }
     let fin = '';                                            // don mensuel « jusqu'à une date » (vide = sans limite de durée)
-    if (mensuel && req.body.duree === 'date') {
+    const mois = mensuel ? parseInt(req.body.duree, 10) : 0;   // durée choisie : 12, 24, 36 ou 48 mois (N prélèvements) ; sinon sans limite
+    if (mois) {
+      if (![12, 24, 36, 48].includes(mois)) throw new Error('Durée du don mensuel invalide.');
+      const f = new Date(Date.now() + 3600000); f.setUTCMonth(f.getUTCMonth() + mois); f.setUTCDate(f.getUTCDate() - 1);   // le (N+1)e prélèvement tombe un jour après : exactement N prélèvements
+      fin = f.toISOString().slice(0, 10);
+    } else if (mensuel && req.body.duree === 'date') {
       fin = String(req.body.finDate || '');
       const t = /^\d{4}-\d{2}-\d{2}$/.test(fin) ? Date.parse(fin + 'T23:59:59Z') : NaN, now = Date.now();
       if (isNaN(t) || t < now + 32 * 86400000) throw new Error('Choisissez une date de fin au moins un mois après aujourd\'hui.');
