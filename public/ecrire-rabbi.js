@@ -1,4 +1,4 @@
-/* « Écrire au Rabbi » : bouton sous la Parole du Rabbi -> fenêtre avec un formulaire ; la lettre est envoyée par email (Brevo) à Ohel. */
+/* « Écrire au Rabbi » : bouton sous la Parole du Rabbi -> fenêtre avec un formulaire ; la lettre est envoyée par email (Brevo) à l’Ohel du Rabbi. */
 (function(){
 function mount(){
   var w=document.querySelector('.parole .wrap');if(!w||document.getElementById('ecrirerabbi'))return;
@@ -42,7 +42,7 @@ function mount(){
 function open(){
   if(document.getElementById('erov'))return;
   var o=document.createElement('div');o.id='erov';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Écrire une lettre au Rabbi');
-  o.innerHTML='<div id="erc"><div class="hd"><button class="x" type="button" aria-label="Fermer"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button><h3>Écrire une lettre au Rabbi</h3><p>Confiez votre demande par écrit&nbsp;: nous la transmettons au Ohel.</p></div>'+
+  o.innerHTML='<div id="erc"><div class="hd"><button class="x" type="button" aria-label="Fermer"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button><h3>Écrire une lettre au Rabbi</h3><p>Confiez votre demande par écrit&nbsp;: nous la transmettons au Rabbi.</p></div>'+
   '<form novalidate><p class="all">Tous les champs sont obligatoires.</p><div class="g">'+
   '<div class="f1"><label for="er-n">Nom et prénom <i>*</i></label><input id="er-n" name="name" type="text" autocomplete="name" required></div>'+
   '<div class="two"><div><label for="er-h">Votre prénom hébraïque <i>*</i></label><input id="er-h" name="heb" type="text" required></div>'+
@@ -52,10 +52,10 @@ function open(){
   '<div><label for="er-p">Téléphone <i>*</i></label><input id="er-p" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+33…" required></div></div>'+
   '<div class="f1"><label for="er-t">Votre lettre <i>*</i></label><textarea id="er-t" name="message" rows="3" required placeholder="Écrivez ici votre demande…"></textarea></div></div>'+
   '<div class="hp" aria-hidden="true"><label>Site web<input name="website" type="text" tabindex="-1" autocomplete="off"></label></div>'+
-  '<label class="ck"><input type="checkbox" name="consent"><span>J’autorise l’envoi de ma lettre au Ohel. Elle ne sera jamais conservée par Émounatéha.</span></label>'+
+  '<label class="ck"><input type="checkbox" name="consent"><span>J’autorise l’envoi de ma lettre au Rabbi. Elle ne sera jamais conservée par Émounatéha.</span></label>'+
   '<div class="err" role="alert"></div><button class="send" type="submit">Envoyer ma lettre</button>'+
-  '<p class="conf"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Lettre strictement confidentielle : elle n’est jamais enregistrée dans notre base de données et nous n’avons jamais accès à son contenu. Elle ne regarde que vous et le Ohel.</p></form>'+
-  '<div class="ok"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#16393e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.500"/></svg></div><h4>Lettre envoyée</h4><p>Votre lettre a bien été envoyée au Ohel. Un récapitulatif vient d’être envoyé à votre adresse email.</p><button class="send" type="button" id="er-close">Fermer</button></div></div>';
+  '<p class="conf"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Lettre strictement confidentielle : elle n’est jamais enregistrée dans notre base de données et nous n’avons jamais accès à son contenu. Elle ne regarde que vous et le Rabbi.</p></form>'+
+  '<div class="ok"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#16393e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.500"/></svg></div><h4>Lettre envoyée</h4><p>Votre lettre a bien été envoyée au Rabbi. Un récapitulatif vient d’être envoyé à votre adresse email.</p><button class="send" type="button" id="er-close">Fermer</button></div></div>';
   document.body.appendChild(o);document.documentElement.style.overflow='hidden';
   requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})});
   function close(){o.classList.remove('on');document.documentElement.style.overflow='';setTimeout(function(){o.remove()},350)}

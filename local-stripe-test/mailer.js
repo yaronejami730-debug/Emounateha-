@@ -48,11 +48,9 @@ function shell(s, inner, { preheader = '', testBanner = false } = {}) {
 ${testBanner ? '<tr><td align="center" style="background:#8a1f1f;color:#ffffff;font-size:11px;letter-spacing:1px;padding:7px 10px;font-weight:bold;">EMAIL DE TEST — AUCUN DON RÉEL</td></tr>' : ''}
 <tr><td align="center" background="${abase}/header2.jpg" bgcolor="#1f6a72" style="background:#1f6a72 url('${abase}/header2.jpg') center top/cover no-repeat;padding:12px 20px 18px;">
   <div lang="he" dir="rtl" style="text-align:right;color:${accent};font-size:13px;line-height:1;">בס״ד</div>
-  <img src="${esc(logo)}" alt="${esc(s.orgName)}" width="120" style="display:block;margin:0 auto;width:120px;height:auto;">
-  <div style="font-family:Inter,-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:22px;font-weight:bold;color:${accent};letter-spacing:2px;margin-top:6px;line-height:1.1;">${esc(String(s.orgName).toUpperCase())}</div>
-  <div class="he" lang="he" dir="rtl" style="font-family:'Frank Ruhl Libre','David',serif;font-weight:900;font-size:20px;color:#fff;letter-spacing:2px;margin-top:2px;">אמונתך</div>
+  <img src="${esc((s.publicUrl || abase).replace(/\/$/, ''))}/logo-complet-site.png?v=5" alt="${esc(s.orgName)} — אמונתך" width="150" style="display:block;margin:4px auto 2px;width:150px;max-width:55%;height:auto;border:0;">
   <div style="height:2px;width:70px;background:${accent};margin:8px auto 7px;"></div>
-  <div style="font-size:12px;color:#d8ecea;">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</div></td></tr>
+  <div style="font-size:11px;line-height:1.4;color:#d8ecea;">Sensibiliser · Aider · Lutter · Distribuer · Favoriser</div><div style="font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:12px;line-height:1.5;letter-spacing:.06em;text-transform:uppercase;color:#f6e094;margin-top:8px;padding:0 6px;">Accueillons Machia'h avec des actes de bonté et de bienveillance&nbsp;!</div></td></tr>
 <tr><td class="pad" ${patAttr} style="${pat}padding:32px 34px 14px;">${inner}</td></tr>
 <tr><td class="pad" ${patAttr} style="${pat}padding:22px 34px 28px;text-align:center;border-top:1px solid #eef0f3;">
   <div style="margin:0 0 12px;text-align:center;">${icons}</div>
