@@ -820,6 +820,9 @@ body{overflow-x:hidden}
 .fh-d summary::before{content:"＋ ";color:var(--gold)}
 .fh-d[open] summary::before{content:"－ "}
 .fh-d p{margin:8px 0 0;font-size:14px;line-height:1.55;color:#33464a}
+
+.dn-actq{display:flex;flex-wrap:wrap;gap:6px}
+.dn-actq button{flex:0 0 auto}
 </style>
 
 <section id="dn"><div class="dn-wrap">
@@ -1092,7 +1095,7 @@ function renderActs(it) {
     const on = (it.defaut || []).includes(a.id); if (on) ACTS[a.id] = a.montant ? String(a.montant) : '';
     return '<div class="dn-act' + (on ? ' on' : '') + '" data-id="' + esc(a.id) + '"><label class="dn-actrow"><input type="checkbox"' + (on ? ' checked' : '') + '><span class="bx"></span><span class="tx"><b>' + esc(a.label) + '</b>' + (a.desc ? '<small>' + esc(a.desc) + '</small>' : '') + '</span></label>' +
       '<div class="dn-actamt"' + (on ? '' : ' hidden') + '><div class="dn-other"><input inputmode="decimal" placeholder="Montant libre" aria-label="Montant : ' + esc(a.court) + '" value="' + (on && a.montant ? a.montant : '') + '"><span>€</span></div><div class="dn-actq">' +
-      (a.montant ? [1, 2, 3, 5] : [10, 20, 50, 100]).map(n => { const v = a.montant ? a.montant * n : n; return '<button type="button" data-v="' + v + '">' + (a.montant ? n + ' × ' : '') + v + ' €</button>'; }).join('') + '</div></div></div>';
+      (a.montant ? [1, 2, 3, 4, 5, 6, 7] : [10, 20, 50, 100]).map(n => { const v = a.montant ? a.montant * n : n; return '<button type="button" data-v="' + v + '">' + (a.montant ? n + ' × ' : '') + v + ' €</button>'; }).join('') + '</div></div></div>';
   }).join('');
   document.querySelectorAll('#acts .dn-act').forEach(box => {
     const id = box.dataset.id, a = it.actions.find(x => x.id === id), cb = box.querySelector('input[type=checkbox]'), inp = box.querySelector('.dn-actamt input'), amt = box.querySelector('.dn-actamt');
