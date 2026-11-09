@@ -789,6 +789,8 @@ document.getElementById('y').textContent=new Date().getFullYear();
     dayIdx=base.getDay();
     const day0=new Date(base);
     const body=document.getElementById('hbody');body.classList.add('loading');
+    const tok=render.tok=(render.tok||0)+1, ck='hrows:'+ymd(day0)+':'+cities.map(c=>c[1]).join(','); // affichage immédiat du dernier tableau connu
+    try{const c=localStorage.getItem(ck);if(c){body.innerHTML=c;body.classList.remove('loading')}}catch(e){}
     const cap=fr(day0,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const isToday=ymd(day0)===ymd(new Date());
     document.getElementById('hrange').textContent=(isToday?"Aujourd'hui · ":'')+cap.charAt(0).toUpperCase()+cap.slice(1);
@@ -796,7 +798,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
     hebRange(day0,day0).then(t=>{document.getElementById('hrange2').textContent=t;document.getElementById('hcap').innerHTML='<b>'+document.getElementById('hrange').textContent+'</b>'+(t?'<small>'+t+'</small>':'')}).catch(()=>{});
     const day=new Date(a);day.setDate(a.getDate()+dayIdx);const dk=ymd(day);
     document.getElementById('hsub').textContent='Horaires du '+fr(day,{weekday:'long',day:'numeric',month:'long'});
-    const rows=await Promise.all(cities.map(async([name,id])=>{let sh=['—','—'];try{sh=await shab(id,a,b)}catch(e){}const lieu=/^c\d+$/.test(String(id))?String(id).slice(1):(await LIEUX)[id];if(lieu){try{const z=await zc(lieu,dk);const fz=await zc(lieu,weekDay(day,5)),sz=await zc(lieu,weekDay(day,6));ZD[id]={z,dk};let cin=pick(fz,/Allumage|bougies/i),cout=pick(sz,/Fin du Chabbat|Fin de (la )?f[êe]te/i);
+    const rows=await Promise.all(cities.map(async([name,id])=>{let sh=['—','—'];try{sh=await shab(id,a,b)}catch(e){}const lieu=/^c\d+$/.test(String(id))?String(id).slice(1):(await LIEUX)[id];if(lieu){try{const [z,fz,sz]=await Promise.all([zc(lieu,dk),zc(lieu,weekDay(day,5)),zc(lieu,weekDay(day,6))]);ZD[id]={z,dk};let cin=pick(fz,/Allumage|bougies/i),cout=pick(sz,/Fin du Chabbat|Fin de (la )?f[êe]te/i);
         if(!cin||!cout){ /* entrée / sortie absentes du flux : repli sur l'API Hebcal */
           let geo=/^c\d+$/.test(String(id))?await geoOf(name):id;
           if(geo){try{const h=await shab(geo,a,b);if(!cin&&h[0]&&h[0]!=='—')cin=h[0];if(!cout&&h[1]&&h[1]!=='—')cout=h[1]}catch(e){}}}
@@ -807,8 +809,10 @@ document.getElementById('y').textContent=new Date().getFullYear();
     const mine=(()=>{try{return localStorage.getItem('parcity')}catch(e){return null}})();
     rows.sort((x,y)=>(String(y[1])===mine)-(String(x[1])===mine)); // sa ville en premier
     const dayLabel=fr(day,{weekday:'long',day:'numeric',month:'long'});
+    if(tok!==render.tok)return; // un rendu plus récent a déjà pris la main
     body.innerHTML=rows.map(([n,id,v])=>'<tr data-z="'+id+'"'+(String(id)===mine?' class="me"':'')+'><td>'+n+'<span class="zch" aria-hidden="true">▾</span>'+(ABO&&ALL.some(c=>c[1]===id)?'<span class="mymail" data-id="'+id+'" data-n="'+n.replace(/"/g,'')+'" title="Recevoir les horaires de cette ville par e-mail">✉</span>':'')+(DEF.some(d=>d[1]===id)?'':'<span class="rm" title="Retirer" data-id="'+id+'">✕</span>')+'</td>'+'<td class="sect">Horaires</td>'+v.slice(0,5).map(cell).join('')+'<td class="sect sect2">Horaires de Chabbat</td>'+v.slice(5).map((x,i)=>cell(x,i+5)).join('')+'</tr><tr class="zdetrow" id="zd'+id+'"><td colspan="10">'+zdet(id,n,dayLabel)+'</td></tr>').join('');
     body.classList.remove('loading');
+    try{for(const k of Object.keys(localStorage))if(k.startsWith('hrows:')&&k!==ck)localStorage.removeItem(k);if(!rows.some(r=>r[2].every(x=>x==='—')))localStorage.setItem(ck,body.innerHTML)}catch(e){}
     body.querySelectorAll('.mymail').forEach(x=>x.onclick=async e=>{e.stopPropagation();e.preventDefault();try{const r=await fetch('/api/shabbat-city',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:ABO,city:x.dataset.id})});const j=await r.json();aboNote(r.ok?'✓ C\'est fait : vous recevrez désormais les horaires de Chabbat de <b>'+j.city+'</b> par e-mail.':(j.error||'Impossible de modifier la ville.'),r.ok)}catch(err){aboNote('Impossible de modifier la ville pour le moment.',false)}});
     body.querySelectorAll('.rm').forEach(x=>x.onclick=()=>{cities=cities.filter(c=>String(c[1])!==x.dataset.id);save();render()});
   }
