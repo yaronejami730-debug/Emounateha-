@@ -981,7 +981,7 @@ body{overflow-x:hidden}
       <div class="dn-lab" id="cardLab" style="margin-top:6px">Carte bancaire</div>
       <div id="payel"></div>
       <p class="dn-secure"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Paiement chiffré par Stripe : vos données bancaires ne passent jamais par nos serveurs.</p>
-      <p class="dn-test">Mode test : carte <b>4242 4242 4242 4242</b> · date future · CVC <b>123</b></p>
+      <p class="dn-test" id="dnTest" hidden>Mode test : carte <b>4242 4242 4242 4242</b> · date future · CVC <b>123</b></p>
     </div>
 
     <div class="dn-panel" id="p4"><div class="dn-ok2" id="res" aria-live="polite"></div></div>
@@ -1193,9 +1193,9 @@ function fillRandom() {
 }
 
 const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
-  cfg = c; buildChips(c.affectations || []);
+  cfg = c; buildChips(c.affectations || []); if (!c.live && $('dnTest')) $('dnTest').hidden = false;
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
-  if (mode === 'sans' || /[?&]test=1/.test(location.search)) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
+  if (!c.live && (mode === 'sans' || /[?&]test=1/.test(location.search))) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
   pickAff(0);
   { // ?aff=chabbat|roch-hachana|simhat-torah|hanouka|pourim|pessah|reinsertion|vetements|toit|soutien|scolarite|education : affectation choisie d'office
     const q = (new URLSearchParams(location.search).get('aff') || '').toLowerCase(), labels = [...document.querySelectorAll('input[name=affr]')].map(r => r.value);
@@ -1490,7 +1490,7 @@ function renderRes(o) {
 }
 setMode(mode);
 // mode test : ?auto=pay avance seul jusqu'à l'écran de paiement
-if (/[?&]auto=pay/.test(location.search)) cfgP.then(async () => { await wait(700); await act(); await wait(400); await act(); });
+if (/[?&]auto=pay/.test(location.search)) cfgP.then(async () => { if (cfg.live) return; await wait(700); await act(); await wait(400); await act(); });
 
 (function(){const nav=document.querySelector('.sec-nav'),b=document.getElementById('burger');
  b.addEventListener('click',()=>{const o=nav.classList.toggle('open');b.setAttribute('aria-expanded',o)});

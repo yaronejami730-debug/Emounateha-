@@ -20,7 +20,9 @@ vault.ensureKey(path.join(__dirname, '.env'));
 const ASSO = JSON.parse(fs.readFileSync(path.join(__dirname, 'asso.config.json'), 'utf8'));
 const PORT = Number(process.env.PORT || 3100);
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const PREFIX = process.env.NUM_PREFIX || 'TEST';
+const LIVE = /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY || '');   // vrais paiements
+const PREFIX = process.env.NUM_PREFIX !== undefined ? process.env.NUM_PREFIX : (LIVE ? '' : 'TEST');
+const T = LIVE ? '' : ' (TEST)';
 const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? '/tmp/don' : __dirname);           // en ligne : disque persistant (/data)
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const DATA = path.join(DATA_DIR, 'data.json');
@@ -29,7 +31,7 @@ const TEMPLATE_PATH = path.join(__dirname, 'templates', 'cerfa.html');
 fs.mkdirSync(RECUS, { recursive: true, mode: 0o700 });
 
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
-if (stripe && !/^sk_test_/.test(process.env.STRIPE_SECRET_KEY)) { console.error('Clé Stripe non TEST : arrêt par sécurité.'); process.exit(1); }
+if (stripe && LIVE && !process.env.VERCEL) { console.error('Clé Stripe LIVE sur l\'ordinateur local : arrêt par sécurité (vrais paiements seulement en ligne).'); process.exit(1); }
 
 // --- petit stockage local (numéros de reçu, dons en attente, reçus déjà générés) ---
 const load = () => {
@@ -37,7 +39,9 @@ const load = () => {
   return JSON.parse(vault.readFile(DATA).toString('utf8'));      // fichier illisible ou modifié : on s'arrête plutôt que d'écraser les données
 };
 const save = d => vault.writeFile(DATA, JSON.stringify(d));       // data.json est chiffré (AES-256-GCM)
-function nextNumero(annee) { const d = load(); d.counters[annee] = (d.counters[annee] || 0) + 1; save(d); return `${PREFIX}-${annee}-${String(d.counters[annee]).padStart(4, '0')}`; }
+function nextNumero(annee) { // vrais reçus : compteur à part, qui repart de 0001 (les reçus TEST gardent le leur)
+  const d = load(), k = PREFIX ? (PREFIX === 'TEST' ? String(annee) : PREFIX + '-' + annee) : 'reel-' + annee;
+  d.counters[k] = (d.counters[k] || 0) + 1; save(d); return `${PREFIX ? PREFIX + '-' : ''}${annee}-${String(d.counters[k]).padStart(4, '0')}`; }
 
 // --- validation ---
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -148,7 +152,7 @@ function remplir(don, numero) {
     assoForme: esc(ASSO.forme || ''), assoSiret: esc(ASSO.siret || ''), assoContact: esc(`${ASSO.email} · ${ASSO.telephone}`), assoNomMin: esc(ASSO.nom), assoEmail: esc(ASSO.email), conservation: esc(ASSO.conservation || '6 ans'),
     dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? `Don mensuel (un reçu pour chaque prélèvement) — échéance n°${don.echeance || 1}` : 'Don ponctuel',
     modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : /Apple Pay/i.test(don.mode) ? 'Carte bancaire (Apple Pay)' : /Google Pay/i.test(don.mode) ? 'Carte bancaire (Google Pay)' : 'Carte bancaire', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
-    blocSignature: sig, piedPage: esc(`Reçu cerfa généré par ${ASSO.nom}`), testDisplay: process.env.NO_TEST_BANNER ? 'display:none' : ''
+    blocSignature: sig, piedPage: esc(`Reçu cerfa généré par ${ASSO.nom}`), testDisplay: process.env.NO_TEST_BANNER || PREFIX !== 'TEST' ? 'display:none' : ''
   };
   let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
 }
@@ -177,7 +181,7 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
       spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
     if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${numero}.pdf`, content: vault.readFile(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
   }
-  const subject = `[TEST] Votre reçu fiscal ${numero} — ${ASSO.nom}`;
+  const subject = `${LIVE ? '' : '[TEST] '}Votre reçu fiscal ${numero} — ${ASSO.nom}`;
   const text = `Bonjour ${nom},\n\nMerci pour votre don à ${ASSO.nom}. Vous trouverez ci-joint votre reçu fiscal ${numero}.${aff ? `\nAffectation de votre don : ${aff}.` : ''}${mensuel ? '\nVotre don est mensuel : un reçu vous sera adressé pour chaque prélèvement.' : ''}\n\n(Message de TEST : aucun argent réel, reçu sans valeur fiscale.)\n\nCordialement,\n${ASSO.nom}\n${ASSO.telephone} · ${ASSO.email}`;
   const attachments = [{ filename: `Recu-fiscal-${numero}.pdf`, content: vault.readFile(pdfFile), contentType: 'application/pdf' }];
   const from = process.env.MAIL_FROM || `${ASSO.nom} <${ASSO.email}>`;
@@ -279,7 +283,7 @@ app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res)
 app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); res.setHeader('Referrer-Policy', 'no-referrer'); next(); });
 // simulation de date (test) : ?date=2027-02-01, seulement depuis l'ordinateur local, jamais via le tunnel
 const simDate = req => { const l = /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(req.headers.host || '') && !req.headers['cf-connecting-ip']; const d = String(req.query.date || ''); return l && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00:00') : new Date(); };
-app.get('/api/config', async (req, res) => res.json({ paypal: /(^|,)\s*paypal\b/.test(process.env.PAYMENT_METHODS || ''), publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: await affectations(simDate(req)) }));
+app.get('/api/config', async (req, res) => res.json({ live: LIVE, paypal: /(^|,)\s*paypal\b/.test(process.env.PAYMENT_METHODS || ''), publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: await affectations(simDate(req)) }));
 
 // 1) paiement : don ponctuel (PaymentIntent) ou mensuel (abonnement Stripe) sur le compte Stripe de test
 // recherche d'entreprise par SIRET / SIREN (API publique recherche-entreprises.api.gouv.fr, sans clé)
@@ -316,11 +320,11 @@ app.post('/api/intent', async (req, res) => {
     if (mensuel) {
       const cust = await stripe.customers.create({ email: don.email, name: don.nom, address: { line1: don.adresse.split(',')[0], postal_code: (don.adresse.match(/\b\d{5}\b/) || [''])[0], city: don.ville, country: 'FR' }, metadata: meta });
       const sub = await stripe.subscriptions.create({ customer: cust.id, payment_behavior: 'default_incomplete', payment_settings: { payment_method_types: ['card'], save_default_payment_method: 'on_subscription' },
-        items: [{ price_data: { currency: 'eur', unit_amount: don.montant, recurring: { interval: 'month' }, product: (await stripe.products.create({ name: `Don mensuel ${ASSO.nom} (TEST)` })).id } }],
+        items: [{ price_data: { currency: 'eur', unit_amount: don.montant, recurring: { interval: 'month' }, product: (await stripe.products.create({ name: `Don mensuel ${ASSO.nom}${T}` })).id } }],
         metadata: { ...meta, siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0' }, expand: ['latest_invoice.payment_intent'] });
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
-      const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), description: `Don ${ASSO.nom} (TEST)`, metadata: meta });
+      const pi = await stripe.paymentIntents.create({ amount: don.montant, currency: 'eur', payment_method_types: (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), description: `Don ${ASSO.nom}${T}`, metadata: meta });
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
