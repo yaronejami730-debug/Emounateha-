@@ -779,12 +779,13 @@ function cerfaList() {
       <td><a class="btn" href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">PDF</a></td></tr>`).join('')}</tbody></table></div>`;
 }
 function cerfaForm() {
+  cfT = 'particulier';
   const today = new Date().toISOString().slice(0, 10);
   $('#cerfaNew').innerHTML = `<div class="card" style="margin-bottom:16px"><div class="row" style="align-items:center"><b class="grow">Nouveau reçu manuel</b><button class="btn" onclick="$('#cerfaNew').innerHTML=''">Fermer</button></div>
-    <div class="row" style="gap:16px;margin:8px 0"><label style="display:flex;gap:6px;align-items:center;margin:0"><input type="radio" name="cfType" value="particulier" checked onchange="cfType()"> Particulier</label><label style="display:flex;gap:6px;align-items:center;margin:0"><input type="radio" name="cfType" value="entreprise" onchange="cfType()"> Professionnel</label></div>
+    <div class="cf-seg" role="group" aria-label="Type de donateur"><button type="button" class="on" data-t="particulier" onclick="cfType('particulier')">👤 Particulier</button><button type="button" data-t="entreprise" onclick="cfType('entreprise')">🏢 Professionnel</button></div>
     <div id="cfPro" style="display:none"><label>Numéro SIRET (ou SIREN) — tout se remplit tout seul</label><input id="cf_siret" inputmode="numeric" placeholder="14 chiffres" oninput="cfSiret()"><div class="hint" id="cfSiretMsg"></div>
       <div class="row"><div class="grow"><label>Raison sociale</label><input id="cf_rs"></div><div class="grow"><label>SIREN</label><input id="cf_siren" inputmode="numeric"></div></div></div>
-    <div class="row"><div class="grow"><label>Prénom</label><input id="cf_prenom"></div><div class="grow"><label>Nom</label><input id="cf_nom"></div></div>
+    <div class="row" id="cfPart"><div class="grow"><label>Prénom</label><input id="cf_prenom"></div><div class="grow"><label>Nom</label><input id="cf_nom"></div></div>
     <div class="row"><div class="grow"><label>E-mail</label><input id="cf_email" type="email"></div><div class="grow"><label>Téléphone</label><input id="cf_tel" inputmode="tel"></div></div>
     <label>Adresse</label><input id="cf_adr">
     <div class="row"><div class="grow"><label>Code postal</label><input id="cf_cp" inputmode="numeric" maxlength="5"></div><div class="grow"><label>Ville</label><input id="cf_ville"></div></div>
@@ -795,7 +796,8 @@ function cerfaForm() {
     <div class="row" style="margin-top:12px"><span class="grow hint" id="cfMsg"></span><button class="btn pri" id="cfGo" onclick="cerfaCreate()">Générer le reçu (PDF)</button></div></div>`;
   $('#cerfaNew').scrollIntoView({ behavior: 'smooth' });
 }
-function cfType() { const pro = document.querySelector('input[name=cfType]:checked').value === 'entreprise'; $('#cfPro').style.display = pro ? '' : 'none'; }
+let cfT = 'particulier';
+function cfType(t) { cfT = t; const pro = t === 'entreprise'; document.querySelectorAll('.cf-seg button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); $('#cfPro').style.display = pro ? '' : 'none'; $('#cfPart').style.display = pro ? 'none' : ''; }
 let cfSeq = 0;
 async function cfSiret() {
   const q = $('#cf_siret').value.replace(/\s/g, ''), m = $('#cfSiretMsg'), n = ++cfSeq; m.textContent = '';
@@ -805,7 +807,7 @@ async function cfSiret() {
   catch (e) { if (n === cfSeq) m.textContent = e.message + ' — remplissez à la main.'; }
 }
 async function cerfaCreate() {
-  const pro = document.querySelector('input[name=cfType]:checked').value === 'entreprise', v = id => ($('#' + id).value || '').trim();
+  const pro = cfT === 'entreprise', v = id => ($('#' + id).value || '').trim();
   const b = { type: pro ? 'entreprise' : 'particulier', prenom: v('cf_prenom'), nom: v('cf_nom'), raisonSociale: v('cf_rs'), siren: v('cf_siren'), email: v('cf_email'), tel: v('cf_tel'), adresse: v('cf_adr'), cp: v('cf_cp'), ville: v('cf_ville'), montant: v('cf_montant'), dateDon: v('cf_date'), mode: v('cf_mode'), affectation: v('cf_aff'), envoyerEmail: $('#cf_env').checked };
   $('#cfGo').disabled = true; $('#cfMsg').textContent = 'Fabrication du reçu… (quelques secondes)';
   try {

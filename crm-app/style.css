@@ -195,3 +195,8 @@ table{border-radius:16px;overflow:hidden}
   *{scrollbar-width:none;-ms-overflow-style:none}
   *::-webkit-scrollbar{display:none;width:0;height:0}
 }
+
+/* onglet CERFA : choix Particulier / Professionnel */
+.cf-seg{display:inline-flex;gap:4px;background:#eef3f3;border-radius:12px;padding:4px;margin:8px 0 6px}
+.cf-seg button{border:0;background:transparent;padding:9px 18px;border-radius:9px;font:inherit;font-weight:600;color:var(--mut);cursor:pointer}
+.cf-seg button.on{background:#fff;color:var(--brand);box-shadow:0 1px 4px rgba(0,0,0,.12)}
