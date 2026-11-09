@@ -174,3 +174,8 @@ html body .htable tr.me>td:first-child{background-image:linear-gradient(180deg,#
 /* doré métallique brillant : même dégradé que le titre (accueil), citation un peu plus grande, logo rond cerclé d'or */
 html body .hero .quote{background:none;-webkit-text-fill-color:#e4c766;color:#e4c766;text-shadow:0 0 10px rgba(255,230,150,.55),0 2px 6px rgba(0,0,0,.35);filter:none;font-size:clamp(15px,2vw,20px)}
 @media(max-width:800px){html body .hero .quote{font-size:15px;letter-spacing:.04em}}
+
+/* accueil : logo complet (rond + אמונתך + EMOUNATEHA) à la place du rond + titre HTML ; le titre reste pour le référencement */
+html body .hero img.logo-complet{width:clamp(190px,24vw,330px);height:auto;filter:brightness(1.12) saturate(1.2) drop-shadow(0 6px 18px rgba(0,0,0,.3))}
+html body .hero h1,html body .hero .he,html body .hero .rule{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);margin:0;padding:0}
+@media(max-width:800px){html body .hero img.logo-complet{width:min(62vw,240px)}}
