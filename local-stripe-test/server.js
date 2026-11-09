@@ -203,6 +203,8 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   return { sent: false, eml: (process.env.BASE_PATH || '') + '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
 }
 
+// alerte e-mail à l'administrateur à chaque don réussi (une seule fois par don : appelée juste après la création du reçu ; n'échoue jamais)
+const notifyAdmin = out => mailer.notifyAdminDon({ nom: out.nom, email: out.donorEmail, type: out.type, montant: out.montant, dateDon: out.dateDon, affectation: out.affectation, mode: out.mode, numero: out.numero, mensuel: out.mensuel, echeance: out.echeance, ambassadeur: out.ambassadeur, test: PREFIX === 'TEST' });
 async function fabriquer(don, { envoyerEmail }) {
   const annee = new Date(don.dateDon).getFullYear();
   const numero = nextNumero(annee);
@@ -275,7 +277,7 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
         const n = (await stripe.invoices.list({ subscription: sub.id, limit: 100 })).data.filter(i => i.status === 'paid').length;
         const out = await fabriquer({ type: m.type === 'entreprise' ? 'entreprise' : 'particulier', nom: cu.name, siren: m.siren || '', adresse: `${ad.line1 || ''}, ${ad.postal_code || ''} ${ad.city || ''}`, email: cu.email, montant: inv.amount_paid, mensuel: true, echeance: n,
           mode: 'Carte bancaire — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
-        out.affectation = m.affectation; out.mensuel = true; if (m.ambassadeur) out.ambassadeur = m.ambassadeur; const d2 = load(); d2.receipts[inv.id] = out; save(d2);
+        out.affectation = m.affectation; out.mensuel = true; if (m.ambassadeur) out.ambassadeur = m.ambassadeur; const d2 = load(); d2.receipts[inv.id] = out; save(d2); await notifyAdmin(out);
         console.log('[webhook] invoice.paid', inv.id, '-> reçu', out.numero, '(mensualité n°' + n + ')');
       }
     } else console.log('[webhook]', ev.type, '(non traité)');
@@ -358,6 +360,7 @@ async function receiptForPayment(id) {
     const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
     out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.amb) out.ambassadeur = p.amb; if (p.lignes) out.lignes = p.lignes;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id]; save(d2);
+    await notifyAdmin(out);
     if (p.owner && p.saveProfile) acc.saveProfileFromForm(p.owner, p.type, p.form);   // « enregistrer mes informations »
     return out;
   })().finally(() => inflight.delete(id));

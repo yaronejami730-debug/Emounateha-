@@ -99,4 +99,28 @@ async function donEmail(d) {   // { prenom, montant(centimes), dateDon, affectat
     text: `Merci pour votre don de ${amount.replace(' ', ' ')}${d.mensuel ? ' par mois' : ''} à ${s.orgName} (${date}).\n${d.affectation ? 'Affectation : ' + d.affectation + '.\n' : ''}« En pratiquant la tsédaka, nous honorons son héritage et contribuons à la construction d'un monde empreint de bienveillance, d'unité et de générosité. »\nVotre reçu fiscal ${d.numero} est joint à cet email (PDF). Conservez-le : il vous sera demandé en cas de contrôle.${d.spaceUrl ? '\nRetrouvez tous vos reçus : ' + d.spaceUrl : ''}` };
 }
 
-module.exports = { settings, isFake, send, otpEmail, donEmail };
+// ---- alerte administrateur : un don vient d'être effectué (aucune action requise) ----
+const ADMIN_EMAIL = () => process.env.ADMIN_EMAIL || 'emounateha770@gmail.com';
+async function adminDonEmail(d) {   // { nom, email, type, montant(centimes), dateDon, affectation, mode, numero, mensuel, echeance, ambassadeur, test }
+  const s = await settings(); if (!s) return null;
+  const color = '#1f6a72', accent = '#c4a24a';
+  const date = new Date(d.dateDon).toLocaleString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+  const amount = (d.montant / 100).toFixed(2).replace('.', ',').replace(',00', '') + ' €';
+  const row = (k, v, last) => `<tr><td style="padding:9px 0;${last ? '' : 'border-bottom:1px solid #e9eeee;'}font-size:12px;color:#6b7d80;width:38%;">${k}</td><td style="padding:9px 0;${last ? '' : 'border-bottom:1px solid #e9eeee;'}font-size:13.5px;color:#14272a;font-weight:600;text-align:right;">${v}</td></tr>`;
+  const inner = `<p style="margin:0 0 2px;text-align:center;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#9a7a22;font-weight:bold;">Nouveau don</p>
+  <h1 style="margin:0 0 6px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:bold;font-size:21px;line-height:1.3;color:${color};text-align:center;">Un don vient d'être effectué</h1>
+  <p class="big" style="margin:2px 0 14px;text-align:center;font-family:Inter,-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:40px;letter-spacing:-0.5px;line-height:1.05;color:${color};">${amount}${d.mensuel ? '<span style="font-size:18px;color:#6b7d80;"> / mois</span>' : ''}</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6faf9;border:1px solid #dbe8e8;border-radius:12px;margin:0 0 14px;"><tr><td style="padding:6px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    ${row('Donateur', esc(d.nom || '—'))}${row('Email', esc(d.email || '—'))}${row('Type', d.type === 'entreprise' ? 'Entreprise' : 'Particulier')}${row('Date', esc(date))}${d.affectation ? row('Affectation', esc(d.affectation)) : ''}${row('Paiement', esc(d.mode || '—'))}${d.mensuel && d.echeance ? row('Échéance', 'n°' + d.echeance) : ''}${d.ambassadeur ? row('Ambassadeur', esc(d.ambassadeur)) : ''}${row('Reçu fiscal n°', esc(d.numero || '—'), true)}
+  </table></td></tr></table>
+  <p style="margin:0 0 10px;text-align:center;font-size:13px;line-height:1.6;color:#51666a;">Le don est accepté et le reçu fiscal a été généré automatiquement.<br><b>Aucune action de votre part n'est nécessaire.</b></p>`;
+  return { subject: `${d.test ? '[TEST] ' : ''}Nouveau don de ${amount}${d.mensuel ? ' par mois' : ''}${d.nom ? ' — ' + d.nom : ''}`,
+    html: shell(s, inner, { preheader: `${d.nom || 'Un donateur'} a fait un don de ${amount}.`, testBanner: !!d.test }).replace('{{pied}}', "Notification automatique réservée à l'administrateur du site."),
+    text: `Un don vient d'être effectué : ${amount}${d.mensuel ? ' par mois' : ''}\nDonateur : ${d.nom || '—'} (${d.email || '—'})\nDate : ${date}\n${d.affectation ? 'Affectation : ' + d.affectation + '\n' : ''}Paiement : ${d.mode || '—'}\nReçu fiscal : ${d.numero || '—'}\nAucune action nécessaire.` };
+}
+async function notifyAdminDon(d) {   // ne casse jamais le flux du don
+  try { const m = await adminDonEmail(d); if (!m) return { sent: false, reason: 'Brevo non configuré' }; return await send({ to: ADMIN_EMAIL(), toName: "Administrateur", subject: m.subject, html: m.html, text: m.text }); }
+  catch (e) { console.error('[mail admin] échec :', e.message); return { sent: false, error: e.message }; }
+}
+
+module.exports = { settings, isFake, send, otpEmail, donEmail, adminDonEmail, notifyAdminDon, ADMIN_EMAIL };
