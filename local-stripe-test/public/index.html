@@ -806,6 +806,20 @@ body{overflow-x:hidden}
 
 .ad-full{display:block;height:170px;width:auto;margin:0 auto}
 @media(max-width:420px){.ad-full{height:150px}}
+
+/* présentation de la fête (façon AlloDons, aux couleurs du site) */
+.fete-hero:empty{display:none}
+.fete-hero{background:linear-gradient(180deg,#fffaf0,#fff);border:1.5px solid #ece3c6;border-radius:18px;padding:14px;margin:4px 0 6px}
+.fh-top{display:flex;gap:14px;align-items:center}
+.fh-top img{width:96px;height:96px;object-fit:cover;border-radius:14px;flex:none;box-shadow:0 4px 12px rgba(20,60,66,.15)}
+.fh-k{display:inline-block;background:var(--teal);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.4px;padding:3px 10px;border-radius:99px;text-transform:uppercase}
+.fh-t b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:28px;color:var(--teal);margin-top:4px;line-height:1.1}
+.fh-p{margin:12px 0 4px;font-size:14.5px;line-height:1.55;color:#33464a}
+.fh-d{margin-top:8px;border-top:1px solid #ece3c6;padding-top:8px}
+.fh-d summary{cursor:pointer;font-weight:700;color:#9a7a22;font-size:14px;list-style:none}
+.fh-d summary::before{content:"＋ ";color:var(--gold)}
+.fh-d[open] summary::before{content:"－ "}
+.fh-d p{margin:8px 0 0;font-size:14px;line-height:1.55;color:#33464a}
 </style>
 
 <section id="dn"><div class="dn-wrap">
@@ -845,6 +859,7 @@ body{overflow-x:hidden}
       <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don" hidden></div>
       <input type="hidden" id="aff">
       <div id="actBox" hidden>
+        <div class="fete-hero" id="feteHero"></div>
         <div class="dn-lab" id="actLab">Comment souhaitez-vous participer ?</div>
         <div id="acts"></div>
         <div class="dn-actfree"><label for="libre">Ajouter un don libre <small>facultatif</small></label><div class="dn-other"><input id="libre" inputmode="decimal" placeholder="Montant libre" aria-label="Don libre"><span>€</span></div></div>
@@ -1041,8 +1056,9 @@ const joursTxt = j => j <= 0 ? (j === 0 ? "aujourd'hui" : 'en cours') : (j === 1
 function buildChips(list) {
   list = (list || []).map(a => typeof a === 'string' ? { label: a, kind: 'base' } : a);
   AFFITEMS = {}; list.forEach(a => AFFITEMS[a.label] = a);
+  const iDef = Math.max(0, list.findIndex(a => a.kind === 'fete'));   // une fête est ouverte (jusqu'à 2 mois avant) : elle est choisie d'office
   $('chips').innerHTML = list.map((a, i) => {
-    const [main, note] = splitLab(a.label), chk = i === 0 ? ' checked' : '';
+    const [main, note] = splitLab(a.label), chk = i === iDef ? ' checked' : '';
     if (a.kind === 'fete') {
       const sub = a.montant ? 'Un colis de fête pour une famille · ' + a.montant + ' €' : 'Participez à cette occasion';
       const ico = a.montant ? '<img src="/tuiles/colis.png" alt="">' : ICONS.star;
@@ -1067,7 +1083,11 @@ function actTotal() {
 }
 function renderActs(it) {
   ACTS = {}; $('libre').value = '';
-  $('actLab').textContent = '2 · Comment souhaitez-vous participer ?';
+  $('actLab').textContent = 'Comment souhaitez-vous participer ?';
+  const hero = $('feteHero');
+  if (hero) hero.innerHTML = (it.image || it.intro) ? ('<div class="fh-top">' + (it.image ? '<img src="' + esc(it.image) + '" alt="">' : '') + '<div class="fh-t"><span class="fh-k">' + esc(joursTxt(it.jours)) + '</span><b>' + esc(it.titre || it.label) + '</b></div></div>' +
+    (it.intro ? '<p class="fh-p">' + esc(it.intro) + '</p>' : '') +
+    (it.apropos && it.apropos.length ? '<details class="fh-d"><summary>Qu\'est-ce que ' + esc(it.titre || it.label) + ' ?</summary>' + it.apropos.map(x => '<p>' + esc(x) + '</p>').join('') + '</details>' : '')) : '';
   $('acts').innerHTML = it.actions.map(a => {
     const on = (it.defaut || []).includes(a.id); if (on) ACTS[a.id] = a.montant ? String(a.montant) : '';
     return '<div class="dn-act' + (on ? ' on' : '') + '" data-id="' + esc(a.id) + '"><label class="dn-actrow"><input type="checkbox"' + (on ? ' checked' : '') + '><span class="bx"></span><span class="tx"><b>' + esc(a.label) + '</b>' + (a.desc ? '<small>' + esc(a.desc) + '</small>' : '') + '</span></label>' +
@@ -1115,7 +1135,8 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []);
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (mode === 'sans' || /[?&]test=1/.test(location.search)) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
-  pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
+  pickAff(0); if (!$('actBox').hidden) actTotal();   // fête choisie d'office : le total suit les actions cochées
+  // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
   return c;
 });

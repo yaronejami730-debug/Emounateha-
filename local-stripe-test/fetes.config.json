@@ -1,47 +1,216 @@
 {
   "_aide": "Fichier modifiable. Une fête s'ouvre « avant » jours avant sa date (« apres » jours après pour Hanouka). « match » = titre exact dans le calendrier du site. Chaque action : id (sans espace), label (phrase affichée), court (apparaît sur le reçu et dans l'espace donateur), desc (explication courte), montant (suggestion en €, facultatif). L'ordre ici = l'ordre à l'écran. « defaut » : actions cochées au départ.",
   "fetes": [
-    { "label": "Colis de Roch Hachana", "match": "^Roch Hachanah \\d{4}$", "avant": 60, "titre": "Roch Hachana", "defaut": ["colis"],
+    {
+      "label": "Colis de Roch Hachana",
+      "match": "^Roch Hachanah \\d{4}$",
+      "avant": 60,
+      "titre": "Roch Hachana",
+      "defaut": [
+        "colis"
+      ],
       "actions": [
-        { "id": "colis", "label": "Je participe à la distribution des colis alimentaires", "court": "Colis alimentaires", "desc": "Un colis de fête pour une famille.", "montant": 130 },
-        { "id": "soutien", "label": "Je soutiens les familles pour les fêtes de Tichri", "court": "Soutien aux familles", "desc": "Aide au choix de l'association." }
-      ] },
-    { "label": "Kapparot (Yom Kippour)", "match": "^Yom Kippour$", "avant": 30, "titre": "Kapparot", "defaut": ["kapparot"],
+        {
+          "id": "colis",
+          "label": "Je participe à la distribution des colis alimentaires",
+          "court": "Colis alimentaires",
+          "desc": "Un colis de fête pour une famille.",
+          "montant": 130
+        },
+        {
+          "id": "soutien",
+          "label": "Je soutiens les familles pour les fêtes de Tichri",
+          "court": "Soutien aux familles",
+          "desc": "Aide au choix de l'association."
+        }
+      ]
+    },
+    {
+      "label": "Kapparot (Yom Kippour)",
+      "match": "^Yom Kippour$",
+      "avant": 30,
+      "titre": "Kapparot",
+      "defaut": [
+        "kapparot"
+      ],
       "actions": [
-        { "id": "kapparot", "label": "Je fais mes Kapparot", "court": "Kapparot", "desc": "Votre don est remis à des familles dans le besoin." },
-        { "id": "colis", "label": "Je participe à la distribution des colis alimentaires", "court": "Colis alimentaires", "desc": "Un colis pour une famille.", "montant": 130 }
-      ] },
-    { "label": "Colis de Souccot", "match": "^Soukkot I$", "avant": 30, "titre": "Souccot", "defaut": ["colis"],
+        {
+          "id": "kapparot",
+          "label": "Je fais mes Kapparot",
+          "court": "Kapparot",
+          "desc": "Votre don est remis à des familles dans le besoin."
+        },
+        {
+          "id": "colis",
+          "label": "Je participe à la distribution des colis alimentaires",
+          "court": "Colis alimentaires",
+          "desc": "Un colis pour une famille.",
+          "montant": 130
+        }
+      ]
+    },
+    {
+      "label": "Colis de Souccot",
+      "match": "^Soukkot I$",
+      "avant": 30,
+      "titre": "Souccot",
+      "defaut": [
+        "colis"
+      ],
       "actions": [
-        { "id": "colis", "label": "Je participe à la distribution des colis alimentaires", "court": "Colis alimentaires", "desc": "Un colis de fête pour une famille.", "montant": 130 },
-        { "id": "soutien", "label": "Je soutiens les familles pour Souccot", "court": "Soutien aux familles", "desc": "Aide au choix de l'association." }
-      ] },
-    { "label": "Colis de Hanouka", "match": "^Hanoukah$", "avant": 60, "apres": 8, "titre": "Hanouka", "defaut": ["colis"],
+        {
+          "id": "colis",
+          "label": "Je participe à la distribution des colis alimentaires",
+          "court": "Colis alimentaires",
+          "desc": "Un colis de fête pour une famille.",
+          "montant": 130
+        },
+        {
+          "id": "soutien",
+          "label": "Je soutiens les familles pour Souccot",
+          "court": "Soutien aux familles",
+          "desc": "Aide au choix de l'association."
+        }
+      ]
+    },
+    {
+      "label": "Colis de Hanouka",
+      "match": "^Hanoukah$",
+      "avant": 60,
+      "apres": 8,
+      "titre": "Hanouka",
+      "defaut": [
+        "colis"
+      ],
       "actions": [
-        { "id": "lumiere", "label": "Je participe à la diffusion de la lumière de Hanouka", "court": "Diffusion de la lumière", "desc": "Une hanoukia installée sur le toit de la voiture, avec un haut-parleur." },
-        { "id": "cadeaux", "label": "Je participe aux distributions des beignets et des cadeaux de la fête", "court": "Beignets et cadeaux", "desc": "Des beignets et des cadeaux pour les enfants et les familles." },
-        { "id": "colis", "label": "Je participe à la distribution des colis alimentaires", "court": "Colis alimentaires", "desc": "Un colis de fête pour une famille.", "montant": 130 }
-      ] },
-    { "label": "Colis de Pourim", "match": "^Pourim$", "avant": 60, "titre": "Pourim", "defaut": ["colis"],
+        {
+          "id": "lumiere",
+          "label": "Je participe à la diffusion de la lumière de Hanouka",
+          "court": "Diffusion de la lumière",
+          "desc": "Une hanoukia installée sur le toit de la voiture, avec un haut-parleur."
+        },
+        {
+          "id": "cadeaux",
+          "label": "Je participe aux distributions des beignets et des cadeaux de la fête",
+          "court": "Beignets et cadeaux",
+          "desc": "Des beignets et des cadeaux pour les enfants et les familles."
+        },
+        {
+          "id": "colis",
+          "label": "Je participe à la distribution des colis alimentaires",
+          "court": "Colis alimentaires",
+          "desc": "Un colis de fête pour une famille.",
+          "montant": 130
+        }
+      ],
+      "image": "/fetes/hanouka.jpg",
+      "intro": "Chers amis, à l'approche de Hanouka, soutenez nos actions pour la fête : la lumière de Hanouka dans les rues, des beignets et des cadeaux pour les enfants, et des colis alimentaires pour les familles. Merci pour votre générosité, et joyeuses fêtes de Hanouka !",
+      "apropos": [
+        "Hanouka, la « fête des Lumières », dure huit jours. Chaque soir, on allume la hanoukia : une flamme le premier soir, une de plus chaque soir, jusqu'à huit, allumées grâce au chamach.",
+        "Le mot Hanouka signifie « inauguration » : la fête rappelle la nouvelle inauguration du Temple de Jérusalem et le miracle de la fiole d'huile, qui brûla huit jours au lieu d'un.",
+        "On récite le Hallel, on ajoute Véal hanissim dans les prières, et l'on place la hanoukia à la porte ou à la fenêtre pour faire rayonner le miracle au-dehors."
+      ]
+    },
+    {
+      "label": "Colis de Pourim",
+      "match": "^Pourim$",
+      "avant": 60,
+      "titre": "Pourim",
+      "defaut": [
+        "colis"
+      ],
       "actions": [
-        { "id": "matanot", "label": "Je participe aux dons aux nécessiteux (Matanot laévyonim)", "court": "Matanot laévyonim", "desc": "Remis directement à des familles dans le besoin." },
-        { "id": "michloah", "label": "Je participe aux paniers de Pourim (Michloa'h manot)", "court": "Michloa'h manot", "desc": "Des paniers de fête pour les familles." },
-        { "id": "colis", "label": "Je participe à la distribution des colis alimentaires", "court": "Colis alimentaires", "desc": "Un colis de fête pour une famille.", "montant": 130 }
-      ] },
-    { "label": "Colis de Pessah", "match": "^Pessah I$", "avant": 60, "titre": "Pessah", "defaut": ["colis"],
+        {
+          "id": "matanot",
+          "label": "Je participe aux dons aux nécessiteux (Matanot laévyonim)",
+          "court": "Matanot laévyonim",
+          "desc": "Remis directement à des familles dans le besoin."
+        },
+        {
+          "id": "michloah",
+          "label": "Je participe aux paniers de Pourim (Michloa'h manot)",
+          "court": "Michloa'h manot",
+          "desc": "Des paniers de fête pour les familles."
+        },
+        {
+          "id": "colis",
+          "label": "Je participe à la distribution des colis alimentaires",
+          "court": "Colis alimentaires",
+          "desc": "Un colis de fête pour une famille.",
+          "montant": 130
+        }
+      ]
+    },
+    {
+      "label": "Colis de Pessah",
+      "match": "^Pessah I$",
+      "avant": 60,
+      "titre": "Pessah",
+      "defaut": [
+        "colis"
+      ],
       "actions": [
-        { "id": "mahot", "label": "Je participe à l'aide pour Pessah (Maot'hitim)", "court": "Maot'hitim", "desc": "Pour que chaque famille puisse fêter Pessah." },
-        { "id": "matsot", "label": "Je participe à la distribution des matsot", "court": "Matsot", "desc": "Des matsot pour les familles." },
-        { "id": "colis", "label": "Je participe à la distribution des colis alimentaires", "court": "Colis alimentaires", "desc": "Un colis de Pessah pour une famille.", "montant": 130 }
-      ] },
-    { "label": "Lag ba'Omer", "match": "^Lag ba.Omer$", "avant": 30, "titre": "Lag ba'Omer", "defaut": ["fete"],
+        {
+          "id": "mahot",
+          "label": "Je participe à l'aide pour Pessah (Maot'hitim)",
+          "court": "Maot'hitim",
+          "desc": "Pour que chaque famille puisse fêter Pessah."
+        },
+        {
+          "id": "matsot",
+          "label": "Je participe à la distribution des matsot",
+          "court": "Matsot",
+          "desc": "Des matsot pour les familles."
+        },
+        {
+          "id": "colis",
+          "label": "Je participe à la distribution des colis alimentaires",
+          "court": "Colis alimentaires",
+          "desc": "Un colis de Pessah pour une famille.",
+          "montant": 130
+        }
+      ]
+    },
+    {
+      "label": "Lag ba'Omer",
+      "match": "^Lag ba.Omer$",
+      "avant": 30,
+      "titre": "Lag ba'Omer",
+      "defaut": [
+        "fete"
+      ],
       "actions": [
-        { "id": "fete", "label": "Je participe à la fête de Lag ba'Omer", "court": "Fête de Lag ba'Omer", "desc": "Aide au choix de l'association." }
-      ] },
-    { "label": "Colis de Chavou'ot", "match": "^Chavou.ot I$", "avant": 60, "titre": "Chavou'ot", "defaut": ["colis"],
+        {
+          "id": "fete",
+          "label": "Je participe à la fête de Lag ba'Omer",
+          "court": "Fête de Lag ba'Omer",
+          "desc": "Aide au choix de l'association."
+        }
+      ]
+    },
+    {
+      "label": "Colis de Chavou'ot",
+      "match": "^Chavou.ot I$",
+      "avant": 60,
+      "titre": "Chavou'ot",
+      "defaut": [
+        "colis"
+      ],
       "actions": [
-        { "id": "colis", "label": "Je participe à la distribution des colis alimentaires", "court": "Colis alimentaires", "desc": "Un colis de fête pour une famille.", "montant": 130 },
-        { "id": "soutien", "label": "Je soutiens les familles pour Chavou'ot", "court": "Soutien aux familles", "desc": "Aide au choix de l'association." }
-      ] }
+        {
+          "id": "colis",
+          "label": "Je participe à la distribution des colis alimentaires",
+          "court": "Colis alimentaires",
+          "desc": "Un colis de fête pour une famille.",
+          "montant": 130
+        },
+        {
+          "id": "soutien",
+          "label": "Je soutiens les familles pour Chavou'ot",
+          "court": "Soutien aux familles",
+          "desc": "Aide au choix de l'association."
+        }
+      ]
+    }
   ]
 }

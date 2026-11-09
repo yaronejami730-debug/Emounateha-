@@ -62,7 +62,7 @@ const AFFECT_DEFAUT = AFFECT_BASE[0];
 let calCache = { at: 0, list: [] };
 async function calendrier() {
   if (Date.now() - calCache.at < 6 * 3600e3 && calCache.list.length) return calCache.list;
-  try { const r = await fetch('http://127.0.0.1:3000/holidays.json', { signal: AbortSignal.timeout(3000) }); const l = await r.json(); if (Array.isArray(l) && l.length) calCache = { at: Date.now(), list: l }; else calCache.at = Date.now() - 5 * 60e3; }
+  try { const r = await fetch((process.env.SITE_URL || (process.env.VERCEL ? 'https://www.emounateha.fr' : 'http://127.0.0.1:3000')) + '/holidays.json', { signal: AbortSignal.timeout(5000) }); const l = await r.json(); if (Array.isArray(l) && l.length) calCache = { at: Date.now(), list: l }; else calCache.at = Date.now() - 5 * 60e3; }
   catch (e) { calCache.at = Date.now() - 5 * 60e3; }      // site local indisponible : on réessaie dans 5 minutes
   return calCache.list;
 }
@@ -70,7 +70,7 @@ async function affectations(now = new Date()) {
   const cal = await calendrier(), j0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()), fetes = [];
   for (const f of fetesConfig()) {
     const h = cal.filter(x => !x.chabad && f.re.test(x.title)).map(x => ({ ...x, jours: Math.round((Date.parse(x.date + 'T00:00:00Z') - j0) / 86400000) })).find(x => x.jours >= -(f.apres || 0));
-    if (h && h.jours <= f.avant) fetes.push({ label: f.label, kind: 'fete', titre: f.titre || f.label, date: h.date, jours: h.jours, actions: f.actions || [], defaut: f.defaut || [] });
+    if (h && h.jours <= f.avant) fetes.push({ label: f.label, kind: 'fete', titre: f.titre || f.label, date: h.date, jours: h.jours, actions: f.actions || [], defaut: f.defaut || [], image: f.image || '', intro: f.intro || '', apropos: f.apropos || [] });
   }
   fetes.sort((a, b) => a.jours - b.jours);
   const base = AFFECT_BASE.map(l => l === COLIS_CHABBAT.label ? COLIS_CHABBAT : { label: l, kind: 'base' });
@@ -357,7 +357,7 @@ app.post('/api/recu', async (req, res) => {
 });
 // (les PDF ne sont plus servis publiquement : voir accounts.js, liens signés ou propriétaire connecté)
 const SITE_PUBLIC = path.join(__dirname, '..', 'public');   // css, scripts et images du vrai site
-const SITE = process.env.VERCEL ? 'https://www.emounateha.fr' : 'http://127.0.0.1:3000';                       // serveur du site local (bandeau Hanouka, date du jour…)
+const SITE = process.env.SITE_URL || (process.env.VERCEL ? 'https://www.emounateha.fr' : 'http://127.0.0.1:3000');                       // serveur du site local (bandeau Hanouka, date du jour…)
 app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/api/colis-videos', '/api/action-videos'], async (req, res) => {
   try { const r = await fetch(SITE + req.originalUrl); res.status(r.status).type(r.headers.get('content-type') || 'application/json').send(Buffer.from(await r.arrayBuffer())); }
   catch (e) { res.status(502).json({ error: 'Serveur du site local (port 3000) indisponible' }); }
