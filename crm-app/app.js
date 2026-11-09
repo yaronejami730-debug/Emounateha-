@@ -521,7 +521,7 @@ function renderKeepFocus() {
 }
 window.addEventListener('hashchange', () => { tplDraft = null; render(); });
 render();
-setInterval(() => { if (!document.hidden && $('#modal').classList.contains('hidden') && !location.hash.includes('templates') && !location.hash.includes('settings') && !location.hash.includes('sms') && !location.hash.includes('campaigns/')) render(); }, 30000);
+setInterval(() => { if (!document.hidden && $('#modal').classList.contains('hidden') && !location.hash.includes('templates') && !location.hash.includes('settings') && !location.hash.includes('sms') && !location.hash.includes('campaigns/') && !location.hash.includes('cerfa')) render(); }, 30000);   // pas de rafraîchissement automatique sur la page des reçus (formulaire en cours, confirmation…)
 
 // fiche statistiques d'une campagne
 function campDetail(id){
