@@ -679,6 +679,13 @@ body{overflow-x:hidden}
 .sp-r .amt{font-family:'Bree Serif',serif;font-size:21px;color:var(--teal);text-align:right;line-height:1.1}
 .sp-r .dl{grid-column:1/-1;justify-self:start}
 .sp-empty{text-align:center;padding:26px 8px;color:#51666a}
+.sp-men{background:#fffaf0;border:1px solid #ecd9a0;border-radius:14px;padding:14px 16px;margin:0 0 18px}
+.sp-men h3{margin:0 0 8px;font-size:16px;color:#14272a}
+.sp-md{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;padding:10px 0;border-top:1px solid #f0e4bd}
+.sp-md:first-of-type{border-top:0}
+.sp-md small{display:block;color:#6b7d80;font-size:12.5px;margin-top:2px}
+.sp-md .stop{background:#fff;border:1px solid #c9a0a0;color:#8a1f1f;border-radius:99px;padding:8px 14px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+.sp-md .stop[disabled]{opacity:.5;cursor:default}
 .sp-form{border:1px solid #e3ecec;border-radius:18px;padding:14px 14px 12px;margin-bottom:14px;background:#fff}
 .sp-form h4{margin:0 0 10px;font-family:'Bree Serif',serif;font-weight:400;font-size:18px;color:var(--teal);display:flex;align-items:center;gap:8px}
 .sp-ok{font-size:13px;color:#1d6b43;margin:8px 0 0}
@@ -812,6 +819,7 @@ body::before,body::after{display:none!important}
     <div class="sp-card">
       <div class="sp-head"><span class="dn-av">✓</span><div><b id="spMail"></b><small>Espace donateur</small></div><div class="act"><a class="sp-pill gold" href="/">Faire un don</a><button class="sp-pill" id="spOut" type="button">Se déconnecter</button></div></div>
       <div class="sp-tabs"><button id="spT1" class="on" type="button">Mes reçus</button><button id="spT2" type="button">Mes informations</button></div>
+      <div id="spMen"></div>
       <div id="spRec"></div>
       <div id="spInf" hidden>
         <p class="sp-note" style="margin-top:0">Ces informations remplissent automatiquement le formulaire de don. Vous pouvez donner en tant que particulier ou au nom d'une ou plusieurs sociétés.</p>
@@ -902,7 +910,7 @@ $('spChange').onclick = () => { $('spS1').hidden = false; $('spS2').hidden = tru
 $('spResend').onclick = () => { const w = resendAt - Date.now(); if (w > 0) return err('Patientez ' + Math.ceil(w / 1000) + ' s avant de redemander un code.'); $('spEmail').value = em; request(); };
 $('spOut').onclick = async () => { try { await api('POST', '/api/auth/logout'); } catch (e) {} location.reload(); };
 
-function tab(n) { $('spT1').classList.toggle('on', n === 1); $('spT2').classList.toggle('on', n === 2); $('spRec').hidden = n !== 1; $('spInf').hidden = n !== 2; }
+function tab(n) { $('spT1').classList.toggle('on', n === 1); $('spT2').classList.toggle('on', n === 2); $('spRec').hidden = n !== 1; $('spMen').hidden = n !== 1; $('spInf').hidden = n !== 2; }
 $('spT1').onclick = () => tab(1); $('spT2').onclick = () => tab(2);
 const MOIS = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 function renderReceipts(data) {
@@ -911,6 +919,19 @@ function renderReceipts(data) {
   $('spRec').innerHTML = '<p class="sp-note" style="margin-top:0">Vos reçus fiscaux, classés par année. Conservez-les : ils vous sont demandés en cas de contrôle.</p>' +
     data.years.map(y => '<div class="sp-year"><div class="sp-yh"><h3>' + y.year + '</h3><span><b>' + y.count + ' reçu' + (y.count > 1 ? 's' : '') + '</b> · total <b>' + eur(y.total) + '</b></span></div>' +
       by[y.year].map(r => '<div class="sp-r"><div class="l"><b>' + esc(r.affectation || 'Don') + (r.mensuel ? '<span class="tag m">Mensuel' + (r.echeance ? ' n°' + r.echeance : '') + '</span>' : '') + '<span class="tag">' + (r.type === 'entreprise' ? 'Pro' : 'Particulier') + '</span></b><small>' + MOIS(r.date) + ' · ' + esc(r.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')) + ' · reçu n° ' + esc(r.numero) + '</small></div><div class="amt">' + eur(r.montant) + '</div><a class="sp-pill dl" href="' + r.pdf + '" target="_blank" rel="noopener">Télécharger le reçu (PDF)</a></div>').join('') + '</div>').join('');
+}
+const DJ = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+function renderMensuels(dons) {
+  if (!dons.length) { $('spMen').innerHTML = ''; return; }
+  $('spMen').innerHTML = '<div class="sp-men"><h3>Mes dons mensuels en cours</h3>' + dons.map(d => '<div class="sp-md"><div><b>' + eur(d.montant) + ' par mois</b>' + (d.affectation ? ' · ' + esc(d.affectation) : '') +
+    '<small>Depuis le ' + DJ(d.depuis) + ' · ' + (d.fin ? 'jusqu\'au ' + DJ(d.fin) : 'sans limite de durée') + (d.prochain ? ' · prochain prélèvement le ' + DJ(d.prochain) : '') + (d.retard ? ' · <b style="color:#8a1f1f">dernier prélèvement en échec</b>' : '') + '</small></div>' +
+    '<button class="stop" data-stop="' + esc(d.id) + '">Arrêter ce don</button></div>').join('') + '</div>';
+  document.querySelectorAll('[data-stop]').forEach(b => b.onclick = async () => {
+    if (!confirm('Arrêter définitivement ce don mensuel ? Plus aucun prélèvement ne sera effectué. Vos reçus déjà établis sont conservés.')) return;
+    b.disabled = true; b.textContent = 'Arrêt en cours…';
+    try { const j = await api('POST', '/api/me/dons-mensuels/' + encodeURIComponent(b.dataset.stop) + '/arreter'); renderMensuels(j.dons); alert('C\'est fait : ce don mensuel est arrêté, plus aucun prélèvement ne sera effectué.'); }
+    catch (e) { b.disabled = false; b.textContent = 'Arrêter ce don'; alert('Impossible d\'arrêter ce don : ' + e.message); }
+  });
 }
 let proNew = false;
 const cleSoc = p => String(p.siren || '').replace(/\s/g, '') || String(p.raisonSociale || '').trim().toLowerCase();
@@ -958,6 +979,7 @@ $('delPart').onclick = async () => { if (!confirm('Supprimer le profil particuli
 async function start() {
   try { me = await api('GET', '/api/me'); } catch (e) { $('spLogin').hidden = false; $('spApp').hidden = true; return; }
   $('spLogin').hidden = true; $('spApp').hidden = false; $('spMail').textContent = me.email; fillForms();
+  api('GET', '/api/me/dons-mensuels').then(j => renderMensuels(j.dons || [])).catch(() => {});
   try { renderReceipts(await api('GET', '/api/me/receipts')); } catch (e) { $('spRec').innerHTML = '<div class="sp-empty">Impossible de charger vos reçus : ' + esc(e.message) + '</div>'; }
 }
 try { const pre = sessionStorage.getItem('acctEmail'); if (pre) { $('spEmail').value = pre; sessionStorage.removeItem('acctEmail'); } } catch (e) {}

@@ -435,6 +435,7 @@ body{overflow-x:hidden}
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "NGO", "@id": "https://www.emounateha.fr/#org", "name": "Émounatéha", "alternateName": ["Emounateha", "אמונתך"], "url": "https://www.emounateha.fr/", "logo": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png?v=2"}, "image": "https://www.emounateha.fr/logo.png?v=2", "description": "Association à but non lucratif d'aide aux familles dans le besoin : colis de Chabbat et de fêtes, réinsertion sociale, vêtements, logement, soutien moral et financier, diffusion de la Torah.", "email": "emounateha770@gmail.com", "telephone": "+33669670770", "identifier": [{"@type": "PropertyValue", "propertyID": "SIRET", "value": "93075555800010"}, {"@type": "PropertyValue", "propertyID": "RNA", "value": "W931028738"}], "areaServed": {"@type": "Country", "name": "France"}, "nonprofitStatus": "NonprofitType", "sameAs": ["https://www.instagram.com/emounateha", "https://www.tiktok.com/@emounateha", "https://youtube.com/@emounateharaba-h4b", "https://www.facebook.com/share/1HhyHMPNPd/"], "contactPoint": [{"@type": "ContactPoint", "contactType": "customer service", "telephone": "+33669670770", "email": "emounateha770@gmail.com", "availableLanguage": ["fr", "he"]}], "potentialAction": {"@type": "DonateAction", "target": "https://don.emounateha.fr/"}}, {"@type": "WebSite", "@id": "https://www.emounateha.fr/#site", "url": "https://www.emounateha.fr/", "name": "Émounatéha", "inLanguage": "fr-FR", "publisher": {"@id": "https://www.emounateha.fr/#org"}}, {"@type": "WebPage", "@id": "https://www.emounateha.fr/torah/#page", "url": "https://www.emounateha.fr/torah/", "name": "Diffusion de la Torah : Machia'h Now et Tanya du jour — Émounatéha", "description": "Chaque jour : le document Machia'h Now (Hayom Yom, Séfer Hamitsvot, calendrier hassidique) et la vidéo de Tanya du jour, avec toutes les archives. Diffusion de la Torah par Émounatéha.", "inLanguage": "fr-FR", "isPartOf": {"@id": "https://www.emounateha.fr/#site"}, "about": {"@id": "https://www.emounateha.fr/#org"}, "primaryImageOfPage": {"@type": "ImageObject", "url": "https://www.emounateha.fr/logo.png?v=2"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://www.emounateha.fr/"}, {"@type": "ListItem", "position": 2, "name": "Diffusion de la Torah", "item": "https://www.emounateha.fr/torah/"}]}]}</script>
 <!-- seo:end -->
 <script src="/appel.js?v=4" defer></script>
+<script src="/jour-hebraique.js"></script>
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -690,7 +691,7 @@ html body .pagehead{padding-bottom:70px}
 document.getElementById('y').textContent=new Date().getFullYear();
 (function(){const n=document.querySelector('.sec-nav');if(!n)return;const f=()=>n.classList.toggle('scrolled',scrollY>40);addEventListener('scroll',f,{passive:true});f()})();
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
-(function(){const el=document.getElementById('hdate')||document.createElement('span');if(!document.getElementById('ndate'))return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd7'+ymd;
+(function(){const el=document.getElementById('hdate')||document.createElement('span');if(!document.getElementById('ndate'))return;const d=new Date();let last;function go(J){const hd=J?new Date(J+'T12:00:00'):d,ymd=hd.getFullYear()+'-'+String(hd.getMonth()+1).padStart(2,'0')+'-'+String(hd.getDate()).padStart(2,'0'),k='hd7'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
  const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
@@ -714,10 +715,12 @@ document.getElementById('y').textContent=new Date().getFullYear();
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('https://www.hebcal.com/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
    fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
- ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
+ ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ})}
+ (window.jourHeb?window.jourHeb():Promise.resolve(null)).then(J=>{last=J;go(J)});
+ setInterval(()=>{if(window.jourHeb)window.jourHeb().then(J=>{if(J!==last){last=J;go(J)}})},60000);
 })();
 // ---- visionneuse (plein écran) pour la diffusion
 function openLb(src,cap){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.innerHTML='<div class="lbbar"><span class="lbc"></span><button class="lbx" aria-label="Fermer">✕</button></div><div class="lbs"><img alt=""></div>';document.body.appendChild(lb);
@@ -805,7 +808,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     var h='<div class="dkick">'+t[1]+'</div><h2>'+t[0]+'</h2><div class="edate">'+esc(d)+'</div><div class="etxt" id="etxt"><div class="empty">Chargement du texte…</div></div>';
     pe.innerHTML=h;
     var tp=cur;
-    (texts[tp]?Promise.resolve(texts[tp]):fetch('/api/etude-texte?v=4&type='+tp+'&date='+(function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})(new Date())).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){texts[tp]=j;return j})).then(function(j){
+    (texts[tp]?Promise.resolve(texts[tp]):window.jourHeb().then(function(J){return fetch('/api/etude-texte?v=4&type='+tp+(J?'&date='+J:''))}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){texts[tp]=j;return j})).then(function(j){
       if(cur!==tp)return;var el=document.getElementById('etxt');if(!el)return;
       var o='<p class="eport">'+esc(j.ref)+'</p><div class="elang" role="group"><button type="button" class="on" data-l="both">Hébreu + '+(j.trLang==='fr'?'français':'anglais')+'</button><button type="button" data-l="he">Hébreu</button><button type="button" data-l="tr">'+(j.trLang==='fr'?'Français':'Anglais')+'</button></div>';
       j.sections.forEach(function(sc){

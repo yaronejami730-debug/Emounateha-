@@ -881,9 +881,20 @@ async function chabadZmanim(id, ymd, before = 18) {
 // ---------- Étude du jour (Houmach, Téhilim, Tanya) : flux RSS « Daily Study » de fr.chabad.org ----------
 const etudeCache = new Map();
 // jour demandé (AAAA-MM-JJ) ; par défaut le jour à Paris. Le flux Chabad sans date suit l'heure de New York : on passe toujours tdate.
-const jourValide = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '') && Math.abs(new Date(d + 'T12:00:00Z') - Date.now()) < 3 * 86400000 ? d : parisDay(Date.now());
+const jourValide = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '') && Math.abs(new Date(d + 'T12:00:00Z') - Date.now()) < 3 * 86400000 ? d : '';
+// Le jour hébraïque change à Tset Hakokhavim (tombée de la nuit à Paris), pas à minuit : une fois la nuit tombée, le « jour » est celui de demain
+// (date hébraïque, Houmach, Téhilim, Tanya). La date civile, elle, reste celle de Paris et change à minuit.
+async function jourHebraique() {
+  const now = Date.now(), today = parisDay(now);
+  let tzeit = null;
+  try { const z = await chabadZmanim('394', today), it = z.items.find(x => /Tset Hakokhavim|Tombée de la nuit/i.test(x.label)); if (it && /^\d{1,2}:\d{2}$/.test(it.time)) tzeit = it.time; } catch (e) { /* horaires indisponibles : on garde le jour civil */ }
+  const hm = new Date(now).toLocaleTimeString('sv-SE', { timeZone: 'Europe/Paris', hour12: false }).slice(0, 5);
+  const apres = !!tzeit && hm.padStart(5, '0') >= tzeit.padStart(5, '0');
+  return { jour: apres ? parisDay(new Date(today + 'T12:00:00Z').getTime() + 86400000) : today, civil: today, tzeit, apres };
+}
+const jourEtude = async d => jourValide(d) || (await jourHebraique()).jour;
 async function chabadEtude(jour) {
-  jour = jourValide(jour);
+  jour = await jourEtude(jour);
   const hit = etudeCache.get(jour);
   if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
   const [y, m, d] = jour.split('-');
@@ -969,7 +980,7 @@ async function tanyaFrancais(cle, items, jeton) {
 }
 
 async function chabadTexte(type, jour, jeton) {
-  jour = jourValide(jour);
+  jour = await jourEtude(jour);
   const hit = texteCache.get(type + jour);
   if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
   const e = await chabadEtude(jour), it = e[type];
@@ -1598,6 +1609,10 @@ async function handle(req, res) {
       if (!['houmach', 'tehilim', 'tanya'].includes(ty)) return send(res, 400, { error: 'type inconnu' });
       try { const v = await chabadTexte(ty, url.searchParams.get('date'), process.env.VERCEL_OIDC_TOKEN || req.headers['x-vercel-oidc-token'] || process.env.AI_GATEWAY_API_KEY); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': (ty === 'tanya' && v.trLang !== 'fr') ? 'no-store' : ty === 'tanya' ? 'public, max-age=900' : url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
+    }
+    if (url.pathname === '/api/jour-hebraique' && req.method === 'GET') { // public : jour hébraïque en cours (change à Tset Hakokhavim)
+      try { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify(await jourHebraique())); }
+      catch (e) { return send(res, 502, { error: 'Indisponible' }); }
     }
     if (url.pathname === '/api/etude' && req.method === 'GET') { // public : étude du jour (flux RSS Chabad)
       try { const v = await chabadEtude(url.searchParams.get('date')); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
