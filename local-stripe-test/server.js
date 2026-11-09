@@ -157,7 +157,7 @@ function remplir(don, numero) {
     modePaiement: esc(don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')), dateSignature: fmt(Date.now()),
     assoForme: esc(ASSO.forme || ''), assoSiret: esc(ASSO.siret || ''), assoContact: esc(`${ASSO.email} · ${ASSO.telephone}`), assoNomMin: esc(ASSO.nom), assoEmail: esc(ASSO.email), conservation: esc(ASSO.conservation || '6 ans'),
     dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? `Don mensuel (un reçu pour chaque prélèvement) — échéance n°${don.echeance || 1}${don.nb ? ' sur ' + don.nb : ''}` : 'Don ponctuel',
-    modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : /Apple Pay/i.test(don.mode) ? 'Carte bancaire (Apple Pay)' : /Google Pay/i.test(don.mode) ? 'Carte bancaire (Google Pay)' : 'Carte bancaire', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
+    modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : /klarna/i.test(don.mode) ? 'Klarna' : /Apple Pay/i.test(don.mode) ? 'Carte bancaire (Apple Pay)' : /Google Pay/i.test(don.mode) ? 'Carte bancaire (Google Pay)' : 'Carte bancaire', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
     blocSignature: sig, piedPage: esc(`Reçu cerfa généré par ${ASSO.nom}`), testDisplay: process.env.NO_TEST_BANNER || PREFIX !== 'TEST' ? 'display:none' : ''
   };
   let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
@@ -291,7 +291,7 @@ app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res)
 app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); res.setHeader('Referrer-Policy', 'no-referrer'); next(); });
 // simulation de date (test) : ?date=2027-02-01, seulement depuis l'ordinateur local, jamais via le tunnel
 const simDate = req => { const l = /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(req.headers.host || '') && !req.headers['cf-connecting-ip']; const d = String(req.query.date || ''); return l && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00:00') : new Date(); };
-app.get('/api/config', async (req, res) => res.json({ live: LIVE, paypal: /(^|,)\s*paypal\b/.test(process.env.PAYMENT_METHODS || ''), publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: await affectations(simDate(req)) }));
+app.get('/api/config', async (req, res) => res.json({ live: LIVE, paypal: true, klarna: true, publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', stripe: !!stripe, asso: { nom: ASSO.nom }, smtp: !!process.env.SMTP_HOST, modes: MODES.slice(0, 3), affectations: await affectations(simDate(req)) }));
 
 // 1) paiement : don ponctuel (PaymentIntent) ou mensuel (abonnement Stripe) sur le compte Stripe de test
 // recherche d'entreprise par SIRET / SIREN (API publique recherche-entreprises.api.gouv.fr, sans clé)
@@ -355,11 +355,12 @@ app.post('/api/intent', async (req, res) => {
         metadata: { ...meta, ...(nb ? { nb: String(nb), total: String(total) } : {}), siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0' }, expand: ['latest_invoice.payment_intent'] });
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
-      const types = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: `Don ${ASSO.nom}${T}`, metadata: meta };
-      let pi;
-      try { pi = await stripe.paymentIntents.create({ ...base, payment_method_types: types }); }
-      catch (e) { // moyen pas encore activé sur le compte Stripe (ex. PayPal non connecté) : on garde la carte (Apple Pay / Google Pay inclus)
-        if (types.length > 1 && /payment.?method|paypal|invalid/i.test(e.message)) { console.error('[intent] repli carte :', e.message); pi = await stripe.paymentIntents.create({ ...base, payment_method_types: ['card'] }); } else throw e; }
+      // don ponctuel : carte (Apple Pay et Google Pay passent par la carte), PayPal et Klarna ; si un moyen n'est pas activé sur le compte Stripe, on retire les moyens en trop (jamais la carte)
+      const envT = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: `Don ${ASSO.nom}${T}`, metadata: meta };
+      const essais = [[...new Set([...envT, 'card', 'paypal', 'klarna'])], [...new Set([...envT, 'card', 'paypal'])], ['card']];
+      let pi, derniere;
+      for (const types of essais) { try { pi = await stripe.paymentIntents.create({ ...base, payment_method_types: types }); break; } catch (e) { derniere = e; console.error('[intent] moyens', types.join('+'), 'refusés :', e.message); } }
+      if (!pi) throw derniere;
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
@@ -377,7 +378,7 @@ async function receiptForPayment(id) {
     const p = d.pending[id]; if (!p) throw new Error('Paiement inconnu de cette page');
     const pi = await stripe.paymentIntents.retrieve(id, { expand: ['payment_method'] });
     const pm = pi.payment_method || {}, wal = pm.card && pm.card.wallet && pm.card.wallet.type;
-    const moyen = pm.type === 'paypal' ? 'PayPal' : wal === 'apple_pay' ? 'Carte bancaire (Apple Pay)' : wal === 'google_pay' ? 'Carte bancaire (Google Pay)' : 'Carte bancaire';
+    const moyen = pm.type === 'paypal' ? 'PayPal' : pm.type === 'klarna' ? 'Klarna' : wal === 'apple_pay' ? 'Carte bancaire (Apple Pay)' : wal === 'google_pay' ? 'Carte bancaire (Google Pay)' : 'Carte bancaire';
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
     const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });

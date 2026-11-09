@@ -597,7 +597,8 @@ body{overflow-x:hidden}
 .dn-back{display:block;width:100%;margin-top:12px;border:0;background:transparent;color:var(--teal);font:inherit;font-weight:600;font-size:15px;padding:10px;cursor:pointer}
 .dn-err{display:none;margin-top:16px;padding:13px 15px;border-radius:14px;background:#fdecea;color:#8a2a22;font-size:14.5px;font-weight:500}
 #payel{margin:12px 0}
-#exel{min-height:0}
+#exel{min-height:0;max-width:190px}   /* boutons Apple Pay / Google Pay : petits carrés côte à côte, pas de grandes barres */
+.dn-pmnote{font-size:12.5px;color:#6b7d80;margin:8px 2px 0;line-height:1.4}
 .dn-or{display:flex;align-items:center;gap:10px;margin:16px 0 6px;color:#7f9396;font-size:12.5px;font-weight:600}
 .dn-or::before,.dn-or::after{content:"";flex:1;height:1px;background:#dbe6e6}
 .dn-paysum{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f1f7f7;border:1px solid #dbe8e8;border-radius:14px;padding:11px 14px;margin:2px 0 6px;font-weight:600;font-size:14px;color:#24505a}
@@ -1024,8 +1025,9 @@ body{overflow-x:hidden}
         <div id="exel"></div>
         <div class="dn-or"><span>ou par carte bancaire</span></div>
       </div>
-      <div class="dn-lab" id="cardLab" style="margin-top:6px">Carte bancaire</div>
+      <div class="dn-lab" id="cardLab" style="margin-top:6px">Moyen de paiement</div>
       <div id="payel"></div>
+      <p class="dn-pmnote" id="pmNote" hidden></p>
       <p class="dn-secure"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Paiement chiffré par Stripe : vos données bancaires ne passent jamais par nos serveurs.</p>
       <p class="dn-test" id="dnTest" hidden>Mode test : carte <b>4242 4242 4242 4242</b> · date future · CVC <b>123</b></p>
     </div>
@@ -1554,10 +1556,11 @@ async function act() {
           variables: { colorPrimary: '#1f6a72', colorText: '#14272a', colorTextSecondary: '#51666a', colorDanger: '#8a2a22', fontFamily: 'Inter, system-ui, sans-serif', fontSizeBase: '16px', borderRadius: '14px', spacingUnit: '4px', spacingGridRow: '14px', spacingGridColumn: '12px' },
           rules: { '.Input': { border: '2px solid #d3e0e0', backgroundColor: '#fff', padding: '13px 14px', boxShadow: 'none' }, '.Input:focus': { border: '2px solid #c4a24a', boxShadow: '0 0 0 4px rgba(196,162,74,0.22)' }, '.Input--invalid': { border: '2px solid #c0564b', boxShadow: 'none' }, '.Label': { fontWeight: '600', fontSize: '13px', color: '#24505a', marginBottom: '6px' }, '.Error': { fontSize: '13px' } } } });
         $('payel').innerHTML = ''; $('exel').innerHTML = ''; $('exwrap').style.display = 'none'; $('cardLab').style.display = '';
+        { const n = $('pmNote'); n.hidden = !payMen; n.textContent = payMen ? 'Don mensuel : carte bancaire, Apple Pay et Google Pay. PayPal et Klarna sont réservés aux dons ponctuels.' : ''; }
         $('paySum').textContent = money(payAmount / 100) + (payMen ? ' par mois' : '') + ' · ' + ($('aff').value || 'Don');
-        elements.create('payment', { layout: { type: 'tabs' }, wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } }).mount('#payel');
+        elements.create('payment', { layout: { type: 'tabs', defaultCollapsed: false }, paymentMethodOrder: ['card', 'paypal', 'klarna'], wallets: { applePay: 'never', googlePay: 'never' }, fields: { billingDetails: { name: 'never', email: 'never', address: 'never' } } }).mount('#payel');
         // Apple Pay / Google Pay : bouton express au-dessus de la carte (visible seulement si l'appareil et le domaine le permettent)
-        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 48, layout: { maxColumns: 1, maxRows: 4 }, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: (cfg && cfg.paypal && !payMen) ? 'auto' : 'never', amazonPay: 'never' } });
+        const ex = elements.create('expressCheckout', { buttonType: { applePay: 'donate', googlePay: 'donate' }, buttonHeight: 52, layout: { maxColumns: 2, maxRows: 1 }, paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'never', klarna: 'never', amazonPay: 'never' } });
         ex.mount('#exel');
         ex.on('loaderror', ev => { $('exDiag').textContent = 'Erreur Apple Pay / Google Pay : ' + ((ev.error && (ev.error.message || ev.error.code)) || JSON.stringify(ev)); window.__exErr = ev; });
         setTimeout(() => { if (!window.__exReady && !window.__exErr) $('exDiag').textContent = 'Portefeuilles : aucune réponse de Stripe après 6 s'; }, 6000);
