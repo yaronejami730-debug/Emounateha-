@@ -570,6 +570,8 @@ body{overflow-x:hidden}
 .dn-bamt small{display:block;font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#7f9396}
 .dn-bamt b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:21px;color:var(--teal);line-height:1.1;white-space:nowrap}
 .dn-bamt b em{font-style:normal;font-family:Inter,sans-serif;font-weight:600;font-size:13px;color:#51666a}
+.dn-bamt b em.bl{display:block;margin-top:2px;font-size:12.5px}
+#go{white-space:nowrap}
 .dn-btn{flex:1;border:0;border-radius:99px;height:50px;padding:0 18px;font:inherit;font-weight:700;font-size:16px;cursor:pointer;background:linear-gradient(180deg,var(--gold-l),var(--gold));color:#1b2b2d;box-shadow:0 10px 24px rgba(196,162,74,.45);transition:transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .dn-btn:active{transform:scale(.97)}
 .dn-btn:disabled{opacity:.55;cursor:wait}
@@ -1115,7 +1117,7 @@ function upSum() {
   const v = nf($('montant').value), men = isMen();
   const n = men ? +document.querySelector('input[name=duree]:checked').value : 0, tot = n && document.querySelector('input[name=repart]:checked').value === 'total';
   $('sAmt').innerHTML = v ? money(v) + ' <small>' + (tot ? 'en ' + n + ' mensualités' : men ? 'par mois' : '') + '</small>' : '— <small></small>';
-  $('bAmt').innerHTML = v ? money(v) + (tot ? ' <em>en ' + n + ' fois</em>' : men ? ' <em>/ mois</em>' : '') : '—';
+  $('bAmt').innerHTML = v ? money(v) + (tot ? ' <em class="bl">en ' + n + ' fois</em>' : men ? ' <em>/ mois</em>' : '') : '—';
   if (typeof upDur === 'function') upDur();
   $('sAff').textContent = $('aff').value || '—';
   const who = isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()).trim();
@@ -1508,7 +1510,7 @@ async function act() {
           } catch (e) { show(e.message); }
         });
         goPanel(3);
-        if (payMen) $('go').textContent = 'Payer ' + eur(payAmount) + ' · puis chaque mois';
+        $('go').textContent = 'Payer ' + eur(payAmount);   // court : « puis chaque mois » est déjà rappelé dans le récapitulatif
       }
     }
     else if (panel === 3) {
