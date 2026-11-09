@@ -277,7 +277,7 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
         const n = (await stripe.invoices.list({ subscription: sub.id, limit: 100 })).data.filter(i => i.status === 'paid').length;
         const out = await fabriquer({ type: m.type === 'entreprise' ? 'entreprise' : 'particulier', nom: cu.name, siren: m.siren || '', adresse: `${ad.line1 || ''}, ${ad.postal_code || ''} ${ad.city || ''}`, email: cu.email, montant: inv.amount_paid, mensuel: true, nb: m.nb ? +m.nb : 0, echeance: n,
           mode: 'Carte bancaire — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
-        out.affectation = m.affectation; out.mensuel = true; if (m.fin) out.fin = m.fin; if (m.nb) { out.nb = +m.nb; out.total = +m.total; } if (m.ambassadeur) out.ambassadeur = m.ambassadeur; const d2 = load(); d2.receipts[inv.id] = out; save(d2); await notifyAdmin(out);
+        out.affectation = m.affectation; out.mensuel = true; if (m.fin) out.fin = m.fin; if (m.nb) { out.nb = +m.nb; out.total = +m.total; } { const a = attrDe(m); if (Object.keys(a).length) { out.attr = a; out.attrRepeat = true; } }   // prélèvement suivant : même provenance que le 1er don if (m.ambassadeur) out.ambassadeur = m.ambassadeur; const d2 = load(); d2.receipts[inv.id] = out; save(d2); await notifyAdmin(out);
         console.log('[webhook] invoice.paid', inv.id, '-> reçu', out.numero, '(mensualité n°' + n + ')');
       }
     } else console.log('[webhook]', ev.type, '(non traité)');
@@ -311,6 +311,11 @@ app.get('/api/siret', async (req, res) => {
   } catch (e) { res.status(502).json({ error: 'Recherche impossible pour le moment. Remplissez les champs à la main.' }); }
 });
 
+// Provenance du don (e-mail de campagne) : c = campagne, t = modèle d'e-mail, s = envoi précis, src / med = source et canal.
+// Rien de personnel : seulement des identifiants courts. Ils partent dans les métadonnées Stripe (paiement, abonnement, client) et sur le reçu.
+const cleanAttr = a => { const o = {}; if (a && typeof a === 'object') for (const [k, mx] of [['c', 60], ['t', 60], ['s', 60], ['src', 30], ['med', 30]]) { const v = String(a[k] || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, mx); if (v) o[k] = v; } return o; };
+const attrMeta = a => ({ ...(a.src ? { utm_source: a.src } : {}), ...(a.med ? { utm_medium: a.med } : {}), ...(a.c ? { utm_campaign: a.c } : {}), ...(a.t ? { utm_content: a.t } : {}), ...(a.s ? { email_send: a.s } : {}) });
+const attrDe = m => cleanAttr({ src: m.utm_source, med: m.utm_medium, c: m.utm_campaign, t: m.utm_content, s: m.email_send });
 app.post('/api/intent', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
@@ -323,6 +328,7 @@ app.post('/api/intent', async (req, res) => {
       const em = String(don.email || '').toLowerCase(), prev = Object.values(load().receipts || {}).filter(r => r.ambassadeur && r.donorEmail === em).sort((a, b) => String(a.dateDon).localeCompare(String(b.dateDon)))[0];
       if (prev) amb = prev.ambassadeur;
     }
+    const attr = cleanAttr(req.body.attr);
     let fin = '';                                            // don mensuel « jusqu'à une date » (vide = sans limite de durée)
     const mois = mensuel ? parseInt(req.body.duree, 10) : 0;   // durée choisie : 12 ou 24 mois (N prélèvements) ; sinon sans limite
     if (mois) {
@@ -343,7 +349,7 @@ app.post('/api/intent', async (req, res) => {
       if (par < 100) throw new Error('Mensualité trop faible (au moins 1 € par mois) : choisissez une durée plus courte.');
       don.montant = par + reste;   // montant du 1er prélèvement
     }
-    const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel', ambassadeur: amb, ...(fin ? { fin } : {}) };
+    const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel', ambassadeur: amb, ...(fin ? { fin } : {}), ...attrMeta(attr) };
     let id, clientSecret, subscription = null;
     if (mensuel) {
       const cust = await stripe.customers.create({ email: don.email, name: don.nom, address: { line1: don.adresse.split(',')[0], postal_code: (don.adresse.match(/\b\d{5}\b/) || [''])[0], city: don.ville, country: 'FR' }, metadata: meta });
@@ -364,7 +370,7 @@ app.post('/api/intent', async (req, res) => {
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
-    d.pending[id] = { ...don, amb, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
+    d.pending[id] = { ...don, amb, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -382,7 +388,7 @@ async function receiptForPayment(id) {
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
     const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
-    out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.fin) out.fin = p.fin; if (p.nb) { out.nb = p.nb; out.total = p.total; } if (p.amb) out.ambassadeur = p.amb; if (p.lignes) out.lignes = p.lignes;
+    out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.fin) out.fin = p.fin; if (p.nb) { out.nb = p.nb; out.total = p.total; } if (p.attr && Object.keys(p.attr).length) out.attr = p.attr; if (p.amb) out.ambassadeur = p.amb; if (p.lignes) out.lignes = p.lignes;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id]; save(d2);
     await notifyAdmin(out);
     if (p.owner && p.saveProfile) acc.saveProfileFromForm(p.owner, p.type, p.form);   // « enregistrer mes informations »
@@ -432,7 +438,7 @@ function adminOk(req, res) {
   if (!ok) res.status(401).json({ error: 'non autorisé' });
   return !!ok;
 }
-const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent) });
+const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat });
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();

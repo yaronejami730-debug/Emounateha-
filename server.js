@@ -145,7 +145,20 @@ function heTag(html) {
   return html.split(/(<[^>]*>)/).map((p, i, arr) => (p.startsWith('<') || !/[\u0590-\u05FF]/.test(p) || /lang="he"/.test(arr[i - 1] || '')) ? p
     : p.replace(HE, m => `<span lang="he" dir="rtl">${m}</span>`)).join('');
 }
-function renderEmail(t, contact) {
+// Suivi des dons par e-mail : chaque lien vers nos sites reçoit la campagne (utm_campaign), le modèle d'e-mail (utm_content) et l'identifiant de l'envoi (sid).
+// Le site de don les garde (cookie 30 jours) et les envoie à Stripe avec le paiement : on sait quel e-mail a déclenché quel don.
+const TRK_HOSTS = /^(www\.|don\.|ambassadeur\.)?emounateha\.fr$/i;
+function trackUrl(url, ctx) {
+  if (!ctx || !ctx.campaignId) return url;
+  try {
+    const u = new URL(url); if (!TRK_HOSTS.test(u.hostname)) return url;
+    const cl = (v, n) => String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, n);
+    u.searchParams.set('utm_source', 'email'); u.searchParams.set('utm_medium', 'email'); u.searchParams.set('utm_campaign', cl(ctx.campaignId, 60));
+    if (ctx.templateId) u.searchParams.set('utm_content', cl(ctx.templateId, 60)); if (ctx.sendId) u.searchParams.set('sid', cl(ctx.sendId, 60));
+    return u.toString();
+  } catch (e) { return url; }
+}
+function renderEmail(t, contact, ctx) {
   const s = db.settings;
   const color = t.color || '#1f6a72', accent = t.accent || '#c4a24a';
   const c = contact || { firstName: 'Prénom', lastName: 'Nom', email: 'email@exemple.com', id: 'preview' };
@@ -160,10 +173,10 @@ function renderEmail(t, contact) {
     : '';
   const button = t.buttonText && t.buttonUrl
     ? `<table role="presentation" align="center" style="margin:28px auto 8px;"><tr><td style="background:${accent};border-radius:999px;">
-        <a href="${esc(fill(t.buttonUrl, c))}" style="display:inline-block;padding:${t.buttonSmall ? '11px 26px' : '16px 38px'};font-size:${t.buttonSmall ? '14px' : '17px'};font-weight:bold;color:#1f2937;text-decoration:none;font-family:Arial,sans-serif;">${esc(t.buttonText)}</a>
+        <a href="${esc(trackUrl(fill(t.buttonUrl, c), ctx))}" style="display:inline-block;padding:${t.buttonSmall ? '11px 26px' : '16px 38px'};font-size:${t.buttonSmall ? '14px' : '17px'};font-weight:bold;color:#1f2937;text-decoration:none;font-family:Arial,sans-serif;">${esc(t.buttonText)}</a>
        </td></tr></table>` : '';
   const wa = (s.phone || '').replace(/\D/g, '').replace(/^0/, '33');
-  const pill = (href, label) => `<a href="${esc(href)}" style="display:inline-block;margin:4px 3px;padding:10px 22px;background:#7b8a8d;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;border-radius:999px;">${label}</a>`;
+  const pill = (href, label) => `<a href="${esc(trackUrl(href, ctx))}" style="display:inline-block;margin:4px 3px;padding:10px 22px;background:#7b8a8d;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;border-radius:999px;">${label}</a>`;
   const ico = (href, name, alt) => `<a href="${esc(href)}" style="display:inline-block;margin:0 4px;text-decoration:none;"><img src="${abase}/icon-${name}.png" width="26" height="26" alt="${alt}" style="display:block;width:26px;height:26px;border:0;border-radius:17px;background:#7b8a8d;color:#ffffff;font-size:11px;"></a>`;
   const contactLine = '<div>' + [
     s.instagramUrl ? ico(s.instagramUrl, 'instagram', 'Instagram') : '',
@@ -503,7 +516,7 @@ async function sendOne(campaign, { contact, stepIndex, step }) {
   const rec = { id: uid(), at: now(), campaignId: campaign.id, contactId: contact.id, email: contact.email, stepIndex, templateId: step.templateId };
   try {
     if (!t) throw new Error('Template introuvable');
-    const r = await brevoSend({ to: contact.email, toName: contact.firstName, subject: fill(t.subject, contact), html: renderEmail(t, contact) });
+    const r = await brevoSend({ to: contact.email, toName: contact.firstName, subject: fill(t.subject, contact), html: renderEmail(t, contact, { campaignId: campaign.id, templateId: step.templateId, sendId: rec.id }) });
     rec.status = r.simulated ? 'simulated' : 'sent'; rec.messageId = r.messageId;
   } catch (e) { rec.status = 'error'; rec.error = e.message; if (e.quota) { rec.quota = true; db.settings.pausedUntil = nextMidnight(); } }
   db.sends.push(rec); save();
@@ -731,7 +744,7 @@ async function sendChabbat(contact, key, mode, cache) {
   const t = chabbatTemplate(city, cache[ck], mode, contact);
   const rec = { id: uid(), at: now(), campaignId: 'chabbat', contactId: contact.id, email: contact.email, stepIndex: 0, templateId: key };
   try {
-    const r = await brevoSend({ to: contact.email, toName: contact.firstName, subject: fill(t.subject, contact), html: renderEmail(t, contact) });
+    const r = await brevoSend({ to: contact.email, toName: contact.firstName, subject: fill(t.subject, contact), html: renderEmail(t, contact, { campaignId: 'chabbat', templateId: key, sendId: rec.id }) });
     rec.status = r.simulated ? 'simulated' : 'sent'; rec.messageId = r.messageId;
   } catch (e) { rec.status = 'error'; rec.error = e.message; if (e.quota) { rec.quota = true; db.settings.pausedUntil = nextMidnight(); } }
   db.sends.push(rec); save(); return rec;
@@ -1259,6 +1272,7 @@ async function api(req, res, url) {
       sends: db.sends.slice(-60).reverse()
     });
   }
+  if (parts[0] === 'attribution' && m === 'GET') return send(res, 200, await attributionReport());   // quels e-mails ont déclenché des dons
   if (parts[0] === 'reset' && m === 'POST') { // Réglages : remise à zéro (contacts, historique des envois, campagnes)
     if (body.confirm !== 'SUPPRIMER') return send(res, 400, { error: 'Tapez SUPPRIMER pour confirmer.' });
     const quoi = ['contacts', 'sends', 'campaigns'].filter(t => body[t]);
@@ -1753,6 +1767,28 @@ async function handle(req, res) {
   } catch (e) { console.error(e); send(res, 500, { error: e.message }); }
 }
 
+
+// ---------- Dons par e-mail : quelle campagne / quel modèle d'e-mail a déclenché quel don (provenance enregistrée avec le paiement dans Stripe) ----------
+async function attributionReport() {
+  const out = { lignes: [], dons: [], total: { envois: 0, dons: 0, montant: 0, prelevements: 0, montantPrelev: 0 }, erreur: '' };
+  let recus = [];
+  try { const r = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus'), signal: AbortSignal.timeout(20000) }); const j = await r.json(); recus = (j.recus || []).filter(x => x.attr && (x.attr.c || x.attr.s)); if (!r.ok) out.erreur = j.error || 'Serveur des dons indisponible'; }
+  catch (e) { out.erreur = 'Serveur des dons injoignable : ' + e.message; }
+  const camps = new Map(db.campaigns.map(c => [c.id, c.name])), tpls = new Map(db.templates.map(t => [t.id, t.name || t.subject || t.id]));
+  const nomC = id => camps.get(id) || ({ chabbat: 'Horaires de Chabbat', lettre: 'Copie de lettre au Rabbi' })[id] || id || '—', nomT = id => tpls.get(id) || (id === 'copie' ? 'Copie de lettre' : id || '—');
+  const rows = new Map(), row = (c, t) => { const k = c + '|' + t; if (!rows.has(k)) rows.set(k, { campagneId: c, modeleId: t, campagne: nomC(c), modele: nomT(t), envois: 0, dons: 0, montant: 0, prelevements: 0, montantPrelev: 0 }); return rows.get(k); };
+  for (const x of db.sends) if (x.status !== 'error' && x.campaignId) row(x.campaignId, x.templateId || '').envois++;
+  const byId = new Map(db.sends.map(x => [x.id, x]));
+  for (const d of recus) {
+    const r = row(d.attr.c || '', d.attr.t || ''), suite = !!d.attrRepeat || (d.mensuel && (d.echeance || 1) > 1), s = d.attr.s ? byId.get(d.attr.s) : null;
+    if (suite) { r.prelevements++; r.montantPrelev += d.montant || 0; } else { r.dons++; r.montant += d.montant || 0; }
+    out.dons.push({ date: d.dateDon, email: d.email, nom: d.nom, montant: d.montant, mensuel: !!d.mensuel, suite, campagne: nomC(d.attr.c), modele: nomT(d.attr.t), envoyeA: s ? s.email : '', numero: d.numero });
+  }
+  out.lignes = [...rows.values()].filter(r => r.envois || r.dons || r.prelevements).map(r => ({ ...r, taux: r.envois ? Math.round(r.dons / r.envois * 1000) / 10 : null })).sort((a, b) => b.montant - a.montant || b.dons - a.dons || b.envois - a.envois);
+  for (const r of out.lignes) { out.total.envois += r.envois; out.total.dons += r.dons; out.total.montant += r.montant; out.total.prelevements += r.prelevements; out.total.montantPrelev += r.montantPrelev; }
+  out.dons.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  return out;
+}
 
 // ---------- CRM, onglet CERFA : relais vers le serveur des dons (don.emounateha.fr), requêtes signées ----------
 const DON_URL = process.env.DON_URL || 'https://don.emounateha.fr';

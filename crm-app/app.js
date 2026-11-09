@@ -160,7 +160,8 @@ const views = {
         <div class="row">
           ${c.status === 'running' || c.status === 'scheduled' ? `<button class="btn" onclick="campAct('${c.id}','pause')">⏸ Pause</button>` : c.status !== 'done' ? `<button class="btn pri" onclick="campAct('${c.id}','start')">▶ Démarrer</button>` : ''}
           <button class="btn" onclick="location.hash='#/campaigns/${c.id}'">🗓 Programmation</button><button class="btn" onclick="campDetail('${c.id}')">📊 Statistiques</button><button class="btn" onclick="campModal('${c.id}')">Modifier</button><button class="btn bad" onclick="del('campaigns','${c.id}')">✕</button></div></div>`;
-    }).join('') : `<div class="card empty"><big>➤</big>Aucune campagne. Créez « Hanouka » avec une séquence de relances.</div>`}`,
+    }).join('') : `<div class="card empty"><big>➤</big>Aucune campagne. Créez « Hanouka » avec une séquence de relances.</div>`}
+    <div id="attr"></div>`,
 
   templates: () => {
     if (!tplDraft) { const t = S.templates.find(x => x.id === tplId) || S.templates[0]; if (t) { tplId = t.id; tplDraft = { ...t }; } }
@@ -513,6 +514,7 @@ async function render(skipLoad) {
   $('#main').innerHTML = (views[route] || views[''])();
   if (route === 'templates') bindTpl();
   if (route === 'historique') loadHistorique();
+  if (route === 'campaigns') loadAttribution();
   if (route === 'sms') smsInit();
   if (route === 'cerfa') cerfaInit();
 }
@@ -560,6 +562,21 @@ function campDetail(id){
 
 // historique : chargé après affichage de la page
 (function(){ const oldRender = window.render; })();
+// Dons par e-mail : quel modèle / quelle relance a déclenché des dons (la provenance est enregistrée avec le paiement dans Stripe)
+async function loadAttribution(){
+  const el=document.getElementById('attr'); if(!el) return;
+  el.innerHTML='<div class="card" style="margin-top:18px"><b>Dons par e-mail</b><div class="hint">Chargement…</div></div>';
+  const eur=c=>(c/100).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' €';
+  try{ const a=await api('GET','/attribution');
+    const lg=a.lignes.map(r=>`<tr><td>${esc(r.campagne)}</td><td>${esc(r.modele)}</td><td align="right">${r.envois}</td><td align="right"><b>${r.dons}</b></td><td align="right">${r.taux===null?'—':r.taux+' %'}</td><td align="right"><b>${eur(r.montant)}</b></td><td align="right">${r.prelevements?r.prelevements+' ('+eur(r.montantPrelev)+')':'—'}</td></tr>`).join('');
+    const dn=a.dons.slice(0,40).map(d=>`<tr><td>${new Date(d.date).toLocaleDateString('fr-FR')}</td><td>${esc(d.nom||'')} <small style="color:var(--mut)">${esc(d.email||'')}</small></td><td>${esc(d.campagne)} · ${esc(d.modele)}</td><td align="right">${eur(d.montant)}${d.mensuel?' <small>/ mois'+(d.suite?' (suite)':'')+'</small>':''}</td></tr>`).join('');
+    el.innerHTML=`<div class="card" style="margin-top:18px"><div class="row" style="justify-content:space-between"><div><b style="font-size:16px">Dons par e-mail</b><div class="hint">Quel e-mail a déclenché le don (campagne et modèle). Le lien de chaque e-mail porte son identifiant, gardé 30 jours et envoyé à Stripe avec le paiement.</div></div><button class="btn" onclick="loadAttribution()">↻</button></div>
+      ${a.erreur?`<div class="hint" style="color:var(--warn)">⚠ ${esc(a.erreur)}</div>`:''}
+      ${a.lignes.length?`<table style="width:100%;font-size:14px;margin-top:10px"><tr><th align="left">Campagne</th><th align="left">Modèle d'e-mail</th><th align="right">Envoyés</th><th align="right">Dons</th><th align="right">Taux</th><th align="right">Montant</th><th align="right">Prélèvements suivants</th></tr>${lg}
+      <tr style="border-top:2px solid #dbe8e8"><td colspan="2"><b>Total</b></td><td align="right"><b>${a.total.envois}</b></td><td align="right"><b>${a.total.dons}</b></td><td align="right">${a.total.envois?Math.round(a.total.dons/a.total.envois*1000)/10+' %':'—'}</td><td align="right"><b>${eur(a.total.montant)}</b></td><td align="right">${a.total.prelevements?a.total.prelevements+' ('+eur(a.total.montantPrelev)+')':'—'}</td></tr></table>`:'<div class="hint" style="margin-top:8px">Aucun envoi de campagne pour l\'instant.</div>'}
+      ${dn?`<h4 style="margin:16px 0 6px">Derniers dons venus d'un e-mail</h4><table style="width:100%;font-size:14px"><tr><th align="left">Date</th><th align="left">Donateur</th><th align="left">E-mail à l'origine</th><th align="right">Montant</th></tr>${dn}</table>`:'<div class="hint" style="margin-top:10px">Aucun don rattaché à un e-mail pour l\'instant : ils apparaîtront ici dès qu\'un donateur paiera après avoir cliqué sur un lien de campagne.</div>'}</div>`;
+  }catch(e){ el.innerHTML='<div class="card" style="margin-top:18px"><b>Dons par e-mail</b><div class="hint">Indisponible : '+esc(e.message)+'</div></div>'; }
+}
 async function loadHistorique(){
   const el=document.getElementById('hist'); if(!el) return;
   try{ const h=await api('GET','/historique');
