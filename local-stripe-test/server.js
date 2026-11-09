@@ -498,9 +498,19 @@ function slugsAffectations() {
   for (const l of AFFECT_BASE) s.add(slugOf((AC[l] && AC[l].titre) || l));
   return s;
 }
+// aperçu de partage (WhatsApp, Facebook…) propre à chaque adresse : l'image « don-<action> » du dossier public/apercus du site
+const APERCU = { 'colis-de-chabbat': 'don-colis', 'l-aide-a-leducation': 'don-l-aide-a-l-education', 'lag-baomer': 'don-lag-ba-omer', 'chavouot': 'don-chavou-ot', 'la-ou-le-besoin-est-le-plus-grand': 'don' };
+const TITRES = { 'la-ou-le-besoin-est-le-plus-grand': 'Là où le besoin est le plus grand' };
 app.get('/:slug', (req, res, next) => {
-  if (!/^[a-z0-9-]+$/.test(req.params.slug) || !slugsAffectations().has(req.params.slug)) return next();
-  res.setHeader('Cache-Control', 'no-store'); res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const sl = req.params.slug;
+  if (!/^[a-z0-9-]+$/.test(sl) || !slugsAffectations().has(sl)) return next();
+  let html; try { html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8'); } catch (e) { return next(); }
+  const img = 'https://www.emounateha.fr/apercus/' + (APERCU[sl] || 'don-' + sl) + '.jpg?v=1';
+  const tit = TITRES[sl] || ((fetesConfig().find(f => slugOf(f.titre || f.label) === sl) || {}).titre) || ((Object.values(actionsConfig()).find(a => slugOf(a.titre || '') === sl) || {}).titre) || '';
+  html = html.replace(/(<meta property="og:image" content=")[^"]*(")/, '$1' + img + '$2').replace(/(<meta name="twitter:image" content=")[^"]*(")/, '$1' + img + '$2')
+    .replace(/(<meta property="og:url" content=")[^"]*(")/, '$1https://don.emounateha.fr/' + sl + '/$2')
+    .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + ('Faire un don' + (tit ? ' · ' + tit.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : '') + ' — Émounatéha') + '$2');
+  res.setHeader('Cache-Control', 'no-store'); res.type('html').send(html);
 });
 if (!process.env.VERCEL) app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));
 app.locals.remplir = remplir; app.locals.pdf = pdf;
