@@ -74,7 +74,7 @@ h1 em{font-style:normal;color:var(--gold-l)}
 .btn:active{transform:scale(.98)}
 .uberline{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#c9d9db;margin-top:9px;padding-left:4px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
 .uberline svg{height:11px;width:auto;color:#fff}
-.ubrand svg{height:.9em;width:auto;color:#fff;vertical-align:-.08em;margin:0 -3px 0 2px}
+.ubrand svg{height:.9em;width:auto;color:#fff;vertical-align:-.08em;margin:0 1px 0 3px}
 
 .legal{position:absolute;left:0;right:0;bottom:0;padding:0 18px calc(8px + env(safe-area-inset-bottom));font-size:10px;color:rgba(255,255,255,.4);text-align:center}
 .legal a{color:rgba(255,255,255,.55);text-decoration:none}
@@ -96,8 +96,11 @@ h1 em{font-style:normal;color:var(--gold-l)}
   .stage>img.m{display:none}.stage>img.d{display:block;top:0;height:100%;object-position:62% 50%}
   .stage::before{background:linear-gradient(90deg,rgba(18,18,18,.82) 0%,rgba(18,18,18,.55) 34%,rgba(18,18,18,0) 56%),linear-gradient(180deg,rgba(18,18,18,.35),rgba(18,18,18,0) 26%)}
   .top{padding:26px 44px 0}
-  .partners img{height:110px}
-  .foot{margin:auto 0;padding:0 44px 70px;max-width:640px}
+  .partners img{height:150px}
+  .foot{margin:auto 0;padding:0 44px 70px;max-width:640px;-webkit-mask-image:none;mask-image:none;-webkit-backdrop-filter:none;backdrop-filter:none;background:none}   /* sinon le haut du bloc (Première bougie, titre) est estompé par le dégradé du mobile */
+  .unlock{margin-left:0;max-width:460px}
+  .firstc{font-size:17px}
+  .firstc .cnt{font-size:15px;color:#fff;opacity:1}
   .legal{text-align:right}
   .when{font-size:13px}
   h1{font-size:clamp(40px,4.4vw,56px);letter-spacing:-1.8px}
@@ -142,7 +145,7 @@ html body h1 em{font-style:normal}
   <img class="d" src="/hanouka-lp/hero-wide.jpg?v=5" width="1344" height="752" alt="" aria-hidden="true">
 
   <header class="top rv">
-    <a class="partners" href="/" aria-label="Émounatéha, retour au site"><img src="/logo.png?v=2" alt="Émounatéha"></a>
+    <a class="partners" href="/" aria-label="Émounatéha, retour au site"><img src="/logo-complet-transparent.png?v=5" alt="Émounatéha"></a>
     <span class="bsd" aria-hidden="true">בס״ד</span>
   </header>
 

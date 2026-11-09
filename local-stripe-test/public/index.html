@@ -567,6 +567,19 @@ body{overflow-x:hidden}
 /* barre d'action */
 .dn-actions{display:flex;align-items:center;gap:14px;margin-top:22px}
 #actBox #gFreq{margin-top:22px}
+.dn-dur .dn-datehint#durHint{margin:4px 0 0;padding:12px 14px;background:#fff7e0;border:1.5px solid #ecd9a0;border-radius:14px;font-size:15px;line-height:1.45;color:#14272a}
+#durHint b{font-weight:800;color:#1f6a72}
+.dn-mod{position:fixed;inset:0;z-index:2000;background:rgba(20,39,42,.6);display:flex;align-items:center;justify-content:center;padding:16px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.dn-modc{background:#fff;border-radius:22px;padding:24px 20px 18px;max-width:440px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.35);max-height:calc(100vh - 32px);overflow:auto}
+.dn-modi{width:54px;height:54px;border-radius:50%;background:linear-gradient(180deg,#ecd98f,#c4a24a);color:#1b2b2d;font:800 30px/54px Inter,sans-serif;margin:0 auto 10px}
+.dn-modc h3{font-family:'Bree Serif',serif;font-weight:400;font-size:23px;color:#1f6a72;margin:0 0 10px;line-height:1.2}
+.dn-modc p{font-size:17px;line-height:1.5;color:#22383b;margin:0 0 16px}
+.dn-modc p b{font-weight:800;color:#14272a}
+.dn-modc p span{display:block;margin-top:8px;font-size:15px;color:#51666a}
+.dn-modc button{display:block;width:100%;border-radius:99px;font:inherit;font-weight:700;font-size:16px;padding:14px 16px;margin-top:10px;cursor:pointer;line-height:1.25}
+.dn-modok{border:0;background:linear-gradient(180deg,#ecd98f,#c4a24a);color:#1b2b2d;box-shadow:0 10px 22px rgba(196,162,74,.4)}
+.dn-modalt{border:2px solid #1f6a72;background:#fff;color:#1f6a72}
+.dn-modno{border:0;background:none;color:#51666a;font-weight:600!important;text-decoration:underline}
 .dn-actq button.qty{font-size:12.5px;padding:5px 11px;line-height:1.2}
 .dn-actq:has(.qty){gap:6px}
 .dn-actq:has(.qty)::after{content:attr(data-unit);flex-basis:100%;font-size:12px;color:#6b7d80;margin-top:2px}
@@ -849,6 +862,7 @@ body{overflow-x:hidden}
 #dn{padding-top:18px!important}
 .dn-back{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:9px 16px;border-radius:99px;border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 2px 8px rgba(20,60,66,.06)}
 .dn-back:hover{border-color:var(--teal)}
+#back.dn-back{margin:18px 0 0;justify-content:center}   /* « Retour » ne doit pas toucher la barre « Valider mon don » */
 .dn-back.on{background:var(--teal);color:#fff;border-color:var(--teal);padding:12px 22px;font-size:15px}
 .dn-topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 12px}.dn-topbar .dn-back{margin:0}
 .dn-esp{background:#f3eedd!important;border-color:#e2cf98!important;color:#7a5f17!important}
@@ -939,10 +953,9 @@ body{overflow-x:hidden}
           <label><input type="radio" name="duree" value="infini" checked><span><i>Sans limite de durée<small>Jusqu'à ce que vous l'arrêtiez</small></i></span></label>
           <div class="dn-dur4" role="radiogroup" aria-label="Durée du don mensuel">
             <label><input type="radio" name="duree" value="12"><span><i>12 mois</i></span></label><label><input type="radio" name="duree" value="24"><span><i>24 mois</i></span></label>
-            <label><input type="radio" name="duree" value="36"><span><i>36 mois</i></span></label><label><input type="radio" name="duree" value="48"><span><i>48 mois</i></span></label>
           </div>
-          <div id="repBox" style="display:none"><p class="dn-datehint" style="margin:6px 4px 8px">Le montant de votre don est :</p>
-            <div class="dn-freq"><label><input type="radio" name="repart" value="mois" checked><span>Par mois</span></label><label><input type="radio" name="repart" value="total"><span>Le total à répartir</span></label></div></div>
+          <div id="repBox" style="display:none"><p class="dn-datehint" style="margin:6px 4px 8px"><b>Le montant que vous avez saisi est…</b></p>
+            <div class="dn-freq"><label><input type="radio" name="repart" value="mois" checked><span>Par mois</span></label><label><input type="radio" name="repart" value="total"><span>Total à répartir</span></label></div></div>
           <p class="dn-datehint" id="durHint" style="display:none"></p>
         </div>
       </div>
@@ -1097,7 +1110,7 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const isEnt = () => document.querySelector('input[name=type]:checked').value === 'entreprise';
 const isMen = () => document.querySelector('input[name=freq]:checked').value === 'mensuel' && mode === 'carte';
-const money = v => v.toFixed(2).replace('.00', '').replace('.', ',') + ' €';
+const money = v => v.toFixed(2).replace('.00', '').replace('.', ',').replace(/^(\d+)/, m => m.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')) + ' €';   // 2 880 € (espace fine)
 
 function show(m) { const e = $('err'); e.textContent = m; e.style.display = m ? 'block' : 'none'; if (m) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 async function withLoad(txt, fn) { $('dnLoadTxt').textContent = txt; $('dnLoad').classList.add('on'); const t0 = Date.now(); try { return await fn(); } finally { const d = 650 - (Date.now() - t0); if (d > 0) await wait(d); $('dnLoad').classList.remove('on'); } }
@@ -1272,6 +1285,15 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
       'reinsertion': /insertion/i, 'vetements': /v[êe]tements/i, 'toit': /toit/i, 'soutien': /soutien/i, 'scolarite': /scolarit/i, 'education': /ducation/i };
     if (q && PAT[q]) { let i = labels.findIndex(l => PAT[q].test(l)); if (i < 0 && /^(roch-hachana|simhat-torah|souccot|hanouka|pourim|pessah|chavouot)$/.test(q)) i = labels.findIndex(l => /chabbat/i.test(l)); if (i >= 0) pickAff(i); }
   }
+  { // jeudi soir (dès 18 h) et vendredi, heure de Paris : « Colis de Chabbat » est choisi par défaut, même si une fête approche
+    const p = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(new Date()), wd = (p.find(x => x.type === 'weekday') || {}).value || '', h = (+((p.find(x => x.type === 'hour') || {}).value || 0)) % 24;
+    if ((/^jeu/i.test(wd) && h >= 18) || /^ven/i.test(wd)) { const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => /^Colis de Chabbat/.test(r.value)); if (i >= 0) pickAff(i); }
+  }
+  { // adresse dédiée à une action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale… présélectionne cette affectation
+    const slugOf = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' et ').replace(/^l['’]/, 'l-').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const seg = decodeURIComponent(location.pathname).split('/').filter(Boolean).pop() || '';
+    if (seg) { const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => slugOf((AFFITEMS[r.value] || {}).titre || r.value) === seg); if (i >= 0) pickAff(i); }
+  }
   if (!$('actBox').hidden) actTotal();   // fête choisie d'office : le total suit les actions cochées
   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
@@ -1302,13 +1324,44 @@ function setMode(m) {
   upSum(); goPanel(1);
 }
 document.querySelectorAll('input[name=type]').forEach(r => r.onchange = () => { setType(isEnt()); updHint(); upSum(); });
+// ---- don mensuel : phrase de récapitulatif (en gras) + fenêtre de confirmation
+function mensInfo() {
+  if (!isMen()) return null;
+  const n = +document.querySelector('input[name=duree]:checked').value;
+  return { n, tot: !!n && document.querySelector('input[name=repart]:checked').value === 'total', v: nf($('montant').value) };
+}
+function recapHtml(i) {
+  if (!i.v) return i.tot ? 'Saisissez le montant total : il sera réparti sur ' + i.n + ' mensualités.' : 'Choisissez un montant : il sera prélevé chaque mois.';
+  if (i.tot) { const c = Math.round(i.v * 100), p = Math.floor(c / i.n), r = c - p * i.n;
+    return '<b>' + money(i.v) + ' au total</b>, répartis en <b>' + i.n + ' mensualités de ' + money(p / 100) + '</b>' + (r ? ' (1er prélèvement : ' + money((p + r) / 100) + ')' : '') + '. Le don s\'arrête ensuite tout seul.'; }
+  if (i.n) return '<b>' + money(i.v) + ' prélevés chaque mois pendant ' + i.n + ' mois</b>, soit <b>' + money(i.v * i.n) + ' au total</b>.';
+  return '<b>' + money(i.v) + ' prélevés chaque mois</b>, sans limite de durée. Vous pouvez arrêter quand vous voulez.';
+}
 function upDur() {
-  const men = isMen(), n = +document.querySelector('input[name=duree]:checked').value, tot = n && men && document.querySelector('input[name=repart]:checked').value === 'total', v = nf($('montant').value), h = $('durHint');
-  $('durBox').style.display = men ? 'grid' : 'none'; $('repBox').style.display = n && men ? 'block' : 'none'; h.style.display = n && men ? 'block' : 'none';
-  if (!n) { h.textContent = ''; return; }
-  if (tot && v) { const c = Math.round(v * 100), p = Math.floor(c / n), r = c - p * n; h.textContent = money(v) + ' répartis en ' + n + ' mensualités de ' + money(p / 100) + (r ? ' (1er prélèvement : ' + money((p + r) / 100) + ')' : '') + ', puis le don s\'arrête automatiquement.'; }
-  else if (tot) h.textContent = 'Saisissez le montant total : il sera réparti sur ' + n + ' mensualités.';
-  else h.textContent = n + ' prélèvements' + (v ? ' de ' + money(v) + ', soit ' + money(v * n) + ' au total' : '') + ', puis le don s\'arrête automatiquement.';
+  const i = mensInfo(), h = $('durHint');
+  $('durBox').style.display = i ? 'grid' : 'none'; $('repBox').style.display = i && i.n ? 'block' : 'none'; h.style.display = i ? 'block' : 'none';
+  if (i) h.innerHTML = recapHtml(i);
+}
+function confirmMens() {   // « Attention, c'est un don mensuel… » : fenêtre de confirmation avant de continuer
+  const i = mensInfo(); if (!i) return Promise.resolve(true);
+  const dur = i.n ? ' pendant ' + i.n + ' mois' : ', sans limite de durée', c = Math.round(i.v * 100), p = i.tot ? Math.floor(c / i.n) : 0;
+  const titre = i.tot ? 'Votre don en plusieurs fois' : 'Attention : c\'est un don mensuel';
+  const corps = i.tot
+    ? '<b>' + money(i.v) + ' au total</b>, répartis en <b>' + i.n + ' mensualités de ' + money(p / 100) + '</b>.<span>Le don s\'arrête tout seul après la dernière mensualité.</span>'
+    : '<b>' + money(i.v) + ' seront prélevés chaque mois</b>' + dur + (i.n ? ' (soit ' + money(i.v * i.n) + ' au total)' : '') + '.<span>Ce n\'est <u>pas</u> un total réparti : chaque prélèvement sera de ' + money(i.v) + '.</span>';
+  return new Promise(res => {
+    const o = document.createElement('div'); o.className = 'dn-mod'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+    o.innerHTML = '<div class="dn-modc"><div class="dn-modi">' + (i.tot ? '✓' : '!') + '</div><h3>' + titre + '</h3><p>' + corps + '</p>' +
+      '<button type="button" class="dn-modok">' + (i.tot ? 'Oui, c\'est bien ça' : 'Oui, ' + money(i.v) + ' par mois') + '</button>' +
+      (!i.tot && i.n ? '<button type="button" class="dn-modalt">Non : répartir ' + money(i.v) + ' sur ' + i.n + ' mois</button>' : '') +
+      '<button type="button" class="dn-modno">Modifier mon don</button></div>';
+    const fin = r => { o.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', esc); res(r); };
+    const esc = e => { if (e.key === 'Escape') fin(false); };
+    o.querySelector('.dn-modok').onclick = () => fin(true); o.querySelector('.dn-modno').onclick = () => fin(false);
+    const alt = o.querySelector('.dn-modalt'); if (alt) alt.onclick = () => { document.querySelector('input[name=repart][value=total]').checked = true; upDur(); upSum(); fin(false); };
+    o.addEventListener('click', e => { if (e.target === o) fin(false); }); document.addEventListener('keydown', esc);
+    document.body.appendChild(o); document.body.style.overflow = 'hidden'; o.querySelector('.dn-modok').focus();
+  });
 }
 document.querySelectorAll('input[name=repart]').forEach(r => r.onchange = () => { upDur(); upSum(); });
 document.querySelectorAll('input[name=duree]').forEach(r => r.onchange = upDur);
@@ -1485,7 +1538,7 @@ async function act() {
   guestProSave();
   if (busy) return; busy = true; $('go').disabled = true;
   try {
-    if (panel === 1) { check1(); goPanel(2); }
+    if (panel === 1) { check1(); if (!(await confirmMens())) return; goPanel(2); }
     else if (panel === 2) {
       check2();
       if (mode === 'sans') { renderRes(await withLoad('Création de votre reçu fiscal…', () => post('/api/recu', body()))); }

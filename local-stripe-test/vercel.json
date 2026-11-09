@@ -3,7 +3,7 @@
     "api/index.js": {
       "maxDuration": 60,
       "memory": 2048,
-      "includeFiles": "{templates/**,asso.config.json,fetes.config.json,actions.config.json,logo-asso*.png,apple-pay/**,public/emblem.png,logo-recu.png,node_modules/@sparticuz/chromium/bin/**}"
+      "includeFiles": "{templates/**,asso.config.json,fetes.config.json,actions.config.json,logo-asso*.png,apple-pay/**,public/emblem.png,public/index.html,logo-recu.png,node_modules/@sparticuz/chromium/bin/**}"
     }
   },
   "rewrites": [
@@ -21,6 +21,134 @@
     },
     {
       "source": "/.well-known/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/roch-hachana",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/roch-hachana/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/kapparot",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/kapparot/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/souccot",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/souccot/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/hanouka",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/hanouka/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/pourim",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/pourim/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/pessah",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/pessah/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/lag-baomer",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/lag-baomer/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/chavouot",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/chavouot/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/la-ou-le-besoin-est-le-plus-grand",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/la-ou-le-besoin-est-le-plus-grand/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/colis-de-chabbat",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/colis-de-chabbat/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/un-toit-sur-la-tete",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/un-toit-sur-la-tete/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/reinsertion-sociale",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/reinsertion-sociale/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/l-aide-a-la-scolarite",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/l-aide-a-la-scolarite/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/l-aide-a-leducation",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/l-aide-a-leducation/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/soutien-moral-et-financier",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/soutien-moral-et-financier/",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/vetements-et-soins",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/vetements-et-soins/",
       "destination": "/api/index.js"
     }
   ]

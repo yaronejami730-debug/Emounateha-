@@ -324,9 +324,9 @@ app.post('/api/intent', async (req, res) => {
       if (prev) amb = prev.ambassadeur;
     }
     let fin = '';                                            // don mensuel « jusqu'à une date » (vide = sans limite de durée)
-    const mois = mensuel ? parseInt(req.body.duree, 10) : 0;   // durée choisie : 12, 24, 36 ou 48 mois (N prélèvements) ; sinon sans limite
+    const mois = mensuel ? parseInt(req.body.duree, 10) : 0;   // durée choisie : 12 ou 24 mois (N prélèvements) ; sinon sans limite
     if (mois) {
-      if (![12, 24, 36, 48].includes(mois)) throw new Error('Durée du don mensuel invalide.');
+      if (![12, 24].includes(mois)) throw new Error('Durée du don mensuel invalide.');
       const f = new Date(Date.now() + 3600000); f.setUTCMonth(f.getUTCMonth() + mois); f.setUTCDate(f.getUTCDate() - 1);   // le (N+1)e prélèvement tombe un jour après : exactement N prélèvements
       fin = f.toISOString().slice(0, 10);
     } else if (mensuel && req.body.duree === 'date') {
@@ -489,6 +489,17 @@ app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/a
 });
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.use(express.static(SITE_PUBLIC, { index: false, dotfiles: 'deny' }));
+// une adresse par action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale, /l-aide-a-la-scolarite… (la page présélectionne l'action)
+const slugOf = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' et ').replace(/^l['’]/, 'l-').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function slugsAffectations() {
+  const AC = actionsConfig(), s = new Set(fetesConfig().map(f => slugOf(f.titre || f.label)));
+  for (const l of AFFECT_BASE) s.add(slugOf((AC[l] && AC[l].titre) || l));
+  return s;
+}
+app.get('/:slug', (req, res, next) => {
+  if (!/^[a-z0-9-]+$/.test(req.params.slug) || !slugsAffectations().has(req.params.slug)) return next();
+  res.setHeader('Cache-Control', 'no-store'); res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 if (!process.env.VERCEL) app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));
 app.locals.remplir = remplir; app.locals.pdf = pdf;
 module.exports = app;
