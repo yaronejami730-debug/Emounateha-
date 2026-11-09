@@ -82,6 +82,16 @@
       "permanent": true
     },
     {
+      "source": "/don-cerfa/",
+      "destination": "https://don.emounateha.fr/",
+      "permanent": true
+    },
+    {
+      "source": "/don-cerfa/:path*/",
+      "destination": "https://don.emounateha.fr/:path*/",
+      "permanent": true
+    },
+    {
       "source": "/don-cerfa/:path*",
       "destination": "https://don.emounateha.fr/:path*",
       "permanent": true
