@@ -923,7 +923,7 @@ function renderReceipts(data) {
 const DJ = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 function renderMensuels(dons) {
   if (!dons.length) { $('spMen').innerHTML = ''; return; }
-  $('spMen').innerHTML = '<div class="sp-men"><h3>Mes dons mensuels en cours</h3>' + dons.map(d => '<div class="sp-md"><div><b>' + eur(d.montant) + ' par mois</b>' + (d.affectation ? ' · ' + esc(d.affectation) : '') +
+  $('spMen').innerHTML = '<div class="sp-men"><h3>Mes dons mensuels en cours</h3>' + dons.map(d => '<div class="sp-md"><div><b>' + eur(d.montant) + ' par mois</b>' + (d.nb ? ' <span style="color:#6b7d80">(don de ' + eur(d.total) + ' en ' + d.nb + ' fois)</span>' : '') + (d.affectation ? ' · ' + esc(d.affectation) : '') +
     '<small>Depuis le ' + DJ(d.depuis) + ' · ' + (d.fin ? 'jusqu\'au ' + DJ(d.fin) : 'sans limite de durée') + (d.prochain ? ' · prochain prélèvement le ' + DJ(d.prochain) : '') + (d.retard ? ' · <b style="color:#8a1f1f">dernier prélèvement en échec</b>' : '') + '</small></div>' +
     '<button class="stop" data-stop="' + esc(d.id) + '">Arrêter ce don</button></div>').join('') + '</div>';
   document.querySelectorAll('[data-stop]').forEach(b => b.onclick = async () => {
@@ -944,7 +944,7 @@ function proForm(q, i) {
 }
 function renderPros(openI) {
   const pros = prosOf();
-  $('proList').innerHTML = '<h4 style="margin:22px 0 0;font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:var(--teal)">🏢 Mes sociétés</h4>' + (pros.length ? '' : '<p class="sp-note">Aucune société enregistrée.</p>') +
+  $('proList').innerHTML = '<h4 style="margin:22px 0 0;font-family:\'Bree Serif\',serif;font-weight:400;font-size:20px;color:var(--teal)">🏢 Mes sociétés</h4>' + (pros.length ? '' : '<p class="sp-note">Aucune société enregistrée.</p>') +
     pros.map((q, i) => '<details class="sp-soc"' + (i === openI ? ' open' : '') + '><summary><span class="ic">🏢</span><span class="t"><b>' + esc(q.raisonSociale || 'Société') + '</b><small>' + (q.siren ? 'SIREN ' + esc(String(q.siren).replace(/(\d{3})(?=\d)/g, '$1 ')) : esc(q.ville || '')) + ' · modifier</small></span><span class="chev">▾</span></summary>' + proForm(q, i) + '</details>').join('') +
     (proNew ? '<div class="sp-soc" style="padding-top:4px"><div style="padding:12px 16px 0;font-weight:700;color:var(--teal)">Nouvelle société</div>' + proForm({}, -1) + '</div>' : '');
   $('proAdd').hidden = proNew;

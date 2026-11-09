@@ -488,16 +488,16 @@ body{overflow-x:hidden}
 .dn-dur{margin:12px 0 18px;display:grid;gap:10px}
 .dn-dur label{position:relative;display:block;margin:0;cursor:pointer}
 .dn-dur label input[type=radio]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
-.dn-dur label>span{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border:1.5px solid #cfdcdc;border-radius:14px;font-size:15.5px;font-weight:700;color:#24505a;line-height:1.25;transition:.15s}
-.dn-dur label>span::before{content:"";flex:none;width:22px;height:22px;border-radius:50%;border:2px solid #9fb6b8;background:#fff;box-sizing:border-box;transition:.15s}
+.dn-dur>label>span,.dn-dur4>label>span{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border:1.5px solid #cfdcdc;border-radius:14px;font-size:15.5px;font-weight:700;color:#24505a;line-height:1.25;transition:.15s}
+.dn-dur>label>span::before,.dn-dur4>label>span::before{content:"";flex:none;width:22px;height:22px;border-radius:50%;border:2px solid #9fb6b8;background:#fff;box-sizing:border-box;transition:.15s}
 .dn-dur label i{font-style:normal}
 .dn-dur label small{display:block;font-weight:500;font-size:12.5px;color:#6b7d80;margin-top:2px}
-.dn-dur label input:checked+span{border-color:var(--teal);background:#eef6f6;box-shadow:0 3px 12px rgba(31,106,114,.16)}
-.dn-dur label input:checked+span::before{border-color:var(--teal);background:var(--teal);box-shadow:inset 0 0 0 4px #fff}
+.dn-dur>label input:checked+span,.dn-dur4>label input:checked+span{border-color:var(--teal);background:#eef6f6;box-shadow:0 3px 12px rgba(31,106,114,.16)}
+.dn-dur>label input:checked+span::before,.dn-dur4>label input:checked+span::before{border-color:var(--teal);background:var(--teal);box-shadow:inset 0 0 0 4px #fff}
 .dn-dur label input:focus-visible+span{outline:3px solid rgba(31,106,114,.35);outline-offset:2px}
 #dn .dn-dur input[type=date]{display:block;width:100%;box-sizing:border-box;height:54px;margin:4px 0 0;padding:0 16px;border:1.5px solid #cfdcdc;border-radius:14px;font:inherit;font-size:16px;color:#14272a;background:#fff;-webkit-appearance:none;appearance:none}
 .dn-dur4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.dn-dur4 label>span{padding:13px 14px;font-size:15px}
+.dn-dur4>label>span{padding:13px 14px;font-size:15px}
 .dn-dur .dn-datehint{margin:2px 4px 0;font-size:12.5px;color:#6b7d80}
 /* affectation : tuiles à toucher (2 colonnes), carte de fête en grand */
 .dn-chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -935,6 +935,8 @@ body{overflow-x:hidden}
             <label><input type="radio" name="duree" value="12"><span><i>12 mois</i></span></label><label><input type="radio" name="duree" value="24"><span><i>24 mois</i></span></label>
             <label><input type="radio" name="duree" value="36"><span><i>36 mois</i></span></label><label><input type="radio" name="duree" value="48"><span><i>48 mois</i></span></label>
           </div>
+          <div id="repBox" style="display:none"><p class="dn-datehint" style="margin:6px 4px 8px">Le montant saisi ci-dessus est :</p>
+            <div class="dn-freq"><label><input type="radio" name="repart" value="mois" checked><span>Par mois</span></label><label><input type="radio" name="repart" value="total"><span>Le total à répartir</span></label></div></div>
           <p class="dn-datehint" id="durHint" style="display:none"></p>
         </div>
       </div>
@@ -1111,8 +1113,10 @@ function goPanel(n) {
 }
 function upSum() {
   const v = nf($('montant').value), men = isMen();
-  $('sAmt').innerHTML = v ? money(v) + ' <small>' + (men ? 'par mois' : '') + '</small>' : '— <small></small>';
-  $('bAmt').innerHTML = v ? money(v) + (men ? ' <em>/ mois</em>' : '') : '—';
+  const n = men ? +document.querySelector('input[name=duree]:checked').value : 0, tot = n && document.querySelector('input[name=repart]:checked').value === 'total';
+  $('sAmt').innerHTML = v ? money(v) + ' <small>' + (tot ? 'en ' + n + ' mensualités' : men ? 'par mois' : '') + '</small>' : '— <small></small>';
+  $('bAmt').innerHTML = v ? money(v) + (tot ? ' <em>en ' + n + ' fois</em>' : men ? ' <em>/ mois</em>' : '') : '—';
+  if (typeof upDur === 'function') upDur();
   $('sAff').textContent = $('aff').value || '—';
   const who = isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()).trim();
   $('sWho').textContent = who || '—';
@@ -1290,7 +1294,15 @@ function setMode(m) {
   upSum(); goPanel(1);
 }
 document.querySelectorAll('input[name=type]').forEach(r => r.onchange = () => { setType(isEnt()); updHint(); upSum(); });
-const upDur = () => { $('durBox').style.display = isMen() ? 'grid' : 'none'; const n = +document.querySelector('input[name=duree]:checked').value, h = $('durHint'); h.style.display = n && isMen() ? 'block' : 'none'; h.textContent = n ? n + ' prélèvements, puis le don s\'arrête automatiquement.' : ''; };
+function upDur() {
+  const men = isMen(), n = +document.querySelector('input[name=duree]:checked').value, tot = n && men && document.querySelector('input[name=repart]:checked').value === 'total', v = nf($('montant').value), h = $('durHint');
+  $('durBox').style.display = men ? 'grid' : 'none'; $('repBox').style.display = n && men ? 'block' : 'none'; h.style.display = n && men ? 'block' : 'none';
+  if (!n) { h.textContent = ''; return; }
+  if (tot && v) { const c = Math.round(v * 100), p = Math.floor(c / n), r = c - p * n; h.textContent = money(v) + ' répartis en ' + n + ' mensualités de ' + money(p / 100) + (r ? ' (1er prélèvement : ' + money((p + r) / 100) + ')' : '') + ', puis le don s\'arrête automatiquement.'; }
+  else if (tot) h.textContent = 'Saisissez le montant total : il sera réparti sur ' + n + ' mensualités.';
+  else h.textContent = n + ' prélèvements' + (v ? ' de ' + money(v) + ', soit ' + money(v * n) + ' au total' : '') + ', puis le don s\'arrête automatiquement.';
+}
+document.querySelectorAll('input[name=repart]').forEach(r => r.onchange = () => { upDur(); upSum(); });
 document.querySelectorAll('input[name=duree]').forEach(r => r.onchange = upDur);
 document.querySelectorAll('input[name=freq]').forEach(r => r.onchange = () => { $('freqHint').style.display = isMen() ? 'block' : 'none'; upDur(); upSum(); });
 $('amts').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('montant').value = b.dataset.v; mark(); upSum(); };
@@ -1437,7 +1449,7 @@ function body() {
   return { amb: AMB, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
     adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value, montant: $('montant').value,
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
-    frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked),
+    frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, repartition: document.querySelector('input[name=repart]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked),
     ...(!$('actBox').hidden ? { lignes: Object.entries(ACTS).map(([id, m]) => ({ id, montant: m })), libre: $('libre').value } : {}) };
 }
 async function post(url, data) {
@@ -1537,7 +1549,7 @@ function renderRes(o) {
     '<p class="dn-thx">Votre générosité aide directement les familles que nous accompagnons.</p>' +
     '<div class="dn-recap"><div class="dn-amt">' + eur(o.montant) + (o.mensuel ? '<small> par mois</small>' : '') + '</div>' +
       (o.lignes && o.lignes.length ? o.lignes.map(l => row(esc(l.label), eur(l.montant))).join('') : (o.affectation ? row('Affectation', esc(o.affectation)) : '')) +
-      row('Paiement', o.mensuel ? 'Don mensuel · 1re échéance' : 'Don ponctuel') + (o.mensuel ? row('Durée', o.fin ? 'Jusqu\'au ' + new Date(o.fin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sans limite de durée') : '') +
+      row('Paiement', o.nb ? 'Don en ' + o.nb + ' fois · 1er paiement' : o.mensuel ? 'Don mensuel · 1re échéance' : 'Don ponctuel') + (o.nb ? row('Total du don', eur(o.total) + ' en ' + o.nb + ' mensualités') : '') + (o.mensuel && !o.nb ? row('Durée', o.fin ? 'Jusqu\'au ' + new Date(o.fin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sans limite de durée') : '') +
       row('Reçu fiscal', 'n° ' + esc(o.numero)) + '</div>' +
     (em ? '<p class="dn-mail">' + em + '</p>' : '') +
     '<a class="dn-dl" href="' + o.pdf + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Télécharger mon reçu fiscal</a>';
