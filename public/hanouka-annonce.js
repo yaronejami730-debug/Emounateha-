@@ -4,7 +4,7 @@ var END=new Date('2026-12-07T23:59:59+01:00').getTime(),FIRST=new Date('2026-12-
 if(Date.now()>END)return;
 var d=Math.ceil((FIRST-Date.now())/86400000);
 var cnt=d>1?'dans <b>'+d+' jours</b>':d===1?'<b>demain soir</b>':d===0?'<b>ce soir</b>':'<b>c’est Hanouka</b>';
-var HANOUKA_DON='https://don.emounateha.fr/?aff=hanouka'; /* don Hanouka (AlloDons) ; le don général reste sur /don/ */
+var HANOUKA_DON='https://don.emounateha.fr/?aff=hanouka'; /* don Hanouka : don.emounateha.fr, Hanouka choisi d'office */
 var LINK=HANOUKA_DON;
 var css=document.createElement('style');
 css.textContent=
@@ -57,7 +57,7 @@ function mountBanner(){
   st.textContent='#hnbanner{display:block;order:9;width:min(100%,760px);margin:18px auto 0;border-radius:22px;overflow:hidden;box-shadow:0 10px 28px rgba(8,20,28,.35),0 0 0 1px rgba(243,213,140,.35);position:relative;z-index:2;-webkit-tap-highlight-color:transparent;transition:transform .2s}#hnbanner:active{transform:scale(.985)}html body .hero #hnbanner img{display:block;width:100%;height:auto;margin:0;filter:none;animation:none;max-width:none}@media(max-width:800px){#hnbanner{width:calc(100% - 4px);margin-top:16px;border-radius:18px}}';
   document.head.appendChild(st);
   var a=document.createElement('a');a.id='hnbanner';a.href=HANOUKA_DON;a.target='_blank';a.rel='noopener';a.setAttribute('aria-label','Hanouka 5787 : offrez la lumière à une famille. Un colis alimentaire pour la fête, 130 euros');
-  a.innerHTML='<img src="/hanouka/banderole.jpg?v=5" alt="Hanouka 5787 — Offrez la lumière à une famille. Un colis alimentaire pour la fête. Pour 130 € · Émounatéha × AlloDons" width="1046" height="262" loading="eager">';
+  a.innerHTML='<img src="/hanouka/banderole.jpg?v=6" alt="Hanouka 5787 — Offrez la lumière à une famille. Un colis alimentaire pour la fête. Pour 130 € · Émounatéha × AlloDons" width="1046" height="262" loading="eager">';
   a.addEventListener('click',function(e){if(window.hnOpen){e.preventDefault();window.hnOpen()}});
   r.parentNode.insertBefore(a,r.nextSibling)}
 if(document.readyState!=='loading')mountBanner();else document.addEventListener('DOMContentLoaded',mountBanner);
