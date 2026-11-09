@@ -215,7 +215,7 @@ const views = {
     <div class="card" style="margin-top:18px">
       <div class="row" style="margin-bottom:12px"><b>🖥 Aperçu ordinateur</b><span class="hint" style="margin:0">tel que le destinataire le reçoit</span><span class="grow"></span><button class="btn sm" onclick="pvFull()">⤢ Plein écran</button></div>
       <div class="dev desktop"><div class="chrome"><div class="bar"><i></i><i></i><i></i><span>Boîte de réception</span></div>
-        <div class="mailhead"><img src="/logo.png" alt=""><div><b>${esc(S.settings.senderName || S.settings.orgName)}</b> <span>&lt;${esc(S.settings.senderEmail || 'contact@emounateha.fr')}&gt;</span><div id="pvsubj" class="subj"></div></div></div>
+        <div class="mailhead"><img src="/logo.png?v=2" alt=""><div><b>${esc(S.settings.senderName || S.settings.orgName)}</b> <span>&lt;${esc(S.settings.senderEmail || 'contact@emounateha.fr')}&gt;</span><div id="pvsubj" class="subj"></div></div></div>
         <div class="scr" id="pvdscr"><iframe id="pvd"></iframe></div></div></div>
     </div>` : '<div class="card empty">Créez un template.</div>'}`;
   },
@@ -279,7 +279,7 @@ const views = {
       </div>
       <div class="card"><b>Identité des mails</b>
         <label>Nom de l'association</label><input id="s_orgName" value="${esc(s.orgName)}">
-        <label>URL du logo (publique https, ou /logo.png en local)</label><input id="s_logoUrl" value="${esc(s.logoUrl)}" placeholder="https://…/logo.png">
+        <label>URL du logo (publique https, ou /logo.png en local)</label><input id="s_logoUrl" value="${esc(s.logoUrl)}" placeholder="https://…/logo.png?v=2">
         <div class="hint">Les logos doivent être hébergés en ligne pour s'afficher dans Gmail/Outlook. Sans logo : le nom s'affiche en texte.</div>
         <div class="row"><div class="grow"><label>Téléphone / WhatsApp</label><input id="s_phone" value="${esc(s.phone)}"></div><div class="grow"><label>Compte réseaux</label><input id="s_social" value="${esc(s.social)}"></div></div>
         <label>Lien de don (par défaut)</label><input id="s_donateUrl" value="${esc(s.donateUrl)}">
