@@ -884,15 +884,25 @@ const etudeCache = new Map();
 const jourValide = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '') && Math.abs(new Date(d + 'T12:00:00Z') - Date.now()) < 3 * 86400000 ? d : '';
 // Le jour hébraïque change à Tset Hakokhavim (tombée de la nuit à Paris), pas à minuit : une fois la nuit tombée, le « jour » est celui de demain
 // (date hébraïque, Houmach, Téhilim, Tanya). La date civile, elle, reste celle de Paris et change à minuit.
-async function jourHebraique() {
-  const now = Date.now(), today = parisDay(now);
-  let tzeit = null;
-  try { const z = await chabadZmanim('394', today), it = z.items.find(x => /Tset Hakokhavim|Tombée de la nuit/i.test(x.label)); if (it && /^\d{1,2}:\d{2}$/.test(it.time)) tzeit = it.time; } catch (e) { /* horaires indisponibles : on garde le jour civil */ }
-  const hm = new Date(now).toLocaleTimeString('sv-SE', { timeZone: 'Europe/Paris', hour12: false }).slice(0, 5);
-  const apres = !!tzeit && hm.padStart(5, '0') >= tzeit.padStart(5, '0');
-  return { jour: apres ? parisDay(new Date(today + 'T12:00:00Z').getTime() + 86400000) : today, civil: today, tzeit, apres };
+const tzCache = new Map([['2988507', 'Europe/Paris']]);
+async function fuseauDe(geo) {   // fuseau horaire de la ville (Hebcal), gardé en mémoire
+  if (tzCache.has(geo)) return tzCache.get(geo);
+  const j = await (await fetch(`https://www.hebcal.com/zmanim?cfg=json&geonameid=${geo}&date=${parisDay(Date.now())}`)).json();
+  const tz = j.location && j.location.tzid; if (!tz) throw new Error('fuseau inconnu');
+  tzCache.set(geo, tz); return tz;
 }
-const jourEtude = async d => jourValide(d) || (await jourHebraique()).jour;
+// geo = ville de référence du visiteur (geonameid, mémorisée dans son navigateur après localisation) ; Paris par défaut
+async function jourHebraique(geo) {
+  geo = String(geo || '').replace(/\D/g, ''); if (!CHABAD_LIEUX[geo]) geo = '2988507';
+  const now = Date.now(); let tz = 'Europe/Paris', tzeit = null;
+  try { tz = await fuseauDe(geo); } catch (e) { if (geo !== '2988507') { geo = '2988507'; tz = 'Europe/Paris'; } }
+  const jourA = t => new Date(t).toLocaleDateString('sv-SE', { timeZone: tz }), today = jourA(now);
+  try { const z = await chabadZmanim(CHABAD_LIEUX[geo], today), it = z.items.find(x => /Tset Hakokhavim|Tombée de la nuit/i.test(x.label)); if (it && /^\d{1,2}:\d{2}$/.test(it.time)) tzeit = it.time; } catch (e) { /* horaires indisponibles : on garde le jour civil */ }
+  const hm = new Date(now).toLocaleTimeString('sv-SE', { timeZone: tz, hour12: false }).slice(0, 5);
+  const apres = !!tzeit && hm.padStart(5, '0') >= tzeit.padStart(5, '0');
+  return { jour: apres ? jourA(new Date(today + 'T12:00:00Z').getTime() + 86400000) : today, civil: today, tzeit, apres, geo };
+}
+const jourEtude = async (d, geo) => jourValide(d) || (await jourHebraique(geo)).jour;
 async function chabadEtude(jour) {
   jour = await jourEtude(jour);
   const hit = etudeCache.get(jour);
@@ -1611,7 +1621,7 @@ async function handle(req, res) {
       catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
     }
     if (url.pathname === '/api/jour-hebraique' && req.method === 'GET') { // public : jour hébraïque en cours (change à Tset Hakokhavim)
-      try { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify(await jourHebraique())); }
+      try { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify(await jourHebraique(url.searchParams.get('geo')))); }
       catch (e) { return send(res, 502, { error: 'Indisponible' }); }
     }
     if (url.pathname === '/api/etude' && req.method === 'GET') { // public : étude du jour (flux RSS Chabad)
