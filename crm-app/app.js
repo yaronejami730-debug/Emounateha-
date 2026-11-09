@@ -103,7 +103,8 @@ const views = {
     <div id="cerfaNew"></div>
     <div class="card"><div class="row" style="align-items:center"><b class="grow">Tous les reçus</b>
       <select id="cfFiltre" onchange="cerfaList()" style="width:auto"><option value="">Tous</option><option value="en ligne">En ligne</option><option value="manuel">Manuels</option></select>
-      <input id="cfQ" placeholder="Rechercher un nom, un n°…" oninput="cerfaList()" style="width:220px"></div>
+      <input id="cfQ" placeholder="Rechercher un nom, un n°…" oninput="cerfaList()" style="width:220px">
+      <button class="btn" id="cfTests" onclick="cerfaSupprTests()" style="display:none" title="Retire uniquement les reçus numérotés TEST-… (aucun don réel)">Supprimer les reçus de test</button></div>
       <div id="cerfaTab" style="margin-top:10px">Chargement…</div></div>`,
   '': () => {
     const running = S.campaigns.filter(c => c.status === 'running').length;
@@ -798,9 +799,17 @@ views.sms = () => `
 // ================= CERFA : liste + reçus manuels =================
 let CF = { recus: [], modes: ['Virement bancaire', 'Chèque', 'Espèces'], affs: [] };
 const eurC = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+async function cerfaSupprTests() {
+  const tests = CF.recus.filter(r => /^TEST-/i.test(r.numero || ''));
+  if (!tests.length) return toast('Aucun reçu de test');
+  if (!confirm('Supprimer définitivement ' + tests.length + ' reçu(s) de test (' + tests.map(r => r.numero).join(', ') + ') ? Les dons réels ne sont jamais touchés.')) return;
+  try { const r = await api('POST', '/cerfa/supprimer', {}); toast((r.supprimes || []).length + ' reçu(s) de test supprimé(s)'); await cerfaInit(); }
+  catch (e) { toast('Suppression impossible : ' + e.message, true); }
+}
 async function cerfaInit() {
   try { const [l, c] = await Promise.all([api('GET', '/cerfa'), api('GET', '/cerfa/config').catch(() => ({ affectations: [] }))]); CF.recus = l.recus || []; if (l.modes) CF.modes = l.modes; CF.affs = (c.affectations || []).map(a => a.label); }
   catch (e) { $('#cerfaTab').innerHTML = '<p class="hint">Impossible de lire les reçus : ' + esc(e.message) + '</p>'; return; }
+  { const bt = $('#cfTests'); if (bt) bt.style.display = CF.recus.some(r => /^TEST-/i.test(r.numero || '')) ? '' : 'none'; }
   cerfaList();
 }
 function cerfaList() {
