@@ -1690,7 +1690,7 @@ async function handle(req, res) {
     }
     if (url.pathname === '/diffusion-archives.json') { // public : toutes les diffusions publiées, groupées par mois
       if (!pool) return send(res, 200, { months: [] });
-      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+      const today = (await jourHebraique(url.searchParams.get('geo'))).jour;   // idem : une diffusion « de demain » apparaît à Tset Hakokhavim
       const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day <= $1 order by day desc, created_at desc limit 400', [today]);
       const months = [];
       for (const x of r.rows) { const k = x.day.slice(0, 7); let m = months.find(y => y.key === k); if (!m) { m = { key: k, items: [] }; months.push(m); } m.items.push(x); }
@@ -1698,7 +1698,7 @@ async function handle(req, res) {
     }
     if (url.pathname === '/diffusion.json') { // public : dernier document + dernière vidéo (indépendants : tant que la nouvelle vidéo n'est pas là, on garde la précédente)
       if (!pool) return send(res, 200, []);
-      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+      const today = (await jourHebraique(url.searchParams.get('geo'))).jour;   // le « jour » change à Tset Hakokhavim, pas à minuit
       const q = "select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day <= $1 and ";
       const doc = (await pool.query(q + "data is not null order by day desc, created_at desc limit 1", [today])).rows[0];
       const vid = (await pool.query(q + "youtube <> '' order by day desc, created_at desc limit 1", [today])).rows[0];

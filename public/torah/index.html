@@ -796,7 +796,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     el.innerHTML=out||'<div class="empty">Rien dans cette sélection.</div>';}
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');filter=b.dataset.f;renderArch()}));
   (document.getElementById('mois')||{addEventListener(){}}).addEventListener('change',e=>{mois=e.target.value;renderArch()});
-  Promise.all([fetch('/diffusion-archives.json').then(r=>r.json()),fetch('/diffusion.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>[])]).then(([j,today])=>{months=j.months||[];const sel=document.getElementById('mois')||document.createElement('select');months.forEach(m=>{const o=document.createElement('option');o.value=m.key;o.textContent=dm(m.key);sel.appendChild(o)});
+  Promise.all([fetch('/diffusion-archives.json'+(window.jourHebQS?window.jourHebQS():'')).then(r=>r.json()),fetch('/diffusion.json'+(window.jourHebQS?window.jourHebQS():''),{cache:'no-store'}).then(r=>r.json()).catch(()=>[])]).then(([j,today])=>{months=j.months||[];const sel=document.getElementById('mois')||document.createElement('select');months.forEach(m=>{const o=document.createElement('option');o.value=m.key;o.textContent=dm(m.key);sel.appendChild(o)});
     renderToday((today&&today[0])||(months[0]&&months[0].items[0]));renderArch();}).catch(()=>{renderToday(null);(document.getElementById('archives')||{}).innerHTML='<div class="empty">Archives indisponibles.</div>'});
 })();
 

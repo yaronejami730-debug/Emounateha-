@@ -2,6 +2,7 @@
    jourHeb() -> Promise<'AAAA-MM-JJ'> : la date civile dont le jour hébraïque est en cours (celle de demain une fois la nuit tombée). null si indisponible. */
 (function () {
   var p = null, at = 0, pg = null;
+  window.jourHebQS = function () { var g = ''; try { g = localStorage.getItem('parcity') || ''; } catch (e) {} return /^\d+$/.test(g) ? '?geo=' + g : ''; };   // ?geo=… : ville de référence du visiteur
   window.jourHeb = function () {
     var g = ''; try { g = localStorage.getItem('parcity') || ''; } catch (e) {}   // ville de référence du visiteur, mémorisée après sa localisation (Paris par défaut)
     if (p && pg === g && Date.now() - at < 30000) return p;

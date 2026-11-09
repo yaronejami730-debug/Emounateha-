@@ -755,7 +755,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
     el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));
     return el}
   function dLoad(){
-    fetch('/diffusion.json',{cache:'no-store'}).then(r=>r.json()).then(list=>{
+    fetch('/diffusion.json'+(window.jourHebQS?window.jourHebQS():''),{cache:'no-store'}).then(r=>r.json()).then(list=>{
       const d=list[0],sig=d?[d.id,d.day,d.youtube,d.has_image].join('|'):'';
       if(sig===dSig)return;dSig=sig;
       const playing=document.activeElement&&document.activeElement.tagName==='IFRAME';
