@@ -14,7 +14,7 @@
   // masque toute l'interface Google (bandeau, infobulles, surlignage) : seule la traduction reste
   var st = document.createElement('style');
   st.textContent = '.goog-te-banner-frame,.skiptranslate,#goog-gt-tt,.goog-te-balloon-frame,.goog-tooltip,.VIpgJd-ZVi9od-ORHb-OEVmcd,.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,.VIpgJd-yAWNEb-L7lbkb{display:none!important;visibility:hidden!important}' +
-    'body{top:0!important;position:static!important}font font,.goog-text-highlight{background:none!important;box-shadow:none!important}#gt_el{display:none}' +
+    'body{top:0!important}font font,.goog-text-highlight{background:none!important;box-shadow:none!important}#gt_el{display:none}' +
     '.lang-pop{position:fixed;z-index:9999;top:72px;right:16px;width:230px;background:#fff;border-radius:16px;box-shadow:0 14px 40px rgba(10,40,45,.28);padding:12px;font-family:inherit}' +
     '.lang-pop[hidden]{display:none}.lang-pop b{display:block;font-family:"Bree Serif",serif;font-weight:400;color:#1f6a72;font-size:17px;margin:2px 6px 8px}' +
     '.lang-pop button{display:flex;width:100%;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:#14272a;background:none;border:0;font:inherit;font-weight:600;cursor:pointer;text-align:left}' +
