@@ -290,9 +290,23 @@ const views = {
         <div class="row" style="margin-top:22px"><button class="btn pri" onclick="saveSettings()">Enregistrer</button>
         ${s.hasKey ? `<button class="btn bad" onclick="clearKey()">Retirer la clé</button>` : ''}</div>
       </div>
+    </div>
+    <div class="card" style="margin-top:16px;border-color:#f1c6c6"><b style="color:#9b1c1c">Remettre à zéro</b>
+      <div class="hint">Suppression définitive, sans retour possible. Les modèles de mails, les réglages, les reçus CERFA, la diffusion et les ambassadeurs ne sont pas touchés.</div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="rz_contacts" checked style="width:auto"> Tous les contacts (${S.contacts.length})</label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="rz_sends" checked style="width:auto"> Tout l'historique des envois</label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="rz_campaigns" style="width:auto"> Toutes les campagnes (${S.campaigns.length})</label>
+      <label>Tapez SUPPRIMER pour confirmer</label><input id="rz_conf" placeholder="SUPPRIMER" autocomplete="off">
+      <div class="row" style="margin-top:14px"><button class="btn bad" onclick="resetAll()">Tout supprimer</button></div>
     </div>`;
   }
 };
+async function resetAll() {
+  const b = { contacts: $('#rz_contacts').checked, sends: $('#rz_sends').checked, campaigns: $('#rz_campaigns').checked, confirm: $('#rz_conf').value.trim().toUpperCase() };
+  if (b.confirm !== 'SUPPRIMER') return toast('Tapez SUPPRIMER pour confirmer', true);
+  try { const j = await api('POST', '/reset', b); toast('Supprimé : ' + Object.entries(j.n).map(([k, v]) => v + ' ' + ({ contacts: 'contact(s)', sends: 'envoi(s)', campaigns: 'campagne(s)' }[k])).join(', ')); await render(); }
+  catch (e) { toast(e.message, true); }
+}
 
 // ---------- Actions ----------
 async function runTick() {

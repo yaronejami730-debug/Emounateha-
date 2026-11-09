@@ -1185,12 +1185,27 @@ async function api(req, res, url) {
   const body = ['POST', 'PUT'].includes(m) ? await readBody(req) : {};
 
   if (parts[0] === 'state' && m === 'GET') {
+    await Promise.race([brevoToday(), new Promise(r => setTimeout(r, 2500))]); // vrai total du jour chez Brevo (horaires, dons, codes, campagnes)
     return send(res, 200, {
       settings: publicSettings(), contacts: db.contacts, templates: db.templates,
       campaigns: db.campaigns.map(c => ({ ...c, stats: campaignStats(c), plan: campaignPlan(c) })),
       today: { sent: usedToday(), limit: db.settings.dailyLimit, pausedUntil: db.settings.pausedUntil || null, queue: db.campaigns.filter(c => c.status === 'running').reduce((a, c) => a + remaining(c), 0) },
       sends: db.sends.slice(-60).reverse()
     });
+  }
+  if (parts[0] === 'reset' && m === 'POST') { // Réglages : remise à zéro (contacts, historique des envois, campagnes)
+    if (body.confirm !== 'SUPPRIMER') return send(res, 400, { error: 'Tapez SUPPRIMER pour confirmer.' });
+    const quoi = ['contacts', 'sends', 'campaigns'].filter(t => body[t]);
+    if (!quoi.length) return send(res, 400, { error: 'Rien à supprimer.' });
+    const n = {};
+    for (const t of quoi) {
+      n[t] = db[t].length;
+      if (pool) await pool.query(`delete from public.${t}`);
+      db[t] = []; lastSnap[t] = new Map();
+    }
+    if (quoi.includes('sends')) { db.settings.pausedUntil = null; dirty = true; }
+    save(); await flush().catch(() => {});
+    return send(res, 200, { ok: true, n });
   }
   if (parts[0] === 'settings' && m === 'POST') {
     const allowed = ['senderName', 'senderEmail', 'dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'publicUrl', 'logoUrl', 'orgName', 'address', 'donateUrl', 'phone', 'social', 'minGapHours', 'assetsUrl', 'replyTo', 'instagramUrl', 'facebookUrl', 'tiktokUrl', 'youtubeUrl'];
