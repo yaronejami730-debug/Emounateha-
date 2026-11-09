@@ -697,15 +697,15 @@ async function chabbatJob(budget) {
   if (budget <= 0) return 0;
   const today = parisDay(Date.now()), h = parisHour();
   const wd = new Date(today + 'T12:00:00Z').getUTCDay(); // 0 = dimanche … 4 = jeudi
-  if (h < 10) return 0;
+  if (h < 10) return 0;   // jeudi : envoi principal dès 19 h ; vendredi : rappel dès 10 h
   const subs = db.contacts.filter(c => c.status === 'active' && (c.tags || []).map(x => x.toLowerCase()).includes('chabbat'));
   if (!subs.length) return 0;
   const got = new Set(db.sends.filter(x => x.status !== 'error').map(x => x.contactId + '|' + x.templateId));
   const cache = {}; let n = 0, errors = 0;
   const jobs = [];
-  // mail de la semaine : jeudi dès 10 h ; s'il reste des inscrits (quota Brevo atteint), il reprend vendredi matin jusqu'à 14 h
-  const weeklyDate = wd === 4 ? today : (wd === 5 && h < 14 ? parisDay(Date.now() - 86400000) : null);
-  if (weeklyDate) jobs.push({ key: 'chabbat-' + weeklyDate, mode: 'weekly' });
+  // mail de la semaine : jeudi soir dès 19 h ; rappel le vendredi dès 10 h (jusqu'à 15 h)
+  if (wd === 4 && h >= 19) jobs.push({ key: 'chabbat-' + today, mode: 'weekly' });
+  if (wd === 5 && h < 15) jobs.push({ key: 'chabbat-rappel-' + today, mode: 'weekly' });
   jobs.push({ key: 'chabbat-fete-' + today, mode: 'yomtov', onlyIfEveToday: true });
   for (const job of jobs) {
     for (const c of subs) {
@@ -752,11 +752,16 @@ async function shabbatSubscribe(req, res) {
     db.contacts.push(c);
   }
   save();
-  send(res, 200, { ok: true, city: city[0] });
-  // premier envoi tout de suite (confirme l'adresse et montre le format), sans bloquer la réponse
+  // premier envoi tout de suite (confirme l'adresse et montre le format). Il part AVANT la réponse :
+  // sur Vercel, tout ce qui suit la réponse peut être coupé (l'e-mail n'arrivait jamais).
   const key = 'chabbat-bienvenue';
   const room = db.settings.dailyLimit - usedToday() > 25 && !(db.settings.pausedUntil && Date.now() < +new Date(db.settings.pausedUntil)); // on garde de la marge pour les envois planifiés
-  if (room && !db.sends.some(x => x.contactId === c.id && x.templateId === key && x.status !== 'error')) sendChabbat(c, key, 'weekly', {}).catch(e => console.error('Chabbat bienvenue', e.message));
+  let envoye = false;
+  if (room && !db.sends.some(x => x.contactId === c.id && x.templateId === key && (x.status === 'sent' || x.status === 'simulated'))) {
+    try { const r = await Promise.race([sendChabbat(c, key, 'weekly', {}), new Promise((_, no) => setTimeout(() => no(new Error('délai dépassé')), 20000))]); envoye = r && r.status === 'sent'; }
+    catch (e) { console.error('Chabbat bienvenue', e.message); }
+  }
+  send(res, 200, { ok: true, city: city[0], emailEnvoye: envoye });
 }
 
 

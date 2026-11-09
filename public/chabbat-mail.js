@@ -44,7 +44,7 @@
     fetch('/api/shabbat-subscribe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: email, city: f.city.value, civility: f.civility.value, firstName: f.firstName.value.trim(), lastName: f.lastName.value.trim(), website: f.website.value }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) {
-        if (x.ok) { msg.textContent = 'Merci ! Un premier email arrive dans quelques instants (pensez à vérifier vos courriers indésirables).'; msg.className = 'nlmsg ok'; f.email.value = ''; btn.textContent = 'Inscrit ✓'; }
+        if (x.ok) { msg.textContent = x.emailEnvoye ? 'Merci ! Un premier e-mail vient de vous être envoyé (pensez à vérifier vos courriers indésirables). Ensuite : chaque jeudi soir, et un rappel le vendredi matin.' : 'Merci, vous êtes inscrit ! Vous recevrez les horaires chaque jeudi soir, avec un rappel le vendredi matin.'; msg.className = 'nlmsg ok'; f.email.value = ''; btn.textContent = 'Inscrit ✓'; }
         else { msg.textContent = (x.j && x.j.error) || 'Une erreur est survenue, réessayez.'; msg.className = 'nlmsg err'; btn.disabled = false; btn.textContent = 'Je m\'inscris'; }
       })
       .catch(function () { msg.textContent = 'Connexion impossible, réessayez.'; msg.className = 'nlmsg err'; btn.disabled = false; btn.textContent = 'Je m\'inscris'; });
