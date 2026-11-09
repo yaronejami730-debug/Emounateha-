@@ -521,7 +521,27 @@ function renderKeepFocus() {
 }
 window.addEventListener('hashchange', () => { tplDraft = null; render(); });
 render();
-setInterval(() => { if (!document.hidden && $('#modal').classList.contains('hidden') && !location.hash.includes('templates') && !location.hash.includes('settings') && !location.hash.includes('sms') && !location.hash.includes('campaigns/') && !location.hash.includes('cerfa')) render(); }, 30000);   // pas de rafraîchissement automatique sur la page des reçus (formulaire en cours, confirmation…)
+// ---------- Mise à jour en direct (sans recharger la page) ----------
+// Toutes les 8 s : on relit les données ; si quelque chose a changé ET que l'utilisateur n'est pas en train d'écrire,
+// on redessine seulement le contenu. Jamais pendant une saisie, une fenêtre ouverte, un formulaire de reçu ou une fiche campagne (qui a son propre direct).
+let liveSig = '', liveBusy = false;
+const userBusy = () => { const a = document.activeElement; return !!(a && a.closest('#main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || !$('#modal').classList.contains('hidden') || !!document.querySelector('#cerfaNew form, #cerfaNew input'); };
+async function liveTick() {
+  if (document.hidden || liveBusy) return; const route = (location.hash.replace(/^#\/?/, '') || '');
+  if (/^(templates|settings|sms)/.test(route) || /^campaigns\//.test(route)) return;
+  liveBusy = true;
+  try {
+    if (route === 'cerfa') {
+      const l = await api('GET', '/cerfa'); const sig = JSON.stringify((l.recus || []).map(r => [r.numero, r.montant, r.ref]));
+      if (sig !== liveSig) { liveSig = sig; CF.recus = l.recus || []; if (l.modes) CF.modes = l.modes; if (!userBusy()) { cerfaList(); const bt = $('#cfTests'); if (bt) bt.style.display = CF.recus.some(r => /^TEST-/i.test(r.numero || '')) ? '' : 'none'; } }
+    } else {
+      const st = await api('GET', '/state'); const sig = JSON.stringify([st.contacts && st.contacts.length, st.campaigns, (st.sends || []).length, st.quota, st.ambassadeurs]);
+      if (sig !== liveSig) { liveSig = sig; if (!userBusy()) await render(); }
+    }
+  } catch (e) {} finally { liveBusy = false; }
+}
+setInterval(liveTick, 8000);
+window.addEventListener('hashchange', () => { liveSig = ''; });
 
 // fiche statistiques d'une campagne
 function campDetail(id){
