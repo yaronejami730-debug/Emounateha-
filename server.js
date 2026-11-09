@@ -1635,7 +1635,7 @@ async function handle(req, res) {
       catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
     }
     if (url.pathname === '/api/jour-hebraique' && req.method === 'GET') { // public : jour hébraïque en cours (change à Tset Hakokhavim)
-      try { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify(await jourHebraique(url.searchParams.get('geo')))); }
+      try { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': 'https://don.emounateha.fr' }); return res.end(JSON.stringify(await jourHebraique(url.searchParams.get('geo')))); }
       catch (e) { return send(res, 502, { error: 'Indisponible' }); }
     }
     if (url.pathname === '/api/etude' && req.method === 'GET') { // public : étude du jour (flux RSS Chabad)

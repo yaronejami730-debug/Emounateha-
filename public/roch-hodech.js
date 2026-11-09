@@ -21,7 +21,22 @@
     document.body.insertBefore(b, document.body.firstChild);
   }
   window.__rochHodech = { info: info, show: show };
+  // Le jour hébraïque commence à Tset Hakokhavim (tombée de la nuit), pas à minuit : le bandeau apparaît dès ce moment-là, la veille au soir,
+  // et disparaît à Tset Hakokhavim du 2e jour (ou du 1er jour quand Roch 'Hodech ne dure qu'un jour). Le jour en cours vient de /api/jour-hebraique
+  // (horaire exact de la ville du visiteur) ; si l'horaire est indisponible, on retombe sur la date civile.
+  var API = (/(^|\.)emounateha\.fr$/.test(location.hostname) && !/^www\./.test(location.hostname) ? 'https://www.emounateha.fr' : '') + '/api/jour-hebraique';
+  function jourHebraique() {
+    var g = ''; try { g = localStorage.getItem('parcity') || ''; } catch (e) {}
+    return fetch(API + (/^\d+$/.test(g) ? '?geo=' + g : ''), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { return /^\d{4}-\d{2}-\d{2}$/.test(j.jour || '') ? j.jour : null; }).catch(function () { return null; });
+  }
+  function maj(cal) {
+    jourHebraique().then(function (J) {
+      var r = info(cal, J || ymd(new Date())), b = document.getElementById('rchband');
+      if (b) b.remove();
+      if (r) show(r);
+    });
+  }
   fetch('/calendrier-hebraique.json').then(function (r) { return r.json(); }).then(function (cal) {
-    var r = info(cal, ymd(new Date())); if (r) show(r);
+    maj(cal); setInterval(function () { maj(cal); }, 60000);   // la page reste ouverte au moment de Tset Hakokhavim : le bandeau apparaît / disparaît tout seul
   }).catch(function () {});
 })();
