@@ -1370,8 +1370,12 @@ $('acctLogout').onclick = async () => { try { await api('POST', '/api/auth/logou
   inp.addEventListener('blur', () => setTimeout(close, 150));
 })();
 
+// ambassadeur : lien https://ambassadeur.emounateha.fr/<prenom> → ?amb=<prenom>, retenu en permanence sur cet appareil
+const AMB = (() => { const k = 'emAmb'; let v = (new URLSearchParams(location.search).get('amb') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+  try { if (v) localStorage.setItem(k, JSON.stringify({ v, t: Date.now() })); else { const o = JSON.parse(localStorage.getItem(k) || 'null'); if (o && o.v) v = o.v; } } catch (e) {}
+  return v; })();
 function body() {
-  return { type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
+  return { amb: AMB, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
     adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value, montant: $('montant').value,
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
     frequence: document.querySelector('input[name=freq]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked),

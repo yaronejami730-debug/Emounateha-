@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Devenir ambassadeur — Émounatéha</title>
+<meta name="description" content="Devenez ambassadeur Émounatéha : relayez la diffusion de la Torah et aidez à la collecte de dons pour les familles dans le besoin.">
+<meta property="og:title" content="Devenir ambassadeur — Émounatéha">
+<meta property="og:description" content="Relayez la lumière de la Torah et aidez à la collecte, là où vous êtes.">
+<meta property="og:image" content="https://www.emounateha.fr/og-accueil-hd.jpg"><meta property="og:url" content="https://ambassadeur.emounateha.fr/">
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:#fff url(/bg.png) repeat;line-height:1.65}
+h1,h2,h3{font-family:'Bree Serif',Georgia,serif;font-weight:400}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+/* hero */
+.hero{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:10px 0 24px;position:relative}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:4px}
+.top a{text-decoration:none;font-weight:700;background:var(--gold);border:1.5px solid var(--gold);color:#1b2b2d;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:10px 22px;border-radius:99px;font-size:15px}
+.top a:hover{background:var(--gold-l);border-color:var(--gold-l)}
+.top .bsd{font-size:26px;font-weight:600;color:var(--gold-l);text-shadow:0 1px 6px rgba(0,0,0,.3);line-height:1}
+.hero img{width:clamp(100px,11vw,190px);display:block;margin:0 auto 4px;animation:logoIn 1.1s cubic-bezier(.2,.8,.2,1) both,spin 40s linear 1.1s infinite;filter:drop-shadow(0 6px 18px rgba(0,0,0,.25))}
+.hero h1{font-size:clamp(22px,3.4vw,32px);line-height:1.15;color:var(--gold);letter-spacing:1.5px;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.he{font-size:clamp(15px,2.2vw,19px);letter-spacing:6px;margin:0 0 6px}
+.rule{width:90px;height:2px;background:var(--gold);margin:0 auto 6px}
+.slogan{font-size:clamp(12px,2.4vw,15px);opacity:.95}
+.quote{font-family:'Bree Serif',serif;font-size:clamp(14px,2.2vw,18px);max-width:640px;margin:10px auto 8px;line-height:1.35}
+.btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;text-decoration:none;font-weight:600;padding:9px 20px;border-radius:99px;font-size:14px;transition:.2s}
+.btn.gold{background:var(--gold);color:#1b2b2d}
+.btn.gold:hover{background:var(--gold-l);transform:translateY(-2px)}
+.btn.line{border:2px solid #fff;color:#fff}
+.btn.line:hover{background:#fff;color:var(--teal)}
+@keyframes logoIn{from{opacity:0;transform:scale(.7) rotate(-8deg)}to{opacity:1;transform:none}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.hero img{animation:none}}
+
+/* boutons : effet léger au survol */
+.btn,.top a{transition:transform .2s,background .2s,box-shadow .2s}
+.btn:hover,.top a:hover{transform:translateY(-2px)}
+
+
+/* colis : onglets */
+.ctabs{display:flex;gap:10px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin:0 auto 28px}
+.ctab{font:inherit;cursor:pointer;border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);padding:8px 18px;border-radius:99px;font-weight:600;font-size:14px;line-height:1.2;transition:.2s;white-space:nowrap}
+.ctab:hover{border-color:var(--teal)}
+.ctab.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+.ctab.feat{font-weight:800}
+.tabwrap{display:flex;flex-direction:column;align-items:center}
+.tabwrap small{margin-top:4px;font-weight:700;font-size:9.5px;color:var(--gold);letter-spacing:.5px;text-transform:uppercase}
+/* colis de Chabbat */
+.colis{display:grid;gap:34px;grid-template-columns:minmax(0,330px) minmax(0,1fr);align-items:center}
+.colis img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:18px;box-shadow:0 14px 36px rgba(20,60,66,.2);display:block}
+.colis h3{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(24px,4vw,32px);color:var(--teal);margin-bottom:8px}
+.colis ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 18px;margin:16px 0 22px}
+.colis li{padding-left:22px;position:relative;color:#2b4044}
+.colis li::before{content:"";position:absolute;left:0;top:.62em;width:9px;height:9px;border-radius:50%;background:var(--gold)}
+.price{display:inline-flex;align-items:baseline;gap:10px;background:#fff;border:1px solid #e3ecec;border-radius:12px;padding:8px 16px;margin-bottom:20px;box-shadow:0 6px 24px rgba(20,60,66,.07)}
+.price b{font-family:'Bree Serif',serif;font-weight:400;font-size:30px;color:var(--teal);line-height:1}
+.price span{color:var(--mut);font-size:14px;display:inline-flex;align-items:center;gap:8px}
+.price .uber{height:17px;width:auto;display:block}
+@media(max-width:820px){.colis{grid-template-columns:1fr}.colis img{max-width:330px;margin:0 auto}}
+
+/* carrousel nos actions / diffusion : pleine largeur, défilement à la main, sans rebords */
+.slider{position:relative;width:100vw;margin-left:calc(50% - 50vw);overflow:hidden}
+.slides{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;gap:0;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;transition:height .3s ease-out}
+.slides::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;min-width:100%;scroll-snap-align:start;scroll-snap-stop:always;padding:0}
+.sbtn{display:none}
+.slide>.wrap{padding-top:6px;padding-bottom:6px}
+.sbtn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--teal);font-size:26px;line-height:1;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.22);z-index:3}
+.sbtn:hover{background:var(--teal);color:#fff}
+.sbtn.prev{left:12px}.sbtn.next{right:12px}
+.dots{display:flex;gap:8px;justify-content:center;padding:14px 0 4px}
+.dots button{width:9px;height:9px;border-radius:50%;border:0;background:#c5d6d7;cursor:pointer;padding:0}
+.dots button.on{background:var(--teal);width:26px;border-radius:9px}
+.dslide{display:flex;justify-content:center;padding:4px 16px 10px}
+.dcard{width:100%;max-width:960px;background:#fff;border:1px solid #e3ecec;border-radius:20px;padding:26px 28px 30px;box-shadow:0 10px 30px rgba(20,60,66,.08)}
+.dhead{text-align:center;margin-bottom:20px}
+.dkick{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.dhead h3{font-family:'Bree Serif',serif;font-weight:400;font-size:28px;color:var(--teal);margin:0 0 4px;line-height:1.2}
+.dhead .when{color:var(--mut);font-size:14px;text-transform:capitalize}
+.dbody{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;justify-content:center;align-items:start}
+.dbody.solo{grid-template-columns:minmax(0,620px)}
+.dlab{font-weight:700;color:var(--teal);font-size:14px;margin-bottom:8px}
+.dprev{position:relative;background:#f3f6f6;height:586px;overflow:hidden;cursor:zoom-in;border:1px solid #e3ecec;border-radius:14px}
+.dprev img{display:block;width:100%;height:100%;object-fit:cover;object-position:top center}
+.dfade{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,.96))}
+.dopen{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);border:1.5px solid var(--teal);background:#fff;color:var(--teal);font:inherit;font-weight:600;font-size:13px;padding:9px 18px;border-radius:99px;cursor:pointer}
+.dopen:hover{background:var(--teal);color:#fff}
+.yt{position:relative;background:#000;aspect-ratio:9/16;border-radius:14px;overflow:hidden}
+.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ytlink{display:inline-flex;align-items:center;padding:10px 16px;border:1px solid #e3ecec;color:var(--teal);font-weight:600;text-decoration:none}
+#lb{position:fixed;inset:0;background:#0b1e21;z-index:100;display:none;overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(64px + env(safe-area-inset-top)) 10px calc(24px + env(safe-area-inset-bottom))}
+#lb.on{display:block}
+#lb .lbbar{position:fixed;top:0;left:0;right:0;z-index:2;height:calc(52px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0 16px;background:#0b1e21;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-between;gap:10px}
+#lb .lbc{color:#cfe6e3;font-size:14px;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lb .lbx{flex-shrink:0;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:var(--teal);font-size:18px;line-height:1;cursor:pointer}
+#lb .lbs{max-width:900px;margin:0 auto}
+#lb img{display:block;width:100%;height:auto;background:#fff;border-radius:10px}
+@media(max-width:820px){.dslide{padding:4px 12px 10px}.dprev{height:300px}.sbtn{display:none}
+  .dots{gap:4px}.dots button{position:relative;margin:0 4px}.dots button::before{content:"";position:absolute;inset:-16px -8px}}
+/* tablette (601-820) : affiche + texte côte à côte, colis en deux colonnes */
+@media(min-width:601px) and (max-width:820px){
+  .dbody{grid-template-columns:minmax(0,1fr) 280px;gap:18px}.dprev{height:498px}
+  .colis{grid-template-columns:minmax(0,250px) minmax(0,1fr);gap:26px;align-items:start}
+  .colis img{max-width:none;margin:0}
+  .colis ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ctab{padding:10px 18px}
+}
+
+/* petits écrans : tout est resserré */
+@media(max-width:600px){
+  .ctabs{flex-wrap:wrap;overflow:visible;justify-content:center;gap:8px;padding:0;margin:0 0 20px}
+  .hero{padding:10px 0 24px}
+  .hero img{width:92px;margin-bottom:4px}
+  .hero h1{font-size:22px;letter-spacing:1px}
+  .he{font-size:14px;letter-spacing:4px}
+  .slogan{font-size:11px}
+  .quote{font-size:14px;margin:12px auto}
+  .btn{padding:13px 20px;font-size:14px}
+  .top .bsd{font-size:20px}
+  .title{margin-bottom:24px}.title h2{font-size:24px}.title p{font-size:14px}
+  .sec-nav a{font-size:12px;padding:12px 10px}
+  .card h3,.step h3{font-size:17px}.card p,.step p{font-size:13.5px}
+  .card .ic{width:42px;height:42px;margin-bottom:10px}
+  .social{gap:12px}.social img{width:44px;height:44px}
+  .contactline a{display:inline-block;padding:10px 2px}
+  footer a{display:inline-block;padding:9px 4px}
+  .contactline{font-size:13px}.contactline span{margin:0 6px}
+  .ctab{padding:11px 15px;font-size:13px}
+  .colis h3{font-size:22px}.colis li{font-size:14px}
+  .price b{font-size:24px}.price{padding:6px 12px}
+  .colis{gap:18px}.colis img{max-width:100%;aspect-ratio:4/3}
+  .dslide{padding:4px 8px 10px}.dcard{padding:16px 12px 20px}.dhead h3{font-size:22px}.dbody{grid-template-columns:1fr;gap:18px}.dbody.solo{grid-template-columns:1fr}.dprev{height:380px}.yt{max-width:320px;margin:0 auto}.ytl{margin:16px 0 8px}.dopen{padding:12px 18px}
+  footer{padding:26px 16px;font-size:12px}footer .legal{font-size:12px}
+  .don{padding:30px 16px}.don h2{font-size:24px}
+}
+
+/* pied de page compact */
+footer{line-height:1.45}
+footer p{margin:0}
+footer p+p{margin-top:4px}
+footer .sir{margin-top:6px}
+footer .legal{margin-top:8px;gap:4px 14px}
+footer .dev{margin-top:10px;padding-top:8px}
+
+.rebbe{margin:0 auto 14px;max-width:680px;font-family:'Bree Serif',serif;font-style:italic;font-size:clamp(12.5px,1.4vw,14.5px);line-height:1.5;color:#fff;opacity:.95;padding:0 10px}
+.rebbe cite{display:block;margin-top:6px;font-style:normal;font-family:Inter,sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold-l)}
+@media(max-width:600px){.rebbe{font-size:12.5px;margin-bottom:14px}}
+
+/* date du jour (civile + hébraïque, Hebcal) en haut de l'en-tête */
+.hdate{font-size:13px;color:#fff;opacity:.92;text-align:left;line-height:1.3}
+.hdate b{display:block;font-weight:600;color:var(--gold-l);font-size:14px}
+.hdate i{display:block;font-style:normal;font-weight:700;color:var(--gold-l);font-size:12.5px;margin-top:2px}
+@media(max-width:600px){.hdate{font-size:11px}.hdate b{font-size:12.5px}}
+
+/* ---- barre de menu : tout en haut, sur toutes les pages ---- */
+.sec-nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid #e3ecec}
+.sec-nav .wrap{display:flex;align-items:center;gap:6px;min-height:52px}
+.sec-nav .links{display:flex;gap:4px;justify-content:center;flex:1;overflow-x:auto;scrollbar-width:none}
+.sec-nav .links a{white-space:nowrap;text-decoration:none;font-weight:600;font-size:14px;color:var(--teal);padding:14px 12px;border-bottom:3px solid transparent}
+.sec-nav .links a:hover{border-color:var(--gold)}
+.sec-nav .links a.ndon{background:var(--gold);color:#1b2b2d;border-radius:99px;padding:8px 16px;margin:8px 0 8px 8px;border:0}
+.sec-nav .links a.ndon:hover{background:var(--gold-l)}
+.nbrand{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;color:var(--teal);font-size:15px;flex-shrink:0}
+.nbrand img{width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--gold)}
+.ndate{display:none;margin-left:auto;font-size:12px;color:var(--teal);font-weight:600;white-space:nowrap;direction:rtl}
+.burger{display:none;width:42px;height:42px;border:0;background:none;cursor:pointer;padding:10px;flex-direction:column;justify-content:space-between;flex-shrink:0}
+.burger span{display:block;height:3px;border-radius:3px;background:var(--teal);transition:.25s}
+@media(max-width:800px){
+  .sec-nav .wrap{justify-content:space-between;padding:0 6px 0 12px}
+  .ndate{display:block}
+  .burger{display:flex}
+  .sec-nav .links{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;flex-direction:column;gap:0;max-height:calc(100vh - 52px);overflow:auto;box-shadow:0 12px 24px rgba(20,60,66,.15);border-top:1px solid #e3ecec;padding:4px 10px 12px}
+  .sec-nav.open .links{display:flex}
+  .sec-nav .links a{padding:14px 10px;font-size:16px;border-bottom:1px solid #eef3f3}
+  .sec-nav .links a.ndon{margin:10px 0 0;text-align:center;padding:12px}
+  .sec-nav.open .burger span:nth-child(1){transform:translateY(8.5px) rotate(45deg)}
+  .sec-nav.open .burger span:nth-child(2){opacity:0}
+  .sec-nav.open .burger span:nth-child(3){transform:translateY(-8.5px) rotate(-45deg)}
+}
+
+/* étapes */
+.steps{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));counter-reset:s}
+.step{position:relative;background:rgba(255,255,255,.92);border:1px solid #e3ecec;border-radius:18px;padding:34px 24px 26px;box-shadow:0 6px 24px rgba(20,60,66,.07);counter-increment:s}
+.step::before{content:counter(s);position:absolute;top:-18px;left:24px;width:38px;height:38px;border-radius:50%;background:var(--gold);color:#1b2b2d;font-family:'Bree Serif',serif;font-size:20px;display:grid;place-items:center}
+.step h3{color:var(--teal);font-size:20px;margin-bottom:6px}.step p{color:var(--mut);font-size:15px}
+/* icônes réseaux */
+.social{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.social img{width:42px;height:42px;border-radius:50%;display:block;transition:.2s}
+.social a:hover img{transform:translateY(-3px)}
+/* sections */
+section{padding:56px 0}
+.title{text-align:center;margin-bottom:38px}
+.title h2{font-size:clamp(24px,4vw,34px);color:var(--teal)}
+.title p{color:var(--mut);max-width:620px;margin:10px auto 0}
+.title::after{content:"";display:block;width:70px;height:3px;background:var(--gold);margin:16px auto 0;border-radius:2px}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.card{background:rgba(255,255,255,.92);border:1px solid #e3ecec;border-radius:18px;padding:28px 24px;box-shadow:0 6px 24px rgba(20,60,66,.07)}
+.card .ic{width:50px;height:50px;border-radius:12px;background:#e6f0f0;color:var(--teal);display:grid;place-items:center;margin-bottom:14px}
+.card h3{font-size:21px;color:var(--teal);margin-bottom:6px}
+.card p{color:var(--mut);font-size:15px}
+.about{max-width:760px;margin:0 auto;text-align:center;font-size:18px;color:#2b4044}
+.about b{color:var(--teal)}
+/* don */
+.don{background:var(--teal) url(/header.jpg) center/cover;color:#fff;text-align:center;border-radius:26px;padding:56px 24px;box-shadow:0 14px 40px rgba(20,60,66,.25)}
+.don h2{font-size:clamp(28px,5vw,40px);color:var(--gold-l);margin-bottom:10px}
+.don p{max-width:560px;margin:0 auto 26px;opacity:.95}
+/* contact */
+.contact{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));text-align:center}
+.contact a{text-decoration:none}
+.contact .card{transition:.2s}
+.contact .card:hover{transform:translateY(-3px);border-color:var(--gold)}
+.contact strong{display:block;color:var(--teal);font-family:'Bree Serif',serif;font-size:19px;margin-bottom:4px}
+footer{background:#1f6a72 url(/header.jpg) center/cover;color:#e7f1f1;text-align:center;padding:26px 22px 22px;font-size:13px;position:relative}
+footer::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+footer b{color:var(--gold-l)}
+footer a{color:#e7f1f1;text-decoration:none}footer a:hover{color:var(--gold-l);text-decoration:underline}
+footer .legal{display:flex;gap:6px 18px;justify-content:center;flex-wrap:wrap;margin-top:14px;font-size:13px}
+footer .sir{margin-top:10px;font-size:13px;color:#d3e6e7}
+footer .dev{margin-top:14px;font-size:12px;color:#b9d3d4;padding-top:12px;border-top:1px solid rgba(255,255,255,.15)}footer .dev a{color:#b9d3d4}footer .dev b{color:#e4cd8a;font-weight:600}
+.contactline{text-align:center;margin-top:16px;font-size:15px}
+.contactline a{color:var(--teal);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.contactline span{margin:0 12px;color:var(--gold)}
+@media(max-width:600px){section{padding:40px 0}.wrap{padding:0 16px}.he{letter-spacing:5px;font-size:17px}.btns{flex-direction:column;align-items:stretch}.btn{text-align:center}.card{padding:22px 18px}.about{font-size:16px}.don{padding:38px 18px;border-radius:20px}}
+img{max-width:100%;height:auto}
+body{overflow-x:hidden}
+
+/* iPhone : barre fondue dans l'en-tête (même fond), date au centre, menu à droite */
+@media(max-width:800px){
+  .sec-nav{background:#1f6a72 url(/header.jpg) center top/cover;border-bottom:0;box-shadow:none}
+  .sec-nav .wrap{position:relative;justify-content:center;min-height:50px;padding:0 6px}
+  .nbrand{display:none}
+  .ndate{display:block;margin:0;text-align:center;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35);line-height:1.2;direction:ltr;padding:6px 44px 6px 44px}
+  .ndate b{display:block;font-size:14px;font-weight:700;color:var(--gold-l);direction:rtl}
+  .ndate small{display:block;font-size:11.5px;font-weight:500;opacity:.95}
+  .burger{position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+  .burger span{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .sec-nav.open .burger span{background:#fff}
+  .hero .top .hdate,.pagehead .top .hdate{visibility:hidden}
+  .hero{padding-top:0}.hero .top{margin-bottom:0}
+}
+
+/* barre de menu fondue dans le fond vert (toutes tailles) */
+.sec-nav{background:#1f6a72 url(/header.jpg) center top/cover;border-bottom:0;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.sec-nav .links a{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.sec-nav .links a:hover{border-color:var(--gold-l)}
+.sec-nav .links a.ndon{color:#1b2b2d;text-shadow:none}
+.nbrand{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+@media(max-width:800px){.sec-nav .links{background:#1f6a72 url(/header.jpg) center/cover;border-top:1px solid rgba(255,255,255,.2)}.sec-nav .links a{border-bottom:1px solid rgba(255,255,255,.15)}}
+
+/* paracha de la semaine + horaires de Chabbat (Hebcal) */
+.parsec{padding:0;margin-top:-26px;position:relative;z-index:5}
+.parcard{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:#fff;border:1px solid #e3ecec;border-radius:16px;box-shadow:0 12px 32px rgba(20,60,66,.14);overflow:hidden}
+.parcard>div{padding:16px 18px;border-left:1px solid #eef3f3;display:flex;flex-direction:column;justify-content:center}
+.parcard>div:first-child{border-left:0;background:linear-gradient(135deg,#e9f4f4,#fff)}
+.plab{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gold)}
+.parcard b{font-family:'Bree Serif',serif;font-weight:400;font-size:22px;color:var(--teal);line-height:1.15;margin-top:2px}
+.parcard small{color:var(--mut);font-size:12px;margin-top:2px}
+@media(max-width:800px){.parsec{margin-top:0;padding:12px 12px 0}.parcard{grid-template-columns:1fr 1fr}.parcard>div{padding:12px 14px;border-left:0;border-top:1px solid #eef3f3}.parcard>div:nth-child(1),.parcard>div:nth-child(2){border-top:0}.parcard>div:nth-child(2),.parcard>div:nth-child(4){border-left:1px solid #eef3f3}.parcard b{font-size:18px}}
+
+/* barre transparente par-dessus l'en-tête ; fond vert uni seulement une fois la page défilée */
+.sec-nav{background:transparent;box-shadow:none;margin-bottom:-52px;transition:background .25s,box-shadow .25s}
+.sec-nav.scrolled{background:#1f6a72;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.hero,.pagehead{padding-top:58px}
+@media(max-width:800px){.sec-nav{background:transparent;margin-bottom:-50px}.sec-nav.scrolled,.sec-nav.open{background:#1f6a72}.sec-nav .links{background:#1f6a72}.hero,.pagehead{padding-top:56px}.hero .top{display:none}}
+/* carte paracha : sous l'en-tête, sans chevauchement */
+.parsec{margin-top:0;padding:26px 0 0}
+@media(max-width:800px){.parsec{padding:14px 12px 0}}
+
+/* carte paracha à cheval sur la ligne dorée */
+.hero{padding-bottom:86px}
+.parsec{margin-top:-58px;padding:0}
+.parcard{max-width:960px;margin:0 auto;border:1px solid #e3ecec;box-shadow:0 14px 40px rgba(20,60,66,.22)}
+.pk{flex-direction:row!important;align-items:center;gap:14px}
+.torah{width:46px;height:46px;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.12))}
+#parheb{font-family:'Bree Serif',serif;font-size:15px;color:var(--teal);opacity:.85;direction:rtl;text-align:left}
+@media(max-width:800px){.hero{padding-bottom:70px}.parsec{margin-top:-46px;padding:0 12px}.torah{width:34px;height:34px}#parheb{font-size:13px}}
+.pk>div{display:flex;flex-direction:column;min-width:0}
+#parheb{margin-top:1px}
+
+/* barre toujours transparente ; au défilement, les liens passent en vert foncé pour rester lisibles */
+.sec-nav.scrolled{background:transparent;box-shadow:none}
+.sec-nav.scrolled .links a{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .links a.ndon{color:#1b2b2d}
+.sec-nav.scrolled .nbrand{color:var(--teal);text-shadow:none}
+.sec-nav.scrolled .burger span{background:var(--teal);box-shadow:none}
+.sec-nav.scrolled .ndate{color:var(--teal);text-shadow:none}.sec-nav.scrolled .ndate b{color:var(--teal)}
+@media(max-width:800px){.sec-nav.scrolled{background:transparent}.sec-nav.open,.sec-nav.scrolled.open{background:#1f6a72}}
+/* paracha : trois lignes nettes */
+.pk>div{display:flex;flex-direction:column;gap:2px}
+#parname{display:block}
+#parheb{display:block;font-family:'Bree Serif',serif;font-size:20px;line-height:1.15;color:var(--teal);opacity:1;direction:rtl;text-align:left;margin:0}
+@media(max-width:800px){#parheb{font-size:17px}}
+
+.citysel{position:relative;display:inline-flex;align-items:center;margin-top:2px}
+.citysel select{appearance:none;-webkit-appearance:none;border:0;background:transparent;font-family:'Bree Serif',serif;font-size:22px;color:var(--teal);padding:0 22px 0 0;cursor:pointer;line-height:1.15;max-width:100%}
+.citysel .chev{position:absolute;right:2px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:14px;pointer-events:none}
+.citysel select:focus{outline:none;text-decoration:underline;text-decoration-color:var(--gold)}
+@media(max-width:800px){.citysel select{font-size:18px}}
+
+.hero{padding-bottom:112px}
+.parsec{margin-top:-62px}
+.parsec[hidden]{display:none}
+.hero:has(+.parsec[hidden]){padding-bottom:40px}
+.citysel{border:1.5px dashed var(--gold);border-radius:10px;padding:2px 8px 2px 10px;margin-top:4px;background:#fffdf5}
+.citysel select{padding-right:18px}
+.citysel .chev{right:8px}
+@media(max-width:800px){.hero{padding-bottom:84px}.parsec{margin-top:-48px}}
+
+/* barre transparente : date à gauche, menu au centre, Faire un don, בס״ד à droite ; plus de petit logo */
+.nbrand{display:none!important}
+.sec-nav .wrap{position:relative;min-height:56px}
+.ndate{display:block;margin:0;text-align:left;line-height:1.2;direction:ltr;flex-shrink:0;min-width:150px}
+.ndate b{display:block;font-size:13px;font-weight:700;color:var(--gold-l);direction:rtl;text-align:left}
+.ndate small{display:block;font-size:11px;font-weight:500;color:#fff;opacity:.95}
+.sec-nav.scrolled .ndate b{color:var(--gold)}.sec-nav.scrolled .ndate small{color:var(--teal)}
+.nbsd{font-size:24px;font-weight:600;color:var(--gold-l);text-shadow:0 1px 6px rgba(0,0,0,.3);line-height:1;margin-left:10px;flex-shrink:0}
+.sec-nav.scrolled .nbsd{color:var(--gold);text-shadow:none}
+.hero .top{display:none}
+.hero{padding-top:62px}
+.hero img{margin-top:0}
+@media(max-width:800px){
+  .sec-nav .wrap{justify-content:space-between;padding:0 6px 0 10px}
+  .nbsd{font-size:18px;margin:0;order:0}
+  .ndate{text-align:center;min-width:0;order:1;position:absolute;left:50%;transform:translateX(-50%)}
+  .ndate b{text-align:center;font-size:14px}.ndate small{font-size:11.5px}
+  .burger{order:2;position:static;transform:none}
+  .hero{padding-top:58px}
+}
+
+/* barre : plus large, liens compacts, בס״ד tout à droite */
+.sec-nav .wrap{max-width:1280px;gap:8px}
+.sec-nav .links{overflow:visible;flex:1;justify-content:center;gap:0;min-width:0}
+.sec-nav .links a{font-size:13.5px;padding:14px 9px}
+.sec-nav .links a.ndon{margin-left:10px;padding:8px 14px}
+.nbsd{margin-left:6px}
+.ndate{min-width:140px}
+@media(max-width:1100px){.sec-nav .links a{font-size:12.5px;padding:14px 7px}.ndate{min-width:120px}.ndate b{font-size:12px}.ndate small{font-size:10px}}
+
+/* barre : date | liens | בס״ד | ≡ ; plus de bouton Faire un don dans la barre */
+.ndate{order:0}.sec-nav .links{order:1}.nbsd{order:2;margin-left:auto}.burger{order:3}
+.sec-nav .links a.ndon{display:none}
+@media(max-width:800px){.nbsd{order:0;margin:0}.ndate{order:1}.burger{order:3}.sec-nav .links{order:4}}
+
+/* menu déroulant (≡) sur toutes les tailles, y compris ordinateur */
+.burger{display:flex;order:3;position:static;transform:none;margin-left:6px}
+.sec-nav .links{display:none;position:absolute;top:100%;right:0;left:auto;width:min(360px,100%);background:#1f6a72;flex-direction:column;gap:0;max-height:calc(100vh - 56px);overflow:auto;box-shadow:0 14px 30px rgba(0,0,0,.28);border-radius:0 0 16px 16px;padding:6px 10px 12px;order:4}
+.sec-nav.open .links{display:flex}
+.sec-nav .links a{color:#fff!important;text-shadow:none;padding:13px 12px;font-size:15px;border-bottom:1px solid rgba(255,255,255,.14);border-left:0}
+.sec-nav .links a:last-child{border-bottom:0}
+.sec-nav .links a:hover{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.08);border-radius:8px}
+.sec-nav.open .burger span:nth-child(1){transform:translateY(8.5px) rotate(45deg)}
+.sec-nav.open .burger span:nth-child(2){opacity:0}
+.sec-nav.open .burger span:nth-child(3){transform:translateY(-8.5px) rotate(-45deg)}
+.sec-nav .wrap{justify-content:space-between}
+.nbsd{margin-left:0;order:2}
+.sec-nav.scrolled .burger span{background:var(--teal)}
+@media(max-width:800px){.sec-nav .links{left:0;right:0;width:100%;border-radius:0}}
+/* en-tête : plus de boutons */
+.hero .btns{display:none}
+.hero{padding-bottom:96px}
+@media(max-width:800px){.hero{padding-bottom:72px}}
+</style>
+</head>
+<body>
+<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="https://www.emounateha.fr/"><img src="/logo.png" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="https://www.emounateha.fr/#mission">Qui sommes-nous</a><a href="https://www.emounateha.fr/#actions">Nos actions</a><a href="https://www.emounateha.fr/#actions" id="navDif">Diffusion de la Torah</a><a href="https://www.emounateha.fr/colis/">Les colis</a><a href="https://www.emounateha.fr/#aider">Comment aider</a><a href="https://www.emounateha.fr/#contact">Contact</a><a href="/ambassadeur/">Devenir ambassadeur</a></div></div></nav>
+<div class="ab-top"><a class="ab-back" href="https://www.emounateha.fr/"><span>←</span> emounateha.fr</a><a class="ab-back ab-don" href="https://don.emounateha.fr/">Faire un don</a></div>
+<header class="ab-head"><img src="/logo-complet.png" alt="Émounatéha — אמונתך"><h1>Devenir ambassadeur</h1><p>Relayer la lumière de la Torah et aider à la collecte, là où vous êtes.</p></header>
+<style>
+/* ambassadeur.emounateha.fr : page autonome, sans la barre du site */
+.sec-nav,.pagehead,.ndate{display:none!important}
+html,body{background:linear-gradient(180deg,#eef5f5 0,#f8fbfb 320px,#fff 100%)!important}
+.ab-top{max-width:1040px;margin:0 auto;padding:18px 16px 0;display:flex;justify-content:space-between;gap:10px}
+.ab-back{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 2px 8px rgba(20,60,66,.06)}
+.ab-back:hover{border-color:var(--teal)}
+.ab-don{background:#f3eedd;border-color:#e2cf98;color:#7a5f17}
+.ab-head{text-align:center;padding:14px 16px 0}
+.ab-head img{width:132px;height:auto;mix-blend-mode:multiply;display:block;margin:0 auto 10px}
+.ab-head h1{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(28px,4.5vw,40px);color:var(--teal);margin:0}
+.ab-head p{color:#51666a;margin:6px auto 0;max-width:520px}
+</style>
+<style>
+.pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:76px 0 34px;position:relative}
+.pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
+.pagehead h1{font-family:'Bree Serif',serif;font-weight:400;font-size:clamp(28px,4.5vw,42px);color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.25)}.pagehead p{opacity:.95;margin-top:6px}
+.amb{max-width:1040px;margin:0 auto;padding:26px 16px 60px;display:grid;grid-template-columns:1.1fr 1fr;gap:28px;align-items:start}
+.ambtxt h2{font-family:'Bree Serif',serif;font-weight:400;font-size:26px;color:var(--teal);margin-bottom:10px}
+.ambtxt p{color:#2b4044;margin-bottom:14px}
+.miss{display:grid;gap:12px;margin:18px 0 6px}
+.miss>div{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #e3ecec;border-radius:14px;padding:14px 16px}
+.miss .ic{width:40px;height:40px;border-radius:10px;background:#e6f0f0;color:var(--teal);display:grid;place-items:center;flex-shrink:0;font-size:18px}
+.miss b{display:block;color:var(--teal);font-family:'Bree Serif',serif;font-weight:400;font-size:18px}
+.miss small{color:var(--mut);font-size:13.5px}
+.ambform{background:#fff;border:1px solid #e3ecec;border-radius:20px;box-shadow:0 14px 40px rgba(20,60,66,.12);padding:24px 22px}
+.ambform h3{font-family:'Bree Serif',serif;font-weight:400;font-size:22px;color:var(--teal);margin-bottom:4px}
+.ambform .hint{color:var(--mut);font-size:13px;margin-bottom:10px}
+.ambform label{display:block;font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin:12px 0 5px}
+.ambform input,.ambform textarea{width:100%;padding:11px 12px;border:1px solid #e3ecec;border-radius:10px;font:inherit;font-size:15px;outline:none;background:#fff}
+.ambform input:focus,.ambform textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(31,106,114,.15)}
+.ambform textarea{min-height:90px;resize:vertical}
+.ambform .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chk{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.chk label{display:flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0;font-size:15px;color:#2b4044;font-weight:500;margin:0;cursor:pointer;padding:10px 12px;border:1px solid #e3ecec;border-radius:10px}
+.chk input{width:18px;height:18px;accent-color:var(--teal)}
+.chk label:has(input:checked){border-color:var(--teal);background:#e9f4f4}
+.ambform .btn{width:100%;text-align:center;margin-top:18px;border:0;cursor:pointer;font:inherit;font-weight:600}
+.ok{display:none;background:#fff;border:1px solid #e3ecec;border-radius:20px;box-shadow:0 14px 40px rgba(20,60,66,.12);padding:24px 20px;text-align:center;color:var(--teal);font-weight:600}
+.lnk{margin:12px 0 16px;padding:14px;border-radius:14px;background:#f3eedd;color:#5c4710;font-weight:700;font-size:17px;word-break:break-all}
+.ok .btn{border:0;cursor:pointer;font:inherit;font-weight:700;padding:12px 20px;border-radius:99px;text-decoration:none}
+.err{color:#b91c1c;font-size:13px;margin-top:10px;min-height:18px}
+.hp{position:absolute;left:-9999px}
+@media(max-width:820px){.amb{grid-template-columns:1fr;gap:18px;padding:22px 12px 40px}.pagehead{padding-top:70px}}
+.miss>div>div{display:block;border:0;padding:0;background:none}
+.miss .ic{font-family:'Bree Serif',serif;font-weight:700}
+.ab-head{padding-bottom:0}
+@media(max-width:820px){.ambform,.ok{order:-1}.ambtxt h2{font-size:22px}.amb{padding-top:16px}}
+</style>
+<section><div class="amb">
+  <div class="ambtxt">
+    <h2>Comment ça marche ?</h2>
+    <div class="miss">
+      <div><span class="ic">1</span><div><b>Inscrivez-vous</b><small>Quelques informations, moins d'une minute.</small></div></div>
+      <div><span class="ic">2</span><div><b>Recevez votre lien</b><small>Par email, un lien à votre nom, par exemple <b style="display:inline;font-family:Inter,sans-serif;font-size:13.5px">ambassadeur.emounateha.fr/yaron</b></small></div></div>
+      <div><span class="ic">3</span><div><b>Partagez-le</b><small>Dans vos groupes WhatsApp, vos statuts, vos réseaux, autour de vous. Chaque don fait par votre lien vous est attribué.</small></div></div>
+    </div>
+    <p style="margin-top:14px">Les dons servent aux colis de Chabbat et des fêtes, à la diffusion de la Torah et à nos actions auprès des familles. Chaque donateur reçoit son reçu fiscal.</p>
+  </div>
+  <form class="ambform" id="f" novalidate>
+    <h3>Je deviens ambassadeur</h3>
+    <div class="hint">Votre lien personnel vous est envoyé par email.</div>
+    <div class="row"><div><label for="aP">Prénom *</label><input id="aP" name="firstName" required autocomplete="given-name"></div><div><label for="aN">Nom *</label><input id="aN" name="lastName" required autocomplete="family-name"></div></div>
+    <label for="aE">Email *</label><input id="aE" name="email" type="email" inputmode="email" required autocomplete="email">
+    <label for="aT">Téléphone *</label><input id="aT" name="phone" type="tel" inputmode="tel" required autocomplete="tel">
+    <div class="row"><div><label for="aC">Code postal *</label><input id="aC" name="cp" inputmode="numeric" maxlength="5" required autocomplete="postal-code"></div><div><label for="aV">Ville *</label><input id="aV" name="city" required autocomplete="address-level2"></div></div>
+    <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="btn gold" type="submit">Recevoir mon lien ambassadeur</button>
+    <div class="err" id="err"></div>
+  </form>
+  <div class="ok" id="ok"><div style="font-size:30px">🙏</div><b style="display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:22px;margin:4px 0 6px">Merci, vous êtes ambassadeur !</b>
+    <span style="font-weight:500;color:#33464a">Votre lien personnel (aussi envoyé par email) :</span>
+    <div class="lnk" id="lnk"></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn gold" type="button" id="cp">Copier le lien</button><a class="btn" id="wa" target="_blank" rel="noopener" style="background:#25d366;color:#fff">Partager sur WhatsApp</a></div></div>
+</div></section>
+<footer>
+  <p><b>Émounatéha</b> · Association à but non lucratif</p>
+  <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
+  <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
+  <div class="legal"><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a><a href="https://www.emounateha.fr/cgv/">CGV</a></div>
+  <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
+  <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
+</footer>
+<script>
+document.getElementById('y').textContent=new Date().getFullYear();
+(function(){const n=document.querySelector('.sec-nav');if(!n)return;const f=()=>n.classList.toggle('scrolled',scrollY>40);addEventListener('scroll',f,{passive:true});f()})();
+// ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
+(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date(),ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),k='hd3'+ymd;
+ const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
+ const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
+ const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+ function label(items){ // transforme les intitulés Hebcal du jour en « Xe jour de … »
+   const out=[];
+   for(const it of items){let t=(it.title||'').replace(/[\u0300-\u036f]/g,'').replace(/H\u0332/g,'H');
+     if(it.category==='parashat'){out.push('Chabbat · '+t.replace(/^Parachat?\s*/i,'Parachat '));continue}
+     if(it.category==='roshchodesh'){out.push(t);continue}
+     if(it.category!=='holiday')continue;
+     let m;
+     if(m=t.match(/^Hanoukah:\s*(\d)\s*Bougie/i)){const n=+m[1];out.push(n===1?'Veille de Hanouka · 1<sup>re</sup> bougie ce soir':ord(n-1)+' jour de Hanouka · '+n+' bougies ce soir');continue}
+     if(/^Hanoukah:\s*8/i.test(t)){out.push('8<sup>e</sup> jour de Hanouka');continue}
+     if(m=t.match(/^Erev\s+(.+)$/i)){out.push('Veille de '+m[1]);continue}
+     if(m=t.match(/^(Pessah|Soukkot|Chavou.?ot|Roch Hachanah)\s+(I{1,3}|IV|V|VI{0,3})(\s*\(.*\))?$/i)){const n=roman[m[2].toUpperCase()];out.push(ord(n)+' jour de '+m[1].replace(/Roch Hachanah/i,'Roch Hachana').replace(/Soukkot/i,'Souccot')+(/H.?.?M/i.test(m[3]||'')?' · Hol Hamoed':'')+(/Hochanah Rabbah/i.test(m[3]||'')?' · Hochana Rabba':''));continue}
+     if(m=t.match(/^Roch Hachanah\s+\d{4}$/i)){out.push('1<sup>er</sup> jour de Roch Hachana');continue}
+     if(/^(Hag HaBanot|Roch Hachanah LaBehemot|Lel Selihot|Yom HaAliyah|Family Day|Sigd)/i.test(t))continue;
+     out.push(t);
+   }
+   return out.join(' · ');
+ }
+ try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
+ Promise.all([
+   fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]}))
+ ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
+})();
+(function(){const nav=document.querySelector('.sec-nav'),b=document.getElementById('burger');
+ b.addEventListener('click',()=>{const o=nav.classList.toggle('open');b.setAttribute('aria-expanded',o)});
+ nav.querySelectorAll('.links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');b.setAttribute('aria-expanded',false)}));})();
+document.getElementById('f').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,err=document.getElementById('err');err.textContent='';
+  const data={firstName:f.firstName.value.trim(),lastName:f.lastName.value.trim(),email:f.email.value.trim(),phone:f.phone.value.trim(),cp:f.cp.value.trim(),city:f.city.value.trim(),website:f.website.value};
+  const no=m=>{err.textContent=m};
+  if(!data.firstName)return no('Indiquez votre prénom.');if(!data.lastName)return no('Indiquez votre nom.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email))return no('Indiquez un email valide.');
+  if(data.phone.replace(/\D/g,'').length<9)return no('Indiquez votre numéro de téléphone.');
+  if(!/^\d{5}$/.test(data.cp))return no('Code postal : 5 chiffres.');if(!data.city)return no('Indiquez votre ville.');
+  const b=f.querySelector('button');b.disabled=true;b.textContent='Envoi…';
+  try{const r=await fetch('/api/ambassadeur',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});const j=await r.json();if(!r.ok)throw new Error(j.error||'Erreur');
+    f.style.display='none';const ok=document.getElementById('ok');ok.style.display='block';
+    if(j.lien){document.getElementById('lnk').textContent=j.lien.replace('https://','');
+      document.getElementById('cp').onclick=e=>{navigator.clipboard.writeText(j.lien).then(()=>{e.target.textContent='Lien copié ✓'})};
+      document.getElementById('wa').href='https://wa.me/?text='+encodeURIComponent('Soutenez Émounatéha avec moi : colis pour les familles, diffusion de la Torah. Faites un don ici : '+j.lien);}
+    ok.scrollIntoView({behavior:'smooth',block:'center'});}
+  catch(x){no(x.message);b.disabled=false;b.textContent='Recevoir mon lien ambassadeur';}
+});
+</script>
+</body>
+</html>

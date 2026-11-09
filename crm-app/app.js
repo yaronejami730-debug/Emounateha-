@@ -18,13 +18,14 @@ async function load() {
   const route = (location.hash.replace(/^#\/?/, '') || '');
   const need = n => route === n; // on ne charge que ce que la page affiche
   const cached = (() => { try { return JSON.parse(sessionStorage.hol || 'null'); } catch { return null; } })();
-  const [st, dif, usr, hol] = await Promise.all([
+  const [st, dif, usr, amb, hol] = await Promise.all([
     api('GET', '/state'),
     need('diffusion') ? api('GET', '/diffusion').catch(() => []) : Promise.resolve(S?.diffusion || []),
     need('users') ? api('GET', '/users').catch(() => []) : Promise.resolve(S?.users || []),
+    need('ambassadeurs') ? api('GET', '/ambassadors').catch(e => ({ list: [], erreur: e.message })) : Promise.resolve(S?.ambassadors || {}),
     load.hol || cached ? Promise.resolve(load.hol || cached) : api('GET', '/holidays?all=1').catch(() => [])
   ]);
-  S = st; S.diffusion = dif; S.users = usr;
+  S = st; S.diffusion = dif; S.users = usr; S.ambassadors = amb;
   load.hol = hol; try { if (hol && hol.length) sessionStorage.hol = JSON.stringify(hol); } catch {}
   S.holidaysAll = load.hol || []; S.holidays = S.holidaysAll.slice(0, 8);
   const { sent, limit } = S.today;
@@ -235,6 +236,23 @@ const views = {
       <div class="hint">Seule la diffusion du jour s'affiche sur l'accueil (bouton « Voir plus » vers les archives). Cliquez sur un jour pour y ajouter le lien vidéo. Une image programmée à une date future apparaîtra ce jour-là.</div>
     </div>
     <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px;cursor:pointer" onclick="editDiffusion('${d.id}')" title="Cliquer pour ajouter ou changer le lien vidéo">${d.has_image===false?`<div style="height:220px;border-radius:10px;background:#111 url(https://i.ytimg.com/vi/${(String(d.youtube||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/)||[])[1]||''}/hqdefault.jpg) center/auto 100%"></div>`:`<img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block">`}<div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="event.stopPropagation();delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
+  },
+
+  ambassadeurs: () => {
+    const ST = { new: 'Nouveau', contacted: 'Contacté', active: 'Actif', inactive: 'Inactif' };
+    const A = S.ambassadors || {}, list = A.list || [];
+    const eur = c => ((c || 0) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+    const tot = list.reduce((t, x) => t + (x.total || 0), 0), nd = list.reduce((t, x) => t + (x.dons || 0), 0), actifs = list.filter(x => x.dons > 0).length;
+    const rows = [...list].sort((a, b) => (b.total || 0) - (a.total || 0) || String(b.created_at).localeCompare(String(a.created_at)));
+    return `<div class="head"><div><h1>Ambassadeurs</h1><p class="sub">Inscriptions sur <a href="https://ambassadeur.emounateha.fr/" target="_blank">ambassadeur.emounateha.fr</a>. Chaque ambassadeur a son lien ; les dons faits par ce lien lui sont attribués (30 jours).</p></div></div>
+    ${A.erreur ? `<div class="card" style="border-color:#f3c9c9;color:#9b1c1c">${esc(A.erreur)}</div>` : ''}
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card stat"><small>Ambassadeurs</small><b>${list.length}</b></div>
+      <div class="card stat"><small>Ayant rapporté un don</small><b>${actifs}</b></div>
+      <div class="card stat"><small>Dons via les liens</small><b>${nd}</b></div>
+      <div class="card stat"><small>Total rapporté</small><b>${eur(tot)}</b></div>
+    </div>
+    <div class="card" style="padding:0">${rows.length ? `<table><thead><tr><th>Ambassadeur</th><th>Lien</th><th>Contact</th><th>Ville</th><th>Dons</th><th>Rapporté</th><th>Statut</th><th></th></tr></thead><tbody>${rows.map(x => `<tr><td><b>${esc(x.first_name)} ${esc(x.last_name)}</b><div class="hint" style="margin:0">inscrit le ${fmt(x.created_at)}</div></td><td>${x.slug ? `<a href="https://ambassadeur.emounateha.fr/${esc(x.slug)}" target="_blank">/${esc(x.slug)}</a> <button class="btn sm" onclick="navigator.clipboard.writeText('https://ambassadeur.emounateha.fr/${esc(x.slug)}');toast('Lien copié')">Copier</button>` : '—'}</td><td>${esc(x.email)}${x.phone ? '<br><a href="https://wa.me/' + esc(x.phone.replace(/\D/g, '').replace(/^0/, '33')) + '" target="_blank">' + esc(x.phone) + '</a>' : ''}</td><td>${esc(x.cp || '')} ${esc(x.city)}</td><td><b>${x.dons || 0}</b>${x.dernier ? '<div class="hint" style="margin:0">dernier : ' + new Date(x.dernier).toLocaleDateString('fr-FR') + '</div>' : ''}</td><td><b>${eur(x.total)}</b></td><td><select onchange="ambStatus('${x.id}',this.value)" style="width:auto;padding:6px 8px;font-size:12px">${Object.keys(ST).map(k => `<option value="${k}" ${x.status === k ? 'selected' : ''}>${ST[k]}</option>`).join('')}</select></td><td><button class="btn sm bad" onclick="ambDel('${x.id}')">✕</button></td></tr>`).join('')}</tbody></table>` : '<div class="empty"><big>✦</big>Aucun ambassadeur pour l\'instant.</div>'}</div>`;
   },
 
   users: () => `
@@ -460,6 +478,9 @@ async function inviteUser(email) {
   try { await api('POST', '/users/invite', { email }); toast('Invitation envoyée à ' + email); await render(); } catch (e) { toast(e.message, true); }
 }
 async function delUser(id) { if (!confirm('Supprimer cet utilisateur ?')) return; try { await api('DELETE', '/users/' + id); await render(); } catch (e) { toast(e.message, true); } }
+
+async function ambStatus(id, status) { try { await api('PUT', '/ambassadors/' + id, { status }); toast('Statut mis à jour'); } catch (e) { toast(e.message, true); } }
+async function ambDel(id) { if (!confirm('Supprimer cette candidature ?')) return; await api('DELETE', '/ambassadors/' + id); await render(); }
 
 // ---------- Router ----------
 function bindTpl() {

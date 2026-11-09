@@ -1275,6 +1275,18 @@ async function api(req, res, url) {
     }
     if (m === 'DELETE' && parts[1]) { await pool.query('delete from public.diffusion where id = $1', [parts[1]]); return send(res, 200, { ok: true }); }
   }
+  if (parts[0] === 'ambassadors') {
+    if (!pool) return send(res, 400, { error: 'Base de données requise' });
+    if (m === 'GET') { // avec les dons rapportés par chaque lien (reçus du serveur des dons)
+      const r = await pool.query('select id, first_name, last_name, email, phone, cp, city, slug, status, created_at from public.ambassadors order by created_at desc');
+      let recus = [], erreur = '';
+      try { const x = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus'), signal: AbortSignal.timeout(15000) }); const j = await x.json(); if (!x.ok) throw new Error(j.error || x.status); recus = j.recus || []; } catch (e) { erreur = 'Dons indisponibles : ' + e.message; }
+      const par = {}; for (const x of recus) if (x.ambassadeur) { const p = par[x.ambassadeur] = par[x.ambassadeur] || { dons: 0, total: 0, dernier: null }; p.dons++; p.total += x.montant || 0; if (!p.dernier || x.dateDon > p.dernier) p.dernier = x.dateDon; }
+      return send(res, 200, { list: r.rows.map(a => ({ ...a, ...(par[a.slug] || { dons: 0, total: 0, dernier: null }) })), erreur });
+    }
+    if (m === 'PUT' && parts[1]) { const st = ['new', 'contacted', 'active', 'inactive'].includes(body.status) ? body.status : 'new'; await pool.query('update public.ambassadors set status = $1 where id = $2', [st, parts[1]]); return send(res, 200, { ok: true }); }
+    if (m === 'DELETE' && parts[1]) { await pool.query('delete from public.ambassadors where id = $1', [parts[1]]); return send(res, 200, { ok: true }); }
+  }
   if (parts[0] === 'users') {
     if (!pool) return send(res, 400, { error: 'Base de données requise' });
     if (m === 'GET') { const r = await pool.query("select id, email, role, created_at, (password_hash is null) as pending from public.crm_users order by created_at"); return send(res, 200, r.rows); }
@@ -1540,6 +1552,43 @@ async function handle(req, res) {
     if (url.pathname === '/api/shabbat-city' && req.method === 'POST') return shabbatCity(req, res);
     if (url.pathname === '/api/rabbi-letter' && req.method === 'POST') return rabbiLetter(req, res);
     // (ancien paiement AlloDons /api/pay-session retiré : tous les dons passent par don.emounateha.fr)
+    if (url.pathname === '/api/ambassadeur' && req.method === 'POST') { // public : inscription ambassadeur → lien personnel
+      if (!pool) return send(res, 503, { error: 'Base indisponible' });
+      const b = await readBody(req);
+      if (String(b.website || '')) return send(res, 200, { ok: true }); // piège anti-robot
+      const t = (k, n) => String(b[k] || '').trim().slice(0, n);
+      const email = t('email', 120).toLowerCase(), prenom = t('firstName', 80), nom = t('lastName', 80), tel = t('phone', 30), cp = t('cp', 10), ville = t('city', 80);
+      if (!prenom) return send(res, 400, { error: 'Prénom requis' });
+      if (!nom) return send(res, 400, { error: 'Nom requis' });
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Email invalide' });
+      if (tel.replace(/\D/g, '').length < 9) return send(res, 400, { error: 'Numéro de téléphone invalide' });
+      if (!/^\d{5}$/.test(cp)) return send(res, 400, { error: 'Code postal invalide (5 chiffres)' });
+      if (!ville) return send(res, 400, { error: 'Ville requise' });
+      const ex = (await pool.query('select slug from public.ambassadors where lower(email) = $1', [email])).rows[0];
+      let slug = ex && ex.slug;
+      if (!slug) { // prénom sans accents ; yaron, yaron-2, yaron-3…
+        const base = prenom.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'ami';
+        const pris = new Set((await pool.query("select slug from public.ambassadors where slug = $1 or slug like $1 || '-%'", [base])).rows.map(r => r.slug));
+        slug = base; for (let n = 2; pris.has(slug) || ['ambassadeur', 'api', 'www'].includes(slug); n++) slug = base + '-' + n;
+      }
+      await pool.query(`insert into public.ambassadors (id, first_name, last_name, email, phone, cp, city, slug) values ($1,$2,$3,$4,$5,$6,$7,$8)
+        on conflict (lower(email)) do update set first_name = excluded.first_name, last_name = excluded.last_name, phone = excluded.phone, cp = excluded.cp, city = excluded.city, slug = coalesce(public.ambassadors.slug, excluded.slug)`,
+        [uid(), prenom, nom, email, tel, cp, ville, slug]);
+      const lien = 'https://ambassadeur.emounateha.fr/' + slug;
+      try { // l'ambassadeur reçoit son lien
+        await brevoSend({ to: email, toName: prenom + ' ' + nom, subject: 'Votre lien ambassadeur Émounatéha', html: `<div style="font-family:Inter,-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:520px;margin:0 auto;color:#14272a;font-size:15px;line-height:1.6">
+<p style="text-align:center;margin:0 0 18px"><img src="https://www.emounateha.fr/logo-complet.png" width="130" alt="Émounatéha"></p>
+<p>Bonjour ${esc(prenom)},</p><p>Merci de devenir ambassadeur d'Émounatéha ! Voici votre lien personnel. Partagez-le autour de vous : chaque don fait par ce lien vous est attribué.</p>
+<p style="text-align:center;margin:24px 0"><a href="${lien}" style="display:inline-block;background:#c9a84f;color:#14272a;text-decoration:none;font-weight:700;padding:14px 26px;border-radius:99px">${lien.replace('https://', '')}</a></p>
+<p style="color:#51666a;font-size:13.5px">Copiez ce lien dans vos groupes WhatsApp, vos statuts et vos réseaux. Merci pour votre engagement.</p>
+<p>L'équipe Émounatéha</p></div>` });
+      } catch (e) { console.error('mail ambassadeur', e.message); }
+      try { // prévenir l'association
+        const to = db.settings.replyTo || db.settings.senderEmail;
+        if (to && !ex) await brevoSend({ to, subject: `Nouvel ambassadeur : ${prenom} ${nom}`, html: `<p>Nouvel ambassadeur inscrit.</p><ul><li><b>Nom :</b> ${esc(prenom)} ${esc(nom)}</li><li><b>Email :</b> ${esc(email)}</li><li><b>Téléphone :</b> ${esc(tel)}</li><li><b>Ville :</b> ${esc(cp)} ${esc(ville)}</li><li><b>Lien :</b> ${lien}</li></ul><p>À retrouver dans le CRM, page Ambassadeurs.</p>` });
+      } catch (e) { console.error('mail ambassadeur (asso)', e.message); }
+      return send(res, 200, { ok: true, lien, slug });
+    }
     if (url.pathname === '/diffusion-archives.json') { // public : toutes les diffusions publiées, groupées par mois
       if (!pool) return send(res, 200, { months: [] });
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });

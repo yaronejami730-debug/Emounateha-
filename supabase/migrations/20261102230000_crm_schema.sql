@@ -104,3 +104,23 @@ alter table public.crm_users enable row level security;
 
 -- Diffusion : l'image devient facultative (entrées « vidéo de Tanya seule » importées des archives)
 alter table public.diffusion alter column data drop not null;
+
+-- Ambassadeurs (ambassadeur.emounateha.fr) : personnes qui relaient la diffusion de la Torah et la collecte
+create table if not exists public.ambassadors (
+  id text primary key,
+  first_name text not null default '',
+  last_name text not null default '',
+  email text not null,
+  phone text not null default '',
+  city text not null default '',
+  missions text[] not null default '{}',   -- 'torah', 'dons', 'colis'
+  message text not null default '',
+  status text not null default 'new' check (status in ('new','contacted','active','inactive')),
+  created_at timestamptz not null default now()
+);
+create unique index if not exists ambassadors_email_uidx on public.ambassadors (lower(email));
+alter table public.ambassadors enable row level security;
+-- Ambassadeurs : lien personnel ambassadeur.emounateha.fr/<slug> (suivi des dons) et code postal
+alter table public.ambassadors add column if not exists slug text;
+alter table public.ambassadors add column if not exists cp text not null default '';
+create unique index if not exists ambassadors_slug_uidx on public.ambassadors (slug);
