@@ -567,9 +567,9 @@ body{overflow-x:hidden}
 /* barre d'action */
 .dn-actions{display:flex;align-items:center;gap:14px;margin-top:22px}
 #actBox #gFreq{margin-top:22px}
-.dn-actq button.qty{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
-.dn-actq button.qty b{font-size:15px}
-.dn-actq button.qty small{font-size:12px;font-weight:600;opacity:.75}
+.dn-actq button.qty{font-size:12.5px;padding:5px 11px;line-height:1.2}
+.dn-actq:has(.qty){gap:6px}
+.dn-actq:has(.qty)::after{content:attr(data-unit);flex-basis:100%;font-size:12px;color:#6b7d80;margin-top:2px}
 .dn-bamt{min-width:0;flex:none}
 .dn-bamt small{display:block;font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#7f9396}
 .dn-bamt b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:21px;color:var(--teal);line-height:1.1;white-space:nowrap}
@@ -1216,8 +1216,8 @@ function renderActs(it) {
   $('acts').innerHTML = it.actions.map(a => {
     const on = (it.defaut || []).includes(a.id); if (on) ACTS[a.id] = a.montant ? String(a.montant) : '';
     return '<div class="dn-act' + (on ? ' on' : '') + '" data-id="' + esc(a.id) + '"><label class="dn-actrow"><input type="checkbox"' + (on ? ' checked' : '') + '><span class="bx"></span><span class="tx"><b>' + esc(a.label) + '</b>' + (a.desc ? '<small>' + esc(a.desc) + '</small>' : '') + '</span></label>' +
-      '<div class="dn-actamt"' + (on ? '' : ' hidden') + '><div class="dn-other"><input inputmode="decimal" placeholder="Montant libre" aria-label="Montant : ' + esc(a.court) + '" value="' + (on && a.montant ? a.montant : '') + '"><span>€</span></div><div class="dn-actq">' +
-      (a.montant ? [1, 2, 3, 4, 5, 6, 7] : [10, 20, 50, 100]).map(n => { const v = a.montant ? a.montant * n : n; return a.montant ? '<button type="button" data-v="' + v + '" class="qty"><b>' + n + ' colis</b><small>' + v + ' €</small></button>' : '<button type="button" data-v="' + v + '">' + v + ' €</button>'; }).join('') + '</div></div></div>';
+      '<div class="dn-actamt"' + (on ? '' : ' hidden') + '><div class="dn-other"><input inputmode="decimal" placeholder="Montant libre" aria-label="Montant : ' + esc(a.court) + '" value="' + (on && a.montant ? a.montant : '') + '"><span>€</span></div><div class="dn-actq"' + (a.montant ? ' data-unit="1 colis = ' + a.montant + ' €"' : '') + '>' +
+      (a.montant ? [1, 2, 3, 4, 5, 6, 7] : [10, 20, 50, 100]).map(n => { const v = a.montant ? a.montant * n : n; return a.montant ? '<button type="button" data-v="' + v + '" class="qty" title="' + v + ' €">' + n + ' colis</button>' : '<button type="button" data-v="' + v + '">' + v + ' €</button>'; }).join('') + '</div></div></div>';
   }).join('');
   document.querySelectorAll('#acts .dn-act').forEach(box => {
     const id = box.dataset.id, a = it.actions.find(x => x.id === id), cb = box.querySelector('input[type=checkbox]'), inp = box.querySelector('.dn-actamt input'), amt = box.querySelector('.dn-actamt');
