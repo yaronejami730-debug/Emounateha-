@@ -200,3 +200,28 @@ table{border-radius:16px;overflow:hidden}
 .cf-seg{display:inline-flex;gap:4px;background:#eef3f3;border-radius:12px;padding:4px;margin:8px 0 6px}
 .cf-seg button{border:0;background:transparent;padding:9px 18px;border-radius:9px;font:inherit;font-weight:600;color:var(--mut);cursor:pointer}
 .cf-seg button.on{background:#fff;color:var(--brand);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+
+/* ===== téléphone : tout le CRM tient dans l'écran (aucun débordement horizontal) ===== */
+@media(max-width:900px){
+  html,body{max-width:100%;overflow-x:hidden}
+  main,main *{min-width:0}
+  main .row{flex-wrap:wrap}
+  main .row>input,main .row>select,main .row>textarea,main .row>.grow{flex:1 1 150px;width:auto!important;max-width:100%!important}
+  main [style*="min-width:2"],main [style*="width:2"],main [style*="width:1"]{min-width:0!important;max-width:100%!important}
+  main input,main select,main textarea{max-width:100%}
+  /* tous les tableaux défilent horizontalement dans leur carte */
+  main table{display:block;width:100%;min-width:0!important;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+  main td,main th{white-space:nowrap}
+  main td .hint{white-space:normal}
+  .head h1{font-size:22px;line-height:1.2}
+  .head .btn{width:100%;justify-content:center}
+  .grid.g3{grid-template-columns:1fr}
+  .cf-seg{display:flex}.cf-seg button{flex:1}
+  .modal .box{overflow-x:hidden}
+  img,video,iframe{max-width:100%}
+}
+@media(max-width:520px){
+  .grid.g4{grid-template-columns:1fr 1fr}
+  main .row>input,main .row>select,main .row>.grow{flex-basis:100%}
+}
+@media(max-width:900px){main .row>b,main .row>h3{flex-basis:100%}}
