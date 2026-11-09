@@ -170,3 +170,7 @@ html body .htable tr.me>td:first-child{background-image:linear-gradient(180deg,#
   html body .ndate b{font-size:14px}html body .nbsd{font-size:22px}
   html body .sec-nav .links a{padding-left:5px;padding-right:5px;font-size:12.5px}
 }
+
+/* doré métallique brillant : même dégradé que le titre (accueil), citation un peu plus grande, logo rond cerclé d'or */
+html body .hero .quote{background:none;-webkit-text-fill-color:#e4c766;color:#e4c766;text-shadow:0 0 10px rgba(255,230,150,.55),0 2px 6px rgba(0,0,0,.35);filter:none;font-size:clamp(15px,2vw,20px)}
+@media(max-width:800px){html body .hero .quote{font-size:15px;letter-spacing:.04em}}

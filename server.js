@@ -274,25 +274,45 @@ const YT_CHANNEL = 'UCoKYPjSFFtZ4LmO2ceHTU8g'; // @Tanya26770
 
 // ---------- Vidéos des colis : chaîne YouTube d'Émounatéha, classées par fête d'après le titre ----------
 const COLIS_CHANNEL = 'UCwfjah4RK77QAmkr55cRaxw'; // @EmounatehaRaba-h4b
-const COLIS_RULES = [
-  ['chabbat', /chabb?at|shabb?at|chabat/],
+const COLIS_RULES = [ // l'ordre compte : une vidéo va dans UN seul onglet (la première règle qui correspond)
   ['roch-hachana', /ro(ch|sh)\s*-?\s*(ha)?\s*-?\s*(ashana|hachana|hashana|chana)|nouvel\s+an/],
   ['simhat-torah', /sim[ck]?h?a?t?\s*-?\s*tora|simchat/],
   ['hanouka', /han+ou?[ck]+a|hanuk|hannouk/],
   ['pourim', /pourim|purim/],
   ['pessah', /pess?a[ch]*h?|pessach|paque|pâque|matsa|matza/],
+  ['chabbat', /chabb?at|shabb?at|chabat/],
 ];
 // vidéos déjà connues (le flux YouTube ne garde que les 15 dernières) : { id, titre }
 const COLIS_KNOWN = [
-  ['JT4mw7ZoMfM', 'B"H #association EMOUNATEHA #pessah fête de la liberté N24'],
-  ['tQV3gzJzqKQ', 'B"H #association EMOUNATEHA #pourim Samea’h N23'],
-  ['Bf0UHi2-ujg', 'BH #association EMOUNATEHA Diffuserlemiraclede #hanouka vidéo#22 Colis pour CHABBAT'],
-  ['bxaWSIIfFZo', 'B"H #association EMOUNATEHA COLIS POUR ROSH ASHANA N21'],
-  ['RQZZU7glieI', 'B"H #association EMOUNATEHA Num.20 COLIS POUR PESSA’H'],
-  ['pzY0qjlcAtc', 'B"H #association EMOUNATEHA COLIS POURIM ET CHABBAT N19'],
-  ['C0w21MYejKg', '#2024 #5784 PRÉPARATION-DISTRIBUTION num 2 -ASSOCIATION EMOUNATEHA-  Colis pour Chabat- #association'],
-  ['ewA9uGEiTAY', 'B"H #association EMOUNATEHA QR CODE Mission: HÉBERGEMENT'],
-  ['jkwWoFx26v8', 'B’’H #association EMOUNATEHA Campagne de Soutien #5785 AIDER NOUS À LES AIDER'],
+  ['JT4mw7ZoMfM', '#pessah fête de la liberté N24 colis alimentaires'],
+  ['tQV3gzJzqKQ', '#pourim Samea’h N23 colis alimentaires'],
+  ['Bf0UHi2-ujg', 'Diffuserlemiraclede #hanouka vidéo#22 Colis pour CHABBAT'],
+  ['bxaWSIIfFZo', 'COLIS POUR ROSH ASHANA N21'],
+  ['RQZZU7glieI', 'Num.20 COLIS POUR PESSA’H'],
+  ['pzY0qjlcAtc', 'COLIS POURIM ET CHABBAT N19'],
+  ['NXOcxZAmbiQ', 'COLIS POUR CHABBAT N18'],
+  ['u-VUff_nIuQ', 'COLIS POUR CHABBAT N16'],
+  ['Dy8u3QwshgU', 'COLIS POUR CHABBAT N17'],
+  ['ewA9uGEiTAY', 'QR CODE Mission: HÉBERGEMENT'],
+  ['C-Dx14UqYow', 'COLIS POUR CHABBAT N15'],
+  ['RHFSfF_FOlg', 'COLIS POUR CHABBAT N14'],
+  ['jkwWoFx26v8', 'Campagne de Soutien AIDER NOUS À LES AIDER'],
+  ['T7rJ0dsDp78', 'COLIS POUR CHABBAT N13'],
+  ['lCzPwTXMfrA', 'COLIS POUR CHABBAT Numéro12 QRCODE'],
+  ['17geVrQ51_k', 'COLIS POUR CHABBAT Numéro11 scannez le QRCODE'],
+  ['YlHPEHt7oQk', 'QRCODE COLIS POUR #chabbat vidéo#10'],
+  ['vW0GKKyyR9Q', 'QR CODE Mission:Hébergement'],
+  ['B2EHaKa_pcA', 'Mission : Hébergement'],
+  ['RuFuW_M_Hw8', 'COLIS POUR CHABBAT Numéro 9 scannez le QRCODE'],
+  ['Y9013Gywh5A', 'COLIS POUR FÊTES/CHABBAT Numéro 8 scannez le QRCODE'],
+  ['_60UZfl33ic', 'COLIS POUR les FÊTES/CHABBAT Numéro 7 scanner le QR CODE'],
+  ['XyZGXK2ZeZU', 'COLIS POUR CHABBAT Numéro6 scanner le QR CODE'],
+  ['1hTNCY_cT8w', 'COLIS POUR CHABBAT Numéro5'],
+  ['qm42U3H6K44', '-Hébergement- #vincennes'],
+  ['LwuOU6gyT-A', 'PRÉPARATION - DISTRIBUTION COLIS POUR CHABBAT- Numero 3'],
+  ['C0w21MYejKg', 'PRÉPARATION-DISTRIBUTION num 2 Colis pour Chabat'],
+  ['pVOuJnkYvBU', 'Colis pour Chabat -Préparation-Distribution'],
+  ['TdMCfag0TYI', 'Colis pour CHABBAT - Aider son prochain comme soi-même'],
 ];
 let _chanCache = null;
 async function channelVideos() { // toutes les vidéos connues de la chaîne, de la plus récente à la plus ancienne : [{ id, title, at }]
@@ -327,20 +347,47 @@ function cleanTitle(t) { // retire hashtags, B"H, numéros « N24 », nom de l'a
 async function colisVideos() { // { fête: [id…] }
   const out = {};
   COLIS_RULES.forEach(([k]) => out[k] = []);
-  (await channelVideos()).forEach(v => { const t = noAccent(v.title); COLIS_RULES.forEach(([k, re]) => { if (re.test(t)) out[k].push(v.id); }); });
+  (await channelVideos()).forEach(v => { const t = noAccent(v.title); for (const [k, re] of COLIS_RULES) if (re.test(t)) { out[k].push(v.id); break; } });
   return out;
 }
-// les 4 actions de l'association : vidéos rangées d'après les mots du titre
+// les 4 actions de l'association. Vidéos déjà vues et classées une à une (titre propre) ; les nouvelles vidéos sont rangées d'après les mots de leur titre.
 const ACTION_RULES = [
   ['reinsertion', /insertion|emploi|travail|formation|stage|autonomie|reconversion|metier/],
   ['vetements', /vetement|habit|coiffure|coiffeur|barbier|friperie|soins?\b|beaute|relooking/],
   ['toit', /hebergement|logement|toit|\bsdf\b|\brue\b|abri|appartement|loger/],
   ['soutien', /soutien|campagne|aider nous|ecoute|accompagnement|ecouter/],
 ];
+const ACTION_CURATED = {
+  // un toit sur la tête : « Mission Hébergement »
+  'ewA9uGEiTAY': ['toit', 'Mission Hébergement · 4'], 'vW0GKKyyR9Q': ['toit', 'Mission Hébergement · 3'],
+  'B2EHaKa_pcA': ['toit', 'Mission Hébergement · 2'], 'qm42U3H6K44': ['toit', 'Hébergement : un studio près de Vincennes'],
+  // soutien moral et financier : campagne de soutien. Les vidéos de colis restent sur la page Colis (null = pas sur les pages d'actions)
+  'jkwWoFx26v8': ['soutien', 'Campagne de soutien : aidez-nous à les aider'],
+  'JT4mw7ZoMfM': [null, ''], 'tQV3gzJzqKQ': [null, ''],
+  'bxaWSIIfFZo': [null, ''], 'RQZZU7glieI': [null, ''],
+  'pzY0qjlcAtc': [null, ''], 'NXOcxZAmbiQ': [null, ''],
+  'Dy8u3QwshgU': [null, ''], 'u-VUff_nIuQ': [null, ''],
+  'C-Dx14UqYow': [null, ''], 'RHFSfF_FOlg': [null, ''],
+  'T7rJ0dsDp78': [null, ''], 'lCzPwTXMfrA': [null, ''],
+  '17geVrQ51_k': [null, ''], 'YlHPEHt7oQk': [null, ''],
+  'RuFuW_M_Hw8': [null, ''], 'Y9013Gywh5A': [null, ''],
+  '_60UZfl33ic': [null, ''], 'XyZGXK2ZeZU': [null, ''],
+  '1hTNCY_cT8w': [null, ''], 'LwuOU6gyT-A': [null, ''],
+  'C0w21MYejKg': [null, ''], 'pVOuJnkYvBU': [null, ''],
+  'TdMCfag0TYI': [null, ''],
+  'Bf0UHi2-ujg': [null, ''],   // Hanouka (allumage public) : reste sur la page des colis
+};
+const ACTION_FIRST = { soutien: 'jkwWoFx26v8', toit: 'ewA9uGEiTAY' }; // vidéo mise à la une
 async function actionVideos() { // { action: [{ id, title }] }
   const out = {};
   ACTION_RULES.forEach(([k]) => out[k] = []);
-  (await channelVideos()).forEach(v => { const t = noAccent(v.title); ACTION_RULES.forEach(([k, re]) => { if (re.test(t)) out[k].push({ id: v.id, title: cleanTitle(v.title) }); }); });
+  (await channelVideos()).forEach(v => {
+    const cur = ACTION_CURATED[v.id];
+    if (cur) { if (cur[0] && out[cur[0]]) out[cur[0]].push({ id: v.id, title: cur[1] }); return; }
+    const t = noAccent(v.title);
+    for (const [k, re] of ACTION_RULES) if (re.test(t)) { out[k].push({ id: v.id, title: cleanTitle(v.title) }); break; }
+  });
+  Object.keys(ACTION_FIRST).forEach(k => { const i = out[k].findIndex(x => x.id === ACTION_FIRST[k]); if (i > 0) out[k].unshift(out[k].splice(i, 1)[0]); });
   return out;
 }
 let ytLast = 0;
@@ -1725,3 +1772,4 @@ module.exports.chabadZmanim = chabadZmanim;
 module.exports.campaignPlan = (id) => { const c = db.campaigns.find(x => x.id === id); return c ? { plan: campaignPlan(c), stats: campaignStats(c) } : null; };
 module.exports.sendChabbatTest = async (to, cityId, mode) => { const city = cityById(cityId); const dow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' })).getDay(); const wk = await hebcalWeek(city, 8, (4 - dow + 7) % 7); /* un test se lit comme le mail du jeudi, même envoyé un autre jour */ const c = { id: 'test', firstName: 'Yarone', lastName: 'Jami', email: to, tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); const r = await brevoSend({ to, subject: '[TEST] ' + t.subject, html: renderEmail(t, c) }); return { subject: t.subject, result: r.simulated ? 'simulé (pas de clé Brevo)' : 'envoyé' }; };
 module.exports.chabbatHtml = async (cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'preview', firstName: 'Yarone', lastName: 'Jami', email: 'exemple@email.com', tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); return { subject: t.subject, html: renderEmail(t, c) }; };
+module.exports.previewAll = { renderEmail: (...a) => renderEmail(...a), sendReset: (...a) => sendReset(...a), sendInvite: (...a) => sendInvite(...a), getDb: () => db, cities: () => CITIES.map(c => c[0]) };
