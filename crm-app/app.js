@@ -791,7 +791,6 @@ function cerfaForm() {
     <div class="row"><div class="grow"><label>Code postal</label><input id="cf_cp" inputmode="numeric" maxlength="5"></div><div class="grow"><label>Ville</label><input id="cf_ville"></div></div>
     <div class="row"><div class="grow"><label>Montant (€)</label><input id="cf_montant" inputmode="decimal" placeholder="ex. 180"></div><div class="grow"><label>Date du don</label><input id="cf_date" type="date" value="${today}" max="${today}"></div>
       <div class="grow"><label>Mode de versement</label><select id="cf_mode">${CF.modes.map(m => `<option>${esc(m)}</option>`).join('')}</select></div></div>
-    <label>Affectation</label><select id="cf_aff">${(CF.affs.length ? CF.affs : ['Là où le besoin est le plus grand']).map(a => `<option>${esc(a)}</option>`).join('')}</select>
     <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="cf_env" type="checkbox" checked style="width:auto"> Envoyer le reçu par e-mail au donateur</label>
     <div class="row" style="margin-top:12px"><span class="grow hint" id="cfMsg"></span><button class="btn pri" id="cfGo" onclick="cerfaCreate()">Générer le reçu (PDF)</button></div></div>`;
   $('#cerfaNew').scrollIntoView({ behavior: 'smooth' });
@@ -808,7 +807,7 @@ async function cfSiret() {
 }
 async function cerfaCreate() {
   const pro = cfT === 'entreprise', v = id => ($('#' + id).value || '').trim();
-  const b = { type: pro ? 'entreprise' : 'particulier', prenom: v('cf_prenom'), nom: v('cf_nom'), raisonSociale: v('cf_rs'), siren: v('cf_siren'), email: v('cf_email'), tel: v('cf_tel'), adresse: v('cf_adr'), cp: v('cf_cp'), ville: v('cf_ville'), montant: v('cf_montant'), dateDon: v('cf_date'), mode: v('cf_mode'), affectation: v('cf_aff'), envoyerEmail: $('#cf_env').checked };
+  const b = { type: pro ? 'entreprise' : 'particulier', prenom: v('cf_prenom'), nom: v('cf_nom'), raisonSociale: v('cf_rs'), siren: v('cf_siren'), email: v('cf_email'), tel: v('cf_tel'), adresse: v('cf_adr'), cp: v('cf_cp'), ville: v('cf_ville'), montant: v('cf_montant'), dateDon: v('cf_date'), mode: v('cf_mode'), envoyerEmail: $('#cf_env').checked };
   $('#cfGo').disabled = true; $('#cfMsg').textContent = 'Fabrication du reçu… (quelques secondes)';
   try {
     const r = await api('POST', '/cerfa', b);

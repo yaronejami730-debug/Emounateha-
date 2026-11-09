@@ -377,7 +377,7 @@ app.post('/api/admin/recu', async (req, res) => {
     const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide (virement, chèque ou espèces)');
     const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(req.body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
     if (dt.getFullYear() < new Date().getFullYear() - 1) throw new Error('Date trop ancienne (année en cours ou précédente)');
-    const aff = affectation(req.body, await affectationsOk());
+    const aff = req.body.affectation ? affectation(req.body, await affectationsOk()) : '';   // reçu manuel : sans affectation
     const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff }, { envoyerEmail: !!req.body.envoyerEmail });
     out.tel = clean(req.body.tel, 30); out.affectation = aff; out.manuel = true;
     const d = load(); d.manuels = d.manuels || {}; d.manuels['m_' + out.numero] = out; save(d);
