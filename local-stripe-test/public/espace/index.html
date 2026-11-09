@@ -814,15 +814,24 @@ body::before,body::after{display:none!important}
       <div class="sp-tabs"><button id="spT1" class="on" type="button">Mes reçus</button><button id="spT2" type="button">Mes informations</button></div>
       <div id="spRec"></div>
       <div id="spInf" hidden>
-        <p class="sp-note" style="margin-top:0">Ces informations remplissent automatiquement le formulaire de don. Vous pouvez donner en tant que particulier, en tant que professionnel, ou les deux.</p>
+        <p class="sp-note" style="margin-top:0">Ces informations remplissent automatiquement le formulaire de don. Vous pouvez donner en tant que particulier ou au nom d'une ou plusieurs sociétés.</p>
         <form class="sp-form" id="fPart" novalidate><h4>👤 Profil particulier</h4>
           <div class="dn-g"><div><label for="pPrenom">Prénom</label><input id="pPrenom" autocomplete="given-name"></div><div><label for="pNom">Nom</label><input id="pNom" autocomplete="family-name"></div>
           <div class="dn-full"><label for="pAdr">Adresse</label><input id="pAdr" autocomplete="street-address"></div><div><label for="pCp">Code postal</label><input id="pCp" inputmode="numeric" maxlength="5"></div><div><label for="pVille">Ville</label><input id="pVille"></div></div>
           <div class="dn-actions-inline" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="sp-pill gold" type="submit">Enregistrer</button><button class="sp-pill" type="button" id="delPart">Supprimer ce profil</button></div><p class="sp-ok" id="okPart" hidden></p><p class="dn-acct-err" id="erPart" hidden></p></form>
-        <form class="sp-form" id="fPro" novalidate><h4>🏢 Profil professionnel</h4>
-          <div class="dn-g"><div><label for="qRs">Raison sociale</label><input id="qRs" autocomplete="organization"></div><div><label for="qSiren">SIREN <span style="font-weight:400;color:#7f9396">(facultatif)</span></label><input id="qSiren" inputmode="numeric" maxlength="11"></div>
-          <div class="dn-full"><label for="qAdr">Adresse du siège</label><input id="qAdr" autocomplete="street-address"></div><div><label for="qCp">Code postal</label><input id="qCp" inputmode="numeric" maxlength="5"></div><div><label for="qVille">Ville</label><input id="qVille"></div></div>
-          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="sp-pill gold" type="submit">Enregistrer</button><button class="sp-pill" type="button" id="delPro">Supprimer ce profil</button></div><p class="sp-ok" id="okPro" hidden></p><p class="dn-acct-err" id="erPro" hidden></p></form>
+        <div id="proList"></div>
+        <button type="button" class="sp-addsoc" id="proAdd"><span>＋</span> Ajouter une autre société</button>
+        <style>
+        .sp-soc{border:1px solid #e3ecec;border-radius:16px;margin-top:12px;background:#fff;overflow:hidden}
+        .sp-soc>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+        .sp-soc>summary::-webkit-details-marker{display:none}
+        .sp-soc .ic{flex:0 0 38px;height:38px;border-radius:11px;background:#e9f4f4;display:flex;align-items:center;justify-content:center;font-size:18px}
+        .sp-soc .t{flex:1;min-width:0}.sp-soc .t b{display:block;color:var(--teal);font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sp-soc .t small{color:#7f9396;font-size:13px}
+        .sp-soc .chev{color:#7f9396;transition:transform .2s}.sp-soc[open] .chev{transform:rotate(180deg)}
+        .sp-soc .sp-form{margin:0;border:0;border-top:1px solid #eef3f3;border-radius:0;box-shadow:none}
+        .sp-addsoc{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;padding:14px;border:1.5px dashed #d9c58a;border-radius:16px;background:#fffbf0;color:#8a6b1c;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+        .sp-addsoc span{font-size:18px}
+        </style>
       </div>
     </div>
   </div>
@@ -903,11 +912,40 @@ function renderReceipts(data) {
     data.years.map(y => '<div class="sp-year"><div class="sp-yh"><h3>' + y.year + '</h3><span><b>' + y.count + ' reçu' + (y.count > 1 ? 's' : '') + '</b> · total <b>' + eur(y.total) + '</b></span></div>' +
       by[y.year].map(r => '<div class="sp-r"><div class="l"><b>' + esc(r.affectation || 'Don') + (r.mensuel ? '<span class="tag m">Mensuel' + (r.echeance ? ' n°' + r.echeance : '') + '</span>' : '') + '<span class="tag">' + (r.type === 'entreprise' ? 'Pro' : 'Particulier') + '</span></b><small>' + MOIS(r.date) + ' · ' + esc(r.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')) + ' · reçu n° ' + esc(r.numero) + '</small></div><div class="amt">' + eur(r.montant) + '</div><a class="sp-pill dl" href="' + r.pdf + '" target="_blank" rel="noopener">Télécharger le reçu (PDF)</a></div>').join('') + '</div>').join('');
 }
+let proNew = false;
+const cleSoc = p => String(p.siren || '').replace(/\s/g, '') || String(p.raisonSociale || '').trim().toLowerCase();
+function prosOf() { const pr = me.profiles || {}; return pr.pros || (pr.pro ? [pr.pro] : []); }
+function proForm(q, i) {
+  const v = k => esc(q[k] || ''), id = 'q' + i;
+  return '<form class="sp-form" data-i="' + i + '" novalidate><div class="dn-g"><div><label for="' + id + 'rs">Raison sociale</label><input id="' + id + 'rs" name="raisonSociale" value="' + v('raisonSociale') + '" autocomplete="organization"></div><div><label for="' + id + 'sn">SIREN <span style="font-weight:400;color:#7f9396">(facultatif)</span></label><input id="' + id + 'sn" name="siren" value="' + v('siren') + '" inputmode="numeric" maxlength="11"></div>' +
+    '<div class="dn-full"><label for="' + id + 'ad">Adresse du siège</label><input id="' + id + 'ad" name="adresse" value="' + v('adresse') + '" autocomplete="street-address"></div><div><label for="' + id + 'cp">Code postal</label><input id="' + id + 'cp" name="cp" value="' + v('cp') + '" inputmode="numeric" maxlength="5"></div><div><label for="' + id + 'vi">Ville</label><input id="' + id + 'vi" name="ville" value="' + v('ville') + '"></div></div>' +
+    '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="sp-pill gold" type="submit">Enregistrer</button>' + (i >= 0 ? '<button class="sp-pill" type="button" data-del="' + i + '">Supprimer cette société</button>' : '<button class="sp-pill" type="button" data-cancel="1">Annuler</button>') + '</div><p class="sp-ok" hidden></p><p class="dn-acct-err" hidden></p></form>';
+}
+function renderPros(openI) {
+  const pros = prosOf();
+  $('proList').innerHTML = '<h4 style="margin:22px 0 0;font-family:'Bree Serif',serif;font-weight:400;font-size:20px;color:var(--teal)">🏢 Mes sociétés</h4>' + (pros.length ? '' : '<p class="sp-note">Aucune société enregistrée.</p>') +
+    pros.map((q, i) => '<details class="sp-soc"' + (i === openI ? ' open' : '') + '><summary><span class="ic">🏢</span><span class="t"><b>' + esc(q.raisonSociale || 'Société') + '</b><small>' + (q.siren ? 'SIREN ' + esc(String(q.siren).replace(/(\d{3})(?=\d)/g, '$1 ')) : esc(q.ville || '')) + ' · modifier</small></span><span class="chev">▾</span></summary>' + proForm(q, i) + '</details>').join('') +
+    (proNew ? '<div class="sp-soc" style="padding-top:4px"><div style="padding:12px 16px 0;font-weight:700;color:var(--teal)">Nouvelle société</div>' + proForm({}, -1) + '</div>' : '');
+  $('proAdd').hidden = proNew;
+  $('proList').querySelectorAll('form').forEach(f => {
+    const i = +f.dataset.i, ok = f.querySelector('.sp-ok'), er = f.querySelector('.dn-acct-err');
+    f.addEventListener('submit', async ev => { ev.preventDefault(); ok.hidden = er.hidden = true;
+      const data = { raisonSociale: f.raisonSociale.value, siren: f.siren.value, adresse: f.adresse.value, cp: f.cp.value, ville: f.ville.value };
+      try { const old = i >= 0 ? prosOf()[i] : null;
+        let j = await api('PUT', '/api/me/profile', { kind: 'pro', data });
+        if (old && cleSoc(old) !== cleSoc(data)) j = await api('DELETE', '/api/me/profile/pro?cle=' + encodeURIComponent(cleSoc(old)));
+        me.profiles = j.profiles; proNew = false; renderPros(0);
+        const f0 = $('proList').querySelector('form'); if (f0) { const o = f0.querySelector('.sp-ok'); o.textContent = '✓ Enregistré. Elle apparaît dans le formulaire de don.'; o.hidden = false; } }
+      catch (x) { er.textContent = x.message; er.hidden = false; } });
+    const d = f.querySelector('[data-del]'); if (d) d.onclick = async () => { if (!confirm('Supprimer cette société ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/pro?cle=' + encodeURIComponent(cleSoc(prosOf()[i]))); me.profiles = j.profiles; renderPros(); };
+    const c = f.querySelector('[data-cancel]'); if (c) c.onclick = () => { proNew = false; renderPros(); };
+  });
+}
+$('proAdd').onclick = () => { proNew = true; renderPros(); const f = $('proList').querySelector('form[data-i="-1"]'); if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.raisonSociale.focus(); } };
 function fillForms() {
-  const p = (me.profiles || {}).particulier || {}, q = (me.profiles || {}).pro || {};
+  const p = (me.profiles || {}).particulier || {};
   $('pPrenom').value = p.prenom || ''; $('pNom').value = p.nom || ''; $('pAdr').value = p.adresse || ''; $('pCp').value = p.cp || ''; $('pVille').value = p.ville || '';
-  $('qRs').value = q.raisonSociale || ''; $('qSiren').value = q.siren || ''; $('qAdr').value = q.adresse || ''; $('qCp').value = q.cp || ''; $('qVille').value = q.ville || '';
-  $('delPart').hidden = !p.nom; $('delPro').hidden = !q.raisonSociale;
+  $('delPart').hidden = !p.nom; renderPros();
 }
 async function saveProfile(kind, data, ok, er) {
   const o = $(ok), e = $(er); o.hidden = true; e.hidden = true;
@@ -915,9 +953,7 @@ async function saveProfile(kind, data, ok, er) {
   catch (x) { e.textContent = x.message; e.hidden = false; }
 }
 $('fPart').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('particulier', { prenom: $('pPrenom').value, nom: $('pNom').value, adresse: $('pAdr').value, cp: $('pCp').value, ville: $('pVille').value }, 'okPart', 'erPart'); });
-$('fPro').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('pro', { raisonSociale: $('qRs').value, siren: $('qSiren').value, adresse: $('qAdr').value, cp: $('qCp').value, ville: $('qVille').value }, 'okPro', 'erPro'); });
 $('delPart').onclick = async () => { if (!confirm('Supprimer le profil particulier ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/particulier'); me.profiles = j.profiles; fillForms(); };
-$('delPro').onclick = async () => { if (!confirm('Supprimer le profil professionnel ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/pro'); me.profiles = j.profiles; fillForms(); };
 
 async function start() {
   try { me = await api('GET', '/api/me'); } catch (e) { $('spLogin').hidden = false; $('spApp').hidden = true; return; }
