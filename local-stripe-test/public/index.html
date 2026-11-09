@@ -858,6 +858,25 @@ body{overflow-x:hidden}
 
 /* connecté : les cartes de profil remplacent l'interrupteur (un seul sélecteur) */
 #f.dn-conn .dn-type{display:none!important}
+
+/* profils : une liste sobre, une ligne par profil, rond de sélection à droite */
+#dn .dn-pcards{display:block!important;border:1.5px solid #e3ecec;border-radius:16px;background:#fff;overflow:hidden;margin:4px 0 16px!important;gap:0!important}
+#dn .dn-pcard{display:flex!important;width:100%;align-items:center;gap:12px;border:0!important;border-bottom:1px solid #eef3f3!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;padding:12px 14px!important;position:relative;text-align:left}
+#dn .dn-pcard:last-child{border-bottom:0!important}
+#dn .dn-pcard .ic{width:34px!important;height:34px!important;border-radius:10px!important;background:#eef5f5!important;display:grid;place-items:center;flex:none}
+#dn .dn-pcard .ic svg{width:18px;height:18px;fill:none;stroke:var(--teal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#dn .dn-pcard b{font-size:14.5px!important;font-weight:600;color:#1d3a3e!important}
+#dn .dn-pcard small{font-size:12.5px!important;color:#7f9396!important}
+#dn .dn-pcard::after{content:"";margin-left:auto;flex:none;width:20px;height:20px;border-radius:50%;border:2px solid #cfdcdc;box-sizing:border-box}
+#dn .dn-pcard.on{background:#f5faf9!important}
+#dn .dn-pcard.on::after{border:0;background:var(--teal) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center/13px no-repeat}
+#dn .dn-pcard.add{background:#fff!important}
+#dn .dn-pcard.add .ic{background:#fbf5e4!important}
+#dn .dn-pcard.add .ic svg{stroke:#9a7a22}
+#dn .dn-pcard.add b{color:#9a7a22!important;font-weight:600}
+#dn .dn-pcard.add small{display:none}
+#dn .dn-pcard.add::after{display:none}
+#dn .dn-pcard.add.on{background:#fffbf0!important}
 </style>
 
 <section id="dn"><div class="dn-wrap">
@@ -1281,10 +1300,11 @@ function renderProfiles() {
   if (!me) return;
   const cur = curKind();
   const pa = me.profiles && me.profiles.particulier, pros = prosOf();
+  const IC = { user: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>', soc: '<svg viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16"/><path d="M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></svg>', plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' };
   const card = (k, i, on, ic, titre, ligne, add) => '<button type="button" class="dn-pcard' + (on ? ' on' : '') + (add ? ' add' : '') + '" data-k="' + k + '" data-i="' + i + '"><span class="ic">' + ic + '</span><span style="min-width:0"><b>' + esc(titre) + '</b><small>' + esc(ligne) + '</small></span></button>';
-  $('profCards').innerHTML = card('particulier', 0, cur === 'particulier', '👤', 'Particulier', pa ? pa.prenom + ' ' + pa.nom : 'Ajouter ce profil', !pa) +
-    pros.map((p, i) => card('pro', i, cur === 'pro' && curPro === i, '🏢', p.raisonSociale, p.siren ? 'SIREN ' + p.siren.replace(/(\d{3})(?=\d)/g, '$1 ') : (p.ville || ''), false)).join('') +
-    card('pro-new', 0, cur === 'pro' && (curPro === -1 || !pros.length), '＋', pros.length ? 'Ajouter une autre société' : 'Professionnel', pros.length ? 'Entreprise, association…' : 'Ajouter ma société', true);
+  $('profCards').innerHTML = card('particulier', 0, cur === 'particulier', IC.user, 'Particulier', pa ? pa.prenom + ' ' + pa.nom : 'Ajouter ce profil', !pa) +
+    pros.map((p, i) => card('pro', i, cur === 'pro' && curPro === i, IC.soc, p.raisonSociale, p.siren ? 'SIREN ' + p.siren.replace(/(\d{3})(?=\d)/g, '$1 ') : (p.ville || ''), false)).join('') +
+    card('pro-new', 0, cur === 'pro' && (curPro === -1 || !pros.length), IC.plus, pros.length ? 'Ajouter une autre société' : 'Professionnel', pros.length ? 'Entreprise, association…' : 'Ajouter ma société', true);
   document.querySelectorAll('#profCards .dn-pcard').forEach(b => b.onclick = () => fillProfile(b.dataset.k, +b.dataset.i));
 }
 function renderAcct() {
