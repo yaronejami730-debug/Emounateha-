@@ -1060,6 +1060,9 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (mode === 'sans' || /[?&]test=1/.test(location.search)) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
   pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
+  // ?aff=besoin (ou colis, toit, soutien, insertion, vetement…) : présélection depuis un lien (ex. logo de l'accueil)
+  const affQ = (new URLSearchParams(location.search).get('aff') || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (affQ) { const rs = [...document.querySelectorAll('input[name=affr]')]; const i = rs.findIndex(r => r.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(affQ)); if (i >= 0) pickAff(i); }
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
   return c;
 });

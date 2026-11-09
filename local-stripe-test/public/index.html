@@ -1196,7 +1196,10 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []); if (!c.live && $('dnTest')) $('dnTest').hidden = false;
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (!c.live && (mode === 'sans' || /[?&]test=1/.test(location.search))) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
-  pickAff(0);
+  pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
+  // ?aff=besoin (ou colis, toit, soutien, insertion, vetement…) : présélection depuis un lien (ex. logo de l'accueil)
+  const affQ = (new URLSearchParams(location.search).get('aff') || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (affQ) { const rs = [...document.querySelectorAll('input[name=affr]')]; const i = rs.findIndex(r => r.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(affQ)); if (i >= 0) pickAff(i); }
   { // ?aff=chabbat|roch-hachana|simhat-torah|hanouka|pourim|pessah|reinsertion|vetements|toit|soutien|scolarite|education : affectation choisie d'office
     const q = (new URLSearchParams(location.search).get('aff') || '').toLowerCase(), labels = [...document.querySelectorAll('input[name=affr]')].map(r => r.value);
     const PAT = { 'chabbat': /chabbat/i, 'roch-hachana': /roch hachana/i, 'simhat-torah': /souccot|simhat/i, 'souccot': /souccot/i, 'hanouka': /hanouka/i, 'pourim': /pourim/i, 'pessah': /pessah/i, 'chavouot': /chavou/i,
