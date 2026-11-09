@@ -39,9 +39,15 @@ const load = () => {
   return JSON.parse(vault.readFile(DATA).toString('utf8'));      // fichier illisible ou modifié : on s'arrête plutôt que d'écraser les données
 };
 const save = d => vault.writeFile(DATA, JSON.stringify(d));       // data.json est chiffré (AES-256-GCM)
-function nextNumero(annee) { // vrais reçus : compteur à part, qui repart de 0001 (les reçus TEST gardent le leur)
-  const d = load(), k = PREFIX ? (PREFIX === 'TEST' ? String(annee) : PREFIX + '-' + annee) : 'reel-' + annee;
-  d.counters[k] = (d.counters[k] || 0) + 1; save(d); return `${PREFIX ? PREFIX + '-' : ''}${annee}-${String(d.counters[k]).padStart(4, '0')}`; }
+// numéros des vrais reçus : suite de la numérotation de l'association (A2026/00351 = dernier reçu fait avant ce site)
+const DEPART = { 2026: 351 };
+function nextNumero(annee) { // les reçus TEST gardent leur propre compteur
+  const d = load();
+  if (PREFIX === 'TEST') { d.counters[annee] = (d.counters[annee] || 0) + 1; save(d); return `TEST-${annee}-${String(d.counters[annee]).padStart(4, '0')}`; }
+  const k = 'reel-' + annee; d.counters[k] = Math.max(d.counters[k] || 0, DEPART[annee] || 0) + 1; save(d);
+  return `${PREFIX || 'A'}${annee}/${String(d.counters[k]).padStart(5, '0')}`;
+}
+const nomFichier = n => String(n).replace(/[^A-Za-z0-9-]+/g, '-');
 
 // --- validation ---
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -179,11 +185,11 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   if (don && !mailer.isFake(to)) {     // vraie adresse : email Brevo (modèle unique pour tous les dons), reçu en pièce jointe
     const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance,
       spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
-    if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${numero}.pdf`, content: vault.readFile(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
+    if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${nomFichier(numero)}.pdf`, content: vault.readFile(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
   }
   const subject = `${LIVE ? '' : '[TEST] '}Votre reçu fiscal ${numero} — ${ASSO.nom}`;
   const text = `Bonjour ${nom},\n\nMerci pour votre don à ${ASSO.nom}. Vous trouverez ci-joint votre reçu fiscal ${numero}.${aff ? `\nAffectation de votre don : ${aff}.` : ''}${mensuel ? '\nVotre don est mensuel : un reçu vous sera adressé pour chaque prélèvement.' : ''}\n\n(Message de TEST : aucun argent réel, reçu sans valeur fiscale.)\n\nCordialement,\n${ASSO.nom}\n${ASSO.telephone} · ${ASSO.email}`;
-  const attachments = [{ filename: `Recu-fiscal-${numero}.pdf`, content: vault.readFile(pdfFile), contentType: 'application/pdf' }];
+  const attachments = [{ filename: `Recu-fiscal-${nomFichier(numero)}.pdf`, content: vault.readFile(pdfFile), contentType: 'application/pdf' }];
   const from = process.env.MAIL_FROM || `${ASSO.nom} <${ASSO.email}>`;
   if (process.env.SMTP_HOST) {
     const t = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined });
@@ -200,7 +206,7 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
 async function fabriquer(don, { envoyerEmail }) {
   const annee = new Date(don.dateDon).getFullYear();
   const numero = nextNumero(annee);
-  const file = path.join(RECUS, `recu_${numero}_${crypto.randomBytes(3).toString('hex')}.pdf`);
+  const file = path.join(RECUS, `recu_${nomFichier(numero)}_${crypto.randomBytes(3).toString('hex')}.pdf`);
   await pdf(remplir(don, numero), file);
   const out = { numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
