@@ -50,10 +50,18 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
     return { raisonSociale: rs, siren, adresse: rue, cp, ville };
   }
   const kindOf = t => (t === 'entreprise' || t === 'pro') ? 'pro' : 'particulier';
+  // plusieurs sociétés par compte : profiles.pros (liste, une par SIREN) ; profiles.pro = la dernière utilisée
+  const cleSoc = p => String(p.siren || '').replace(/\s/g, '') || String(p.raisonSociale || '').trim().toLowerCase();
+  function poserProfil(u, k, p) {
+    u.profiles = u.profiles || {};
+    if (k === 'pro') { const l = (u.profiles.pros || (u.profiles.pro ? [u.profiles.pro] : [])).filter(x => cleSoc(x) !== cleSoc(p)); l.unshift(p); u.profiles.pros = l.slice(0, 20); }
+    u.profiles[k] = p; u.last = k;
+  }
+  const profilsVus = pr => { pr = pr || {}; return pr.pro && !pr.pros ? { ...pr, pros: [pr.pro] } : pr; };
   function saveProfileFromForm(email, type, form) {   // appelée après un don, si le donateur l'a demandé
     try {
       const k = kindOf(type), p = cleanProfile(k, form || {}), d = load(); const u = (d.users || {})[email]; if (!u) return false;
-      u.profiles = u.profiles || {}; u.profiles[k] = p; u.last = k; save(d); return true;
+      poserProfil(u, k, p); save(d); return true;
     } catch (e) { return false; }
   }
   function receiptsOf(email) {
@@ -100,7 +108,7 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
       for (const [k, s] of Object.entries(d.sessions)) if (s.exp < Date.now()) delete d.sessions[k];
       d.sessions[sha(token)] = { email, createdAt: Date.now(), exp: Date.now() + SESSION_DAYS * 86400000 }; save(d);
       setCookie(req, res, token, SESSION_DAYS * 86400);
-      res.json({ ok: true, email, profiles: d.users[email].profiles, last: d.users[email].last || null });
+      res.json({ ok: true, email, profiles: profilsVus(d.users[email].profiles), last: d.users[email].last || null });
     });
 
     app.post('/api/auth/logout', (req, res) => {
@@ -112,20 +120,23 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
     app.get('/api/me', (req, res) => {
       const s = requireUser(req, res); if (!s) return;
       const u = (load().users || {})[s.email] || { profiles: {} };
-      res.json({ email: s.email, profiles: u.profiles || {}, last: u.last || null });
+      res.json({ email: s.email, profiles: profilsVus(u.profiles), last: u.last || null });
     });
     app.put('/api/me/profile', (req, res) => {
       try {
         if (!sameOrigin(req, res)) return; const s = requireUser(req, res); if (!s) return;
         const k = kindOf(req.body.kind), p = cleanProfile(k, req.body.data || {}), d = load();
-        d.users[s.email].profiles = d.users[s.email].profiles || {}; d.users[s.email].profiles[k] = p; d.users[s.email].last = k; save(d);
-        res.json({ ok: true, profiles: d.users[s.email].profiles });
+        poserProfil(d.users[s.email], k, p); save(d);
+        res.json({ ok: true, profiles: profilsVus(d.users[s.email].profiles) });
       } catch (e) { res.status(400).json({ error: e.message }); }
     });
     app.delete('/api/me/profile/:kind', (req, res) => {
       if (!sameOrigin(req, res)) return; const s = requireUser(req, res); if (!s) return;
-      const k = kindOf(req.params.kind), d = load(), u = d.users[s.email]; if (u.profiles) delete u.profiles[k]; if (u.last === k) u.last = Object.keys(u.profiles || {})[0] || null; save(d);
-      res.json({ ok: true, profiles: u.profiles || {} });
+      const k = kindOf(req.params.kind), d = load(), u = d.users[s.email]; u.profiles = u.profiles || {};
+      if (k === 'pro' && req.query.cle) { const l = (u.profiles.pros || (u.profiles.pro ? [u.profiles.pro] : [])).filter(x => cleSoc(x) !== String(req.query.cle)); u.profiles.pros = l; if (l.length) u.profiles.pro = l[0]; else { delete u.profiles.pro; delete u.profiles.pros; } }
+      else { delete u.profiles[k]; if (k === 'pro') delete u.profiles.pros; }
+      if (u.last === k && !u.profiles[k]) u.last = u.profiles.particulier ? 'particulier' : (u.profiles.pro ? 'pro' : null); save(d);
+      res.json({ ok: true, profiles: profilsVus(u.profiles) });
     });
     app.get('/api/me/receipts', (req, res) => {
       const s = requireUser(req, res); if (!s) return;

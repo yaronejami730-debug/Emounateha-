@@ -837,6 +837,24 @@ body{overflow-x:hidden}
 .dn-saved .dn-link{font-size:12.5px}
 
 .fh-top img[src$=".png"]{object-fit:contain;padding:6px;background:#fffaf0}
+
+/* choix Particulier / Professionnel : interrupteur à deux positions */
+.dn-type{display:grid!important;grid-template-columns:1fr 1fr;gap:0!important;background:#eef5f5;border-radius:18px;padding:5px;margin-bottom:16px!important;position:relative}
+.dn-type label{margin:0!important}
+.dn-type span{border:0!important;background:transparent!important;border-radius:14px!important;padding:11px 8px!important;color:var(--mut)!important;font-size:15px!important;display:flex!important;flex-direction:column;align-items:center;gap:2px;transition:background .2s,color .2s,box-shadow .2s}
+.dn-type span::before{font-size:20px;line-height:1}
+.dn-type label:first-child span::before{content:"👤"}
+.dn-type label:last-child span::before{content:"🏢"}
+.dn-type input:checked+span{background:#fff!important;color:var(--teal)!important;box-shadow:0 4px 14px rgba(20,60,66,.14)}
+.dn-type span small{font-size:11.5px!important;color:#7f9396!important;font-weight:500}
+.dn-type input:checked+span small{color:#9a7a22!important}
+/* profils enregistrés : une carte par profil / société, et « ajouter une autre société » */
+.dn-pcards{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px!important}
+.dn-pcard{border-width:1.5px!important;border-radius:14px!important;padding:10px 12px!important}
+.dn-pcard.on{border-color:var(--teal)!important;background:#f2f8f8!important;box-shadow:0 0 0 3px rgba(31,106,114,.12)}
+.dn-pcard.add{border-style:dashed!important;border-color:#d8c58f!important;background:#fffdf6!important}
+.dn-pcard.add .ic{background:#fff3d6!important;color:#9a7a22;font-weight:700}
+.dn-pcard.add.on{border-style:solid!important;border-color:var(--gold)!important}
 </style>
 
 <section id="dn"><div class="dn-wrap">
@@ -1201,12 +1219,18 @@ async function api(m, u, b) { const r = await fetch(u, { method: m, headers: { '
 const lgShowErr = m => { const e = $('lgErr'); e.textContent = m || ''; e.hidden = !m; };
 const PROFNAME = k => k === 'pro' ? 'Professionnel' : 'Particulier';
 const profLine = (k, p) => !p ? 'Ajouter ce profil' : (k === 'pro' ? p.raisonSociale : (p.prenom + ' ' + p.nom));
-function fillProfile(k) {
-  const p = me && me.profiles && me.profiles[k], ent = k === 'pro'; setType(ent);
+let curPro = 0;   // société choisie (index dans me.profiles.pros), -1 = nouvelle société
+const prosOf = () => (me && me.profiles && (me.profiles.pros || (me.profiles.pro ? [me.profiles.pro] : []))) || [];
+function fillProfile(k, i) {
+  const ent = k === 'pro' || k === 'pro-new'; if (ent) curPro = k === 'pro-new' ? -1 : (i || 0);
+  const p = k === 'particulier' ? (me && me.profiles && me.profiles.particulier) : (k === 'pro' ? prosOf()[curPro] : null);
+  setType(ent);
   $('prenom').value = p && !ent ? p.prenom : ''; $('nom').value = p && !ent ? p.nom : ''; $('rs').value = p && ent ? p.raisonSociale : ''; $('siren').value = p && ent ? (p.siren || '') : ''; $('siret').value = ''; $('siretMsg').textContent = '';
+  const ps = $('proSaved'); if (ps) ps.remove();
   $('adr').value = p ? p.adresse : ''; $('cp').value = p ? p.cp : ''; $('ville').value = p ? p.ville : '';
   if (me) { $('email').value = me.email; }
   renderProfiles(); upSum();
+  if (k === 'pro-new') setTimeout(() => $('siret').focus(), 60);
 }
 let siretSeq = 0;
 async function siretLookup() {
@@ -1236,7 +1260,7 @@ async function saveProNow() {
   proSaved('saving');
   try {
     const r = await api('PUT', '/api/me/profile', { kind: 'pro', data: { raisonSociale: $('rs').value, siren: $('siren').value, adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value } });
-    me.profiles = r.profiles; renderProfiles(); proSaved('ok');
+    me.profiles = r.profiles; curPro = 0; renderProfiles(); proSaved('ok');
   } catch (e) { proSaved('ko', e.message); }
 }
 let proT = null;
@@ -1253,8 +1277,12 @@ function renderProfiles() {
   updHint();
   if (!me) return;
   const cur = curKind();
-  $('profCards').innerHTML = ['particulier', 'pro'].map(k => { const p = me.profiles && me.profiles[k]; return '<button type="button" class="dn-pcard' + (cur === k ? ' on' : '') + (p ? '' : ' add') + '" data-k="' + k + '"><span class="ic">' + (k === 'pro' ? '🏢' : '👤') + '</span><span style="min-width:0"><b>' + PROFNAME(k) + '</b><small>' + esc(profLine(k, p)) + '</small></span></button>'; }).join('');
-  document.querySelectorAll('#profCards .dn-pcard').forEach(b => b.onclick = () => fillProfile(b.dataset.k));
+  const pa = me.profiles && me.profiles.particulier, pros = prosOf();
+  const card = (k, i, on, ic, titre, ligne, add) => '<button type="button" class="dn-pcard' + (on ? ' on' : '') + (add ? ' add' : '') + '" data-k="' + k + '" data-i="' + i + '"><span class="ic">' + ic + '</span><span style="min-width:0"><b>' + esc(titre) + '</b><small>' + esc(ligne) + '</small></span></button>';
+  $('profCards').innerHTML = card('particulier', 0, cur === 'particulier', '👤', 'Particulier', pa ? pa.prenom + ' ' + pa.nom : 'Ajouter ce profil', !pa) +
+    pros.map((p, i) => card('pro', i, cur === 'pro' && curPro === i, '🏢', p.raisonSociale, p.siren ? 'SIREN ' + p.siren.replace(/(\d{3})(?=\d)/g, '$1 ') : (p.ville || ''), false)).join('') +
+    card('pro-new', 0, cur === 'pro' && (curPro === -1 || !pros.length), '＋', pros.length ? 'Ajouter une autre société' : 'Professionnel', pros.length ? 'Entreprise, association…' : 'Ajouter ma société', true);
+  document.querySelectorAll('#profCards .dn-pcard').forEach(b => b.onclick = () => fillProfile(b.dataset.k, +b.dataset.i));
 }
 function renderAcct() {
   updHint();
