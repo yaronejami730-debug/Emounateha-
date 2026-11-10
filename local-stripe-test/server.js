@@ -239,6 +239,7 @@ app.use((req, res, next) => {
   if (!process.env.VERCEL && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !req.headers['cf-connecting-ip']) return next();          // ordinateur local
   if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST && host !== 'don.emounateha.fr') return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
   if (req.path.startsWith('/backoffice') || req.path === '/api/recu') return res.status(403).type('text').send("Réservé à l'ordinateur local");
+  if (req.path === '/api/vu') return next();                                                                             // mesure d'audience : hors limite (un signe de vie toutes les 30 s)
   if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {                                        // limite : 30 envois (60 modifications de profil) / 10 min / visiteur
     const post = req.method === 'POST', ip = (post ? '' : 'm|') + String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.ip).split(',')[0].trim(), now = Date.now(), arr = (hits.get(ip) || []).filter(t => now - t < 600000);
     if (arr.length >= (post ? 30 : 60)) return res.status(429).json({ error: 'Trop de demandes, réessayez dans quelques minutes.' });
@@ -259,7 +260,7 @@ app.use((req, res, next) => {
 });
 // --- une page d'un autre site ne peut rien envoyer (anti-CSRF) : toute requête qui modifie quelque chose doit venir de ce site ---
 app.use((req, res, next) => {
-  if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/webhook') return next();   // le webhook est protégé par la signature Stripe
+  if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/webhook' || req.path === '/api/vu') return next();   // le webhook est protégé par la signature Stripe ; /api/vu ne modifie rien ici
   const o = req.headers.origin; if (!o) return next();
   try { const h = new URL(o).host; if (h === req.headers.host || ('don.emounateha.fr,www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
   res.status(403).json({ error: 'Origine non autorisée' });
@@ -294,6 +295,17 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
     } else console.log('[webhook]', ev.type, '(non traité)');
     res.json({ received: true });
   } catch (e) { console.error('[webhook] erreur', e.message); res.status(500).send('erreur'); }   // Stripe réessaiera plus tard
+});
+// Mesure d'audience (onglet Trafic du CRM) : la visite est relayée au site principal, signée, avec l'adresse du visiteur
+// (qui n'y est jamais enregistrée : elle sert seulement à ne compter chaque visiteur qu'une fois par jour).
+app.post('/api/vu', express.text({ type: () => true, limit: '2kb' }), async (req, res) => {
+  try {
+    let b = {}; try { b = JSON.parse(typeof req.body === 'string' ? req.body : '{}') || {}; } catch (e) {}
+    const ip = String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim(), ts = Date.now();
+    await fetch(SITE + '/api/vu', { method: 'POST', signal: AbortSignal.timeout(4000), headers: { 'content-type': 'text/plain', 'user-agent': String(req.headers['user-agent'] || ''), 'x-vu-ip': ip, 'x-vu-ts': String(ts), 'x-vu-sig': crypto.createHmac('sha256', cerfaKey()).update('vu|' + ts + '|' + ip).digest('hex') },
+      body: JSON.stringify({ p: String(b.p || '/').slice(0, 120), r: String(b.r || '').slice(0, 300), h: b.h ? 1 : 0, s: 'don.emounateha.fr' }) });
+  } catch (e) { /* le comptage ne doit jamais gêner la page */ }
+  res.status(204).end();
 });
 app.use(express.json({ limit: '50kb' }));
 acc.mount(app);                                   // /api/auth/*, /api/me*, /recus/:fichier (liens signés)

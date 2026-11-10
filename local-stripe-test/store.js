@@ -14,7 +14,7 @@ module.exports = function createStore({ DATA, RECUS }) {
   let ready = null;
   const ensure = () => ready || (ready = pool.query('create table if not exists don_kv (key text primary key, value bytea not null, updated_at timestamptz not null default now())').catch(e => { ready = null; throw e; }));
   // routes qui n'ont pas besoin des données (aucune connexion ouverte)
-  const SANS = /^\/api\/(config|siret)\b/;
+  const SANS = /^\/api\/(config|siret|vu)\b/;
   const same = (a, b) => a && b && Buffer.compare(a, b) === 0;
   return async (req, res, next) => {
     const p = req.path;

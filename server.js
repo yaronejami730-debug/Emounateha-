@@ -1108,14 +1108,18 @@ async function vu(req, res) {
   try {
     if (!pool) return fin();
     const ua = String(req.headers['user-agent'] || ''); if (ua.length < 20 || VU_ROBOT.test(ua)) return fin();
+    // relais du serveur de don (signé avec la clé commune aux deux projets) : il transmet l'adresse du visiteur
+    const rts = Number(req.headers['x-vu-ts'] || 0), rip = String(req.headers['x-vu-ip'] || ''), rsig = String(req.headers['x-vu-sig'] || '');
+    const rkey = crypto.createHash('sha256').update('emounateha-cerfa|' + (envVar('CERFA_SECRET') || DATABASE_URL)).digest();
+    const relais = /^[0-9a-f]{64}$/.test(rsig) && Math.abs(Date.now() - rts) < 120000 && crypto.timingSafeEqual(Buffer.from(rsig, 'hex'), crypto.createHmac('sha256', rkey).update('vu|' + rts + '|' + rip).digest());
     let oh = ''; try { oh = new URL(req.headers.origin || req.headers.referer || '').hostname; } catch (e) {}
-    if (!VU_SITES[oh] && !(!process.env.VERCEL && /^(localhost|127\.0\.0\.1)$/.test(oh))) return fin();   // seulement depuis nos pages
+    if (!relais && !VU_SITES[oh] && !(!process.env.VERCEL && /^(localhost|127\.0\.0\.1)$/.test(oh))) return fin();   // seulement depuis nos pages
     const b = await readBody(req).catch(() => ({})) || {};
-    const site = VU_SITES[String(b.s || '')]; if (!site) return fin();
+    const site = relais ? 'don.emounateha.fr' : VU_SITES[String(b.s || '')]; if (!site || (!relais && site === 'don.emounateha.fr')) return fin();   // la page de don ne passe que par son relais
     let p = String(b.p || '/').split(/[?#]/)[0].slice(0, 100).replace(/\/index\.html$/, '/').replace(/\/{2,}/g, '/');
     if (!/^\/[A-Za-z0-9\-._~%\/]*$/.test(p) || p.split('/').length > 5 || /^\/(crm|backoffice|api|login|auth)(\/|$)/.test(p)) return fin();
     if (p.length > 1 && !p.endsWith('/') && !/\.[a-z0-9]{2,5}$/i.test(p)) p += '/';
-    const ip = String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || '').split(',')[0].trim();
+    const ip = relais ? rip : String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || '').split(',')[0].trim();
     const day = jourParis(), visitor = crypto.createHash('sha256').update('emounateha-vu|' + (envVar('CRON_SECRET') || DATABASE_URL) + '|' + day + '|' + ip + '|' + ua).digest('hex').slice(0, 20);
     let ref = ''; try { const rh = new URL(String(b.r || '')).hostname.replace(/^www\./, ''); if (rh && !/(^|\.)emounateha\.fr$/.test(rh)) ref = rh.slice(0, 60); } catch (e) {}
     const device = /iPad|Tablet/i.test(ua) ? 'Tablette' : /Mobi|Android|iPhone/i.test(ua) ? 'Téléphone' : 'Ordinateur';
