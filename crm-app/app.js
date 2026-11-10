@@ -761,9 +761,17 @@ function smsDraw() {
   const cost = st.sendable.length * sms.perSms;
   const after = sms.credits == null ? null : sms.credits - cost;
   const reste = info.max - info.len;
+  // Quels caractères imposent le mode Unicode (70 par SMS au lieu de 160) ? On les nomme, et on montre le résultat une fois corrigés.
+  let why = '';
+  if (info.unicode) {
+    const bad = [...new Set([...W.text].filter(ch => !SMS_GSM.has(ch) && !SMS_EXT.has(ch)))], fixed = smsInfo(smsNoUnicode(W.text)), still = fixed.unicode;
+    why = `<div style="margin-top:6px;padding:9px 11px;border-radius:10px;background:#fff4d6;border:1px solid #ecd9a0;font-size:13px;line-height:1.5"><b>Pourquoi ${info.segments > 1 ? info.segments + ' SMS' : 'seulement 70 caractères'} ?</b> Votre message contient ${bad.map(c => '<b>« ' + esc(c) + ' »</b>').join(', ')} : ${bad.length > 1 ? 'ces caractères ne font' : 'ce caractère ne fait'} pas partie de l’alphabet SMS standard. L’envoi passe alors en mode « Unicode » : un SMS ne peut contenir que <b>70 caractères</b> (au lieu de 160).<br>`
+      + (still ? 'Certains caractères (émoji…) ne peuvent pas être remplacés automatiquement : retirez-les à la main.' : `<button type="button" class="btn sm pri" style="margin-top:6px" onclick="smsClean()">Corriger automatiquement</button> <span style="color:#33555b">→ après correction : <b>${fixed.len} / ${fixed.max}</b> · ${fixed.segments} SMS</span>`) + '</div>';
+  }
   $('#sms_count').innerHTML = info.segments === 0 ? '<b>0 / 160</b> caractères <span style="color:var(--mut)">· saisissez votre message</span>'
-    : info.segments === 1 ? `<b>${info.len} / ${info.max}</b> caractères · 1 SMS · <span style="color:${reste < 10 ? '#b26a00' : 'var(--mut)'}">il reste ${reste}</span>${info.unicode ? ' <span class="pill warn">Unicode : 70 max</span>' : ''}`
-    : `<b style="color:#b3261e">${info.len} caractères</b> · <b style="color:#b3261e">${info.segments} SMS</b> (${info.per} par SMS) · <span style="color:#b3261e">retirez ${info.len - info.max} caractère${info.len - info.max > 1 ? 's' : ''} pour tenir en 1 SMS (${info.max} max)</span>${info.unicode ? ' <span class="pill warn">Unicode : 70 max</span>' : ''}`;
+    : info.segments === 1 ? `<b>${info.len} / ${info.max}</b> caractères · 1 SMS · <span style="color:${reste < 10 ? '#b26a00' : 'var(--mut)'}">il reste ${reste}</span>`
+    : `<b style="color:#b3261e">${info.len} caractères</b> · <b style="color:#b3261e">${info.segments} SMS</b> <span style="color:#b3261e">· maximum ${info.max} pour 1 SMS : retirez ${info.len - info.max} caractère${info.len - info.max > 1 ? 's' : ''}</span>`;
+  $('#sms_count').innerHTML += why;
   if (W.vars && info.segments) $('#sms_count').innerHTML += `<div style="font-size:12px;color:var(--mut);margin-top:2px">{{prenom}} / {{nom}} comptés sur le plus long de ${W.listed ? 'la liste (' + W.listed + ' personne' + (W.listed > 1 ? 's' : '') + ')' : 'prénom supposé de 8 lettres (chargez la liste pour un calcul exact)'}</div>`;
   $('#sms_hint').innerHTML = info.unicode ? 'Un caractère spécial (accent comme ê/î/ô/â, apostrophe ’, « », émoji) fait tomber la limite de 160 à 70. <a href="#" onclick="smsClean();return false">Remplacer automatiquement</a>' : 'Alphabet SMS standard : 160 caractères par SMS. Autorisés : é è ù à É ä ö ü ñ. Non autorisés (passent en Unicode, 70 max) : ê â î ô û ç ë ï œ, apostrophe courbe ’, « », émojis.';
   $('#sms_prev').textContent = sample || 'Votre message apparaîtra ici.';
