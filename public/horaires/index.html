@@ -613,8 +613,14 @@ th:nth-child(n+7),td.shc{background:#f5f8f8}
 
 /* détails : horaires halakhiques complets au clic sur une ville */
 .htable tr[data-z]{cursor:pointer}
-.zch{margin-left:8px;color:#c4a24a;font-size:13px;display:inline-block;transition:transform .2s}
-tr.open .zch{transform:rotate(180deg)}
+.zch{margin-left:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 11px;border-radius:99px;border:1.5px solid #e3cd8c;background:#fff7e0;color:#8a6c1c;font:700 11.5px/1.2 Inter,sans-serif;letter-spacing:.01em;white-space:nowrap;vertical-align:middle;cursor:pointer}
+.zch b{display:inline-block;font-weight:700;transition:transform .2s}
+tr.open .zch b{transform:rotate(180deg)}
+.zch .zs{display:none}tr.open .zch .zo{display:none}tr.open .zch .zs{display:inline}
+tbody tr:first-child .zch{animation:zpulse 2s ease-in-out 1s 4}
+@keyframes zpulse{0%,100%{box-shadow:0 0 0 0 rgba(196,162,74,.0)}50%{box-shadow:0 0 0 6px rgba(196,162,74,.35)}}
+@media(prefers-reduced-motion:reduce){tbody tr:first-child .zch{animation:none}}
+tbody tr{cursor:pointer}
 .zdetrow{display:none}
 .zdetrow.open{display:table-row}
 .zdetrow td{padding:0!important;background:#f5f8f8;text-align:left!important;font-size:inherit!important}
@@ -629,7 +635,7 @@ tr.open .zch{transform:rotate(180deg)}
   .htable tr.zdetrow.open{display:block;margin:-12px 0 12px;background:#fff;border:1px solid #e3ecec;border-top:0;border-radius:0 0 16px 16px;box-shadow:0 6px 18px -8px rgba(20,60,66,.25)}
   .htable tr.zdetrow td{display:block;border:0;padding:0;font-size:inherit;text-align:left;font-weight:400}
   .htable tr[data-z].open{margin-bottom:0;border-radius:16px 16px 0 0}
-  .htable td:first-child .zch{float:right;margin-top:4px}
+  .htable td:first-child .zch{float:right;margin-top:2px;font-size:12px}
   .zbox{padding:14px 16px 16px;border:0}
   .zbox ul{grid-template-columns:1fr}
   .zbox li{font-size:15px}
@@ -653,7 +659,10 @@ tr.open .zch{transform:rotate(180deg)}
 #hnote,.zsrc,.zsrc a{font-size:10px!important;color:#aab4b6!important;opacity:.85;text-decoration:none;margin-top:6px}
 .mymail{margin-left:8px;cursor:pointer;font-size:13px;opacity:.8;border:1px solid #d9c27a;border-radius:99px;padding:0 6px;background:#fffaf0}.mymail:hover{opacity:1}
 .geonote{margin:0 0 12px;padding:11px 14px;border-radius:12px;background:#fff7e0;border:1px solid #e6cf8a;color:#5b4a14;font-size:13px;line-height:1.45}.geonote b{display:block;color:#7a5d10;font-size:14px;margin-bottom:2px}.geonote span{display:block}
-.hmany{margin:2px 2px 10px;font-size:13px;line-height:1.45;color:var(--teal);text-align:center}
+.hmany{margin:6px 2px 12px;padding:11px 14px;font-size:14px;line-height:1.5;color:#24505a;text-align:center;background:#fff7e0;border:1.5px solid #ecd9a0;border-radius:14px}
+.hmany b{color:#14525c}.hmany small{display:block;margin-top:3px;font-size:12.5px;color:#6b7d80}
+.hfing{display:inline-block;animation:hfing 1.4s ease-in-out infinite}@keyframes hfing{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media(prefers-reduced-motion:reduce){.hfing{animation:none}}
 #chabbat-mail{margin-top:-34px}
 @media(max-width:800px){#chabbat-mail{margin-top:-14px}}
 /* chiffres des horaires : même police que les prix des colis (Bree Serif) */
@@ -676,7 +685,8 @@ tr.open .zch{transform:rotate(180deg)}
     <div class="hnav"><button id="prev" aria-label="Jour précédent">‹</button><button id="today">Aujourd'hui</button><button id="next" aria-label="Jour suivant">›</button><label class="hpick" aria-label="Choisir une date"><span>Autre date</span><input type="date" id="hdate"></label></div>
   </div>
   
-  <p class="hmany">Plus de 1 000 villes dans le monde, avec tous leurs horaires : ajoutez la vôtre, puis cliquez sur une ville pour voir le détail complet.</p>
+  <p class="hmany"><span class="hfing" aria-hidden="true">👆</span> <b><span class="hverb">Cliquez sur</span> une ville</b> pour voir <b>tous ses horaires détaillés</b> (aube, téfilin, Chéma, Min'ha, coucher du soleil, Tset Hakokhavim…).<br><small>Plus de 1 000 villes dans le monde : ajoutez la vôtre avec la recherche ci-dessus.</small></p>
+  <script>try{if(matchMedia('(hover:none)').matches)document.querySelector('.hverb').textContent='Touchez'}catch(e){}</script>
   <div class="htable"><div class="cap" id="hcap">Du … au …</div>
     <table><thead><tr><th>Ville</th><th>Pose<br>Téfilin</th><th>Limite<br>Chéma</th><th>Min'ha<br>Guédola</th><th>Chkia</th><th>Tset<br>Ko'havim</th><th>Entrée<br>Chabbat</th><th>Sortie<br>Chabbat</th></tr></thead><tbody id="hbody"></tbody></table>
   </div>
@@ -814,7 +824,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
     rows.sort((x,y)=>(String(y[1])===mine)-(String(x[1])===mine)); // sa ville en premier
     const dayLabel=fr(day,{weekday:'long',day:'numeric',month:'long'});
     if(tok!==render.tok)return; // un rendu plus récent a déjà pris la main
-    body.innerHTML=rows.map(([n,id,v])=>'<tr data-z="'+id+'"'+(String(id)===mine?' class="me"':'')+'><td>'+n+'<span class="zch" aria-hidden="true">▾</span>'+(ABO&&ALL.some(c=>c[1]===id)?'<span class="mymail" data-id="'+id+'" data-n="'+n.replace(/"/g,'')+'" title="Recevoir les horaires de cette ville par e-mail">✉</span>':'')+(DEF.some(d=>d[1]===id)?'':'<span class="rm" title="Retirer" data-id="'+id+'">✕</span>')+'</td>'+'<td class="sect">Horaires</td>'+v.slice(0,5).map(cell).join('')+'<td class="sect sect2">Horaires de Chabbat</td>'+v.slice(5).map((x,i)=>cell(x,i+5)).join('')+'</tr><tr class="zdetrow" id="zd'+id+'"><td colspan="10">'+zdet(id,n,dayLabel)+'</td></tr>').join('');
+    body.innerHTML=rows.map(([n,id,v])=>'<tr data-z="'+id+'"'+(String(id)===mine?' class="me"':'')+'><td>'+n+'<span class="zch" aria-hidden="true"><span class="zo">Tous les horaires</span><span class="zs">Réduire</span><b>▾</b></span>'+(ABO&&ALL.some(c=>c[1]===id)?'<span class="mymail" data-id="'+id+'" data-n="'+n.replace(/"/g,'')+'" title="Recevoir les horaires de cette ville par e-mail">✉</span>':'')+(DEF.some(d=>d[1]===id)?'':'<span class="rm" title="Retirer" data-id="'+id+'">✕</span>')+'</td>'+'<td class="sect">Horaires</td>'+v.slice(0,5).map(cell).join('')+'<td class="sect sect2">Horaires de Chabbat</td>'+v.slice(5).map((x,i)=>cell(x,i+5)).join('')+'</tr><tr class="zdetrow" id="zd'+id+'"><td colspan="10">'+zdet(id,n,dayLabel)+'</td></tr>').join('');
     body.classList.remove('loading');
     try{for(const k of Object.keys(localStorage))if(k.startsWith('hrows:')&&k!==ck)localStorage.removeItem(k);if(!rows.some(r=>r[2].every(x=>x==='—')))localStorage.setItem(ck,body.innerHTML)}catch(e){}
     body.querySelectorAll('.mymail').forEach(x=>x.onclick=async e=>{e.stopPropagation();e.preventDefault();try{const r=await fetch('/api/shabbat-city',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:ABO,city:x.dataset.id})});const j=await r.json();aboNote(r.ok?'✓ C\'est fait : vous recevrez désormais les horaires de Chabbat de <b>'+j.city+'</b> par e-mail.':(j.error||'Impossible de modifier la ville.'),r.ok)}catch(err){aboNote('Impossible de modifier la ville pour le moment.',false)}});
