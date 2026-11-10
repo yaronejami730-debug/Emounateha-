@@ -18,14 +18,15 @@ async function load() {
   const route = (location.hash.replace(/^#\/?/, '') || '');
   const need = n => route === n; // on ne charge que ce que la page affiche
   const cached = (() => { try { return JSON.parse(sessionStorage.hol || 'null'); } catch { return null; } })();
-  const [st, dif, usr, amb, hol] = await Promise.all([
+  const [st, dif, usr, amb, bes, hol] = await Promise.all([
     api('GET', '/state'),
     need('diffusion') ? api('GET', '/diffusion').catch(() => []) : Promise.resolve(S?.diffusion || []),
     need('users') ? api('GET', '/users').catch(() => []) : Promise.resolve(S?.users || []),
     need('ambassadeurs') ? api('GET', '/ambassadors').catch(e => ({ list: [], erreur: e.message })) : Promise.resolve(S?.ambassadors || {}),
+    need('besoins') ? api('GET', '/besoins').catch(e => ({ list: [], erreur: e.message })) : Promise.resolve(S?.besoins || {}),
     load.hol || cached ? Promise.resolve(load.hol || cached) : api('GET', '/holidays?all=1').catch(() => [])
   ]);
-  S = st; S.diffusion = dif; S.users = usr; S.ambassadors = amb;
+  S = st; S.diffusion = dif; S.users = usr; S.ambassadors = amb; S.besoins = bes;
   load.hol = hol; try { if (hol && hol.length) sessionStorage.hol = JSON.stringify(hol); } catch {}
   S.holidaysAll = load.hol || []; S.holidays = S.holidaysAll.slice(0, 8);
   const { sent, limit } = S.today;
@@ -243,6 +244,36 @@ const views = {
     <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px;cursor:pointer" onclick="editDiffusion('${d.id}')" title="Cliquer pour ajouter ou changer le lien vidéo">${d.has_image===false?`<div style="height:220px;border-radius:10px;background:#111 url(https://i.ytimg.com/vi/${(String(d.youtube||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/)||[])[1]||''}/hqdefault.jpg) center/auto 100%"></div>`:`<img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block">`}<div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="event.stopPropagation();delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
   },
 
+  besoins: () => {
+    const B = S.besoins || {}, list = B.list || [];
+    const eur = c => ((c || 0) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+    const tot = list.reduce((t, x) => t + (x.total || 0), 0), nd = list.reduce((t, x) => t + (x.dons || 0), 0), ouverts = list.filter(x => x.actif).length;
+    const lien = x => 'https://don.emounateha.fr/besoin/' + x.slug;
+    return `<div class="head"><div><h1>Besoins</h1><p class="sub">Mini-cagnottes : un besoin précis, une personne, un lien. Chaque don fait par ce lien est compté ici et marqué dans Stripe.</p></div>
+      <div class="row"><button class="btn pri" onclick="besoinModal()">+ Nouveau besoin</button></div></div>
+    ${B.erreur ? `<div class="card" style="border-color:#f3c9c9;color:#9b1c1c;margin-bottom:16px">${esc(B.erreur)}</div>` : ''}
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card stat"><small>Besoins ouverts</small><b>${ouverts}</b></div>
+      <div class="card stat"><small>Besoins au total</small><b>${list.length}</b></div>
+      <div class="card stat"><small>Dons reçus</small><b>${nd}</b></div>
+      <div class="card stat"><small>Total collecté</small><b>${eur(tot)}</b></div>
+    </div>
+    ${list.length ? `<div class="bs-list">${list.map(x => { const pct = x.objectif ? Math.min(100, Math.round((x.total || 0) * 100 / x.objectif)) : 0;
+      return `<div class="card bs-it${x.actif ? '' : ' off'}">
+        <div class="bs-top"><div><b class="bs-t">${esc(x.titre)}</b><div class="hint" style="margin:2px 0 0">${x.beneficiaire ? 'Pour : <b>' + esc(x.beneficiaire) + '</b> · ' : ''}créé le ${fmt(x.created_at)}</div></div>
+          <span class="pill ${x.actif ? 'ok' : ''}">${x.actif ? 'Ouvert' : 'Clôturé'}</span></div>
+        ${x.description ? `<p class="bs-d">${esc(x.description)}</p>` : ''}
+        <div class="bs-amt"><strong>${eur(x.total)}</strong><span>${x.objectif ? 'collectés sur ' + eur(x.objectif) + ' (' + pct + ' %)' : 'collectés · pas d\'objectif'} · ${x.dons || 0} don${x.dons > 1 ? 's' : ''}${x.dernier ? ' · dernier le ' + new Date(x.dernier).toLocaleDateString('fr-FR') : ''}</span></div>
+        ${x.objectif ? `<div class="bs-bar"><i style="width:${pct}%"></i></div>` : ''}
+        <div class="bs-link"><a href="${lien(x)}" target="_blank" rel="noopener">don.emounateha.fr/besoin/${esc(x.slug)}</a></div>
+        <div class="row bs-act"><button class="btn sm pri" onclick="navigator.clipboard.writeText('${lien(x)}');toast('Lien copié')">Copier le lien</button>
+          <button class="btn sm" onclick="besoinModal('${x.id}')">Modifier</button>
+          ${x.dons ? `<button class="btn sm" onclick="besoinDons('${x.id}')">Voir les dons</button>` : ''}
+          <button class="btn sm" onclick="besoinActif('${x.id}',${x.actif ? 'false' : 'true'})">${x.actif ? 'Clôturer' : 'Rouvrir'}</button>
+          ${x.dons ? '' : `<button class="btn sm bad" onclick="besoinDel('${x.id}')">Supprimer</button>`}</div>
+      </div>`; }).join('')}</div>` : '<div class="card empty"><big>♥</big>Aucun besoin pour l\'instant. Créez-en un : un retard de loyer, une armoire, des repas…</div>'}`;
+  },
+
   ambassadeurs: () => {
     const ST = { new: 'Nouveau', contacted: 'Contacté', active: 'Actif', inactive: 'Inactif' };
     const A = S.ambassadors || {}, list = A.list || [];
@@ -354,6 +385,40 @@ async function doImport() {
   const r = await api('POST', '/contacts/import', { csv: $('#i_csv').value, tags: $('#i_tg').value });
   closeModal(); toast(`${r.added} nouveau(x), ${r.existing} déjà connu(s), ${r.skipped} ignoré(s)`); await render();
 }
+
+// ---- Besoins (mini-cagnottes)
+const besoinOf = id => ((S.besoins || {}).list || []).find(x => x.id === id);
+const bsSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+function besoinModal(id) {
+  const b = besoinOf(id) || { titre: '', beneficiaire: '', description: '', objectif: null, slug: '', actif: true };
+  modal(`<h2>${id ? 'Modifier le' : 'Nouveau'} besoin</h2>
+    <label>Le besoin</label><input id="b_titre" maxlength="70" value="${esc(b.titre)}" placeholder="ex. Loyer en retard, Une armoire, Repas de Chabbat" ${id ? '' : 'oninput="bsLien()"'}>
+    <label>Pour qui <span class="opt">visible seulement ici, dans le CRM</span></label><input id="b_ben" maxlength="120" value="${esc(b.beneficiaire)}" placeholder="Prénom et nom de la personne ou de la famille">
+    <label>Objectif en euros <span class="opt">facultatif</span></label><input id="b_obj" inputmode="decimal" value="${b.objectif ? String(b.objectif / 100).replace('.', ',') : ''}" placeholder="ex. 850">
+    <label>Texte affiché sur la page de don <span class="opt">facultatif</span></label><textarea id="b_desc" rows="3" maxlength="600" placeholder="Quelques mots pour expliquer le besoin aux donateurs.">${esc(b.description)}</textarea>
+    <label>Adresse du lien</label>
+    ${id ? `<div class="bs-url"><span>don.emounateha.fr/besoin/</span><b>${esc(b.slug)}</b></div><div class="hint">L'adresse ne change plus une fois créée : les liens déjà partagés continuent de marcher.</div>`
+      : `<div class="bs-url"><span>don.emounateha.fr/besoin/</span><input id="b_slug" maxlength="40" placeholder="loyer-en-retard" oninput="this.dataset.main='1';this.value=bsSlug(this.value)||this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"></div><div class="hint">Remplie toute seule à partir du besoin. Vous pouvez mettre autre chose (un prénom, un mot). Tout ce qui est dans l'adresse est public.</div>`}
+    <div class="row r" style="margin-top:22px"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn pri" id="b_go" onclick="besoinSave('${id || ''}')">${id ? 'Enregistrer' : 'Créer le besoin'}</button></div>`);
+}
+function bsLien() { const s = $('#b_slug'); if (s && !s.dataset.main) s.value = bsSlug($('#b_titre').value); }
+async function besoinSave(id) {
+  const body = { titre: $('#b_titre').value.trim(), beneficiaire: $('#b_ben').value.trim(), description: $('#b_desc').value.trim(), objectif: $('#b_obj').value.trim() };
+  if (!body.titre) return toast('Indiquez le besoin', true);
+  if (body.objectif && !(Number(body.objectif.replace(',', '.')) >= 1)) return toast("L'objectif doit être un montant en euros", true);
+  if (id) body.actif = besoinOf(id).actif; else body.slug = $('#b_slug').value.trim();
+  const go = $('#b_go'); go.disabled = true;
+  try { const r = await api(id ? 'PUT' : 'POST', '/besoins' + (id ? '/' + id : ''), body); closeModal(); await load(); await render();
+    if (!id && r.lien) { try { await navigator.clipboard.writeText(r.lien); toast('Besoin créé · lien copié'); } catch { toast('Besoin créé'); } } else toast('Besoin enregistré'); }
+  catch (e) { go.disabled = false; toast(e.message, true); }
+}
+async function besoinActif(id, actif) { const b = besoinOf(id); if (!b) return; if (!actif && !confirm('Clôturer « ' + b.titre + ' » ? La page de don n\'acceptera plus de dons pour ce besoin.')) return;
+  try { await api('PUT', '/besoins/' + id, { titre: b.titre, beneficiaire: b.beneficiaire, description: b.description, objectif: b.objectif ? b.objectif / 100 : '', actif }); await load(); await render(); toast(actif ? 'Besoin rouvert' : 'Besoin clôturé'); } catch (e) { toast(e.message, true); } }
+async function besoinDel(id) { const b = besoinOf(id); if (!b || !confirm('Supprimer « ' + b.titre + ' » ? Son lien ne marchera plus.')) return; try { await api('DELETE', '/besoins/' + id); await load(); await render(); toast('Besoin supprimé'); } catch (e) { toast(e.message, true); } }
+function besoinDons(id) { const b = besoinOf(id); if (!b) return; const eur = c => ((c || 0) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+  modal(`<h2>Dons pour « ${esc(b.titre)} »</h2><p class="hint">${b.dons} don${b.dons > 1 ? 's' : ''} · ${eur(b.total)} au total</p>
+    <table style="width:100%;font-size:14px"><thead><tr><th align="left">Date</th><th align="left">Donateur</th><th align="left">Reçu</th><th align="right">Montant</th></tr></thead><tbody>${[...b.liste].sort((x, y) => String(y.dateDon).localeCompare(String(x.dateDon))).map(d => `<tr><td>${new Date(d.dateDon).toLocaleDateString('fr-FR')}</td><td>${esc(d.nom || '')}</td><td>${esc(d.numero || '')}</td><td align="right"><b>${eur(d.montant)}</b></td></tr>`).join('')}</tbody></table>
+    <div class="row r" style="margin-top:22px"><button class="btn pri" onclick="closeModal()">Fermer</button></div>`); }
 
 let campSteps = [];
 function campFromHoliday(date, title) {

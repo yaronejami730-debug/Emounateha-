@@ -352,7 +352,14 @@ app.post('/api/intent', async (req, res) => {
     const don = validerDonateur(req.body);
     if (proche) { don.proche = proche.id; don.accordAt = proche.accordAt || null; don.form.emailProfil = proche.email; }
     if (sess) don.email = sess.email;                       // connecté : le reçu est rattaché au compte (et envoyé à l'email maître)
-    const mensuel = req.body.frequence === 'mensuel', aff = fete ? fete.affectation : affectation(req.body, await affectationsOk());
+    const mensuel = req.body.frequence === 'mensuel';
+    let besoin = null;   // mini-cagnotte : don.emounateha.fr/besoin/<slug> (créée dans le CRM)
+    if (req.body.besoin) {
+      besoin = await besoinInfo(String(req.body.besoin));
+      if (!besoin || !besoin.actif) throw new Error("Cette cagnotte n'est plus ouverte aux dons.");
+      if (mensuel) throw new Error('Une cagnotte reçoit uniquement des dons ponctuels.');
+    }
+    const aff = besoin ? ('Besoin : ' + besoin.titre).slice(0, 78) : fete ? fete.affectation : affectation(req.body, await affectationsOk());
     let amb = String(req.body.amb || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);   // lien d'ambassadeur
     if (!amb) { // donateur déjà venu par un ambassadeur : il lui reste attribué, en permanence
       const em = String(don.email || '').toLowerCase(), prev = Object.values(load().receipts || {}).filter(r => r.ambassadeur && r.donorEmail === em).sort((a, b) => String(a.dateDon).localeCompare(String(b.dateDon)))[0];
@@ -379,7 +386,7 @@ app.post('/api/intent', async (req, res) => {
       if (par < 100) throw new Error('Mensualité trop faible (au moins 1 € par mois) : choisissez une durée plus courte.');
       don.montant = par + reste;   // montant du 1er prélèvement
     }
-    const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel', ambassadeur: amb, ...(fin ? { fin } : {}), ...attrMeta(attr) };
+    const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel', ambassadeur: amb, ...(besoin ? { besoin: besoin.slug } : {}), ...(fin ? { fin } : {}), ...attrMeta(attr) };
     let id, clientSecret, subscription = null;
     if (mensuel) {
       const cust = await stripe.customers.create({ email: don.email, name: don.nom, address: { line1: don.adresse.split(',')[0], postal_code: (don.adresse.match(/\b\d{5}\b/) || [''])[0], city: don.ville, country: 'FR' }, metadata: meta });
@@ -392,7 +399,7 @@ app.post('/api/intent', async (req, res) => {
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
       // don ponctuel : carte (Apple Pay et Google Pay passent par la carte), PayPal et Klarna ; si un moyen n'est pas activé sur le compte Stripe, on retire les moyens en trop (jamais la carte)
-      const envT = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: `Don ${ASSO.nom}${T}`, metadata: meta };
+      const envT = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: `Don ${ASSO.nom}${T}` + (besoin ? ' — Besoin : ' + besoin.titre + ' (' + besoin.slug + ')' : ''), metadata: meta };
       const essais = [[...new Set([...envT, 'card', 'paypal', 'klarna'])], [...new Set([...envT, 'card', 'paypal'])], ['card']];
       let pi, derniere;
       for (const types of essais) { try { pi = await stripe.paymentIntents.create({ ...base, payment_method_types: types }); break; } catch (e) { derniere = e; console.error('[intent] moyens', types.join('+'), 'refusés :', e.message); } }
@@ -400,7 +407,7 @@ app.post('/api/intent', async (req, res) => {
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
-    d.pending[id] = { ...don, amb, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile && !proche), at: Date.now() }; save(d);
+    d.pending[id] = { ...don, amb, besoin: besoin ? besoin.slug : '', envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile && !proche), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -418,7 +425,7 @@ async function receiptForPayment(id) {
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
     const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
-    out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.fin) out.fin = p.fin; if (p.nb) { out.nb = p.nb; out.total = p.total; } if (p.attr && Object.keys(p.attr).length) out.attr = p.attr; if (p.amb) out.ambassadeur = p.amb; if (p.lignes) out.lignes = p.lignes;
+    out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.fin) out.fin = p.fin; if (p.nb) { out.nb = p.nb; out.total = p.total; } if (p.attr && Object.keys(p.attr).length) out.attr = p.attr; if (p.amb) out.ambassadeur = p.amb; if (p.besoin) out.besoin = p.besoin; if (p.lignes) out.lignes = p.lignes;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id];
     if (out.proche && p.owner) { const pr = acc.prochesDe((d2.users || {})[p.owner]).find(x => x.id === out.proche); if (pr && !pr.supprime && pr.lien) out.vuPar = pr.lien; }
     acc.relier(d2); save(d2);   // proche relié : le reçu devient visible dans son espace
@@ -523,7 +530,7 @@ function adminOk(req, res) {
   if (!ok) res.status(401).json({ error: 'non autorisé' });
   return !!ok;
 }
-const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
+const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', besoin: r.besoin || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();
@@ -582,6 +589,30 @@ app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/a
 });
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.use(express.static(SITE_PUBLIC, { index: false, dotfiles: 'deny' }));
+// ---- mini-cagnottes « besoin » : la fiche vient du CRM (site principal), le montant collecté vient des reçus de ce serveur
+const besoinCache = new Map();
+async function besoinInfo(slug) {
+  if (!/^[a-z0-9-]{1,40}$/.test(slug)) return null;
+  const c = besoinCache.get(slug); if (c && Date.now() - c.at < 20000) return c.v;
+  let v = c ? c.v : null;
+  try { const r = await fetch(SITE + '/api/besoin?slug=' + slug, { signal: AbortSignal.timeout(5000) }); if (r.ok) v = await r.json(); else if (r.status === 404) v = null; } catch (e) { console.error('[besoin]', e.message); }
+  if (besoinCache.size > 500) besoinCache.clear();
+  besoinCache.set(slug, { at: Date.now(), v }); return v;
+}
+app.get('/api/besoin/:slug', async (req, res) => {
+  const b = await besoinInfo(String(req.params.slug)); if (!b) return res.status(404).json({ error: 'Cagnotte introuvable' });
+  let collecte = 0, dons = 0; for (const r of Object.values(load().receipts || {})) if (r.besoin === b.slug) { collecte += r.montant || 0; dons++; }
+  res.setHeader('Cache-Control', 'no-store'); res.json({ slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons });
+});
+app.get('/besoin/:slug', async (req, res, next) => {
+  const b = await besoinInfo(String(req.params.slug)); if (!b) return res.redirect(302, (process.env.BASE_PATH || '') + '/');
+  let html; try { html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8'); } catch (e) { return next(); }
+  const q = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, '$1https://don.emounateha.fr/besoin/' + b.slug + '$2')
+    .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + ' — Cagnotte Émounatéha$2')
+    .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q((b.description || 'Participez à cette cagnotte : chaque don compte.').slice(0, 180)) + '$2');
+  res.setHeader('Cache-Control', 'no-store'); res.type('html').send(html);
+});
 // une adresse par action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale, /l-aide-a-la-scolarite… (la page présélectionne l'action)
 const slugOf = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' et ').replace(/^l['’]/, 'l-').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 function slugsAffectations() {

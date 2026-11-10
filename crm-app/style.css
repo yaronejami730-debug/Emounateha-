@@ -263,3 +263,18 @@ table{border-radius:16px;overflow:hidden}
 .kopt b{display:block;font-weight:600}.kopt small{display:block;color:var(--mut);font-size:12.5px;line-height:1.35;margin-top:2px}
 .kopt:has(input:checked){border-color:var(--teal,#1f6a72);background:#f2f8f8}
 @media(max-width:560px){.kwhen{grid-template-columns:1fr}}
+
+/* besoins : mini-cagnottes */
+.bs-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.bs-it.off{opacity:.72}
+.bs-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.bs-t{font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:20px;line-height:1.2;color:var(--teal,#1f6a72)}
+.bs-d{margin:10px 0 0;font-size:14px;color:var(--mut);line-height:1.45;white-space:pre-line}
+.bs-amt{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:14px}.bs-amt strong{font-size:28px;line-height:1;color:var(--ink)}.bs-amt span{font-size:13px;color:var(--mut)}
+.bs-bar{height:9px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}.bs-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:5px}
+.bs-link{margin-top:12px;font-size:13px;word-break:break-all}
+.bs-act{margin-top:12px;flex-wrap:wrap;gap:8px}
+.bs-url{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:#f6f9f9;overflow:hidden}
+.bs-url span{padding:0 0 0 12px;color:var(--mut);font-size:14px;white-space:nowrap}.bs-url b{padding:11px 12px 11px 0;font-size:14px}
+.bs-url input{border:0!important;background:transparent!important;padding-left:0!important;min-width:0;flex:1;box-shadow:none!important}
+@media(max-width:560px){.bs-list{grid-template-columns:1fr}.bs-url span{font-size:12.5px}}

@@ -1100,6 +1100,24 @@ const ensureVisits = () => visitsReady || (visitsReady = pool.query(`
   create index if not exists visits_last_idx on public.visits (last_at);
   alter table public.visits enable row level security;
   delete from public.visits where day < current_date - 400;`).catch(e => { visitsReady = null; throw e; }));
+// ---- Besoins : mini-cagnottes. Chaque besoin a son adresse don.emounateha.fr/besoin/<slug> ; les dons faits par cette adresse lui sont attribués.
+let besoinsReady = null;
+const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
+  create table if not exists public.besoins (
+    id text primary key, slug text not null unique, titre text not null,
+    beneficiaire text not null default '', description text not null default '', objectif integer,
+    actif boolean not null default true, created_at timestamptz not null default now());
+  alter table public.besoins enable row level security;`).catch(e => { besoinsReady = null; throw e; }));
+const besoinSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+// public : ce que la page de don affiche (jamais le nom du bénéficiaire, qui reste dans le CRM)
+async function besoinPublic(req, res, url) {
+  const slug = String(url.searchParams.get('slug') || '');
+  if (!pool || !/^[a-z0-9-]{1,40}$/.test(slug)) return send(res, 404, { error: 'introuvable' });
+  await ensureBesoins();
+  const b = (await pool.query('select slug, titre, description, objectif, actif from public.besoins where slug = $1', [slug])).rows[0];
+  if (!b) return send(res, 404, { error: 'introuvable' });
+  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=20' }); res.end(JSON.stringify(b));
+}
 const VU_ROBOT = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|whatsapp|telegram|curl|wget|python|node-fetch|axios|okhttp|monitor|pingdom|uptime|scan|vercel|gptbot|claude|bytespider/i;
 const VU_SITES = { 'www.emounateha.fr': 'www.emounateha.fr', 'emounateha.fr': 'www.emounateha.fr', 'don.emounateha.fr': 'don.emounateha.fr', 'ambassadeur.emounateha.fr': 'ambassadeur.emounateha.fr' };
 const jourParis = (d = new Date()) => d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
@@ -1451,6 +1469,34 @@ async function api(req, res, url) {
     if (m === 'PUT' && parts[1]) { const st = ['new', 'contacted', 'active', 'inactive'].includes(body.status) ? body.status : 'new'; await pool.query('update public.ambassadors set status = $1 where id = $2', [st, parts[1]]); return send(res, 200, { ok: true }); }
     if (m === 'DELETE' && parts[1]) { await pool.query('delete from public.ambassadors where id = $1', [parts[1]]); return send(res, 200, { ok: true }); }
   }
+  if (parts[0] === 'besoins') {   // mini-cagnottes : création, suivi du montant collecté par lien
+    if (!pool) return send(res, 400, { error: 'Base de données requise' });
+    await ensureBesoins();
+    const propre = b => ({ titre: String(b.titre || '').trim().slice(0, 70), beneficiaire: String(b.beneficiaire || '').trim().slice(0, 120), description: String(b.description || '').trim().slice(0, 600),
+      objectif: (() => { const n = Math.round(Number(String(b.objectif == null ? '' : b.objectif).replace(',', '.')) * 100); return Number.isFinite(n) && n >= 100 && n <= 100000000 ? n : null; })() });
+    if (m === 'GET') {
+      const r = await pool.query('select id, slug, titre, beneficiaire, description, objectif, actif, created_at from public.besoins order by actif desc, created_at desc');
+      let recus = [], erreur = '';
+      try { const x = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus'), signal: AbortSignal.timeout(15000) }); const j = await x.json(); if (!x.ok) throw new Error(j.error || x.status); recus = j.recus || []; } catch (e) { erreur = 'Dons indisponibles : ' + e.message; }
+      const par = {}; for (const x of recus) if (x.besoin) { const p = par[x.besoin] = par[x.besoin] || { dons: 0, total: 0, dernier: null, liste: [] }; p.dons++; p.total += x.montant || 0; if (!p.dernier || x.dateDon > p.dernier) p.dernier = x.dateDon; p.liste.push({ nom: x.nom, montant: x.montant, dateDon: x.dateDon, numero: x.numero }); }
+      return send(res, 200, { list: r.rows.map(a => ({ ...a, ...(par[a.slug] || { dons: 0, total: 0, dernier: null, liste: [] }) })), erreur });
+    }
+    if (m === 'POST' && !parts[1]) {
+      const v = propre(body); if (!v.titre) return send(res, 400, { error: 'Indiquez le besoin (ex. Loyer en retard)' });
+      const base = besoinSlug(body.slug || v.titre); if (!base) return send(res, 400, { error: "Adresse invalide : utilisez des lettres ou des chiffres" });
+      const pris = new Set((await pool.query("select slug from public.besoins where slug = $1 or slug like $1 || '-%'", [base])).rows.map(r => r.slug));
+      if (body.slug && pris.has(base)) return send(res, 400, { error: 'Cette adresse est déjà prise par un autre besoin' });
+      let slug = base; for (let n = 2; pris.has(slug); n++) slug = base.slice(0, 36) + '-' + n;
+      const id = uid(); await pool.query('insert into public.besoins (id, slug, titre, beneficiaire, description, objectif) values ($1,$2,$3,$4,$5,$6)', [id, slug, v.titre, v.beneficiaire, v.description, v.objectif]);
+      return send(res, 200, { id, slug, lien: DON_URL + '/besoin/' + slug });
+    }
+    if (m === 'PUT' && parts[1]) {   // l'adresse (slug) ne change jamais : les liens déjà partagés et les dons déjà reçus y restent attachés
+      const v = propre(body); if (!v.titre) return send(res, 400, { error: 'Indiquez le besoin' });
+      await pool.query('update public.besoins set titre = $1, beneficiaire = $2, description = $3, objectif = $4, actif = $5 where id = $6', [v.titre, v.beneficiaire, v.description, v.objectif, body.actif !== false, parts[1]]);
+      return send(res, 200, { ok: true });
+    }
+    if (m === 'DELETE' && parts[1]) { await pool.query('delete from public.besoins where id = $1', [parts[1]]); return send(res, 200, { ok: true }); }
+  }
   if (parts[0] === 'users') {
     if (!pool) return send(res, 400, { error: 'Base de données requise' });
     if (m === 'GET') { const r = await pool.query("select id, email, role, created_at, (password_hash is null) as pending from public.crm_users order by created_at"); return send(res, 200, r.rows); }
@@ -1731,6 +1777,7 @@ async function handle(req, res) {
         res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Horaires indisponibles' }); }
     }
+    if (url.pathname === '/api/besoin' && req.method === 'GET') return await besoinPublic(req, res, url);   // public : une mini-cagnotte (titre, texte, objectif)
     if (url.pathname === '/api/vu' && req.method === 'POST') return vu(req, res);   // public : mesure d'audience anonyme (onglet Trafic)
     if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
     if (url.pathname === '/api/shabbat-city' && req.method === 'POST') return shabbatCity(req, res);

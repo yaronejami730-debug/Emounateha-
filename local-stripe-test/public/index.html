@@ -544,6 +544,13 @@ body{overflow-x:hidden}
 .dn-actfree{margin-top:4px}
 .dn-actfree label{font-weight:700;font-size:14.5px;color:#14464e;margin:6px 0 8px;display:block}
 .dn-actfree label small{font-weight:500;color:#6a7f83;margin-left:6px}
+.bs-card{margin:0 0 16px;padding:16px 18px;border-radius:16px;background:#f3f8f8;border:1.5px solid #cfe0e0;text-align:left}
+.bs-card .bs-k{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8842a;margin-bottom:4px}
+.bs-card>b{display:block;font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:22px;line-height:1.2;color:#1f6a72}
+.bs-card p{margin:6px 0 0;font-size:14.5px;line-height:1.5;color:#3a4f52}
+.bs-n{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:12px}.bs-n strong{font-size:24px;color:#14464e}.bs-n span{font-size:13.5px;color:#51666a}
+.bs-bar{height:10px;border-radius:99px;background:#dbe7e7;overflow:hidden;margin-top:8px}.bs-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:6px}
+.bs-card.off{background:#fbf6ea;border-color:#ead9a0}
 .dn-acttotal{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 18px;border-radius:16px;background:#14464e;color:#fff}
 .dn-acttotal span{font-size:14px;letter-spacing:.6px;text-transform:uppercase;opacity:.85}
 .dn-acttotal b{font-family:'Bree Serif',serif;font-weight:400;font-size:26px}
@@ -1210,6 +1217,24 @@ const ICONS = {
 const ICONKEY = a => /colis/i.test(a) ? 'box' : /toit/i.test(a) ? 'home' : /soutien/i.test(a) ? 'chat' : /insertion/i.test(a) ? 'work' : /tement/i.test(a) ? 'shirt' : /scolarit/i.test(a) ? 'book' : /ducation/i.test(a) ? 'cap' : /kapparot|omer/i.test(a) ? 'star' : 'heart';
 const splitLab = a => { const m = /^(.*?)\s*\((.*)\)\s*$/.exec(a); return m ? [m[1], m[2]] : [a, '']; };
 let AFFITEMS = {};
+// ---- mini-cagnotte « besoin » : la page ne propose que ce besoin, en don ponctuel ; le don lui est attribué
+let BESOIN = null;
+async function besoinInit(slug) {
+  let b = null; try { const r = await fetch('/api/besoin/' + slug); if (r.ok) b = await r.json(); } catch (e) {}
+  const box = document.createElement('div'); box.className = 'bs-card'; box.id = 'bsCard';
+  if (!b || !b.actif) { box.classList.add('off'); box.innerHTML = '<b>' + (b ? esc(b.titre) : 'Cagnotte introuvable') + '</b><p>' + (b ? 'Cette cagnotte est terminée. Merci à tous ceux qui ont participé.' : "Cette adresse ne correspond à aucune cagnotte.") + ' Vous pouvez toujours faire un don à l\'association ci-dessous.</p>'; $('fs').after(box); return; }
+  BESOIN = b;
+  const e2 = c => (c / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €', pct = b.objectif ? Math.min(100, Math.round(b.collecte * 100 / b.objectif)) : 0;
+  box.innerHTML = '<span class="bs-k">Cagnotte</span><b>' + esc(b.titre) + '</b>' + (b.description ? '<p>' + esc(b.description).replace(/\n/g, '<br>') + '</p>' : '') +
+    '<div class="bs-n"><strong>' + e2(b.collecte) + '</strong><span>' + (b.objectif ? 'collectés sur ' + e2(b.objectif) : 'collectés') + (b.dons ? ' · ' + b.dons + ' don' + (b.dons > 1 ? 's' : '') : '') + '</span></div>' +
+    (b.objectif ? '<div class="bs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : '');
+  $('fs').after(box); $('h1').textContent = 'Votre don pour cette cagnotte';
+  // le don va à ce besoin : pas de choix d'action, pas de don mensuel
+  const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => /besoin est le plus grand/i.test(r.value)); if (i >= 0) pickAff(i);
+  const sel = document.querySelector('label.ad-sel'); if (sel) sel.hidden = true; $('chips').hidden = true;
+  document.querySelector('input[name=freq][value=ponctuel]').checked = true; const fq = document.querySelector('#gFreq .dn-freq'); if (fq) fq.hidden = true; $('freqHint').style.display = 'none'; $('durBox').style.display = 'none';
+  document.title = b.titre + ' — Cagnotte Émounatéha';
+}
 const joursTxt = j => j <= 0 ? (j === 0 ? "aujourd'hui" : 'en cours') : (j === 1 ? 'demain' : 'dans ' + j + ' jours');
 function buildChips(list) {
   list = (list || []).map(a => typeof a === 'string' ? { label: a, kind: 'base' } : a);
@@ -1320,6 +1345,7 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
     const seg = decodeURIComponent(location.pathname).split('/').filter(Boolean).pop() || '';
     if (seg) { const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => slugOf((AFFITEMS[r.value] || {}).titre || r.value) === seg); if (i >= 0) pickAff(i); }
   }
+  { const mb = decodeURIComponent(location.pathname).match(/\/besoin\/([a-z0-9-]{1,40})\/?$/); if (mb) besoinInit(mb[1]); }   // mini-cagnotte : don.emounateha.fr/besoin/<slug>
   if (!$('actBox').hidden) actTotal();   // fête choisie d'office : le total suit les actions cochées
   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
@@ -1582,7 +1608,7 @@ const AMB = (() => { const k = 'emAmb'; let v = (new URLSearchParams(location.se
   try { if (v) localStorage.setItem(k, JSON.stringify({ v, t: Date.now() })); else { const o = JSON.parse(localStorage.getItem(k) || 'null'); if (o && o.v) v = o.v; } } catch (e) {}
   return v; })();
 function body() {
-  return { amb: AMB, attr: ATTR, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
+  return { amb: AMB, ...(BESOIN ? { besoin: BESOIN.slug } : {}), attr: ATTR, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
     adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, tel: $('tel').value, email: $('email').value, montant: $('montant').value, ...(me && curPr && curPr !== 'new' ? { procheId: curPr } : {}),
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
     frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, repartition: document.querySelector('input[name=repart]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked && !curPr),
