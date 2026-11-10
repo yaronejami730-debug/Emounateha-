@@ -7,7 +7,7 @@
 <meta name="description" content="Offrez un colis de Chabbat ou de fêtes (Roch Hachana, Hanouka, Pourim, Pessa'h) à une famille dans le besoin. Aide aux nécessiteux, association Émounatéha.">
 <link rel="icon" href="/logo.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@600;700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -495,17 +495,37 @@ body{overflow-x:hidden}
 #colis{padding-top:64px}
 .ctabs{margin-bottom:36px}
 @media(max-width:800px){#colis{padding-top:40px}.ctabs{margin-bottom:26px}}
+
+/* choix du colis : cases alignées, de la plus proche à la plus lointaine (3 par ligne sur téléphone, 6 sur ordinateur) */
+.ctabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;max-width:900px;margin-left:auto;margin-right:auto;align-items:stretch;justify-content:normal}
+.tabwrap{position:relative;display:flex;min-width:0}
+.ctabs>.ctab{width:100%}
+.tabwrap .ctab{width:100%;min-height:74px;padding:12px 6px 30px;border-radius:16px;border-width:2px;white-space:normal;font-size:15px;font-weight:700;line-height:1.15;box-shadow:0 6px 16px rgba(20,60,66,.1);display:flex;align-items:center;justify-content:center;text-align:center}
+.tabwrap small{position:absolute;left:4px;right:4px;bottom:9px;margin:0;text-align:center;font-size:10.5px;letter-spacing:.4px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabwrap .ctab.on{box-shadow:0 10px 22px rgba(31,106,114,.32)}
+.tabwrap .ctab.on+small{color:var(--gold-l)}
+.tabwrap.proche .ctab:not(.on){border-color:var(--gold)}
+@media(max-width:800px){.ctabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 2px}.tabwrap .ctab{min-height:72px;font-size:14px;padding:11px 4px 28px}.tabwrap small{font-size:10px;letter-spacing:.2px}}
+@media(max-width:360px){.tabwrap .ctab{font-size:13px}.tabwrap small{font-size:9.3px;letter-spacing:0}}
+/* mêmes écritures que les tuiles de la page Torah (et que le logo) : hébreu Frank Ruhl Libre en or dégradé, français en Cinzel capitales espacées */
+.tabwrap .ctab{flex-direction:column;gap:5px;min-height:108px;padding:12px 4px 30px;font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.13em}
+.ctab .cfr{display:block;padding-left:.13em}
+.ctab .che{display:block;font-family:'Frank Ruhl Libre','David Libre',Georgia,serif;font-weight:900;font-size:25px;line-height:1.05;letter-spacing:0;text-transform:none;background:linear-gradient(180deg,#e2c477 0%,#b58c36 45%,#7d5c16 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.ctab.on .che{background-image:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);filter:drop-shadow(0 1px 3px rgba(0,0,0,.28))}
+.tabwrap small{font-family:Inter,system-ui,sans-serif}
+@media(max-width:800px){.tabwrap .ctab{min-height:104px;font-size:10.5px;letter-spacing:.08em;padding:11px 3px 28px;gap:4px}.ctab .cfr{padding-left:.08em}.ctab .che{font-size:21px}}
+@media(max-width:360px){.tabwrap .ctab{font-size:9.6px;letter-spacing:.05em}.ctab .che{font-size:19px}}
 </style>
 <section id="colis">
   <div class="wrap">
     <div class="title"><h2>Les colis</h2><p>Aider au quotidien : choisissez le colis auquel vous souhaitez participer.</p></div>
     <div class="ctabs" role="tablist">
-      <div class="tabwrap"><button class="ctab on feat" data-k="chabbat" role="tab">Chabbat</button><small>chaque semaine</small></div>
-      <button class="ctab" data-k="roch-hachana" role="tab">Roch Hachana</button>
-      <button class="ctab" data-k="simhat-torah" role="tab">Simhat Torah</button>
-      <button class="ctab" data-k="hanouka" role="tab">Hanouka</button>
-      <button class="ctab" data-k="pourim" role="tab">Pourim</button>
-      <button class="ctab" data-k="pessah" role="tab">Pessa'h</button>
+      <div class="tabwrap"><button class="ctab on feat" data-k="chabbat" role="tab"><span class="che" lang="he" dir="rtl">שבת</span><span class="cfr">Chabbat</span></button><small>chaque semaine</small></div>
+      <button class="ctab" data-k="roch-hachana" role="tab"><span class="che" lang="he" dir="rtl">ראש השנה</span><span class="cfr">Roch Hachana</span></button>
+      <button class="ctab" data-k="simhat-torah" role="tab"><span class="che" lang="he" dir="rtl">שמחת תורה</span><span class="cfr">Simhat Torah</span></button>
+      <button class="ctab" data-k="hanouka" role="tab"><span class="che" lang="he" dir="rtl">חנוכה</span><span class="cfr">Hanouka</span></button>
+      <button class="ctab" data-k="pourim" role="tab"><span class="che" lang="he" dir="rtl">פורים</span><span class="cfr">Pourim</span></button>
+      <button class="ctab" data-k="pessah" role="tab"><span class="che" lang="he" dir="rtl">פסח</span><span class="cfr">Pessa'h</span></button>
     </div>
     <div class="colis" id="colisPanel"></div>
   </div>
@@ -620,9 +640,14 @@ fetch('/holidays.json').then(r=>r.json()).then(list=>{
     const d=Math.round((new Date(h.date)-today)/86400000);
     const tab=document.querySelector('.ctab[data-k="'+k+'"]');
     const w=document.createElement('div');w.className='tabwrap';tab.parentNode.insertBefore(w,tab);w.appendChild(tab);
-    const sm=document.createElement('small');sm.textContent=d<=0?"aujourd'hui":'dans '+d+' j';w.appendChild(sm);
+    const sm=document.createElement('small');sm.textContent=d<=0?"aujourd'hui":d===1?'demain':'dans '+d+' jours';w.appendChild(sm);w.dataset.d=d;
     if(!best||d<best.d) best={k,d};
   }
+  // rangement : Chabbat d'abord, puis les fêtes de la plus proche à la plus lointaine ; chaque bouton dans sa case
+  const box=document.querySelector('.ctabs');
+  box.querySelectorAll(':scope > .ctab').forEach(t=>{const w=document.createElement('div');w.className='tabwrap';w.dataset.d=9999;box.insertBefore(w,t);w.appendChild(t)});
+  [...box.querySelectorAll(':scope > .tabwrap')].sort((a,b)=>(a.dataset.d===undefined?-1:+a.dataset.d)-(b.dataset.d===undefined?-1:+b.dataset.d)).forEach(w=>box.appendChild(w));
+  if(best){const w=box.querySelector('.ctab[data-k="'+best.k+'"]').parentNode;w.classList.add('proche')}
   if(best) showColis(best.k);
 }).catch(()=>{});
 (function(){const nav=document.querySelector('.sec-nav'),b=document.getElementById('burger');
