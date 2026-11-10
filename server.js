@@ -447,22 +447,22 @@ async function brevoToday(force) {
   } catch {}
   return brevoCache.n;
 }
-// événements Brevo (livré, ouvert, clic, rebond…) des 14 derniers jours, regroupés par messageId ; cache 30 s
+// événements Brevo (livré, ouvert, clic, rebond…) des 30 derniers jours, regroupés par messageId ; cache 45 s
 let brevoEvCache = { at: 0, map: new Map(), ok: false };
 async function brevoEvents() {
   const k = db.settings.brevoApiKey; if (!k) return brevoEvCache;
-  if (Date.now() - brevoEvCache.at < 30000) return brevoEvCache;
+  if (Date.now() - brevoEvCache.at < 45000) return brevoEvCache;
   try {
-    const end = parisDay(Date.now()), start = parisDay(Date.now() - 14 * 86400000), map = new Map();
-    for (let off = 0; off < 7500; off += 2500) {
+    const end = parisDay(Date.now()), start = parisDay(Date.now() - 30 * 86400000), map = new Map();
+    for (let off = 0; off < 30000; off += 2500) {
       const r = await fetch(`https://api.brevo.com/v3/smtp/statistics/events?limit=2500&offset=${off}&sort=asc&startDate=${start}&endDate=${end}`, { headers: { 'api-key': k, accept: 'application/json' } });
       if (!r.ok) throw new Error('Brevo ' + r.status);
       const ev = (await r.json()).events || [];
       for (const e of ev) {
-        const m = map.get(e.messageId) || { delivered: null, opened: 0, firstOpen: null, clicks: 0, problem: '', problemAt: null };
+        const m = map.get(e.messageId) || { delivered: null, opened: 0, firstOpen: null, clicks: 0, firstClick: null, links: [], problem: '', problemAt: null };
         if (e.event === 'delivered') m.delivered = e.date;
         else if (e.event === 'opened' || e.event === 'loadedByProxy') { m.opened++; m.firstOpen ||= e.date; }
-        else if (e.event === 'clicks') m.clicks++;
+        else if (e.event === 'clicks') { m.clicks++; m.firstClick ||= e.date; if (e.link && m.links.length < 12) m.links.push(String(e.link)); }   // « link » : l'adresse cliquée (bouton, désinscription…)
         else if (['hardBounces', 'softBounces', 'blocked', 'invalid', 'spam', 'unsubscribed', 'deferred', 'error'].includes(e.event)) { m.problem = e.event; m.problemAt = e.date; }
         map.set(e.messageId, m);
       }
@@ -1359,6 +1359,7 @@ async function api(req, res, url) {
       sends: db.sends.slice(-60).reverse()
     });
   }
+  if (parts[0] === 'engagement' && m === 'GET') return send(res, 200, await engagementReport());   // par campagne : délivrés, ouverts, qui a cliqué, clics sur le bouton
   if (parts[0] === 'attribution' && m === 'GET') return send(res, 200, await attributionReport());   // quels e-mails ont déclenché des dons
   if (parts[0] === 'reset' && m === 'POST') { // Réglages : remise à zéro (contacts, historique des envois, campagnes)
     if (body.confirm !== 'SUPPRIMER') return send(res, 400, { error: 'Tapez SUPPRIMER pour confirmer.' });
@@ -1906,6 +1907,27 @@ async function handle(req, res) {
 
 
 // ---------- Dons par e-mail : quelle campagne / quel modèle d'e-mail a déclenché quel don (provenance enregistrée avec le paiement dans Stripe) ----------
+// Engagement par campagne, lu chez Brevo (30 derniers jours) : mails délivrés, ouverts, personnes qui ont cliqué, et parmi elles celles qui ont cliqué sur le bouton du mail.
+// Un clic prouve que le mail a été vu ; l'ouverture seule est moins fiable (Apple Mail précharge les images).
+const sansSuivi = u => { try { const x = new URL(u); ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'sid'].forEach(k => x.searchParams.delete(k)); const q = x.searchParams.toString(); return (x.host + x.pathname.replace(/\/+$/, '') + (q ? '?' + q : '')).toLowerCase(); } catch (e) { return String(u || '').toLowerCase(); } };
+async function engagementReport() {
+  const ev = await brevoEvents(), tpls = new Map(db.templates.map(t => [t.id, t])), cts = new Map(db.contacts.map(c => [c.id, c])), out = {};
+  for (const c of db.campaigns) out[c.id] = { envoyes: 0, suivis: 0, delivres: 0, ouverts: 0, cliques: 0, bouton: 0, liste: [] };
+  for (const x of db.sends) {
+    const o = out[x.campaignId]; if (!o || x.status === 'error') continue; o.envoyes++;
+    const e = x.messageId ? ev.map.get(x.messageId) : null; if (!e) continue; o.suivis++;
+    if (e.delivered || e.opened || e.clicks) o.delivres++;
+    if (e.opened || e.clicks) o.ouverts++;
+    if (!e.clicks) continue;
+    const ct = cts.get(x.contactId), t = tpls.get(x.templateId), camp = db.campaigns.find(k => k.id === x.campaignId);
+    let cta = ''; try { cta = sansSuivi(fill((camp && camp.buttonUrl) || (t && t.buttonUrl) || '', ct || {})); } catch (err) {}
+    const liens = e.links.map(sansSuivi), surBouton = cta ? liens.includes(cta) : liens.some(l => /(^|\.)emounateha\.fr\//.test(l + '/') && !/emounateha\.fr\/u\//.test(l));
+    o.cliques++; if (surBouton) o.bouton++;
+    o.liste.push({ email: x.email, nom: ct ? [ct.firstName, ct.lastName].filter(Boolean).join(' ') : '', date: e.firstClick, clics: e.clicks, bouton: surBouton });
+  }
+  for (const o of Object.values(out)) o.liste.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  return { ok: ev.ok || !db.settings.brevoApiKey, cle: !!db.settings.brevoApiKey, campagnes: out };
+}
 async function attributionReport() {
   const out = { lignes: [], dons: [], total: { envois: 0, dons: 0, montant: 0, prelevements: 0, montantPrelev: 0 }, erreur: '' };
   let recus = [];

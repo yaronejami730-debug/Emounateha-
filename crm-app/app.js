@@ -165,6 +165,7 @@ const views = {
         <p class="cp-meta">${steps > 1 ? '1 mail + ' + (steps - 1) + ' relance' + (steps > 2 ? 's' : '') : '1 mail'} · ${quand}${st.pending ? ' · ' + st.pending + ' contact' + (st.pending > 1 ? 's' : '') + ' en cours' : ''}</p>
         <div class="cp-prog"><div class="cp-bar"><i style="width:${pct}%"></i></div><span><b>${sent.toLocaleString('fr-FR')}</b> envoyé${sent > 1 ? 's' : ''}${aud ? ' sur ' + aud.toLocaleString('fr-FR') + ' · ' + pct + ' %' : ''}</span></div>
         <div class="cp-ks">${k("Aujourd'hui", p ? p.sentToday + ' / ' + p.dayQuota : '—')}${k('Reste à envoyer', p ? p.remaining : (c.status === 'done' ? 0 : '—'))}${k('Mails par heure', p ? p.perHour : '—')}${k('Erreurs', st.errors || 0, st.errors ? 'bad' : '')}</div>
+        <div class="cp-eng" data-id="${c.id}">${engHtml(c.id)}</div>
         ${p ? `<p class="cp-next"><span>Prochain envoi</span> ${esc(String(p.nextLabel))} · <b>${p.nextCount}</b> mail${p.nextCount > 1 ? 's' : ''}</p>` : ''}
         ${st.excluded ? `<p class="cp-warn">${st.excluded} contact${st.excluded > 1 ? 's' : ''} exclu${st.excluded > 1 ? 's' : ''} : ce mail leur a déjà été envoyé dans une autre campagne.</p>` : ''}
       </article>`;
@@ -683,9 +684,37 @@ async function attrPull() {
   catch (e) { if (!AT.data) { const el = document.getElementById('attr'); if (el) el.innerHTML = '<section class="at"><div class="at-head"><div><h2>Dons par e-mail</h2><p class="hint">Indisponible : ' + esc(e.message) + '</p></div></div></section>'; } }
   finally { AT.busy = false; }
 }
+// Qui a ouvert, qui a cliqué (chiffres Brevo), par campagne. Gardés en mémoire et remis à jour sur place, comme les dons.
+const EG = { data: null, sig: '', busy: false };
+function engHtml(id) {
+  if (!EG.data) return '<p class="cp-engw">Clics et ouvertures : chargement…</p>';
+  if (!EG.data.cle) return '';
+  const e = (EG.data.campagnes || {})[id]; if (!e || !e.envoyes) return '';
+  if (!e.suivis) return '<p class="cp-engw">Clics et ouvertures : pas encore de retour de Brevo pour ces envois (ou envois de plus de 30 jours).</p>';
+  const pc = n => e.delivres ? ' · ' + String(Math.round(n * 1000 / e.delivres) / 10).replace('.', ',') + ' %' : '';
+  const k = (l, v, s, cls) => `<div class="cp-e${cls ? ' ' + cls : ''}"><b>${v}</b><small>${l}${s || ''}</small></div>`;
+  return `<div class="cp-engh"><span>Réactions au mail</span>${e.cliques ? `<button class="btn sm" onclick="engQui('${id}')">Voir qui a cliqué</button>` : ''}</div>
+    <div class="cp-es">${k('Délivrés', e.delivres)}${k('Ont ouvert', e.ouverts, pc(e.ouverts))}${k('Ont cliqué', e.cliques, pc(e.cliques), 'hi')}${k('Clic sur le bouton', e.bouton, pc(e.bouton), 'hi')}</div>
+    ${EG.data.ok ? '' : '<p class="cp-engw">Brevo ne répond pas pour l\'instant : ces chiffres peuvent dater.</p>'}`;
+}
+function engPaint() { document.querySelectorAll('.cp-eng').forEach(el => { const h = engHtml(el.dataset.id); if (el.innerHTML !== h) el.innerHTML = h; }); }
+async function engPull() {
+  if (EG.busy || document.hidden || !document.querySelector('.cp-eng')) return; EG.busy = true;
+  try { const d = await api('GET', '/engagement'), sig = JSON.stringify(d); if (sig !== EG.sig) { EG.data = d; EG.sig = sig; engPaint(); } }
+  catch (e) { if (!EG.data) { EG.data = { cle: true, ok: false, campagnes: {} }; engPaint(); } }
+  finally { EG.busy = false; }
+}
+function engQui(id) {
+  const c = S.campaigns.find(x => x.id === id), e = ((EG.data || {}).campagnes || {})[id]; if (!c || !e) return;
+  modal(`<h2>Qui a cliqué — ${esc(c.name)}</h2><p class="hint">${e.cliques} personne${e.cliques > 1 ? 's ont' : ' a'} cliqué dans le mail, dont <b>${e.bouton}</b> sur le bouton. Un clic prouve que le mail a été lu.</p>
+    <ul class="eg-list">${e.liste.map(x => `<li><span class="eg-w"><b>${esc(x.nom || x.email)}</b>${x.nom ? `<small>${esc(x.email)}</small>` : ''}</span>
+      <span class="eg-d">${x.date ? new Date(x.date).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}${x.clics > 1 ? `<small>${x.clics} clics</small>` : ''}</span>
+      <span class="pill ${x.bouton ? 'ok' : ''}">${x.bouton ? 'Bouton' : 'Autre lien'}</span></li>`).join('')}</ul>
+    <div class="row r" style="margin-top:18px"><button class="btn pri" onclick="closeModal()">Fermer</button></div>`);
+}
 function loadAttribution() {   // appelé à chaque dessin de la page Campagnes : on réaffiche tout de suite ce qu'on connaît, puis on met à jour en arrière-plan
-  attrDraw(); attrPull();
-  if (!AT.timer) AT.timer = setInterval(() => { if (document.getElementById('attr')) attrPull(); else { clearInterval(AT.timer); AT.timer = null; } }, 10000);
+  attrDraw(); attrPull(); engPull();
+  if (!AT.timer) { let n = 0; AT.timer = setInterval(() => { if (document.getElementById('attr')) { attrPull(); if (++n % 3 === 0) engPull(); } else { clearInterval(AT.timer); AT.timer = null; } }, 10000); }
 }
 async function loadHistorique(){
   const el=document.getElementById('hist'); if(!el) return;

@@ -341,3 +341,16 @@ table{border-radius:16px;overflow:hidden}
 
 .at-kpis.at-2{grid-template-columns:repeat(2,1fr)}
 @media(max-width:560px){.at-kpis.at-2{grid-template-columns:1fr}}
+
+/* campagnes : réactions au mail (Brevo) */
+.cp-eng:empty{display:none}.cp-eng{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.cp-engh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.cp-engh span{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.cp-es{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.cp-e{padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:#fff}.cp-e b{display:block;font-size:19px;line-height:1.2;font-variant-numeric:tabular-nums}.cp-e small{display:block;font-size:12px;color:var(--mut);margin-top:2px}
+.cp-e.hi{background:#fffaeb;border-color:#ecd999}.cp-e.hi b{color:#8a6a14}
+.cp-engw{margin:0;font-size:13px;color:var(--mut)}
+.eg-list{list-style:none;margin:12px 0 0;padding:0;max-height:52vh;overflow:auto}
+.eg-list li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.eg-list li:first-child{border-top:0}
+.eg-w b{display:block;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.eg-w small,.eg-d small{display:block;font-size:12px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eg-d{font-size:13px;color:var(--mut);text-align:right;white-space:nowrap}
+@media(max-width:640px){.cp-es{grid-template-columns:repeat(2,1fr)}.eg-list li{grid-template-columns:minmax(0,1fr) auto}.eg-d{grid-column:1/-1;text-align:left;grid-row:2}}
