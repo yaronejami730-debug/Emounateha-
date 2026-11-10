@@ -409,7 +409,7 @@ app.post('/api/intent', async (req, res) => {
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
-    d.pending[id] = { ...don, amb, besoin: besoin ? besoin.slug : '', envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile && !proche), at: Date.now() }; save(d);
+    d.pending[id] = { ...don, amb, besoin: besoin ? besoin.slug : '', besoinNom: !!(besoin && req.body.afficherNom === true), envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile && !proche), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -427,7 +427,8 @@ async function receiptForPayment(id) {
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
     const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
-    out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.fin) out.fin = p.fin; if (p.nb) { out.nb = p.nb; out.total = p.total; } if (p.attr && Object.keys(p.attr).length) out.attr = p.attr; if (p.amb) out.ambassadeur = p.amb; if (p.besoin) out.besoin = p.besoin; if (p.lignes) out.lignes = p.lignes;
+    out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.fin) out.fin = p.fin; if (p.nb) { out.nb = p.nb; out.total = p.total; } if (p.attr && Object.keys(p.attr).length) out.attr = p.attr; if (p.amb) out.ambassadeur = p.amb; if (p.besoin) { out.besoin = p.besoin; if (p.besoinNom) out.besoinNom = true; }   // cagnotte : le nom n'est public que si le donateur l'a demandé
+    if (p.lignes) out.lignes = p.lignes;
     const d2 = load(); d2.receipts[id] = out; delete d2.pending[id];
     if (out.proche && p.owner) { const pr = acc.prochesDe((d2.users || {})[p.owner]).find(x => x.id === out.proche); if (pr && !pr.supprime && pr.lien) out.vuPar = pr.lien; }
     acc.relier(d2); save(d2);   // proche relié : le reçu devient visible dans son espace
@@ -602,8 +603,10 @@ async function besoinInfo(slug) {
   besoinCache.set(slug, { at: Date.now(), v }); return v;
 }
 function besoinFiche(b) {   // ce que la page affiche : la fiche + le total des dons reçus par ce lien
-  let collecte = 0, dons = 0; for (const r of Object.values(load().receipts || {})) if (r.besoin === b.slug) { collecte += r.montant || 0; dons++; }
-  return { slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons };
+  let collecte = 0, dons = 0; const liste = [];
+  for (const r of Object.values(load().receipts || {})) if (r.besoin === b.slug) { collecte += r.montant || 0; dons++; liste.push({ nom: r.besoinNom ? String(r.nom || '').slice(0, 60) : 'Anonyme', montant: r.montant || 0, date: r.dateDon }); }
+  liste.sort((x, y) => String(y.date).localeCompare(String(x.date)));   // anonyme par défaut ; le nom n'apparaît que si le donateur a coché « Afficher mon nom »
+  return { slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons, donateurs: liste.slice(0, 40).map(x => ({ nom: x.nom, montant: x.montant })) };
 }
 app.get('/api/besoin/:slug', async (req, res) => {
   const b = await besoinInfo(String(req.params.slug)); if (!b) return res.status(404).json({ error: 'Cagnotte introuvable' });

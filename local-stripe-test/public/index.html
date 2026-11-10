@@ -553,6 +553,9 @@ body[data-besoin] #amtBox{display:block!important}
 .bs-n{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:12px}.bs-n strong{font-size:24px;color:#14464e}.bs-n span{font-size:13.5px;color:#51666a}
 .bs-bar{height:10px;border-radius:99px;background:#dbe7e7;overflow:hidden;margin-top:8px}.bs-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:6px}
 .bs-card.off{background:#fbf6ea;border-color:#ead9a0}
+.bs-dons{margin-top:14px;padding-top:12px;border-top:1px solid #d6e4e4}.bs-dons ul{list-style:none;margin:6px 0 0;padding:0;max-height:190px;overflow:auto}
+.bs-dons li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:14.5px;color:#14272a;border-bottom:1px dashed #dbe7e7}.bs-dons li:last-child{border-bottom:0}.bs-dons li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bs-dons li b{flex:none;color:#1f6a72}.bs-dons li.an span{color:#6a7f83;font-style:italic}
+.bs-nom{display:flex;align-items:flex-start;gap:10px;margin:4px 0 12px;font-size:15px;color:#14272a;cursor:pointer}.bs-nom input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:#1f6a72}.bs-nom small{display:block;font-size:12.5px;color:#51666a;margin-top:2px;line-height:1.35}
 .dn-acttotal{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 18px;border-radius:16px;background:#14464e;color:#fff}
 .dn-acttotal span{font-size:14px;letter-spacing:.6px;text-transform:uppercase;opacity:.85}
 .dn-acttotal b{font-family:'Bree Serif',serif;font-weight:400;font-size:26px}
@@ -1231,7 +1234,8 @@ function besoinInit() {
   const dessine = b => { const connu = b.collecte != null, pct = connu && b.objectif ? Math.min(100, Math.round(b.collecte * 100 / b.objectif)) : 0;
     box.innerHTML = '<span class="bs-k">Cagnotte</span><b>' + esc(b.titre) + '</b>' + (b.description ? '<p>' + esc(b.description).replace(/\n/g, '<br>') + '</p>' : '') +
       '<div class="bs-n"><strong>' + (connu ? e2(b.collecte) : '…') + '</strong><span>' + (b.objectif ? 'collectés sur ' + e2(b.objectif) : 'collectés') + (b.dons ? ' · ' + b.dons + ' don' + (b.dons > 1 ? 's' : '') : '') + '</span></div>' +
-      (b.objectif ? '<div class="bs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : ''); };
+      (b.objectif ? '<div class="bs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : '') +
+      ((b.donateurs || []).length ? '<div class="bs-dons"><span class="bs-k">Ils ont participé</span><ul>' + b.donateurs.map(d => '<li' + (d.nom === 'Anonyme' ? ' class="an"' : '') + '><span>' + esc(d.nom) + '</span><b>' + e2(d.montant) + '</b></li>').join('') + '</ul></div>' : ''); };
   dessine(b);
   if (b.collecte == null) fetch('/api/besoin/' + b.slug).then(r => r.ok ? r.json() : null).then(j => { if (j) { BESOIN = j; dessine(j); } }).catch(() => {});   // total des dons reçus par ce lien
   $('fs').after(box); $('h1').textContent = 'Votre don pour cette cagnotte';
@@ -1240,6 +1244,7 @@ function besoinInit() {
   const sel = document.querySelector('label.ad-sel'); if (sel) sel.hidden = true; $('chips').hidden = true;
   document.querySelector('input[name=freq][value=ponctuel]').checked = true; const fq = document.querySelector('#gFreq .dn-freq'); if (fq) fq.hidden = true; $('freqHint').style.display = 'none'; $('durBox').style.display = 'none';
   $('montant').value = '52'; mark(); upSum();   // jamais le montant d'une fête (130 €) sur une cagnotte
+  if (!$('bsNomRow')) $('amtBox').insertAdjacentHTML('afterend', '<label class="dn-ck bs-nom" id="bsNomRow"><input id="bsNom" type="checkbox"><span>Afficher mon nom sur la cagnotte<small>Sans cette case, votre don apparaît comme « Anonyme ». Le montant est affiché dans les deux cas.</small></span></label>');
   document.title = b.titre + ' — Cagnotte Émounatéha';
 }
 const joursTxt = j => j <= 0 ? (j === 0 ? "aujourd'hui" : 'en cours') : (j === 1 ? 'demain' : 'dans ' + j + ' jours');
@@ -1616,7 +1621,7 @@ const AMB = (() => { const k = 'emAmb'; let v = (new URLSearchParams(location.se
   try { if (v) localStorage.setItem(k, JSON.stringify({ v, t: Date.now() })); else { const o = JSON.parse(localStorage.getItem(k) || 'null'); if (o && o.v) v = o.v; } } catch (e) {}
   return v; })();
 function body() {
-  return { amb: AMB, ...(BESOIN ? { besoin: BESOIN.slug } : {}), attr: ATTR, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
+  return { amb: AMB, ...(BESOIN ? { besoin: BESOIN.slug, afficherNom: !!($('bsNom') && $('bsNom').checked) } : {}), attr: ATTR, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
     adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, tel: $('tel').value, email: $('email').value, montant: $('montant').value, ...(me && curPr && curPr !== 'new' ? { procheId: curPr } : {}),
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
     frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, repartition: document.querySelector('input[name=repart]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked && !curPr),
