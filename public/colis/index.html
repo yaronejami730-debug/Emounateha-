@@ -515,6 +515,15 @@ body{overflow-x:hidden}
 .tabwrap small{font-family:Inter,system-ui,sans-serif}
 @media(max-width:800px){.tabwrap .ctab{min-height:104px;font-size:10.5px;letter-spacing:.08em;padding:11px 3px 28px;gap:4px}.ctab .cfr{padding-left:.08em}.ctab .che{font-size:21px}}
 @media(max-width:360px){.tabwrap .ctab{font-size:9.6px;letter-spacing:.05em}.ctab .che{font-size:19px}}
+/* cases plus petites et plus discrètes ; sans délai affiché, le contenu est centré */
+.ctabs{max-width:760px;gap:8px}
+.tabwrap .ctab{min-height:84px;padding:9px 4px 26px;gap:3px;font-size:11px;border-width:1.5px;border-radius:14px;box-shadow:0 3px 10px rgba(20,60,66,.07)}
+.tabwrap.sans .ctab{padding-bottom:9px}
+.ctab .che{font-size:19px}
+.tabwrap small{bottom:8px;font-size:9.5px;letter-spacing:.3px}
+.tabwrap .ctab.on{box-shadow:0 6px 14px rgba(31,106,114,.26)}
+@media(max-width:800px){.ctabs{gap:6px;padding:0 6px}.tabwrap .ctab{min-height:76px;padding:8px 3px 24px;font-size:9.6px;letter-spacing:.06em;gap:3px}.tabwrap.sans .ctab{padding-bottom:8px}.ctab .che{font-size:17px}.tabwrap small{font-size:9px;bottom:7px;letter-spacing:.1px}}
+@media(max-width:360px){.tabwrap .ctab{font-size:8.8px;letter-spacing:.03em}.ctab .che{font-size:16px}.tabwrap small{font-size:8.4px;letter-spacing:0}}
 </style>
 <section id="colis">
   <div class="wrap">
@@ -631,6 +640,8 @@ function openPay(a){location.href='https://don.emounateha.fr/?aff='+encodeURICom
   m.classList.add('on');document.body.style.overflow='hidden';return false}
 function closePay(){const m=document.getElementById('pm');if(m){m.classList.remove('on');const b=m.querySelector('#pmframe');if(b)b.innerHTML='';document.body.style.overflow=''}}
 async function payColis(a){location.href='https://don.emounateha.fr/?aff='+encodeURIComponent(a.dataset.ref||'chabbat');return false;a.textContent='Ouverture du paiement…';try{const r=await fetch('/api/pay-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amount:+a.dataset.amount,reference:'colis-'+a.dataset.ref,page:'colis'})});const j=await r.json();if(j.url){location.href=j.url;return false}}catch(e){}a.textContent='Participer à un colis';location.href='https://don.emounateha.fr/';return false}
+// case Chabbat : la paracha de la semaine (à défaut, « chaque semaine »)
+fetch('/api/parasha').then(r=>r.ok?r.json():null).then(j=>{const sm=document.querySelector('.ctab[data-k="chabbat"]').parentNode.querySelector('small');if(sm&&j&&j.p)sm.textContent='Paracha '+j.p}).catch(()=>{});
 // pré-sélection : la prochaine fête (dates Hebcal, mises à jour automatiquement)
 const FETE_RE={'roch-hachana':/^Roch Hachanah 5/i,'hanouka':/^Hanoukah$/i,'simhat-torah':/Simh/i,'pourim':/^Pourim$/i,'pessah':/^Pessah I$/i};
 fetch('/holidays.json').then(r=>r.json()).then(list=>{
@@ -640,7 +651,8 @@ fetch('/holidays.json').then(r=>r.json()).then(list=>{
     const d=Math.round((new Date(h.date)-today)/86400000);
     const tab=document.querySelector('.ctab[data-k="'+k+'"]');
     const w=document.createElement('div');w.className='tabwrap';tab.parentNode.insertBefore(w,tab);w.appendChild(tab);
-    const sm=document.createElement('small');sm.textContent=d<=0?"aujourd'hui":d===1?'demain':'dans '+d+' jours';w.appendChild(sm);w.dataset.d=d;
+    w.dataset.d=d;
+    if(d<=60){const sm=document.createElement('small');sm.textContent=d<=0?"aujourd'hui":d===1?'demain':'dans '+d+' jours';w.appendChild(sm)}   // le délai n'est affiché que pour la fête qui arrive dans les deux mois
     if(!best||d<best.d) best={k,d};
   }
   // rangement : Chabbat d'abord, puis les fêtes de la plus proche à la plus lointaine ; chaque bouton dans sa case
@@ -648,6 +660,7 @@ fetch('/holidays.json').then(r=>r.json()).then(list=>{
   box.querySelectorAll(':scope > .ctab').forEach(t=>{const w=document.createElement('div');w.className='tabwrap';w.dataset.d=9999;box.insertBefore(w,t);w.appendChild(t)});
   [...box.querySelectorAll(':scope > .tabwrap')].sort((a,b)=>(a.dataset.d===undefined?-1:+a.dataset.d)-(b.dataset.d===undefined?-1:+b.dataset.d)).forEach(w=>box.appendChild(w));
   if(best){const w=box.querySelector('.ctab[data-k="'+best.k+'"]').parentNode;w.classList.add('proche')}
+  box.querySelectorAll('.tabwrap').forEach(w=>w.classList.toggle('sans',!w.querySelector('small')));
   if(best) showColis(best.k);
 }).catch(()=>{});
 (function(){const nav=document.querySelector('.sec-nav'),b=document.getElementById('burger');
