@@ -1087,6 +1087,63 @@ const send = (res, code, body, type = 'application/json') => {
   res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' });
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 };
+// ---------- Trafic : mesure d'audience anonyme ----------
+// Une ligne par (jour, visiteur, site, page). Le « visiteur » est une empreinte qui change chaque jour (sel du jour + IP + navigateur) :
+// ni l'adresse IP ni le navigateur ne sont enregistrés, aucun cookie n'est posé. Les robots sont ignorés.
+let visitsReady = null;
+const ensureVisits = () => visitsReady || (visitsReady = pool.query(`
+  create table if not exists public.visits (
+    day date not null, visitor text not null, site text not null, path text not null,
+    first_at timestamptz not null default now(), last_at timestamptz not null default now(), hits int not null default 1,
+    ref text not null default '', device text not null default '',
+    primary key (day, visitor, site, path));
+  create index if not exists visits_last_idx on public.visits (last_at);
+  alter table public.visits enable row level security;
+  delete from public.visits where day < current_date - 400;`).catch(e => { visitsReady = null; throw e; }));
+const VU_ROBOT = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|whatsapp|telegram|curl|wget|python|node-fetch|axios|okhttp|monitor|pingdom|uptime|scan|vercel|gptbot|claude|bytespider/i;
+const VU_SITES = { 'www.emounateha.fr': 'www.emounateha.fr', 'emounateha.fr': 'www.emounateha.fr', 'don.emounateha.fr': 'don.emounateha.fr', 'ambassadeur.emounateha.fr': 'ambassadeur.emounateha.fr' };
+const jourParis = (d = new Date()) => d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+async function vu(req, res) {
+  const fin = () => { res.writeHead(204, { 'cache-control': 'no-store', 'access-control-allow-origin': '*' }); res.end(); };
+  try {
+    if (!pool) return fin();
+    const ua = String(req.headers['user-agent'] || ''); if (ua.length < 20 || VU_ROBOT.test(ua)) return fin();
+    let oh = ''; try { oh = new URL(req.headers.origin || req.headers.referer || '').hostname; } catch (e) {}
+    if (!VU_SITES[oh] && !(!process.env.VERCEL && /^(localhost|127\.0\.0\.1)$/.test(oh))) return fin();   // seulement depuis nos pages
+    const b = await readBody(req).catch(() => ({})) || {};
+    const site = VU_SITES[String(b.s || '')]; if (!site) return fin();
+    let p = String(b.p || '/').split(/[?#]/)[0].slice(0, 100).replace(/\/index\.html$/, '/').replace(/\/{2,}/g, '/');
+    if (!/^\/[A-Za-z0-9\-._~%\/]*$/.test(p) || p.split('/').length > 5 || /^\/(crm|backoffice|api|login|auth)(\/|$)/.test(p)) return fin();
+    if (p.length > 1 && !p.endsWith('/') && !/\.[a-z0-9]{2,5}$/i.test(p)) p += '/';
+    const ip = String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || '').split(',')[0].trim();
+    const day = jourParis(), visitor = crypto.createHash('sha256').update('emounateha-vu|' + (envVar('CRON_SECRET') || DATABASE_URL) + '|' + day + '|' + ip + '|' + ua).digest('hex').slice(0, 20);
+    let ref = ''; try { const rh = new URL(String(b.r || '')).hostname.replace(/^www\./, ''); if (rh && !/(^|\.)emounateha\.fr$/.test(rh)) ref = rh.slice(0, 60); } catch (e) {}
+    const device = /iPad|Tablet/i.test(ua) ? 'Tablette' : /Mobi|Android|iPhone/i.test(ua) ? 'Téléphone' : 'Ordinateur';
+    await ensureVisits();
+    await pool.query(`insert into public.visits (day, visitor, site, path, ref, device) values ($1,$2,$3,$4,$5,$6)
+      on conflict (day, visitor, site, path) do update set last_at = now(), hits = public.visits.hits + $7`, [day, visitor, site, p.toLowerCase(), ref, device, b.h ? 0 : 1]);
+  } catch (e) { console.error('[trafic] visite non enregistrée', e.message); }
+  fin();
+}
+async function trafic(req, res, url) {
+  if (!pool) return send(res, 503, { error: 'Base indisponible' });
+  await ensureVisits();
+  const jours = [1, 7, 30, 90].includes(+url.searchParams.get('jours')) ? +url.searchParams.get('jours') : 30;
+  const auj = jourParis(), hier = jourParis(new Date(Date.now() - 86400000)), depuis = jourParis(new Date(Date.now() - (jours - 1) * 86400000)), depuisG = jourParis(new Date(Date.now() - (Math.max(jours, 14) - 1) * 86400000));
+  const [live, parJour, pages, sources, appareils] = await Promise.all([
+    pool.query("select site, path, count(distinct visitor)::int as n from public.visits where last_at > now() - interval '75 seconds' group by 1, 2 order by n desc, path limit 40"),
+    pool.query('select day::text as day, count(distinct visitor)::int as u, sum(hits)::int as v from public.visits where day >= $1 group by day order by day', [depuisG]),
+    pool.query('select site, path, count(*)::int as u, sum(hits)::int as v from public.visits where day >= $1 group by 1, 2 order by u desc, v desc limit 60', [depuis]),
+    pool.query("select ref, count(*)::int as u from (select day, visitor, (array_agg(ref order by first_at))[1] as ref from public.visits where day >= $1 group by day, visitor) t group by ref order by u desc limit 12", [depuis]),
+    pool.query('select device, count(*)::int as u from (select distinct day, visitor, device from public.visits where day >= $1) t group by device order by u desc', [depuis])
+  ]);
+  const enDirect = await pool.query("select count(distinct visitor)::int as n from public.visits where last_at > now() - interval '75 seconds'");
+  const map = Object.fromEntries(parJour.rows.map(r => [r.day, r])), serie = [];
+  for (let i = Math.max(jours, 14) - 1; i >= 0; i--) { const d = jourParis(new Date(Date.now() - i * 86400000)); serie.push({ day: d, u: (map[d] || {}).u || 0, v: (map[d] || {}).v || 0 }); }
+  const dansPeriode = serie.filter(x => x.day >= depuis);
+  send(res, 200, { jours, enDirect: enDirect.rows[0].n, live: live.rows, aujourdhui: map[auj] || { u: 0, v: 0 }, hier: map[hier] || { u: 0, v: 0 },
+    periode: { u: dansPeriode.reduce((t, x) => t + x.u, 0), v: dansPeriode.reduce((t, x) => t + x.v, 0) }, serie, pages: pages.rows, sources: sources.rows, appareils: appareils.rows, maj: new Date().toISOString() });
+}
 const readBody = req => new Promise((ok, ko) => {
   let b = ''; req.on('data', c => { b += c; if (b.length > 8e6) req.destroy(); });
   req.on('end', () => { try { ok(b ? JSON.parse(b) : {}); } catch (e) { ko(e); } });
@@ -1669,6 +1726,7 @@ async function handle(req, res) {
         res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Horaires indisponibles' }); }
     }
+    if (url.pathname === '/api/vu' && req.method === 'POST') return vu(req, res);   // public : mesure d'audience anonyme (onglet Trafic)
     if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
     if (url.pathname === '/api/shabbat-city' && req.method === 'POST') return shabbatCity(req, res);
     if (url.pathname === '/api/rabbi-letter' && req.method === 'POST') return rabbiLetter(req, res);
@@ -1770,6 +1828,7 @@ async function handle(req, res) {
       if (SERVERLESS && !envVar('CRM_PASSWORD') && (await usersCount()) === 0) return send(res, 503, { error: 'Aucun compte : définissez CRM_PASSWORD ou invitez un administrateur' });
       if (!(await authorized(req))) return url.pathname.startsWith('/api/') ? send(res, 401, { error: 'Connexion requise' }) : reply(res, 302, '', 'text/plain', { location: '/login' });
     }
+    if (url.pathname === '/api/trafic' && req.method === 'GET') return await trafic(req, res, url);
     if (url.pathname === '/api/cerfa' || url.pathname.startsWith('/api/cerfa/')) return await cerfaProxy(req, res, url);
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname.startsWith('/u/')) {

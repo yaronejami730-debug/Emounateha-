@@ -98,6 +98,9 @@ async function openFete(k) {
 
 // ---------- Views ----------
 const views = {
+  trafic: () => `<div class="head"><div><h1>Trafic du site</h1><p class="sub">Visiteurs uniques, page par page, et qui est sur le site en ce moment</p></div>
+      <div class="cf-seg" id="tfSeg">${[[1, "Aujourd'hui"], [7, '7 jours'], [30, '30 jours'], [90, '90 jours']].map(([n, l]) => `<button type="button" data-j="${n}" class="${TF.jours === n ? 'on' : ''}" onclick="traficJours(${n})">${l}</button>`).join('')}</div></div>
+    <div id="tfBody"><div class="card">Chargement…</div></div>`,
   cerfa: () => `<div class="head"><div><h1>Reçus fiscaux (CERFA)</h1><p class="sub">Reçus faits automatiquement par don.emounateha.fr, et reçus manuels (virement, chèque, espèces)</p></div>
       <button class="btn pri" onclick="cerfaForm()">＋ Nouveau reçu manuel</button></div>
     <div id="cerfaNew"></div>
@@ -507,7 +510,7 @@ function bindTpl() {
 async function render(skipLoad) {
   if (!skipLoad) await load();
   const route = (location.hash.replace(/^#\/?/, '') || '');
-  stopSchedule(); if (typeof smsStop === 'function') smsStop();
+  stopSchedule(); if (typeof smsStop === 'function') smsStop(); traficStop();
   const schedId = (/^campaigns\/([^/]+)$/.exec(route) || [])[1];
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.r === (schedId ? 'campaigns' : route)));
   if (schedId) { $('#main').innerHTML = schedShell(schedId); startSchedule(schedId); return; }
@@ -517,6 +520,7 @@ async function render(skipLoad) {
   if (route === 'campaigns') loadAttribution();
   if (route === 'sms') smsInit();
   if (route === 'cerfa') cerfaInit();
+  if (route === 'trafic') traficInit();
 }
 function renderKeepFocus() {
   const pos = $('#q')?.selectionStart; render(true).then(() => { const q = $('#q'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } });
@@ -530,7 +534,7 @@ let liveSig = '', liveBusy = false;
 const userBusy = () => { const a = document.activeElement; return !!(a && a.closest('#main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || !$('#modal').classList.contains('hidden') || !!document.querySelector('#cerfaNew form, #cerfaNew input'); };
 async function liveTick() {
   if (document.hidden || liveBusy) return; const route = (location.hash.replace(/^#\/?/, '') || '');
-  if (/^(templates|settings|sms)/.test(route) || /^campaigns\//.test(route)) return;
+  if (/^(templates|settings|sms|trafic)/.test(route) || /^campaigns\//.test(route)) return;
   liveBusy = true;
   try {
     if (route === 'cerfa') {
@@ -940,4 +944,54 @@ async function cerfaCreate() {
     $('#cerfaNew').innerHTML = ''; await cerfaInit();
   } catch (e) { $('#cfMsg').textContent = e.message; toast(e.message, true); }
   finally { const g = $('#cfGo'); if (g) g.disabled = false; }
+}
+
+
+// ---------- Trafic : visiteurs uniques par jour et par page, et visiteurs en direct ----------
+// Données réelles, mesurées par /vu.js sur chaque page (sans cookie). Rafraîchi tout seul toutes les 15 s.
+var TF = { jours: 30, timer: null, data: null };
+function traficStop() { if (TF.timer) clearInterval(TF.timer); TF.timer = null; }
+function traficJours(n) { TF.jours = n; document.querySelectorAll('#tfSeg button').forEach(b => b.classList.toggle('on', +b.dataset.j === n)); traficLoad(); }
+function traficInit() { traficStop(); traficLoad(); TF.timer = setInterval(() => { if (!document.hidden) traficLoad(true); }, 15000); }
+async function traficLoad(silencieux) {
+  try { TF.data = await api('GET', '/trafic?jours=' + TF.jours); traficDraw(); }
+  catch (e) { if (!silencieux && $('#tfBody')) $('#tfBody').innerHTML = `<div class="card">Impossible de charger le trafic : ${esc(e.message)}</div>`; }
+}
+const tfNb = n => Number(n || 0).toLocaleString('fr-FR');
+const tfPage = r => (r.site === 'www.emounateha.fr' ? '' : r.site.replace('.emounateha.fr', '') + ' · ') + (r.path === '/' ? (r.site === 'don.emounateha.fr' ? 'Page de don' : 'Accueil') : r.path);
+const tfLien = r => 'https://' + r.site + r.path;
+const tfJour = (d, long) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', long ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' });
+function traficDraw() {
+  const el = $('#tfBody'), d = TF.data; if (!el || !d) return;
+  const max = Math.max(1, ...d.serie.map(x => x.u)), haut = [max, Math.round(max / 2)];
+  const pas = Math.ceil(d.serie.length / 8);
+  const barres = d.serie.map((x, i) => `<div class="tf-col" data-i="${i}" tabindex="0" aria-label="${esc(tfJour(x.day, true))} : ${x.u} visiteurs uniques, ${x.v} pages vues"><i style="height:${x.u ? Math.max(2, x.u / max * 100) : 0}%"></i></div>`).join('');
+  const axe = d.serie.map((x, i) => `<span>${(i % pas === 0 && d.serie.length - 1 - i >= pas / 2) || i === d.serie.length - 1 ? esc(tfJour(x.day)) : ''}</span>`).join('');
+  const rang = (rows, total, lab) => rows.length ? rows.map(r => `<div class="tf-rk"><div class="l"><span>${lab(r)}</span><b>${tfNb(r.u)}</b></div><div class="tf-rb"><i style="width:${Math.max(2, r.u / Math.max(1, total) * 100)}%"></i></div></div>`).join('') : '<div class="hint">Pas encore de données sur cette période.</div>';
+  const totSrc = d.sources.reduce((t, r) => t + r.u, 0), totApp = d.appareils.reduce((t, r) => t + r.u, 0);
+  const periodeTxt = d.jours === 1 ? "aujourd'hui" : 'sur ' + d.jours + ' jours';
+  el.innerHTML = `
+    <div class="grid g4">
+      <div class="card stat"><small><span class="tf-dot${d.enDirect ? ' on' : ''}"></span>En ce moment sur le site</small><b>${tfNb(d.enDirect)}</b><em>${d.enDirect > 1 ? 'personnes connectées' : d.enDirect === 1 ? 'personne connectée' : 'personne pour l\'instant'}</em></div>
+      <div class="card stat"><small>Visiteurs uniques aujourd'hui</small><b>${tfNb(d.aujourdhui.u)}</b><em>${tfNb(d.aujourdhui.v)} pages vues</em></div>
+      <div class="card stat"><small>Visiteurs uniques hier</small><b>${tfNb(d.hier.u)}</b><em>${tfNb(d.hier.v)} pages vues</em></div>
+      <div class="card stat"><small>Visites ${periodeTxt}</small><b>${tfNb(d.periode.u)}</b><em>${tfNb(d.periode.v)} pages vues · ${d.jours > 1 ? Math.round(d.periode.u / d.jours) + ' visiteurs par jour en moyenne' : 'visiteurs uniques'}</em></div>
+    </div>
+    <div class="card" style="margin-top:16px"><div class="row" style="align-items:center"><b class="grow">En direct : qui est sur quelle page</b><span class="hint" style="margin:0">mis à jour à ${new Date(d.maj).toLocaleTimeString('fr-FR')}</span></div>
+      ${d.live.length ? `<div class="tf-live">${d.live.map(r => `<a href="${esc(tfLien(r))}" target="_blank" rel="noopener"><span class="tf-dot on"></span><span class="p">${esc(tfPage(r))}</span><b>${r.n}</b></a>`).join('')}</div>` : '<div class="hint" style="margin-top:10px">Personne sur le site en ce moment.</div>'}</div>
+    <div class="card" style="margin-top:16px"><b>Visiteurs uniques par jour</b><div class="hint" style="margin-top:2px">${d.serie.length} derniers jours · survolez une barre pour le détail</div>
+      <div class="tf-chart"><div class="tf-y"><span>${tfNb(haut[0])}</span><span>${tfNb(haut[1])}</span><span>0</span></div><div class="tf-plot"><div class="tf-bars">${barres}</div><div class="tf-x">${axe}</div><div class="tf-tip" id="tfTip" hidden></div></div></div></div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card" style="padding:0;overflow:hidden"><div style="padding:18px 22px 10px"><b>Pages les plus visitées</b><div class="hint" style="margin-top:2px">${periodeTxt} · visiteurs uniques par jour</div></div>
+        ${d.pages.length ? `<div style="overflow-x:auto"><table><thead><tr><th>Page</th><th style="text-align:right">Visiteurs uniques</th><th style="text-align:right">Pages vues</th></tr></thead><tbody>${d.pages.map(r => `<tr><td><a href="${esc(tfLien(r))}" target="_blank" rel="noopener" style="color:var(--brand);font-weight:600;word-break:break-word">${esc(tfPage(r))}</a></td><td style="text-align:right;font-variant-numeric:tabular-nums"><b>${tfNb(r.u)}</b></td><td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)">${tfNb(r.v)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="padding:0 22px 20px">Pas encore de visite enregistrée sur cette période.</div>'}</div>
+      <div class="card"><b>D'où viennent les visiteurs</b><div class="hint" style="margin:2px 0 12px">${periodeTxt}</div>${rang(d.sources, totSrc, r => esc(r.ref || 'Accès direct (lien tapé, WhatsApp, e-mail…)'))}
+        <b style="display:block;margin-top:22px">Appareils</b><div class="hint" style="margin:2px 0 12px">${periodeTxt}</div>${rang(d.appareils, totApp, r => esc(r.device || 'Inconnu'))}</div>
+    </div>
+    <div class="hint" style="margin-top:14px">Mesure faite par le site lui-même, sans cookie : un visiteur est compté une seule fois par jour, quel que soit le nombre de pages qu'il ouvre. Les robots (Google, aperçus WhatsApp…) ne sont pas comptés. Ni l'adresse IP ni le nom des visiteurs ne sont enregistrés.</div>`;
+  const tip = $('#tfTip'), plot = el.querySelector('.tf-plot');
+  el.querySelectorAll('.tf-col').forEach(c => {
+    const show = () => { const x = d.serie[+c.dataset.i]; tip.innerHTML = `<b>${esc(tfJour(x.day, true))}</b><span>${tfNb(x.u)} visiteur${x.u > 1 ? 's' : ''} unique${x.u > 1 ? 's' : ''}</span><span>${tfNb(x.v)} page${x.v > 1 ? 's' : ''} vue${x.v > 1 ? 's' : ''}</span>`; tip.hidden = false;
+      const r = c.getBoundingClientRect(), p = plot.getBoundingClientRect(); tip.style.left = Math.min(Math.max(r.left - p.left + r.width / 2, 80), p.width - 80) + 'px'; };
+    c.onmouseenter = show; c.onfocus = show; c.onmouseleave = c.onblur = () => { tip.hidden = true; };
+  });
 }

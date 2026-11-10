@@ -249,7 +249,7 @@ app.use((req, res, next) => {
 // --- en-têtes de sécurité (navigateur) ---
 const STRIPE_H = 'https://*.stripe.com https://*.stripe.network https://*.stripecdn.com https://*.hcaptcha.com https://hcaptcha.com';
 const CSP = ["default-src 'self'", `script-src 'self' 'unsafe-inline' ${STRIPE_H} https://pay.google.com`, "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: https:", `connect-src 'self' ${STRIPE_H} https://fonts.googleapis.com https://data.geopf.fr https://www.hebcal.com https://pay.google.com`, `frame-src ${STRIPE_H} https://pay.google.com`,
+  "img-src 'self' data: https:", `connect-src 'self' ${STRIPE_H} https://fonts.googleapis.com https://data.geopf.fr https://www.hebcal.com https://pay.google.com https://www.emounateha.fr`, `frame-src ${STRIPE_H} https://pay.google.com`,
   "media-src 'self' https:", "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'self' https://www.emounateha.fr https://emounateha.fr" + (process.env.VERCEL ? '' : ' http://127.0.0.1:* http://localhost:*')].join('; ');   // la page de don peut s'ouvrir dans la petite fenêtre de la page Torah, et nulle part ailleurs
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', CSP); res.setHeader('X-Content-Type-Options', 'nosniff');   // (anti-clickjacking : frame-ancestors ci-dessus, plus strict que X-Frame-Options)
