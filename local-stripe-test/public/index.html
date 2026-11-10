@@ -9,11 +9,11 @@
 <meta property="og:site_name" content="Émounatéha">
 <meta property="og:url" content="https://don.emounateha.fr/">
 <meta property="og:title" content="Faites un don à Émounatéha">
-<meta property="og:description" content="Chaque don aide une famille. Paiement sécurisé, reçu fiscal CERFA envoyé par e-mail.">
+<meta property="og:description" content="Chaque don aide une famille. Paiement sécurisé, reçu fiscal instantané envoyé par e-mail.">
 <meta property="og:image" content="https://www.emounateha.fr/apercus/don.jpg?v=1">
 <meta property="og:image:width" content="1080">
 <meta property="og:image:height" content="1350">
-<meta property="og:image:alt" content="Faites un don à Émounatéha, reçu fiscal CERFA par e-mail">
+<meta property="og:image:alt" content="Faites un don à Émounatéha, reçu fiscal instantané par e-mail">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://www.emounateha.fr/apercus/don.jpg?v=1">
 
@@ -601,6 +601,7 @@ body{overflow-x:hidden}
 .embed .dn-topbar,.embed footer,.embed .ad-brand,.embed #rchband,.embed #acctOut .dn-link+span{display:none!important}   /* petite fenêtre : on garde l'essentiel (montant, paiement) */
 .embed #dn{padding-top:12px!important}.embed .dn-wrap{padding-top:0!important}
 .embed .dn-actions{padding-bottom:10px}
+.dn-pays{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 14px}.dn-pays .pl{display:block;width:44px;height:44px;border-radius:11px}.dn-pays .pl img{display:block;width:100%;height:100%}
 .dn-pmnote{font-size:12.5px;color:#6b7d80;margin:8px 2px 0;line-height:1.4}
 .dn-or{display:flex;align-items:center;gap:10px;margin:16px 0 6px;color:#7f9396;font-size:12.5px;font-weight:600}
 .dn-or::before,.dn-or::after{content:"";flex:1;height:1px;background:#dbe6e6}
@@ -764,7 +765,7 @@ body{overflow-x:hidden}
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="http://localhost:3000/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="http://localhost:3000/#mission">Qui sommes-nous</a><a href="http://localhost:3000/#actions">Nos actions</a><a href="http://localhost:3000/torah/">Diffusion de la Torah</a><a href="http://localhost:3000/colis/">Les colis</a><a href="http://localhost:3000/#aider">Comment aider</a><a href="http://localhost:3000/horaires/">Horaires</a><a href="http://localhost:3000/#contact">Contact</a></div></div></nav>
-<header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA vous est envoyé par email, en PDF, dès votre don.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>
+<header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA instantané vous est envoyé par email, en PDF.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>
 <style>
 .pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:76px 0 34px;position:relative}
 .pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold),var(--gold-l),var(--gold))}
@@ -947,10 +948,11 @@ body{overflow-x:hidden}
     <div class="dn-panel on" id="p1">
       <div class="ad-brand"><img class="ad-full" src="/logo-complet.png?v=2" alt="Émounatéha — אמונתך"></div>
       <h2 class="dn-h" id="h1">Votre don</h2>
-      <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal vous est envoyé par email.</p>
+      <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal instantané vous est envoyé par email.</p>
       <div id="amtBox">
       <div class="dn-amts" id="amts"><button type="button" data-v="26">26 €</button><button type="button" data-v="52">52 €</button><button type="button" data-v="126">126 €</button><button type="button" data-v="252">252 €</button><button type="button" data-v="770">770 €</button><button type="button" data-v="1540">1 540 €</button></div>
       <label class="ad-box" for="montant"><span class="ad-k">Autre montant</span><span class="dn-other"><input id="montant" inputmode="decimal" placeholder="0" aria-label="Autre montant"><span>€</span></span></label>
+      <div class="dn-pays" aria-label="Moyens de paiement acceptés"><span class="pl" title="PayPal"><img src="/pay/paypal.png?v=1" alt="PayPal" width="44" height="44" loading="lazy"></span><span class="pl" title="Klarna"><img src="/pay/klarna.png?v=1" alt="Klarna" width="44" height="44" loading="lazy"></span><span class="pl" title="Visa"><img src="/pay/visa.png?v=1" alt="Visa" width="44" height="44" loading="lazy"></span><span class="pl" title="Mastercard"><img src="/pay/mastercard.png?v=1" alt="Mastercard" width="44" height="44" loading="lazy"></span><span class="pl" title="Apple Pay"><img src="/pay/applepay.png?v=1" alt="Apple Pay" width="44" height="44" loading="lazy"></span><span class="pl" title="Google Pay"><img src="/pay/googlepay.png?v=1" alt="Google Pay" width="44" height="44" loading="lazy"></span></div>
       </div>
       <div id="gFreq">
         <div class="dn-freq"><label><input type="radio" name="freq" value="ponctuel" checked><span>Don ponctuel</span></label><label><input type="radio" name="freq" value="mensuel"><span>Mensuel</span></label></div>
@@ -1015,7 +1017,7 @@ body{overflow-x:hidden}
         <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
         <div class="dn-full dn-guestsave" id="guestSave"><span>Pour retrouver ces informations la prochaine fois, <button type="button" class="dn-link" id="guestLogin">connectez-vous</button> (un code par email, sans mot de passe).</span></div>
         <div class="dn-full dn-savep"><label class="dn-ck"><input id="saveProf" type="checkbox" checked><span>Enregistrer ces informations dans mon espace donateur<small>Pour ne plus avoir à les retaper</small></span></label></div>
-        <div class="dn-full" id="envRow"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email</span></label></div>
+        <div class="dn-full" id="envRow"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal instantané par email</span></label></div>
       </div>
     </div>
 
@@ -1054,7 +1056,7 @@ body{overflow-x:hidden}
       <div><dt>Bénéficiaire</dt><dd>Émounatéha · association d'intérêt général</dd></div>
     </dl>
     <div class="dn-ok">
-      <p><span>✓</span> Reçu fiscal CERFA en PDF par email</p>
+      <p><span>✓</span> Reçu fiscal CERFA instantané en PDF par email</p>
       <p><span>✓</span> Paiement sécurisé par Stripe</p>
       <p><span>✓</span> Aucun compte à créer</p>
     </div>
@@ -1331,7 +1333,7 @@ $('rand').onclick = () => { fillRandom(); show(''); };
 function setMode(m) {
   mode = m;
   $('gSans').style.display = m === 'sans' ? 'block' : 'none'; $('gFreq').style.display = m === 'carte' ? '' : 'none';
-  $('fs').textContent = m === 'carte' ? 'Chaque don compte. Votre reçu fiscal vous est envoyé par email.' : 'Pour un don déjà reçu par virement, chèque ou espèces : le reçu CERFA est généré directement.';
+  $('fs').textContent = m === 'carte' ? 'Chaque don compte. Votre reçu fiscal instantané vous est envoyé par email.' : 'Pour un don déjà reçu par virement, chèque ou espèces : le reçu CERFA est généré directement.';
   $('h1').textContent = m === 'carte' ? 'Choisissez votre don' : 'Don reçu';
   upSum(); goPanel(1);
 }

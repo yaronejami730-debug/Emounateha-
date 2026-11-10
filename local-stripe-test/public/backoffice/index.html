@@ -777,7 +777,7 @@ body{overflow-x:hidden}
 
     <div class="dn-panel on" id="p1">
       <h2 class="dn-h" id="h1">Votre don</h2>
-      <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal vous est envoyé par email.</p>
+      <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal instantané vous est envoyé par email.</p>
       <div class="dn-lab first">1 · Pour quoi souhaitez-vous donner ?</div>
       <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don"></div>
       <input type="hidden" id="aff">
@@ -836,7 +836,7 @@ body{overflow-x:hidden}
         <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
         <div class="dn-full dn-guestsave" id="guestSave"><span>Pour retrouver ces informations la prochaine fois, <button type="button" class="dn-link" id="guestLogin">connectez-vous</button> (un code par email, sans mot de passe).</span></div>
         <div class="dn-full dn-savep"><label class="dn-ck"><input id="saveProf" type="checkbox" checked><span>Enregistrer ces informations dans mon espace donateur<small>Pour ne plus avoir à les retaper</small></span></label></div>
-        <div class="dn-full" id="envRow"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email</span></label></div>
+        <div class="dn-full" id="envRow"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal instantané par email</span></label></div>
       </div>
     </div>
 
@@ -874,7 +874,7 @@ body{overflow-x:hidden}
       <div><dt>Bénéficiaire</dt><dd>Émounatéha · association d'intérêt général</dd></div>
     </dl>
     <div class="dn-ok">
-      <p><span>✓</span> Reçu fiscal CERFA en PDF par email</p>
+      <p><span>✓</span> Reçu fiscal CERFA instantané en PDF par email</p>
       <p><span>✓</span> Paiement sécurisé par Stripe</p>
       <p><span>✓</span> Aucun compte à créer</p>
     </div>
@@ -1086,7 +1086,7 @@ $('rand').onclick = () => { fillRandom(); show(''); };
 function setMode(m) {
   mode = m;
   $('gSans').style.display = m === 'sans' ? 'block' : 'none'; $('gFreq').style.display = m === 'carte' ? '' : 'none';
-  $('fs').textContent = m === 'carte' ? 'Chaque don compte. Votre reçu fiscal vous est envoyé par email.' : 'Pour un don déjà reçu par virement, chèque ou espèces : le reçu CERFA est généré directement.';
+  $('fs').textContent = m === 'carte' ? 'Chaque don compte. Votre reçu fiscal instantané vous est envoyé par email.' : 'Pour un don déjà reçu par virement, chèque ou espèces : le reçu CERFA est généré directement.';
   $('h1').textContent = m === 'carte' ? 'Choisissez votre don' : 'Don reçu';
   upSum(); goPanel(1);
 }

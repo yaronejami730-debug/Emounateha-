@@ -309,7 +309,7 @@ HTML = r"""
 
     <div class="dn-panel on" id="p1">
       <h2 class="dn-h" id="h1">Votre don</h2>
-      <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal vous est envoyé par email.</p>
+      <p class="dn-p" id="fs">Chaque don compte. Votre reçu fiscal instantané vous est envoyé par email.</p>
       <div class="dn-lab first">1 · Pour quoi souhaitez-vous donner ?</div>
       <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don"></div>
       <input type="hidden" id="aff">
@@ -368,7 +368,7 @@ HTML = r"""
         <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
         <div class="dn-full dn-guestsave" id="guestSave"><span>Pour retrouver ces informations la prochaine fois, <button type="button" class="dn-link" id="guestLogin">connectez-vous</button> (un code par email, sans mot de passe).</span></div>
         <div class="dn-full dn-savep"><label class="dn-ck"><input id="saveProf" type="checkbox" checked><span>Enregistrer ces informations dans mon espace donateur<small>Pour ne plus avoir à les retaper</small></span></label></div>
-        <div class="dn-full" id="envRow"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal par email</span></label></div>
+        <div class="dn-full" id="envRow"><label class="dn-ck"><input id="env" type="checkbox" checked><span>Envoyer le reçu fiscal instantané par email</span></label></div>
       </div>
     </div>
 
@@ -406,7 +406,7 @@ HTML = r"""
       <div><dt>Bénéficiaire</dt><dd>Émounatéha · association d'intérêt général</dd></div>
     </dl>
     <div class="dn-ok">
-      <p><span>✓</span> Reçu fiscal CERFA en PDF par email</p>
+      <p><span>✓</span> Reçu fiscal CERFA instantané en PDF par email</p>
       <p><span>✓</span> Paiement sécurisé par Stripe</p>
       <p><span>✓</span> Aucun compte à créer</p>
     </div>
@@ -577,7 +577,7 @@ $('rand').onclick = () => { fillRandom(); show(''); };
 function setMode(m) {
   mode = m;
   $('gSans').style.display = m === 'sans' ? 'block' : 'none'; $('gFreq').style.display = m === 'carte' ? '' : 'none';
-  $('fs').textContent = m === 'carte' ? 'Chaque don compte. Votre reçu fiscal vous est envoyé par email.' : 'Pour un don déjà reçu par virement, chèque ou espèces : le reçu CERFA est généré directement.';
+  $('fs').textContent = m === 'carte' ? 'Chaque don compte. Votre reçu fiscal instantané vous est envoyé par email.' : 'Pour un don déjà reçu par virement, chèque ou espèces : le reçu CERFA est généré directement.';
   $('h1').textContent = m === 'carte' ? 'Choisissez votre don' : 'Don reçu';
   upSum(); goPanel(1);
 }
@@ -904,7 +904,7 @@ def build(variant="don"):
     if esp:
         s = s.replace(head, '<header class="pagehead"><div class="wrap"><h1>Mon espace donateur</h1><p>Retrouvez vos reçus fiscaux, classés par année, et vos informations.</p></div></header>')
     else:
-        s = s.replace(head, ('<header class="pagehead"><div class="wrap"><h1>Reçu sans paiement</h1><p>Back-office : générez le reçu fiscal CERFA d\'un don reçu par virement, chèque ou espèces.</p><span class="dn-pill">Back-office · mode test</span></div></header>' if adm else '<header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA vous est envoyé par email, en PDF, dès votre don.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>'))
+        s = s.replace(head, ('<header class="pagehead"><div class="wrap"><h1>Reçu sans paiement</h1><p>Back-office : générez le reçu fiscal CERFA d\'un don reçu par virement, chèque ou espèces.</p><span class="dn-pill">Back-office · mode test</span></div></header>' if adm else '<header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA instantané vous est envoyé par email, en PDF.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>'))
     # contenu
     a = s.index('<section id="colis">'); b = s.index('</section>', a) + len('</section>')
     s = s[:a] + (ESP_HTML if esp else HTML) + s[b:]
