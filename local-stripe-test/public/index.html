@@ -546,6 +546,12 @@ body{overflow-x:hidden}
 .dn-actfree label small{font-weight:500;color:#6a7f83;margin-left:6px}
 body[data-besoin] label.ad-sel,body[data-besoin] #chips,body[data-besoin] #gFreq .dn-freq,body[data-besoin] #actBox{display:none!important}
 body[data-besoin] #amtBox{display:block!important}
+/* reçu fiscal instantané : rappel à côté du montant */
+.rf{display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:11px 14px;border-radius:14px;background:#fffaeb;border:1.5px solid #ecd999;text-align:left}
+.rf-ic{flex:none;display:flex;filter:drop-shadow(0 2px 3px rgba(120,90,20,.18))}.rf-t b{display:block;font-size:15px;line-height:1.25;color:#14464e}.rf-t small{display:block;font-size:12.5px;line-height:1.35;color:#5a6d70;margin-top:1px}
+.rf-b{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:#8a6a14;white-space:nowrap;margin-top:2px}
+.rf-s{margin:0 0 12px;text-align:center;font-size:13.5px;font-weight:600;color:#8a6a14}.rf-s span{display:block;font-weight:500;font-size:12px;color:#5a6d70;margin-top:1px}
+body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
 .bs-card{margin:0 0 16px;padding:16px 18px;border-radius:16px;background:#f3f8f8;border:1.5px solid #cfe0e0;text-align:left}
 .bs-card .bs-k{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8842a;margin-bottom:4px}
 .bs-card>b{display:block;font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:22px;line-height:1.2;color:#1f6a72}
@@ -985,6 +991,7 @@ body[data-besoin] #amtBox{display:block!important}
             <div class="dn-freq"><label><input type="radio" name="repart" value="mois" checked><span>Par mois</span></label><label><input type="radio" name="repart" value="total"><span>Total à répartir</span></label></div></div>
           <p class="dn-datehint" id="durHint" style="display:none"></p>
         </div>
+        <div class="rf" id="rfBadge"><span class="rf-ic"><svg viewBox="0 0 32 40" width="26" height="33" aria-hidden="true"><path d="M3 1h17l9 9v27a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2z" fill="#fff" stroke="#c4a24a" stroke-width="2" stroke-linejoin="round"/><path d="M20 1v7a2 2 0 0 0 2 2h7" fill="#f6e9c4" stroke="#c4a24a" stroke-width="2" stroke-linejoin="round"/><rect x="5" y="20" width="22" height="11" rx="2.5" fill="#c0392b"/><text x="16" y="28.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="8.2" font-weight="700" fill="#fff">PDF</text></svg></span><span class="rf-t"><b>Reçu fiscal CERFA instantané</b><small>Envoyé en PDF par e-mail, juste après votre paiement.</small></span></div>
       </div>
       <label class="ad-box ad-sel" for="affSel"><span class="ad-k">Pour quoi donnez-vous ?</span><select id="affSel" aria-label="Affectation du don"></select></label>
       <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don" hidden></div>
@@ -1064,7 +1071,7 @@ body[data-besoin] #amtBox{display:block!important}
 
     <div class="dn-err" id="err" role="alert"></div>
     <div class="dn-actions" id="bar">
-      <div class="dn-bamt" id="bamt"><small>Votre don</small><b id="bAmt">—</b></div>
+      <div class="dn-bamt" id="bamt"><small>Votre don</small><b id="bAmt">—</b><em class="rf-b">🧾 Reçu fiscal instantané</em></div>
       <button class="dn-btn" id="go" type="button">Continuer</button>
     </div>
     <button class="dn-back" id="back" type="button" hidden>← Retour</button>
@@ -1073,6 +1080,7 @@ body[data-besoin] #amtBox{display:block!important}
   <aside class="dn-card dn-sum" aria-label="Récapitulatif">
     <h3>Votre don</h3>
     <div class="dn-amt" id="sAmt">— <small></small></div>
+    <p class="rf-s" id="rfSum">🧾 Reçu fiscal CERFA instantané<span>PDF envoyé par e-mail dès le paiement</span></p>
     <dl>
       <div><dt>Affectation</dt><dd id="sAff">—</dd></div>
       <div><dt>Donateur</dt><dd id="sWho">—</dd></div>
@@ -1332,6 +1340,7 @@ function fillRandom() {
 
 const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   cfg = c; buildChips(c.affectations || []); if (!c.live && $('dnTest')) $('dnTest').hidden = false;
+  if (mode !== 'carte') ['rfBadge', 'rfSum'].forEach(k => { if ($(k)) $(k).hidden = true; }), document.querySelectorAll('.rf-b').forEach(e => e.hidden = true);   // reçu saisi à la main : pas de paiement, pas de mention
   if (mode === 'carte') { $('env').checked = true; $('envRow').style.display = 'none'; }   // le reçu est toujours envoyé par email aux donateurs
   if (!c.live && (mode === 'sans' || /[?&]test=1/.test(location.search))) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
   { // lien depuis la page Torah (ou ailleurs) : ?montant=26|52…&express=1&retour=https://www.emounateha.fr/torah/
