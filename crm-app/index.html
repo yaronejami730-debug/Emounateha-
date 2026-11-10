@@ -14,22 +14,30 @@
   <div class="brand"><img class="logo" src="/logo.png?v=2" alt="Émounatéha"><div><b>Émounatéha</b><small>Redonner dignité et espoir à chaque famille, toute l'année</small></div><button class="mburger" id="mburger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
   <nav id="nav">
     <a href="#/" data-r=""><span class="i">▦</span>Tableau de bord</a>
-    <span class="ng">E-mails et SMS</span>
-    <a href="#/campaigns" data-r="campaigns"><span class="i">➤</span>Campagnes</a>
-    <a href="#/templates" data-r="templates"><span class="i">✉</span>Templates</a>
-    <a href="#/contacts" data-r="contacts"><span class="i">☺</span>Contacts</a>
-    <a href="#/historique" data-r="historique"><span class="i">⏱</span>Historique</a>
-    <a href="#/sms" data-r="sms"><span class="i">✆</span>SMS</a>
-    <span class="ng">Dons</span>
-    <a href="#/cerfa" data-r="cerfa"><span class="i">🧾</span>Reçus CERFA</a>
-    <a href="#/besoins" data-r="besoins"><span class="i">♥</span>Besoins</a>
-    <a href="#/ambassadeurs" data-r="ambassadeurs"><span class="i">✦</span>Ambassadeurs</a>
-    <span class="ng">Site</span>
-    <a href="#/diffusion" data-r="diffusion"><span class="i">☀</span>Diffusion Torah</a>
-    <a href="#/trafic" data-r="trafic"><span class="i">◔</span>Trafic</a>
-    <span class="ng">Administration</span>
-    <a href="#/users" data-r="users"><span class="i">☻</span>Utilisateurs</a>
-    <a href="#/settings" data-r="settings"><span class="i">⚙</span>Réglages</a>
+    <button type="button" class="ng" data-g="mail" aria-expanded="false"><span>E-mails et SMS</span><i aria-hidden="true">▾</i></button>
+    <div class="ngb" data-g="mail" hidden>
+      <a href="#/campaigns" data-r="campaigns"><span class="i">➤</span>Campagnes</a>
+      <a href="#/templates" data-r="templates"><span class="i">✉</span>Templates</a>
+      <a href="#/contacts" data-r="contacts"><span class="i">☺</span>Contacts</a>
+      <a href="#/historique" data-r="historique"><span class="i">⏱</span>Historique</a>
+      <a href="#/sms" data-r="sms"><span class="i">✆</span>SMS</a>
+    </div>
+    <button type="button" class="ng" data-g="dons" aria-expanded="false"><span>Dons</span><i aria-hidden="true">▾</i></button>
+    <div class="ngb" data-g="dons" hidden>
+      <a href="#/cerfa" data-r="cerfa"><span class="i">🧾</span>Reçus CERFA</a>
+      <a href="#/besoins" data-r="besoins"><span class="i">♥</span>Besoins</a>
+      <a href="#/ambassadeurs" data-r="ambassadeurs"><span class="i">✦</span>Ambassadeurs</a>
+    </div>
+    <button type="button" class="ng" data-g="site" aria-expanded="false"><span>Site</span><i aria-hidden="true">▾</i></button>
+    <div class="ngb" data-g="site" hidden>
+      <a href="#/diffusion" data-r="diffusion"><span class="i">☀</span>Diffusion Torah</a>
+      <a href="#/trafic" data-r="trafic"><span class="i">◔</span>Trafic</a>
+    </div>
+    <button type="button" class="ng" data-g="admin" aria-expanded="false"><span>Administration</span><i aria-hidden="true">▾</i></button>
+    <div class="ngb" data-g="admin" hidden>
+      <a href="#/users" data-r="users"><span class="i">☻</span>Utilisateurs</a>
+      <a href="#/settings" data-r="settings"><span class="i">⚙</span>Réglages</a>
+    </div>
   </nav>
   <div class="quota" id="quota"></div>
   <a href="/auth/logout" style="margin-top:10px;text-align:center;color:#9fcdc9;font-size:12px">Se déconnecter</a>
@@ -37,6 +45,12 @@
 <main id="main"></main>
 <div id="modal" class="modal hidden"></div>
 <div id="toast" class="toast"></div>
+<script>(function(){var K="crmNav",st={};try{st=JSON.parse(localStorage.getItem(K)||"{}")||{}}catch(e){}
+function set(g,o){var b=document.querySelector('.ng[data-g="'+g+'"]'),d=document.querySelector('.ngb[data-g="'+g+'"]');if(!b||!d)return;d.hidden=!o;b.setAttribute("aria-expanded",o?"true":"false")}
+function sync(){var r=(location.hash.replace(/^#\/?/,"")||"").split("/")[0],a=document.querySelector('#nav .ngb a[data-r="'+r+'"]'),cur=a?a.parentNode.dataset.g:"";
+document.querySelectorAll(".ng").forEach(function(b){var g=b.dataset.g;set(g,g===cur||st[g]===true)})}
+document.querySelectorAll(".ng").forEach(function(b){b.addEventListener("click",function(){var g=b.dataset.g,o=b.getAttribute("aria-expanded")!=="true";st[g]=o;try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}set(g,o)})});
+addEventListener("hashchange",sync);sync()})();</script>
 <script src="/crm/app.js"></script>
 <script>(function(){const s=document.querySelector(".side"),b=document.getElementById("mburger");b.onclick=()=>{const o=s.classList.toggle("open");b.setAttribute("aria-expanded",o)};document.querySelectorAll("#nav a").forEach(a=>a.addEventListener("click",()=>{s.classList.remove("open");b.setAttribute("aria-expanded",false)}))})()</script>
 </body>

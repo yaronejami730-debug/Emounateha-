@@ -664,14 +664,8 @@ const atEur = c => ((c || 0) / 100).toLocaleString('fr-FR', { minimumFractionDig
 function attrDraw(neufs) {
   const el = document.getElementById('attr'); if (!el) return; const a = AT.data;
   if (!a) { el.innerHTML = '<section class="at"><div class="at-head"><div><h2>Dons par e-mail</h2><p class="hint">Chargement…</p></div></div></section>'; return; }
-  const t = a.total, taux = t.envois ? Math.round(t.dons / t.envois * 1000) / 10 : null, max = Math.max(1, ...a.lignes.map(r => r.montant));
+  const t = a.total;
   const tuile = (l, v, s) => `<div class="at-kpi"><small>${l}</small><b>${v}</b>${s ? `<em>${s}</em>` : ''}</div>`;
-  const lignes = a.lignes.map(r => `<div class="at-row">
-      <div class="at-who"><b>${esc(r.modele)}</b><small>${esc(r.campagne)}</small></div>
-      <div class="at-n"><b>${r.envois}</b><small>envoyés</small></div>
-      <div class="at-n"><b>${r.dons}</b><small>don${r.dons > 1 ? 's' : ''}${r.taux === null ? '' : ' · ' + String(r.taux).replace('.', ',') + ' %'}</small></div>
-      <div class="at-amt"><b>${atEur(r.montant)}</b><i><u style="width:${Math.round(r.montant * 100 / max)}%"></u></i>${r.prelevements ? `<small>+ ${r.prelevements} prélèvement${r.prelevements > 1 ? 's' : ''} suivant${r.prelevements > 1 ? 's' : ''} (${atEur(r.montantPrelev)})</small>` : ''}</div>
-    </div>`).join('');
   const dons = a.dons.slice(0, 30).map(d => `<li class="${neufs && neufs.has(d.numero) ? 'neuf' : ''}">
       <span class="at-d">${new Date(d.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
       <span class="at-p"><b>${esc(d.nom || '—')}</b><small>${esc(d.modele)} · ${esc(d.campagne)}</small></span>
@@ -679,11 +673,8 @@ function attrDraw(neufs) {
   el.innerHTML = `<section class="at">
     <div class="at-head"><div><h2>Dons par e-mail</h2><p class="hint">Les dons faits après un clic dans un de vos e-mails, pendant 30 jours.</p></div><span class="at-live" title="Mis à jour automatiquement"><i></i>En direct</span></div>
     ${a.erreur ? `<div class="at-warn">${esc(a.erreur)}</div>` : ''}
-    <div class="at-kpis">${tuile('Dons venus d\'un e-mail', t.dons)}${tuile('Montant collecté', atEur(t.montant), t.prelevements ? '+ ' + atEur(t.montantPrelev) + ' de prélèvements suivants' : '')}${tuile('E-mails envoyés', (t.envois || 0).toLocaleString('fr-FR'))}${tuile('Taux de don', taux === null ? '—' : String(taux).replace('.', ',') + ' %', 'dons pour 100 e-mails')}</div>
-    <div class="at-cols">
-      <div class="card at-card"><h3>Par e-mail</h3>${a.lignes.length ? lignes : '<p class="hint">Aucun envoi de campagne pour l\'instant.</p>'}</div>
-      <div class="card at-card"><h3>Derniers dons</h3>${dons ? `<ul class="at-list">${dons}</ul>` : '<p class="hint">Aucun don rattaché à un e-mail pour l\'instant. Ils apparaîtront ici dès qu\'un donateur paiera après avoir cliqué sur un lien.</p>'}</div>
-    </div></section>`;
+    <div class="at-kpis at-2">${tuile('Dons venus d\'un e-mail', t.dons)}${tuile('Montant collecté', atEur(t.montant), t.prelevements ? '+ ' + atEur(t.montantPrelev) + ' de prélèvements mensuels suivants' : '')}</div>
+    <div class="card at-card"><h3>Derniers dons</h3>${dons ? `<ul class="at-list">${dons}</ul>` : '<p class="hint">Aucun don rattaché à un e-mail pour l\'instant. Ils apparaîtront ici dès qu\'un donateur paiera après avoir cliqué sur un lien.</p>'}</div></section>`;
 }
 async function attrPull() {
   if (AT.busy || document.hidden || !document.getElementById('attr')) return; AT.busy = true;
