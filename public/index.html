@@ -8,7 +8,7 @@
 <meta name="description" content="Émounatéha (Emouna) : association à but non lucratif, aide aux nécessiteux. Colis de Chabbat, logement, soutien. Écrire au Rabbi, Torah, Tanya, horaires de Chabbat.">
 <link rel="icon" href="/logo.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@600;700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -530,6 +530,16 @@ body{overflow-x:hidden}
   .hnx{right:8px;top:216px}.hpv{left:6px}
   .hero.moved .hnx{top:calc(50% - 26px);right:6px}.hero.moved .hpv{top:60px;left:8px}
 }
+
+/* barre du haut : mêmes écritures que le logo — date hébraïque et בס״ד en Frank Ruhl Libre gras, or dégradé ; date française en Cinzel, capitales espacées */
+.ndate b,.nbsd{font-family:'Frank Ruhl Libre','David Libre',Georgia,serif!important;font-weight:900!important;background:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;text-shadow:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.32))}
+.sec-nav.scrolled .ndate b,.sec-nav.scrolled .nbsd{background-image:linear-gradient(180deg,#e2c477 0%,#b58c36 45%,#7d5c16 100%);filter:none}
+.sec-nav.open .ndate b,.sec-nav.open .nbsd,.sec-nav.scrolled.open .ndate b,.sec-nav.scrolled.open .nbsd{background-image:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);filter:drop-shadow(0 1px 3px rgba(0,0,0,.32))}
+.ndate small{font-family:'Cinzel',Georgia,serif;font-weight:600;text-transform:uppercase;letter-spacing:.07em;opacity:1;white-space:nowrap}
+@media(min-width:801px){.ndate b{font-size:18px}.ndate small{font-size:11px;margin-top:1px}.nbsd{font-size:30px}}
+@media(max-width:1100px) and (min-width:801px){.ndate b{font-size:15px}.ndate small{font-size:9px;letter-spacing:.03em;white-space:normal;line-height:1.25}}
+@media(max-width:800px){.ndate b{font-size:16px}.ndate small{font-size:9.8px;letter-spacing:.05em}.nbsd{font-size:22px}}
+@media(max-width:360px){.ndate b{font-size:14.5px}.ndate small{font-size:8.8px;letter-spacing:.03em}}
 </style>
 <link rel="stylesheet" href="/mobile.css">
 <link rel="stylesheet" href="/fade.css?v=3">
