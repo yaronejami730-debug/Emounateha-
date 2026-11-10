@@ -1422,6 +1422,20 @@ async function api(req, res, url) {
       return send(res, 200, { credits: p ? p.credits : 0, perSms: smsCost, at: now() });
     } catch (e) { return send(res, 502, { error: 'Brevo injoignable : ' + e.message }); }
   }
+  if (parts[0] === 'sms' && parts[1] === 'status' && m === 'GET') { // état de livraison réel (Brevo accepte l'envoi, mais l'opérateur peut ensuite refuser ou retarder le SMS)
+    const key = db.settings.brevoApiKey; if (!key) return send(res, 400, { error: 'Clé Brevo manquante (Réglages)' });
+    const phones = String(url.searchParams.get('phones') || '').split(',').map(x => x.replace(/\D/g, '')).filter(Boolean).slice(0, 10);
+    const since = Number(url.searchParams.get('since')) || Date.now() - 3600000;
+    const out = [];
+    for (const ph of phones) {
+      try {
+        const r = await fetch('https://api.brevo.com/v3/transactionalSMS/statistics/events?days=1&limit=50&sort=desc&phoneNumber=' + ph, { headers: { 'api-key': key, accept: 'application/json' } }); const j = await r.json().catch(() => ({}));
+        const by = new Map(); for (const e of (j.events || [])) if (+new Date(e.date) >= since - 5000) { const k = e.messageId || e.date; (by.get(k) || by.set(k, []).get(k)).push(e); }
+        for (const [id, ev] of by) { ev.sort((a, b) => (a.date < b.date ? -1 : 1)); const fin = [...ev].reverse().find(e => /delivered|bounce|blocked|rejected|skipped|unsubscribed/i.test(e.event)); out.push({ phone: ph, id, state: fin ? (/delivered/i.test(fin.event) ? 'delivered' : 'failed') : 'pending', event: fin ? fin.event : ev[ev.length - 1].event, reason: fin && fin.reason || '', at: (fin || ev[ev.length - 1]).date }); }
+      } catch (e) { out.push({ phone: ph, state: 'unknown', error: e.message }); }
+    }
+    return send(res, 200, { messages: out });
+  }
   if (parts[0] === 'sms' && parts[1] === 'send' && m === 'POST') { // un lot de SMS (le navigateur découpe en lots de 25)
     const key = db.settings.brevoApiKey;
     if (!key) return send(res, 400, { error: 'Clé Brevo manquante (Réglages)' });

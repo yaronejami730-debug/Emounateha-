@@ -784,7 +784,23 @@ function smsDraw() {
   const list = sms.rows.slice(0, 60).map(r => `<tr${r.ok && !r.over ? '' : ' style="opacity:.55"'}><td>${esc(r.firstName)} ${esc(r.lastName)}</td><td>${esc(r.phone ? '+' + r.phone : r.raw)}</td><td>${r.ok ? (r.over ? '<span class="pill bad">trop long</span>' : '<span class="pill ok">OK</span>') : `<span class="pill bad">${esc(r.why)}</span>`}</td></tr>`).join('');
   $('#sms_list').innerHTML = sms.rows.length ? `<table><thead><tr><th>Nom</th><th>Numéro</th><th></th></tr></thead><tbody>${list}</tbody></table>${sms.rows.length > 60 ? `<p class="hint" style="padding:8px 14px">… et ${sms.rows.length - 60} autres</p>` : ''}` : '';
   const r = sms.result;
-  $('#sms_res').innerHTML = r ? `<div class="card" style="margin-top:14px"><h3 style="margin:0 0 6px">${r.done ? 'Envoi terminé' : 'Envoi en cours…'}</h3><div class="bar" style="margin:6px 0"><i style="width:${Math.round(r.total ? r.pos / r.total * 100 : 0)}%"></i></div><p>${r.sent} envoyé(s) · ${r.failed.length} échec(s) · ${String(Math.round(r.used * 10) / 10).replace('.', ',')} crédits utilisés</p>${r.failed.length ? `<details><summary>Voir les échecs</summary><ul>${r.failed.slice(0, 50).map(f => `<li>${esc(f.phone)} — ${esc(f.error)}</li>`).join('')}</ul></details>` : ''}</div>` : '';
+  $('#sms_res').innerHTML = r ? `<div class="card" style="margin-top:14px"><h3 style="margin:0 0 6px">${r.done ? 'Envoi terminé' : 'Envoi en cours…'}</h3><div class="bar" style="margin:6px 0"><i style="width:${Math.round(r.total ? r.pos / r.total * 100 : 0)}%"></i></div><p>${r.sent} envoyé(s) · ${r.failed.length} échec(s) · ${String(Math.round(r.used * 10) / 10).replace('.', ',')} crédits utilisés</p>${r.failed.length ? `<details><summary>Voir les échecs</summary><ul>${r.failed.slice(0, 50).map(f => `<li>${esc(f.phone)} — ${esc(f.error)}</li>`).join('')}</ul></details>` : ''}${r.deliv ? `<p style="margin:8px 0 0;padding:9px 11px;border-radius:10px;font-weight:600;background:${r.deliv.state === 'delivered' ? '#e3f4e8' : r.deliv.state === 'failed' ? '#fde8e6' : '#fff4d6'};color:${r.deliv.state === 'delivered' ? '#1b6b3a' : r.deliv.state === 'failed' ? '#b3261e' : '#7a5f14'}">${esc(r.deliv.text)}${r.deliv.state === 'failed' ? '<br><small style="font-weight:400">Brevo a bien envoyé le SMS : c’est l’opérateur du destinataire qui l’a refusé. Essayez un autre numéro, ou un message sans lien (emounateha.fr) pour comparer.</small>' : ''}</p>` : ''}</div>` : '';
+}
+// Brevo « accepte » un SMS tout de suite ; c'est ensuite l'opérateur qui le livre (ou le refuse). On suit donc l'état réel pendant ~90 s.
+async function smsWatch(phones, since) {
+  const r0 = sms.result; if (!r0) return; r0.deliv = { state: 'pending', text: 'Envoyé à Brevo, en attente de l’opérateur…' }; smsDraw();
+  for (let k = 0; k < 15; k++) {
+    await new Promise(res => setTimeout(res, 6000));
+    if (sms.result !== r0) return;
+    try {
+      const j = await api('GET', '/sms/status?phones=' + phones.join(',') + '&since=' + since), ms = j.messages || [];
+      if (!ms.length) continue;
+      const bad = ms.filter(x => x.state === 'failed'), ok = ms.filter(x => x.state === 'delivered');
+      if (bad.length) { r0.deliv = { state: 'failed', text: '✖ Non livré par l’opérateur : ' + (bad[0].reason || bad[0].event) + ' (' + bad[0].event + ')' }; smsDraw(); return; }
+      if (ok.length === ms.length) { r0.deliv = { state: 'delivered', text: '✔ Livré sur le téléphone' }; smsDraw(); return; }
+    } catch (e) { /* on réessaie */ }
+  }
+  r0.deliv = { state: 'pending', text: 'Toujours en attente chez l’opérateur (peut arriver avec du retard). Vérifiez dans Brevo → SMS → Statistiques.' }; smsDraw();
 }
 function smsClean() { const t = $('#sms_msg'); t.value = smsNoUnicode(t.value); sms.msg = t.value; smsDraw(); }
 function smsCredDraw() {
@@ -830,6 +846,7 @@ async function smsSend(test) {
   } catch (e) { sms.result.failed.push({ phone: '', error: e.message }); toast(e.message, true); }
   sms.result.done = true; sms.busy = false; smsDraw(); smsCredits();
   if (!sms.result.failed.length) toast(`${sms.result.sent} SMS envoyé(s)`);
+  if (test && sms.result.sent) smsWatch(rows.map(x => x.phone), Date.now() - 20000);   // suivre la livraison réelle chez l'opérateur
 }
 views.sms = () => `
   <div class="head"><div><h1>Campagne SMS</h1><p class="sub">Envoyez un SMS à une liste importée (CSV) ou à vos contacts, via Brevo</p></div><div id="sms_cr" style="text-align:right"></div></div>
