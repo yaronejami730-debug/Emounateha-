@@ -1053,7 +1053,7 @@ function cerfaList() {
       <td class="cf-when">${cree ? esc(cfHeure(cree)) + (r.creeDeduit ? '<div class="hint" title="Heure d\'envoi de l\'e-mail du reçu">d\'après l\'envoi du mail</div>' : '') : esc(new Date(r.dateDon).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }))}<div class="hint">don du ${esc(jd)}</div></td>
       <td>${esc(r.nom)}<div class="hint">${esc(r.type === 'entreprise' ? 'Professionnel' : 'Particulier')}${r.email ? ' · ' + esc(r.email) : ''}${r.tel ? ' · ' + esc(r.tel) : ''}</div></td>
       <td>${eurC(r.montant)}</td><td>${esc(String(r.mode || '').split(' — ')[0])}</td><td><span class="pill ${r.source === 'manuel' ? 'warn' : 'ok'}">${esc(r.source)}</span></td>
-      <td class="cf-mail"><span class="pill ${e.c}">${esc(e.t)}</span>${r.mail ? `<div class="hint">${r.mail.at ? esc(cfHeure(r.mail.at)) : 'date non enregistrée'}${r.envois > 1 ? ' · ' + r.envois + ' envois' : ''}${e.d ? '<br>' + esc(e.d) : ''}</div>` : ''}</td>
+      <td class="cf-mail"><span class="pill ${e.c}">${esc(e.t)}</span>${r.mail ? `<div class="hint">${r.mail.at ? esc(cfHeure(r.mail.at)) : 'date non enregistrée'}${r.envois > 1 ? ' · ' + r.envois + ' envois' : ''}${e.d ? '<span class="cf-d">' + esc(e.d) + '</span>' : ''}</div>` : ''}</td>
       <td class="cf-act"><a class="btn sm" href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">PDF</a>
         <button class="btn sm" onclick="cerfaMail('${esc(r.ref)}')">Voir le mail</button>
         <button class="btn sm${r.mail && r.mail.sent ? '' : ' pri'}" onclick="cerfaEnvoyer('${esc(r.ref)}')">${r.mail && r.mail.sent ? 'Renvoyer' : 'Envoyer'}</button></td></tr>`; }).join('')}</tbody></table></div>
