@@ -617,7 +617,7 @@ app.get('/besoin/:slug', async (req, res, next) => {
     .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + ' — Cagnotte Émounatéha$2')
     .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q((b.description || 'Participez à cette cagnotte : chaque don compte.').slice(0, 180)) + '$2');
   // la fiche est écrite dans la page : la cagnotte s'affiche tout de suite, sans passer par l'écran de don général (fête en cours, choix d'action…)
-  html = html.replace('<body', '<body data-besoin' + (b.actif ? '' : '-off') + '="' + q(JSON.stringify(besoinFiche(b))) + '"');   // clôturée : simple message, puis don normal
+  html = html.replace('<body', '<body data-besoin' + (b.actif ? '' : '-off') + '="' + q(JSON.stringify({ slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte: null, dons: 0 })) + '"');   // le total collecté est demandé ensuite par la page (/api/besoin/<slug>) : cette adresse-ci ne lit pas les reçus   // clôturée : simple message, puis don normal
   res.setHeader('Cache-Control', 'no-store'); res.type('html').send(html);
 });
 // une adresse par action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale, /l-aide-a-la-scolarite… (la page présélectionne l'action)

@@ -1227,10 +1227,13 @@ function besoinInit() {
   const box = document.createElement('div'); box.className = 'bs-card'; box.id = 'bsCard';
   if (!b || !b.actif) { box.classList.add('off'); box.innerHTML = '<b>' + (b ? esc(b.titre) : 'Cagnotte introuvable') + '</b><p>' + (b ? 'Cette cagnotte est terminée. Merci à tous ceux qui ont participé.' : "Cette adresse ne correspond à aucune cagnotte.") + ' Vous pouvez toujours faire un don à l\'association ci-dessous.</p>'; $('fs').after(box); return; }
   BESOIN = b;
-  const e2 = c => (c / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €', pct = b.objectif ? Math.min(100, Math.round(b.collecte * 100 / b.objectif)) : 0;
-  box.innerHTML = '<span class="bs-k">Cagnotte</span><b>' + esc(b.titre) + '</b>' + (b.description ? '<p>' + esc(b.description).replace(/\n/g, '<br>') + '</p>' : '') +
-    '<div class="bs-n"><strong>' + e2(b.collecte) + '</strong><span>' + (b.objectif ? 'collectés sur ' + e2(b.objectif) : 'collectés') + (b.dons ? ' · ' + b.dons + ' don' + (b.dons > 1 ? 's' : '') : '') + '</span></div>' +
-    (b.objectif ? '<div class="bs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : '');
+  const e2 = c => (c / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+  const dessine = b => { const connu = b.collecte != null, pct = connu && b.objectif ? Math.min(100, Math.round(b.collecte * 100 / b.objectif)) : 0;
+    box.innerHTML = '<span class="bs-k">Cagnotte</span><b>' + esc(b.titre) + '</b>' + (b.description ? '<p>' + esc(b.description).replace(/\n/g, '<br>') + '</p>' : '') +
+      '<div class="bs-n"><strong>' + (connu ? e2(b.collecte) : '…') + '</strong><span>' + (b.objectif ? 'collectés sur ' + e2(b.objectif) : 'collectés') + (b.dons ? ' · ' + b.dons + ' don' + (b.dons > 1 ? 's' : '') : '') + '</span></div>' +
+      (b.objectif ? '<div class="bs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : ''); };
+  dessine(b);
+  if (b.collecte == null) fetch('/api/besoin/' + b.slug).then(r => r.ok ? r.json() : null).then(j => { if (j) { BESOIN = j; dessine(j); } }).catch(() => {});   // total des dons reçus par ce lien
   $('fs').after(box); $('h1').textContent = 'Votre don pour cette cagnotte';
   // le don va à ce besoin : pas de choix d'action, pas de don mensuel
   const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => /besoin est le plus grand/i.test(r.value)); if (i >= 0) pickAff(i);
