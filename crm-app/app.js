@@ -683,12 +683,21 @@ async function schedTpl(i) {
 // ================= SMS (Brevo) =================
 const SMS_GSM = new Set([...'@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà']);
 const SMS_EXT = new Set([...'^{}\\[~]|€']);
-function smsInfo(text) { // 1 SMS = 160 car. (alphabet GSM) ou 70 si un caractère spécial (ê, î, ’, emoji…)
-  let n = 0, uni = false;
-  for (const ch of String(text)) { if (SMS_GSM.has(ch)) n++; else if (SMS_EXT.has(ch)) n += 2; else uni = true; }
-  if (uni) n = String(text).length;
-  const max = uni ? 70 : 160;
-  return { len: n, unicode: uni, max, segments: n <= max ? 1 : Math.ceil(n / (uni ? 67 : 153)) };
+function smsInfo(text) { // 1 SMS = 160 car. (alphabet GSM) ou 70 si un caractère spécial (ê, î, ’, emoji…) ; message vide = 0 SMS
+  const t = String(text); let n = 0, uni = false;
+  for (const ch of t) { if (SMS_GSM.has(ch)) n++; else if (SMS_EXT.has(ch)) n += 2; else uni = true; }
+  if (uni) n = t.length;   // en Unicode chaque caractère compte 1 (un émoji compte 2)
+  const max = uni ? 70 : 160, per = uni ? 67 : 153;   // au-delà d'un SMS, chaque morceau en porte un peu moins (153 / 67) à cause de l'en-tête de découpage
+  return { len: n, unicode: uni, max, per, segments: !n ? 0 : n <= max ? 1 : Math.ceil(n / per) };
+}
+// Le SMS réellement envoyé dépend du prénom / nom de chaque personne ({{prenom}}) : on compte sur le PIRE cas de la liste (prénom le plus long),
+// pour que « 160 » soit une garantie pour tous les destinataires. Sans liste, on suppose un prénom de 8 lettres.
+function smsWorst() {
+  const base = sms.msg, good = sms.rows.filter(r => r.ok);
+  const vars = /\{\{\s*(prenom|nom)\s*\}\}/i.test(base);
+  const texts = vars ? (good.length ? good.map(r => smsFill(base, r)) : [smsFill(base, { firstName: 'Mohammed', lastName: 'Dupont' })]) : [smsFill(base, {})];
+  let worst = null; for (const t of texts) { const i = smsInfo(t); if (!worst || i.len > worst.info.len || (i.unicode && !worst.info.unicode)) worst = { text: t, info: i }; }
+  return { ...worst, vars, listed: good.length };
 }
 function smsPhone(p) {
   let s = String(p || '').trim().replace(/[\s.\-()]/g, '');
@@ -699,7 +708,12 @@ function smsPhone(p) {
   if (/^33\d{9}$/.test(s)) return s;
   return intl && s.length >= 8 && s.length <= 15 ? s : '';
 }
-const smsFill = (t, r) => t.replace(/\{\{\s*prenom\s*\}\}/gi, (r.firstName || '').trim()).replace(/\{\{\s*nom\s*\}\}/gi, (r.lastName || '').trim()).replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
+const smsFill = (t, r) => {   // remplace {{prenom}} / {{nom}} ; le texte est envoyé tel quel (même espace avant « ! » ou « ? »), sauf si une variable est vide : alors on nettoie « Bonjour , »
+  let vide = false; const rep = v => { const x = (v || '').trim(); if (!x) vide = true; return x; };
+  let o = String(t).replace(/\{\{\s*prenom\s*\}\}/gi, () => rep(r.firstName)).replace(/\{\{\s*nom\s*\}\}/gi, () => rep(r.lastName));
+  if (vide) o = o.replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1');
+  return o.trim();
+};
 function smsNoUnicode(t) { // remplace ’ « » … œ et retire les accents que l'alphabet SMS ne connaît pas (ê→e, ô→o…)
   const map = { '’': "'", '‘': "'", '“': '"', '”': '"', '«': '"', '»': '"', '–': '-', '—': '-', '…': '...', 'œ': 'oe', 'Œ': 'OE', ' ': ' ', ' ': ' ' };
   return [...t].map(ch => { if (SMS_GSM.has(ch) || SMS_EXT.has(ch)) return ch; if (map[ch] !== undefined) return map[ch]; const b = ch.normalize('NFD').replace(/[̀-ͯ]/g, ''); return SMS_GSM.has(b) ? b : ch; }).join('');
@@ -742,12 +756,16 @@ function smsStats() {
 function smsDraw() {
   const box = $('#sms_body'); if (!box) return;
   const st = smsStats();
-  const info = smsInfo(sms.msg);
+  const W = smsWorst(), info = W.info;
   const sample = (st.good[0] && st.good[0].text) || sms.msg;
   const cost = st.sendable.length * sms.perSms;
   const after = sms.credits == null ? null : sms.credits - cost;
-  $('#sms_count').innerHTML = `<b style="color:${info.segments > 1 ? '#b3261e' : 'inherit'}">${info.len} / ${info.max}</b> caractères · ${info.segments} SMS${info.unicode ? ' <span class="pill warn">Unicode : 70 max</span>' : ''}`;
-  $('#sms_hint').innerHTML = info.unicode ? 'Un caractère spécial (accent comme ê/î/ô/â, apostrophe ’, « », émoji) fait tomber la limite de 160 à 70. <a href="#" onclick="smsClean();return false">Remplacer automatiquement</a>' : 'Alphabet SMS standard : 160 caractères par SMS (é, è, à, ù, ç restent autorisés).';
+  const reste = info.max - info.len;
+  $('#sms_count').innerHTML = info.segments === 0 ? '<b>0 / 160</b> caractères <span style="color:var(--mut)">· saisissez votre message</span>'
+    : info.segments === 1 ? `<b>${info.len} / ${info.max}</b> caractères · 1 SMS · <span style="color:${reste < 10 ? '#b26a00' : 'var(--mut)'}">il reste ${reste}</span>${info.unicode ? ' <span class="pill warn">Unicode : 70 max</span>' : ''}`
+    : `<b style="color:#b3261e">${info.len} caractères</b> · <b style="color:#b3261e">${info.segments} SMS</b> (${info.per} par SMS) · <span style="color:#b3261e">retirez ${info.len - info.max} caractère${info.len - info.max > 1 ? 's' : ''} pour tenir en 1 SMS (${info.max} max)</span>${info.unicode ? ' <span class="pill warn">Unicode : 70 max</span>' : ''}`;
+  if (W.vars && info.segments) $('#sms_count').innerHTML += `<div style="font-size:12px;color:var(--mut);margin-top:2px">{{prenom}} / {{nom}} comptés sur le plus long de ${W.listed ? 'la liste (' + W.listed + ' personne' + (W.listed > 1 ? 's' : '') + ')' : 'prénom supposé de 8 lettres (chargez la liste pour un calcul exact)'}</div>`;
+  $('#sms_hint').innerHTML = info.unicode ? 'Un caractère spécial (accent comme ê/î/ô/â, apostrophe ’, « », émoji) fait tomber la limite de 160 à 70. <a href="#" onclick="smsClean();return false">Remplacer automatiquement</a>' : 'Alphabet SMS standard : 160 caractères par SMS. Autorisés : é è ù à É ä ö ü ñ. Non autorisés (passent en Unicode, 70 max) : ê â î ô û ç ë ï œ, apostrophe courbe ’, « », émojis.';
   $('#sms_prev').textContent = sample || 'Votre message apparaîtra ici.';
   $('#sms_sum').innerHTML = sms.rows.length
     ? `<b>${st.good.length}</b> numéro(s) valide(s)${st.bad ? ` · <span style="color:#b3261e">${st.bad} ignoré(s) (invalide ou doublon)</span>` : ''}${st.over ? ` · <span style="color:#b3261e">${st.over} message(s) dépassent un SMS</span>` : ''}`

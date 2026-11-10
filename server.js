@@ -257,7 +257,12 @@ function smsPhone(p) { // -> format Brevo : indicatif + numéro, sans + (ex. 337
   if (/^33\d{9}$/.test(s)) return s;
   return intl && s.length >= 8 && s.length <= 15 ? s : '';
 }
-const smsFill = (t, r) => t.replace(/\{\{\s*prenom\s*\}\}/gi, (r.firstName || '').trim()).replace(/\{\{\s*nom\s*\}\}/gi, (r.lastName || '').trim()).replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').trim();
+const smsFill = (t, r) => {   // remplace {{prenom}} / {{nom}} ; le texte est envoyé tel quel (même espace avant « ! » ou « ? »), sauf si une variable est vide : alors on nettoie « Bonjour , »
+  let vide = false; const rep = v => { const x = (v || '').trim(); if (!x) vide = true; return x; };
+  let o = String(t).replace(/\{\{\s*prenom\s*\}\}/gi, () => rep(r.firstName)).replace(/\{\{\s*nom\s*\}\}/gi, () => rep(r.lastName));
+  if (vide) o = o.replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1');
+  return o.trim();
+};
 
 // ---------- Brevo ----------
 async function brevoSend({ to, toName, subject, html, text, replyToEmail, replyToName }) {
@@ -1436,6 +1441,7 @@ async function api(req, res, url) {
       if (!to) { failed.push({ phone: r.phone || '', error: 'numéro invalide' }); continue; }
       if (seen.has(to)) continue; seen.add(to);
       const text = smsFill(tpl, r);
+      if (!text.trim()) { failed.push({ phone: to, error: 'message vide' }); continue; }
       if (smsInfo(text).segments !== 1) { failed.push({ phone: to, error: 'dépasse un SMS (' + smsInfo(text).len + ' car.)' }); continue; }
       queue.push({ to, text });
     }
