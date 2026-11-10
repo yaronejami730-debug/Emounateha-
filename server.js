@@ -468,7 +468,7 @@ async function brevoEvents() {
       if (!r.ok) throw new Error('Brevo ' + r.status);
       const ev = (await r.json()).events || [];
       for (const e of ev) {
-        const m = map.get(e.messageId) || { delivered: null, opened: 0, firstOpen: null, clicks: 0, firstClick: null, links: [], problem: '', problemAt: null };
+        const m = map.get(e.messageId) || { first: e.date, delivered: null, opened: 0, firstOpen: null, clicks: 0, firstClick: null, links: [], problem: '', problemAt: null };   // first : premier événement connu = moment où Brevo a pris le mail
         if (e.event === 'delivered') m.delivered = e.date;
         else if (e.event === 'opened' || e.event === 'loadedByProxy') { m.opened++; m.firstOpen ||= e.date; }
         else if (e.event === 'clicks') { m.clicks++; m.firstClick ||= e.date; if (e.link && m.links.length < 12) m.links.push(String(e.link)); }   // « link » : l'adresse cliquée (bouton, désinscription…)
@@ -1980,7 +1980,10 @@ async function cerfaProxy(req, res, url) {
     if (url.pathname === '/api/cerfa' && req.method === 'GET') {   // liste des reçus + ce que Brevo dit de chaque e-mail (délivré, ouvert, rejeté)
       const r = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus') }), j = await J(r);
       if (r.ok && Array.isArray(j.recus)) { const ev = await brevoEvents().catch(() => ({ map: new Map(), ok: false })); j.brevoOk = !!ev.ok;
-        for (const x of j.recus) { const e = x.mail && x.mail.messageId ? ev.map.get(x.mail.messageId) : null; if (e) x.brevo = { delivered: e.delivered, opened: e.opened, firstOpen: e.firstOpen, problem: e.problem, problemAt: e.problemAt }; } }
+        for (const x of j.recus) { const e = x.mail && x.mail.messageId ? ev.map.get(x.mail.messageId) : null; if (!e) continue;
+          x.brevo = { delivered: e.delivered, opened: e.opened, firstOpen: e.firstOpen, problem: e.problem, problemAt: e.problemAt };
+          // reçu créé avant l'enregistrement des heures : l'e-mail est parti à la création, son heure d'envoi donne donc l'heure du reçu
+          const t = e.first || e.delivered; if (t && x.mail.par !== 'crm') { if (!x.creeLe) { x.creeLe = new Date(t).toISOString(); x.creeDeduit = true; } if (!x.mail.at) x.mail.at = new Date(t).toISOString(); } } }
       return send(res, r.status, j);
     }
     if (url.pathname === '/api/cerfa/renvoyer' && req.method === 'POST') {   // (r)envoi du reçu par e-mail

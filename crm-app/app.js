@@ -1050,7 +1050,7 @@ function cerfaList() {
     <div style="overflow-x:auto"><table class="tbl cf-tbl"><thead><tr><th>N°</th><th>Créé le</th><th>Donateur</th><th>Montant</th><th>Mode</th><th>Origine</th><th>E-mail du reçu</th><th></th></tr></thead><tbody>
     ${l.map(r => { const e = mailEtat(r.mail, r.brevo), cree = r.creeLe || (r.source === 'en ligne' ? r.dateDon : null), jd = new Date(r.dateDon).toLocaleDateString('fr-FR');
       return `<tr><td><b>${esc(r.numero)}</b></td>
-      <td class="cf-when">${cree ? esc(cfHeure(cree)) : '<span class="hint" style="margin:0">heure non enregistrée</span>'}<div class="hint">don du ${esc(jd)}</div></td>
+      <td class="cf-when">${cree ? esc(cfHeure(cree)) + (r.creeDeduit ? '<div class="hint" title="Heure d\'envoi de l\'e-mail du reçu">d\'après l\'envoi du mail</div>' : '') : esc(new Date(r.dateDon).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }))}<div class="hint">don du ${esc(jd)}</div></td>
       <td>${esc(r.nom)}<div class="hint">${esc(r.type === 'entreprise' ? 'Professionnel' : 'Particulier')}${r.email ? ' · ' + esc(r.email) : ''}${r.tel ? ' · ' + esc(r.tel) : ''}</div></td>
       <td>${eurC(r.montant)}</td><td>${esc(String(r.mode || '').split(' — ')[0])}</td><td><span class="pill ${r.source === 'manuel' ? 'warn' : 'ok'}">${esc(r.source)}</span></td>
       <td class="cf-mail"><span class="pill ${e.c}">${esc(e.t)}</span>${r.mail ? `<div class="hint">${r.mail.at ? esc(cfHeure(r.mail.at)) : 'date non enregistrée'}${r.envois > 1 ? ' · ' + r.envois + ' envois' : ''}${e.d ? '<br>' + esc(e.d) : ''}</div>` : ''}</td>
