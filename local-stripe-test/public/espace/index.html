@@ -818,16 +818,18 @@ body::before,body::after{display:none!important}
   </div>
   <div id="spApp" hidden>
     <div class="sp-card">
-      <div class="sp-head"><span class="dn-av">✓</span><div><b id="spMail"></b><small>Espace donateur</small></div><div class="act"><a class="sp-pill gold" href="/">Faire un don</a><button class="sp-pill" id="spOut" type="button">Se déconnecter</button></div></div>
+      <div class="sp-head"><span class="dn-av">✓</span><div><b id="spMail"></b><small id="spId">Espace donateur</small></div><div class="act"><a class="sp-pill gold" href="/">Faire un don</a><button class="sp-pill" id="spOut" type="button">Se déconnecter</button></div></div>
       <div class="sp-tabs"><button id="spT1" class="on" type="button">Mes reçus</button><button id="spT2" type="button">Mes informations</button></div>
       <div id="spMen"></div>
       <div id="spRec"></div>
       <div id="spInf" hidden>
         <p class="sp-note" style="margin-top:0">Ces informations remplissent automatiquement le formulaire de don. Vous pouvez donner en tant que particulier ou au nom d'une ou plusieurs sociétés.</p>
-        <form class="sp-form" id="fPart" novalidate><h4>👤 Profil particulier</h4>
+        <form class="sp-form" id="fPart" novalidate><h4>👤 Mon profil (titulaire du compte)</h4>
           <div class="dn-g"><div><label for="pPrenom">Prénom</label><input id="pPrenom" autocomplete="given-name"></div><div><label for="pNom">Nom</label><input id="pNom" autocomplete="family-name"></div>
-          <div class="dn-full"><label for="pAdr">Adresse</label><input id="pAdr" autocomplete="street-address"></div><div><label for="pCp">Code postal</label><input id="pCp" inputmode="numeric" maxlength="5"></div><div><label for="pVille">Ville</label><input id="pVille"></div></div>
+          <div class="dn-full"><label for="pAdr">Adresse</label><input id="pAdr" autocomplete="street-address"></div><div><label for="pCp">Code postal</label><input id="pCp" inputmode="numeric" maxlength="5"></div><div><label for="pVille">Ville</label><input id="pVille"></div><div><label for="pTel">Téléphone <span style="font-weight:400;color:#7f9396">(facultatif)</span></label><input id="pTel" type="tel" inputmode="tel" autocomplete="tel"></div></div>
           <div class="dn-actions-inline" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="sp-pill gold" type="submit">Enregistrer</button><button class="sp-pill" type="button" id="delPart">Supprimer ce profil</button></div><p class="sp-ok" id="okPart" hidden></p><p class="dn-acct-err" id="erPart" hidden></p></form>
+        <div id="prList"></div>
+        <button type="button" class="sp-addsoc" id="prAdd"><span>＋</span> Ajouter une autre personne</button>
         <div id="proList"></div>
         <button type="button" class="sp-addsoc" id="proAdd"><span>＋</span> Ajouter une autre société</button>
         <style>
@@ -840,6 +842,16 @@ body::before,body::after{display:none!important}
         .sp-soc .sp-form{margin:0;border:0;border-top:1px solid #eef3f3;border-radius:0;box-shadow:none}
         .sp-addsoc{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;padding:14px;border:1.5px dashed #d9c58a;border-radius:16px;background:#fffbf0;color:#8a6b1c;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
         .sp-addsoc span{font-size:18px}
+        .sp-r .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+        .sp-pill.cor{background:#fff;border:1.5px solid #e3d29c;color:#7a5f14}
+        .sp-pill.non{background:#fff;border:1.5px solid #e6c4c0;color:#8a2a22}
+        .sp-cor{border:1px solid #ecdca0;background:#fffdf5;border-radius:16px;padding:14px;margin:6px 0 14px}
+        .sp-cor h5{margin:0 0 4px;font-size:15px;color:#5c4a12}
+        .sp-info{font-size:13px;line-height:1.55;color:#5c4a12;background:#fff8e1;border:1px solid #ecdca0;border-radius:12px;padding:10px 12px;margin:10px 0 0}
+        .sp-info.lie{background:#effaf3;border-color:#bfe3cf;color:#1d5a3b;margin:0 0 12px}
+        .sp-ck{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;margin-top:10px;font-weight:600;color:#2b4044;cursor:pointer}
+        .sp-ck input{width:22px!important;height:22px!important;min-height:0!important;flex:none;margin:0;accent-color:var(--teal)}
+        #dn input.ro{background:#f3f6f6!important;color:#51666a!important}
         </style>
       </div>
     </div>
@@ -914,12 +926,62 @@ $('spOut').onclick = async () => { try { await api('POST', '/api/auth/logout'); 
 function tab(n) { $('spT1').classList.toggle('on', n === 1); $('spT2').classList.toggle('on', n === 2); $('spRec').hidden = n !== 1; $('spMen').hidden = n !== 1; $('spInf').hidden = n !== 2; }
 $('spT1').onclick = () => tab(1); $('spT2').onclick = () => tab(2);
 const MOIS = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+let RECUS = {};
+const EMAIL_OK = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+async function reloadReceipts() { renderReceipts(await api('GET', '/api/me/receipts')); }
+function corForm(r) {   // « Corriger ce reçu » : le montant et la date ne changent jamais
+  const f = { ...(r.form || {}) }, ent = r.type === 'entreprise', pr = r.proche; if (!pr && !ent && !f.tel) f.tel = ((me.profiles || {}).particulier || {}).tel || '';
+  const v = k => esc(f[k] || '');
+  const pied = '<p class="sp-info">Le montant et la date du don ne changent pas. Le reçu n° ' + esc(r.numero) + ' sera annulé et remplacé par un nouveau reçu, envoyé à votre adresse email.</p>' +
+    '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="sp-pill gold" type="submit">' + (pr && pr.lie ? 'Refaire le reçu' : 'Corriger et recevoir le nouveau reçu') + '</button><button class="sp-pill" type="button" data-x="1">Annuler</button></div><p class="sp-ok" hidden></p><p class="dn-acct-err" hidden></p>';
+  if (pr && pr.lie) return '<form novalidate><h5>Refaire ce reçu</h5><p class="sp-info lie" style="margin:8px 0 0">Ce profil est relié à l\'espace de la personne : le reçu sera refait avec ses informations actuelles.</p>' + pied + '</form>';
+  const g = (n, l, full, extra) => '<div' + (full ? ' class="dn-full"' : '') + '><label>' + l + '</label><input name="' + n + '" value="' + v(n) + '"' + (extra || '') + '></div>';
+  return '<form novalidate><h5>Corriger ce reçu</h5><div class="dn-g">' +
+    (ent ? g('raisonSociale', 'Raison sociale') + g('siren', 'SIREN', false, ' inputmode="numeric" maxlength="11"') : g('prenom', 'Prénom') + g('nom', 'Nom')) +
+    g('adresse', 'Adresse', true) + g('cp', 'Code postal', false, ' inputmode="numeric" maxlength="5"') + g('ville', 'Ville') +
+    (ent ? '' : (pr ? g('email', 'Email de cette personne', false, ' type="email"') : '') + g('tel', 'Téléphone', false, ' type="tel"')) + '</div>' +
+    (pr ? '<label class="sp-ck"><input type="checkbox" name="accord"><span>Si le nom change : je confirme que cette personne est d\'accord pour qu\'un reçu fiscal soit établi à son nom.</span></label>' : '') + pied + '</form>';
+}
+function openCor(id) {
+  const r = RECUS[id], box = document.getElementById('cor-' + id); if (!r || !box) return;
+  if (!box.hidden) { box.hidden = true; box.innerHTML = ''; return; }
+  box.innerHTML = corForm(r); box.hidden = false;
+  const f = box.querySelector('form'), ok = f.querySelector('.sp-ok'), er = f.querySelector('.dn-acct-err'), go = f.querySelector('[type=submit]');
+  f.querySelector('[data-x]').onclick = () => { box.hidden = true; box.innerHTML = ''; };
+  f.addEventListener('submit', async ev => { ev.preventDefault(); ok.hidden = er.hidden = true;
+    const data = {}; f.querySelectorAll('input[name]').forEach(i => { if (i.type !== 'checkbox') data[i.name] = i.value; });
+    go.disabled = true; const t = go.textContent; go.textContent = 'Création du nouveau reçu…';
+    try { const j = await api('POST', '/api/me/receipts/' + encodeURIComponent(id) + '/corriger', { data, accord: !!(f.accord && f.accord.checked) });
+      try { me = await api('GET', '/api/me'); fillForms(); } catch (x) {}
+      await reloadReceipts();
+      const n = document.getElementById('corMsg'); if (n) { n.textContent = j.profilSeul ? '✓ Le profil est corrigé. Le reçu ne change pas (ces informations n\'y figurent pas).' : '✓ Reçu corrigé : le n° ' + j.numero + ' remplace le n° ' + j.remplace + '. Il vous est envoyé par email.'; n.hidden = false; n.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }
+    catch (x) { er.textContent = x.message; er.hidden = false; go.disabled = false; go.textContent = t; } });
+}
 function renderReceipts(data) {
-  if (!data.receipts.length) { $('spRec').innerHTML = '<div class="sp-empty"><p style="margin:0 0 12px">Aucun reçu pour l\'instant.</p><a class="sp-pill gold" href="/">Faire un don</a></div>'; return; }
+  RECUS = {}; data.receipts.forEach(r => RECUS[r.id] = r);
+  const off = data.offerts || [], liens = data.liens || [];
+  const lienHtml = liens.map(l => '<div class="sp-info' + (l.partage ? ' lie' : '') + '" style="margin:0 0 10px"><b>' + esc(l.par) + '</b> a enregistré un profil à votre nom, pour faire des dons en votre nom. ' + (l.partage ? 'Quand vous modifiez votre adresse ou votre téléphone, son profil est mis à jour.' : 'Voulez-vous que vos changements d\'adresse ou de téléphone soient mis à jour automatiquement dans son profil ? (Sinon, cette personne garde les informations qu\'elle connaît déjà.)') +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" class="sp-pill" data-part="' + esc(l.id) + '" data-on="' + (l.partage ? '0' : '1') + '">' + (l.partage ? 'Arrêter la mise à jour' : 'Oui, mettre à jour') + '</button><button type="button" class="sp-pill non" data-coupe="' + esc(l.id) + '">Ce n\'est pas moi</button></div></div>').join('');
+  const offHtml = (off.length || liens.length) ? '<div class="sp-year"><div class="sp-yh"><h3>Dons faits en votre nom</h3><span><b>' + off.length + ' reçu' + (off.length > 1 ? 's' : '') + '</b></span></div>' + lienHtml + (off.length ? '<p class="sp-note">Une autre personne a fait ces dons et a demandé un reçu fiscal à votre nom. Ces reçus sont les vôtres.</p>' : '') +
+    off.map(r => '<div class="sp-r"><div class="l"><b>' + esc(r.affectation || 'Don') + '<span class="tag m">En votre nom</span></b><small>' + new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' · reçu n° ' + esc(r.numero) + ' · don fait en votre nom par ' + esc(r.par) + '</small></div><div class="amt">' + eur(r.montant) + '</div><div class="acts"><a class="sp-pill dl" href="' + r.pdf + '" target="_blank" rel="noopener">Télécharger le reçu (PDF)</a><button type="button" class="sp-pill non" data-non="' + esc(r.id) + '">Ce n\'est pas moi</button></div></div>').join('') + '</div>' : '';
+  const fin = () => {
+    document.querySelectorAll('[data-cor]').forEach(b => b.onclick = () => openCor(b.dataset.cor));
+    const NON = 'Vous n\'avez pas donné votre accord pour des reçus à votre nom ?\n\nIls disparaîtront de votre espace, le lien sera coupé définitivement et l\'association sera prévenue.';
+    document.querySelectorAll('[data-non]').forEach(b => b.onclick = async () => {
+      if (!confirm(NON)) return; b.disabled = true;
+      try { await api('POST', '/api/me/offerts/' + encodeURIComponent(b.dataset.non) + '/refuser'); await reloadReceipts(); } catch (x) { b.disabled = false; alert(x.message); } });
+    document.querySelectorAll('[data-coupe]').forEach(b => b.onclick = async () => {
+      if (!confirm(NON)) return; b.disabled = true;
+      try { await api('POST', '/api/me/liens/' + encodeURIComponent(b.dataset.coupe) + '/refuser'); await reloadReceipts(); } catch (x) { b.disabled = false; alert(x.message); } });
+    document.querySelectorAll('[data-part]').forEach(b => b.onclick = async () => { b.disabled = true;
+      try { await api('POST', '/api/me/liens/' + encodeURIComponent(b.dataset.part) + '/partage', { on: b.dataset.on === '1' }); await reloadReceipts(); } catch (x) { b.disabled = false; alert(x.message); } });
+  };
+  if (!data.receipts.length) { $('spRec').innerHTML = offHtml + '<div class="sp-empty"><p style="margin:0 0 12px">' + (off.length ? 'Vous n\'avez pas encore fait de don vous-même.' : 'Aucun reçu pour l\'instant.') + '</p><a class="sp-pill gold" href="/">Faire un don</a></div>'; fin(); return; }
   const by = {}; data.receipts.forEach(r => (by[r.year] = by[r.year] || []).push(r));
-  $('spRec').innerHTML = '<p class="sp-note" style="margin-top:0">Vos reçus fiscaux, classés par année. Conservez-les : ils vous sont demandés en cas de contrôle.</p>' +
+  $('spRec').innerHTML = '<p class="sp-ok" id="corMsg" hidden style="margin:0 0 10px;font-size:14px"></p>' + offHtml + '<p class="sp-note" style="margin-top:0">Vos reçus fiscaux, classés par année. Conservez-les : ils vous sont demandés en cas de contrôle.</p>' +
     data.years.map(y => '<div class="sp-year"><div class="sp-yh"><h3>' + y.year + '</h3><span><b>' + y.count + ' reçu' + (y.count > 1 ? 's' : '') + '</b> · total <b>' + eur(y.total) + '</b></span></div>' +
-      by[y.year].map(r => '<div class="sp-r"><div class="l"><b>' + esc(r.affectation || 'Don') + (r.mensuel ? '<span class="tag m">Mensuel' + (r.echeance ? ' n°' + r.echeance : '') + '</span>' : '') + '<span class="tag">' + (r.type === 'entreprise' ? 'Pro' : 'Particulier') + '</span></b><small>' + MOIS(r.date) + ' · ' + esc(r.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')) + ' · reçu n° ' + esc(r.numero) + '</small></div><div class="amt">' + eur(r.montant) + '</div><a class="sp-pill dl" href="' + r.pdf + '" target="_blank" rel="noopener">Télécharger le reçu (PDF)</a></div>').join('') + '</div>').join('');
+      by[y.year].map(r => '<div class="sp-r"><div class="l"><b>' + esc(r.affectation || 'Don') + (r.mensuel ? '<span class="tag m">Mensuel' + (r.echeance ? ' n°' + r.echeance : '') + '</span>' : '') + '<span class="tag">' + (r.proche ? 'Pour ' + esc(r.nom) : (r.type === 'entreprise' ? 'Pro' : 'Particulier')) + '</span></b><small>' + MOIS(r.date) + ' · ' + esc(r.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')) + ' · reçu n° ' + esc(r.numero) + (r.remplace ? ' (remplace le n° ' + esc(r.remplace) + ')' : '') + '</small></div><div class="amt">' + eur(r.montant) + '</div><div class="acts"><a class="sp-pill dl" href="' + r.pdf + '" target="_blank" rel="noopener">Télécharger le reçu (PDF)</a>' + (r.corrigeable && !(r.proche && r.proche.supprime) ? '<button type="button" class="sp-pill cor" data-cor="' + esc(r.id) + '">Corriger ce reçu</button>' : '') + '</div></div><div class="sp-cor" id="cor-' + esc(r.id) + '" hidden></div>').join('') + '</div>').join('');
+  fin();
 }
 const DJ = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 function renderMensuels(dons) {
@@ -963,23 +1025,54 @@ function renderPros(openI) {
     const c = f.querySelector('[data-cancel]'); if (c) c.onclick = () => { proNew = false; renderPros(); };
   });
 }
+// autres personnes (proches) : un reçu à leur nom, envoyé à l'email du compte
+let prNew = false;
+const prochesOf = () => (me.profiles || {}).proches || [];
+function prForm(q, i) {
+  const v = k => esc(q[k] || ''), lie = !!q.lie, ro = lie ? ' readonly class="ro"' : '';
+  const g = (n, l, full, extra) => '<div' + (full ? ' class="dn-full"' : '') + '><label>' + l + '</label><input name="' + n + '" value="' + v(n) + '"' + (extra || '') + ro + '></div>';
+  return '<form class="sp-form" data-i="' + i + '" novalidate>' + (lie ? '<p class="sp-info lie">✓ Profil relié à l\'espace donateur de cette personne : elle voit les reçus faits à son nom, et ses informations se mettent à jour toutes seules.</p>' : '') +
+    '<div class="dn-g">' + g('prenom', 'Prénom') + g('nom', 'Nom') + g('adresse', 'Adresse', true) + g('cp', 'Code postal', false, ' inputmode="numeric" maxlength="5"') + g('ville', 'Ville') + g('email', 'Email de cette personne', false, ' type="email"') + g('tel', 'Téléphone <span style="font-weight:400;color:#7f9396">(facultatif)</span>', false, ' type="tel"') + '</div>' +
+    (lie ? '' : '<p class="sp-info">Les reçus fiscaux seront établis au nom de cette personne et envoyés à votre adresse email. Si un jour elle crée son propre espace donateur avec <b>exactement les mêmes informations</b> (prénom, nom, adresse, email, téléphone), elle verra ces reçus dans son espace. Si une seule lettre est différente dans un champ, elle ne les verra pas : c\'est une sécurité.</p>' +
+      '<label class="sp-ck"><input type="checkbox" name="accord"><span>Je confirme que cette personne est d\'accord pour qu\'un reçu fiscal soit établi à son nom.</span></label>') +
+    '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' + (lie ? '' : '<button class="sp-pill gold" type="submit">Enregistrer</button>') + (i >= 0 ? '<button class="sp-pill" type="button" data-del="1">Supprimer ce profil</button>' : '<button class="sp-pill" type="button" data-cancel="1">Annuler</button>') + '</div><p class="sp-ok" hidden></p><p class="dn-acct-err" hidden></p></form>';
+}
+function renderProches(openId) {
+  const l = prochesOf();
+  $('prList').innerHTML = '<h4 style="margin:22px 0 0;font-family:\'Bree Serif\',serif;font-weight:400;font-size:20px;color:var(--teal)">👥 Autres personnes</h4><p class="sp-note">Pour faire un don au nom d\'un proche (conjoint, famille…). Le reçu est à son nom, il vous est envoyé.</p>' +
+    l.map((q, i) => '<details class="sp-soc"' + (q.id === openId ? ' open' : '') + '><summary><span class="ic">👤</span><span class="t"><b>' + esc(q.prenom + ' ' + q.nom) + '</b><small>' + (q.lie ? 'relié à son espace' : esc(q.email)) + ' · ' + (q.lie ? 'voir' : 'modifier') + '</small></span><span class="chev">▾</span></summary>' + prForm(q, i) + '</details>').join('') +
+    (prNew ? '<div class="sp-soc" style="padding-top:4px"><div style="padding:12px 16px 0;font-weight:700;color:var(--teal)">Nouvelle personne</div>' + prForm({}, -1) + '</div>' : '');
+  $('prAdd').hidden = prNew;
+  $('prList').querySelectorAll('form').forEach(f => {
+    const i = +f.dataset.i, q = i >= 0 ? l[i] : null, ok = f.querySelector('.sp-ok'), er = f.querySelector('.dn-acct-err');
+    f.addEventListener('submit', async ev => { ev.preventDefault(); ok.hidden = er.hidden = true;
+      const data = {}; f.querySelectorAll('input[name]').forEach(x => { if (x.type !== 'checkbox') data[x.name] = x.value; });
+      try { const j = await api('PUT', '/api/me/proche', { id: q ? q.id : undefined, data, accord: !!(f.accord && f.accord.checked) });
+        me.profiles = j.profiles; prNew = false; renderProches(j.id);
+        const o = $('prList').querySelector('details[open] .sp-ok'); if (o) { o.textContent = '✓ Enregistré. Ce profil apparaît dans le formulaire de don.'; o.hidden = false; } }
+      catch (x) { er.textContent = x.message; er.hidden = false; } });
+    const d = f.querySelector('[data-del]'); if (d) d.onclick = async () => { if (!confirm('Supprimer ce profil ? Les reçus déjà faits sont conservés.')) return; d.disabled = true; try { const j = await api('DELETE', '/api/me/proche/' + encodeURIComponent(q.id)); me.profiles = j.profiles; renderProches(); } catch (x) { d.disabled = false; er.textContent = x.message; er.hidden = false; } };
+    const c = f.querySelector('[data-cancel]'); if (c) c.onclick = () => { prNew = false; renderProches(); };
+  });
+}
+$('prAdd').onclick = () => { prNew = true; renderProches(); const f = $('prList').querySelector('form[data-i="-1"]'); if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.prenom.focus(); } };
 $('proAdd').onclick = () => { proNew = true; renderPros(); const f = $('proList').querySelector('form[data-i="-1"]'); if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.raisonSociale.focus(); } };
 function fillForms() {
   const p = (me.profiles || {}).particulier || {};
-  $('pPrenom').value = p.prenom || ''; $('pNom').value = p.nom || ''; $('pAdr').value = p.adresse || ''; $('pCp').value = p.cp || ''; $('pVille').value = p.ville || '';
-  $('delPart').hidden = !p.nom; renderPros();
+  $('pPrenom').value = p.prenom || ''; $('pNom').value = p.nom || ''; $('pAdr').value = p.adresse || ''; $('pCp').value = p.cp || ''; $('pVille').value = p.ville || ''; $('pTel').value = p.tel || '';
+  $('delPart').hidden = !p.nom; renderProches(); renderPros();
 }
 async function saveProfile(kind, data, ok, er) {
   const o = $(ok), e = $(er); o.hidden = true; e.hidden = true;
   try { const j = await api('PUT', '/api/me/profile', { kind, data }); me.profiles = j.profiles; fillForms(); o.textContent = '✓ Enregistré. Le formulaire de don se remplira avec ces informations.'; o.hidden = false; }
   catch (x) { e.textContent = x.message; e.hidden = false; }
 }
-$('fPart').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('particulier', { prenom: $('pPrenom').value, nom: $('pNom').value, adresse: $('pAdr').value, cp: $('pCp').value, ville: $('pVille').value }, 'okPart', 'erPart'); });
+$('fPart').addEventListener('submit', ev => { ev.preventDefault(); saveProfile('particulier', { prenom: $('pPrenom').value, nom: $('pNom').value, adresse: $('pAdr').value, cp: $('pCp').value, ville: $('pVille').value, tel: $('pTel').value }, 'okPart', 'erPart'); });
 $('delPart').onclick = async () => { if (!confirm('Supprimer le profil particulier ? Vos reçus sont conservés.')) return; const j = await api('DELETE', '/api/me/profile/particulier'); me.profiles = j.profiles; fillForms(); };
 
 async function start() {
   try { me = await api('GET', '/api/me'); } catch (e) { $('spLogin').hidden = false; $('spApp').hidden = true; return; }
-  $('spLogin').hidden = true; $('spApp').hidden = false; $('spMail').textContent = me.email; fillForms();
+  $('spLogin').hidden = true; $('spApp').hidden = false; $('spMail').textContent = me.email; $('spId').textContent = 'Espace donateur' + (me.id ? ' · compte n° ' + me.id : ''); fillForms();
   api('GET', '/api/me/dons-mensuels').then(j => renderMensuels(j.dons || [])).catch(() => {});
   try { renderReceipts(await api('GET', '/api/me/receipts')); } catch (e) { $('spRec').innerHTML = '<div class="sp-empty">Impossible de charger vos reçus : ' + esc(e.message) + '</div>'; }
 }

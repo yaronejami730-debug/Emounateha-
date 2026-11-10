@@ -126,7 +126,7 @@ function validerDonateur(b) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error('Email invalide');
   const montant = Math.round(Number(String(b.montant).replace(',', '.')) * 100);
   if (!Number.isInteger(montant) || montant < 100 || montant > 10000000) throw new Error('Montant invalide (de 1 € à 100 000 €)');
-  return { type, nom, siren: type === 'entreprise' ? siren : '', adresse: `${rue}, ${cp} ${ville}`, ville, email, montant, form: { prenom: clean(b.prenom, 60), nom: clean(b.nom, 60), raisonSociale: clean(b.raisonSociale, 120), siren, adresse: rue, cp, ville } };
+  return { type, nom, siren: type === 'entreprise' ? siren : '', adresse: `${rue}, ${cp} ${ville}`, ville, email, montant, form: { prenom: clean(b.prenom, 60), nom: clean(b.nom, 60), raisonSociale: clean(b.raisonSociale, 120), siren, adresse: rue, cp, ville, tel: type === 'entreprise' ? '' : clean(b.tel, 24) } };
 }
 
 // --- reçu : HTML -> PDF (Chrome) ---
@@ -144,7 +144,7 @@ function remplir(don, numero) {
                     : `<div style="height:16mm"></div><div class="who2">${esc(ASSO.signataire || 'Signé électroniquement')}</div>`;
   const ligne = (k, v) => `<div class="row"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`;
   const v = {
-    numeroRecu: esc(numero),
+    numeroRecu: esc(numero), mentionRemplace: don.remplace ? '<div class="rempl">Annule et remplace le reçu n° ' + esc(don.remplace) + '</div>' : '',
     cerfaCode: ent ? '2041-MEC-SD' : '2041-RD', cerfaNum: ent ? '16216*01' : '11580*05', donateurLabel: ent ? "Dénomination de l'entreprise" : 'Nom ou dénomination',
     titreCerfa: ent ? "Reçu des dons et versements effectués par les entreprises au titre de l'article 238 bis du code général des impôts"
                     : 'Reçu des dons et versements effectués par les particuliers au titre des articles 200 et 978 du code général des impôts',
@@ -173,7 +173,14 @@ const pdfPlace = () => pdfActifs < 3 ? (pdfActifs++, Promise.resolve()) : new Pr
 const pdfLibere = () => { const n = pdfAttente.shift(); if (n) n(); else pdfActifs--; };
 async function pdf(html, file) {
   await pdfPlace();
-  try { return await pdf1(html, file); } finally { pdfLibere(); }
+  try {
+    try { return await pdf1(html, file); }
+    catch (e) {   // le navigateur qui fabrique les PDF s'est fermé (ou a planté) : on le relance et on réessaie une fois
+      console.error('[pdf] nouvel essai avec un navigateur neuf :', e.message);
+      const vieux = browserP; browserP = null; try { if (vieux) (await vieux).close().catch(() => {}); } catch (x) {}
+      return await pdf1(html, file);
+    }
+  } finally { pdfLibere(); }
 }
 async function pdf1(html, file) {
   const b = await browser(), page = await b.newPage();
@@ -183,7 +190,7 @@ async function pdf1(html, file) {
 // --- email : vrai envoi si SMTP configuré, sinon fichier .eml (ouvrable dans Mail) ---
 async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, don }) {
   if (don && !mailer.isFake(to)) {     // vraie adresse : email Brevo (modèle unique pour tous les dons), reçu en pièce jointe
-    const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance,
+    const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance, remplace: don.remplace || '',
       spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
     if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${nomFichier(numero)}.pdf`, content: vault.readFile(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
   }
@@ -211,6 +218,7 @@ async function fabriquer(don, { envoyerEmail }) {
   const file = path.join(RECUS, `recu_${nomFichier(numero)}_${crypto.randomBytes(3).toString('hex')}.pdf`);
   await pdf(remplir(don, numero), file);
   const out = { numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
+  if (don.proche) { out.proche = don.proche; out.accordAt = don.accordAt || null; }
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
   return out;
 }
@@ -231,9 +239,9 @@ app.use((req, res, next) => {
   if (!process.env.VERCEL && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !req.headers['cf-connecting-ip']) return next();          // ordinateur local
   if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST && host !== 'don.emounateha.fr') return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
   if (req.path.startsWith('/backoffice') || req.path === '/api/recu') return res.status(403).type('text').send("Réservé à l'ordinateur local");
-  if (req.method === 'POST') {                                                                                           // limite : 30 envois / 10 min / visiteur
-    const ip = String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.ip).split(',')[0].trim(), now = Date.now(), arr = (hits.get(ip) || []).filter(t => now - t < 600000);
-    if (arr.length >= 30) return res.status(429).json({ error: 'Trop de demandes, réessayez dans quelques minutes.' });
+  if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {                                        // limite : 30 envois (60 modifications de profil) / 10 min / visiteur
+    const post = req.method === 'POST', ip = (post ? '' : 'm|') + String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.ip).split(',')[0].trim(), now = Date.now(), arr = (hits.get(ip) || []).filter(t => now - t < 600000);
+    if (arr.length >= (post ? 30 : 60)) return res.status(429).json({ error: 'Trop de demandes, réessayez dans quelques minutes.' });
     arr.push(now); hits.set(ip, arr);
   }
   next();
@@ -277,7 +285,10 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
         const n = (await stripe.invoices.list({ subscription: sub.id, limit: 100 })).data.filter(i => i.status === 'paid').length;
         const out = await fabriquer({ type: m.type === 'entreprise' ? 'entreprise' : 'particulier', nom: cu.name, siren: m.siren || '', adresse: `${ad.line1 || ''}, ${ad.postal_code || ''} ${ad.city || ''}`, email: cu.email, montant: inv.amount_paid, mensuel: true, nb: m.nb ? +m.nb : 0, echeance: n,
           mode: 'Carte bancaire — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
-        out.affectation = m.affectation; out.mensuel = true; if (m.fin) out.fin = m.fin; if (m.nb) { out.nb = +m.nb; out.total = +m.total; } { const a = attrDe(m); if (Object.keys(a).length) { out.attr = a; out.attrRepeat = true; } }   // prélèvement suivant : même provenance que le 1er don if (m.ambassadeur) out.ambassadeur = m.ambassadeur; const d2 = load(); d2.receipts[inv.id] = out; save(d2); await notifyAdmin(out);
+        out.affectation = m.affectation; out.mensuel = true; if (m.fin) out.fin = m.fin; if (m.nb) { out.nb = +m.nb; out.total = +m.total; } { const a = attrDe(m); if (Object.keys(a).length) { out.attr = a; out.attrRepeat = true; } }   // prélèvement suivant : même provenance que le 1er don
+        if (m.ambassadeur) out.ambassadeur = m.ambassadeur;
+        if (m.proche) { const pr = acc.prochesDe((load().users || {})[String(cu.email || '').toLowerCase()]).find(x => x.id === m.proche); out.proche = m.proche; if (pr && !pr.supprime && pr.lien) out.vuPar = pr.lien; }   // don mensuel au nom d'un proche relié
+        const d2 = load(); d2.receipts[inv.id] = out; save(d2); await notifyAdmin(out);
         console.log('[webhook] invoice.paid', inv.id, '-> reçu', out.numero, '(mensualité n°' + n + ')');
       }
     } else console.log('[webhook]', ev.type, '(non traité)');
@@ -320,8 +331,15 @@ app.post('/api/intent', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
     const fete = await lignesFete(req.body); if (fete) req.body.montant = fete.total / 100;   // le total est recalculé ici ; le don d'une fête / action peut aussi être mensuel ou réparti en plusieurs fois
-    const sess = acc.getSession(req), don = validerDonateur(req.body);
-    if (sess) don.email = sess.email;                       // connecté : le reçu est rattaché au compte
+    const sess = acc.getSession(req); let proche = null;
+    if (req.body.procheId) {
+      if (!sess) throw new Error("Connectez-vous pour faire un don au nom d'une autre personne.");
+      proche = acc.procheDe(sess.email, String(req.body.procheId)); if (!proche) throw new Error('Profil introuvable. Rechargez la page.');
+      Object.assign(req.body, { type: 'particulier', raisonSociale: '', siren: '', prenom: proche.prenom, nom: proche.nom, adresse: proche.adresse, cp: proche.cp, ville: proche.ville, tel: proche.tel || '', email: sess.email });
+    }
+    const don = validerDonateur(req.body);
+    if (proche) { don.proche = proche.id; don.accordAt = proche.accordAt || null; don.form.emailProfil = proche.email; }
+    if (sess) don.email = sess.email;                       // connecté : le reçu est rattaché au compte (et envoyé à l'email maître)
     const mensuel = req.body.frequence === 'mensuel', aff = fete ? fete.affectation : affectation(req.body, await affectationsOk());
     let amb = String(req.body.amb || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);   // lien d'ambassadeur
     if (!amb) { // donateur déjà venu par un ambassadeur : il lui reste attribué, en permanence
@@ -358,7 +376,7 @@ app.post('/api/intent', async (req, res) => {
         items: [{ price_data: { currency: 'eur', unit_amount: par, recurring: { interval: 'month' }, product: prod.id } }],
         ...(reste ? { add_invoice_items: [{ price_data: { currency: 'eur', unit_amount: reste, product: prod.id } }] } : {}),
         ...(fin ? { cancel_at: Math.floor(Date.parse(fin + 'T23:59:59Z') / 1000) } : {}),   // Stripe arrête les prélèvements à cette date
-        metadata: { ...meta, ...(nb ? { nb: String(nb), total: String(total) } : {}), siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0' }, expand: ['latest_invoice.payment_intent'] });
+        metadata: { ...meta, ...(nb ? { nb: String(nb), total: String(total) } : {}), siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0', ...(don.proche ? { proche: don.proche } : {}) }, expand: ['latest_invoice.payment_intent'] });
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
       // don ponctuel : carte (Apple Pay et Google Pay passent par la carte), PayPal et Klarna ; si un moyen n'est pas activé sur le compte Stripe, on retire les moyens en trop (jamais la carte)
@@ -370,7 +388,7 @@ app.post('/api/intent', async (req, res) => {
       id = pi.id; clientSecret = pi.client_secret;
     }
     const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
-    d.pending[id] = { ...don, amb, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile), at: Date.now() }; save(d);
+    d.pending[id] = { ...don, amb, envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile && !proche), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -389,9 +407,11 @@ async function receiptForPayment(id) {
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
     const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
     out.affectation = p.affectation; out.mensuel = !!p.mensuel; if (p.fin) out.fin = p.fin; if (p.nb) { out.nb = p.nb; out.total = p.total; } if (p.attr && Object.keys(p.attr).length) out.attr = p.attr; if (p.amb) out.ambassadeur = p.amb; if (p.lignes) out.lignes = p.lignes;
-    const d2 = load(); d2.receipts[id] = out; delete d2.pending[id]; save(d2);
+    const d2 = load(); d2.receipts[id] = out; delete d2.pending[id];
+    if (out.proche && p.owner) { const pr = acc.prochesDe((d2.users || {})[p.owner]).find(x => x.id === out.proche); if (pr && !pr.supprime && pr.lien) out.vuPar = pr.lien; }
+    acc.relier(d2); save(d2);   // proche relié : le reçu devient visible dans son espace
     await notifyAdmin(out);
-    if (p.owner && p.saveProfile) acc.saveProfileFromForm(p.owner, p.type, p.form);   // « enregistrer mes informations »
+    if (p.owner && p.saveProfile && !p.proche) acc.saveProfileFromForm(p.owner, p.type, p.form);   // « enregistrer mes informations »
     return out;
   })().finally(() => inflight.delete(id));
   inflight.set(id, job); return job;
@@ -420,6 +440,59 @@ app.post('/api/me/dons-mensuels/:id/arreter', async (req, res) => {
     res.json({ ok: true, dons: await abonnementsDe(String(s.email).toLowerCase()) });
   } catch (e) { console.error('[dons mensuels] arrêt', e.message); res.status(400).json({ error: e.message }); }
 });
+// « Corriger ce reçu » (espace donateur) : l'ancien reçu est annulé, un nouveau (nouveau numéro, mention « annule et remplace ») est créé
+// et envoyé à l'email maître. Le montant, la date et le mode de paiement ne changent jamais. Le profil est corrigé pour les prochains dons.
+async function alerteAdmin(subject, lignes) { try { await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: (PREFIX === 'TEST' ? '[TEST] ' : '') + subject, text: lignes.join('\n'), html: lignes.map(l => '<p>' + esc(l) + '</p>').join('') }); } catch (e) { console.error('[alerte]', e.message); } }
+const corrEnCours = new Set();
+app.post('/api/me/receipts/:ref/corriger', async (req, res) => {
+  const ref = String(req.params.ref); let verrou = false;
+  try {
+    const s = acc.getSession(req); if (!s) return res.status(401).json({ error: 'Connexion requise' });
+    const d = load(), r = (d.receipts || {})[ref];
+    if (!r || r.donorEmail !== s.email || !r.file || !r.form) return res.status(404).json({ error: 'Reçu introuvable' });
+    const non = acc.nonCorrigeable(r); if (non) throw new Error(non);
+    if (corrEnCours.has(ref)) throw new Error('Correction déjà en cours pour ce reçu.'); corrEnCours.add(ref); verrou = true;
+    const b = req.body.data || {}, u = acc.ensureUser(d, s.email), ent = r.type === 'entreprise';
+    let f, emailProfil = '', nomChange = false, maj = () => {};   // maj : correction du profil, appliquée seulement une fois le nouveau reçu créé
+    if (r.proche) {
+      const p = acc.prochesDe(u).find(x => x.id === r.proche && !x.supprime); if (!p) throw new Error("Ce profil a été supprimé de votre compte : le reçu ne peut plus être corrigé en ligne. Contactez l'association.");
+      if (p.lien && p.partage) f = { prenom: p.prenom, nom: p.nom, adresse: p.adresse, cp: p.cp, ville: p.ville, tel: p.tel || '', email: p.email };   // profil relié : seules les informations actuelles de la personne sont reprises
+      else {
+        f = acc.cleanProche(b);
+        nomChange = acc.normTxt(f.prenom) !== acc.normTxt(r.form.prenom) || acc.normTxt(f.nom) !== acc.normTxt(r.form.nom);
+        if (nomChange && req.body.accord !== true) throw new Error("Le nom change : cochez la case, la personne doit être d'accord pour qu'un reçu fiscal soit établi à son nom.");
+        if (acc.prochesDe(u).some(x => !x.supprime && x !== p && acc.idt(x, x.email) === acc.idt(f, f.email))) throw new Error('Un autre profil de votre compte porte déjà exactement ces informations.');
+        maj = (u2) => { const q = acc.prochesDe(u2).find(x => x.id === r.proche); if (!q) return; if (!acc.memePersonne(q, f)) { q.lien = null; q.partage = false; } Object.assign(q, f); if (nomChange) q.accordAt = Date.now(); q.modifAt = Date.now(); };   // le lien est réévalué ensuite (relier)
+      }
+      emailProfil = f.email;
+    } else {
+      f = acc.cleanProfile(ent ? 'pro' : 'particulier', b);
+      if (ent && !f.siren) throw new Error('SIREN requis pour un reçu professionnel');
+      nomChange = ent ? acc.normTxt(f.raisonSociale) !== acc.normTxt(r.form.raisonSociale) : (acc.normTxt(f.prenom) !== acc.normTxt(r.form.prenom) || acc.normTxt(f.nom) !== acc.normTxt(r.form.nom));
+      const t0 = (u.profiles || {}).particulier, sien = ent ? true : !!(t0 && acc.normTxt(t0.prenom) === acc.normTxt(r.form.prenom) && acc.normTxt(t0.nom) === acc.normTxt(r.form.nom));
+      if (!nomChange && sien) maj = (u2, d2) => {   // c'est bien le reçu du titulaire (ou de sa société) et le nom ne change pas : son profil est corrigé pour les prochains dons
+        const last = u2.last, pf = { ...f }, t = (u2.profiles || {}).particulier; if (!ent && !pf.tel && t && t.tel) pf.tel = t.tel;
+        acc.poserProfil(u2, ent ? 'pro' : 'particulier', pf); u2.last = last; if (!ent) acc.propager(d2, s.email);
+      };
+    }
+    const form = { prenom: f.prenom || '', nom: f.nom || '', raisonSociale: f.raisonSociale || '', siren: f.siren || '', adresse: f.adresse, cp: f.cp, ville: f.ville, tel: f.tel || '', ...(emailProfil ? { emailProfil } : {}) };
+    const cle = x => (ent ? ['raisonSociale', 'siren', 'adresse', 'cp', 'ville'] : ['prenom', 'nom', 'adresse', 'cp', 'ville']).map(k => String(x[k] || '')).join('|');
+    if (cle(form) === cle(r.form)) {   // rien de ce qui est imprimé sur le reçu ne change
+      if (!(r.proche && (form.tel !== (r.form.tel || '') || emailProfil !== (r.form.emailProfil || '')))) throw new Error('Aucune modification : le reçu porte déjà ces informations.');
+      maj(u, d); r.form = { ...r.form, tel: form.tel, emailProfil }; delete r.vuPar; acc.relier(d); save(d);   // seuls l'email ou le téléphone de la personne changent : pas de nouveau reçu, le profil est corrigé
+      return res.json({ ok: true, profilSeul: true });
+    }
+    const don = { type: r.type, nom: ent ? form.raisonSociale : form.prenom + ' ' + form.nom.toUpperCase(), siren: ent ? form.siren : '', adresse: `${form.adresse}, ${form.cp} ${form.ville}`, ville: form.ville, email: s.email, montant: r.montant, mode: r.mode, dateDon: r.dateDon, affectation: r.affectation, mensuel: r.mensuel, echeance: r.echeance, nb: r.nb, form, remplace: r.numero, proche: r.proche, accordAt: r.accordAt };
+    const out = await fabriquer(don, { envoyerEmail: true });
+    const d2 = load(), cur = d2.receipts[ref], ancien = { numero: cur.numero, file: cur.file, nom: cur.nom, form: cur.form, at: Date.now() };
+    Object.assign(cur, { numero: out.numero, pdf: out.pdf, file: out.file, nom: out.nom, form: out.form, email: out.email, remplace: ancien.numero, corrections: [...(cur.corrections || []), ancien] });
+    if (nomChange && r.proche) cur.accordAt = Date.now();
+    maj(acc.ensureUser(d2, s.email), d2); delete cur.vuPar; acc.relier(d2); save(d2);
+    console.log('[correction] reçu', ancien.numero, '->', out.numero, nomChange ? '(nom changé)' : '');
+    await alerteAdmin(`Reçu fiscal corrigé par le donateur : ${ancien.numero} → ${out.numero}${nomChange ? ' (NOM CHANGÉ)' : ''}`, [`Compte : ${s.email}`, `Ancien reçu ${ancien.numero} (annulé) : ${ancien.nom}, ${[ancien.form.adresse, ancien.form.cp, ancien.form.ville].join(' ')}`, `Nouveau reçu ${out.numero} : ${out.nom}, ${[form.adresse, form.cp, form.ville].join(' ')}`, `Montant et date inchangés : ${(r.montant / 100).toFixed(2)} €, ${String(r.dateDon).slice(0, 10)}`, nomChange ? 'Attention : le nom du bénéficiaire du reçu a changé. À vérifier.' : 'Correction simple (même nom).']);
+    res.json({ ok: true, numero: out.numero, remplace: ancien.numero, email: out.email && out.email.sent ? true : false });
+  } catch (e) { res.status(400).json({ error: e.message }); } finally { if (verrou) corrEnCours.delete(ref); }
+});
 app.post('/api/finalize', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré');
@@ -438,7 +511,7 @@ function adminOk(req, res) {
   if (!ok) res.status(401).json({ error: 'non autorisé' });
   return !!ok;
 }
-const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat });
+const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();
@@ -518,6 +591,7 @@ app.get('/:slug', (req, res, next) => {
     .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + ('Faire un don' + (tit ? ' · ' + tit.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : '') + ' — Émounatéha') + '$2');
   res.setHeader('Cache-Control', 'no-store'); res.type('html').send(html);
 });
+app.use((err, req, res, next) => { const st = err && err.status >= 400 && err.status < 500 ? err.status : 400; if (!(err && err.status)) console.error('[erreur]', req.method, req.path, err && err.message); if (res.headersSent) return next(err); res.status(st).json({ error: st === 413 ? 'Requête trop volumineuse.' : 'Requête invalide.' }); });
 if (!process.env.VERCEL) app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`Test Stripe + CERFA → http://127.0.0.1:${PORT}  (stripe: ${stripe ? 'test OK' : 'non configuré'}, email: ${process.env.SMTP_HOST ? 'SMTP' : 'fichier .eml'})`));
 app.locals.remplir = remplir; app.locals.pdf = pdf;
 module.exports = app;

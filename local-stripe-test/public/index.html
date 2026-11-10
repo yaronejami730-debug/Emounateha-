@@ -900,6 +900,13 @@ body{overflow-x:hidden}
 .dn-pcard.add .ic{background:#fff3d6!important;color:#9a7a22;font-weight:700}
 .dn-pcard.add.on{border-style:solid!important;border-color:var(--gold)!important}
 
+/* don au nom d'une autre personne : message d'information et case d'accord */
+.dn-proche{background:#fff8e1;border:1px solid #ecdca0;border-radius:14px;padding:12px 14px}
+.dn-proche p{margin:0;font-size:13.5px;line-height:1.55;color:#5c4a12}
+.dn-proche.lie{background:#effaf3;border-color:#bfe3cf}.dn-proche.lie p{color:#1d5a3b}
+.dn-proche .dn-ck{margin-top:10px!important;font-weight:600!important}
+#dn input.ro{background:#f3f6f6!important;color:#51666a!important}
+
 /* connecté : les cartes de profil remplacent l'interrupteur (un seul sélecteur) */
 #f.dn-conn .dn-type{display:none!important}
 
@@ -1015,6 +1022,9 @@ body{overflow-x:hidden}
         </div>
         <div><label for="cp">Code postal</label><input id="cp" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
         <div><label for="ville">Ville</label><input id="ville" autocomplete="address-level2"></div>
+        <div id="gTel"><label for="tel">Téléphone <span style="font-weight:400;color:#51666a">(facultatif)</span></label><input id="tel" type="tel" inputmode="tel" autocomplete="tel"></div>
+        <div id="gPEmail" hidden><label for="pEmail">Email de cette personne</label><input id="pEmail" type="email" inputmode="email" autocomplete="off"></div>
+        <div class="dn-full dn-proche" id="gProche" hidden><p id="prNote"></p><label class="dn-ck" id="prAccordRow"><input id="pAccord" type="checkbox"><span>Je confirme que cette personne est d'accord pour qu'un reçu fiscal soit établi à son nom.</span></label></div>
         <div class="dn-full"><label for="email">Email (pour recevoir votre reçu)</label><input id="email" type="email" autocomplete="email" inputmode="email"></div>
         <div class="dn-full dn-guestsave" id="guestSave"><span>Pour retrouver ces informations la prochaine fois, <button type="button" class="dn-link" id="guestLogin">connectez-vous</button> (un code par email, sans mot de passe).</span></div>
         <div class="dn-full dn-savep"><label class="dn-ck"><input id="saveProf" type="checkbox" checked><span>Enregistrer ces informations dans mon espace donateur<small>Pour ne plus avoir à les retaper</small></span></label></div>
@@ -1151,7 +1161,7 @@ function upSum() {
   $('sWho').textContent = who || '—';
 }
 function mark() { document.querySelectorAll('#amts button').forEach(b => b.classList.toggle('on', b.dataset.v === $('montant').value.trim())); }
-function setType(ent) { document.querySelector('input[name=type][value=' + (ent ? 'entreprise' : 'particulier') + ']').checked = true; $('gPart').style.display = ent ? 'none' : 'grid'; $('gEnt').style.display = ent ? 'grid' : 'none'; guestProsRender(); }
+function setType(ent) { document.querySelector('input[name=type][value=' + (ent ? 'entreprise' : 'particulier') + ']').checked = true; $('gPart').style.display = ent ? 'none' : 'grid'; $('gEnt').style.display = ent ? 'grid' : 'none'; $('gTel').style.display = ent ? 'none' : ''; guestProsRender(); }
 // professionnel non connecté : plusieurs sociétés mémorisées sur cet appareil, « Ajouter une autre société »
 let guestPros = []; try { guestPros = JSON.parse(localStorage.getItem('dn_pros') || '[]'); if (!Array.isArray(guestPros)) guestPros = []; } catch (e) { guestPros = []; }
 let guestCur = -1;
@@ -1182,7 +1192,7 @@ function guestProPick(i) {
   if (p.email && !$('email').value) $('email').value = p.email;
   guestProsRender(); upSum();
 }
-document.querySelectorAll('input[name=type]').forEach(r => r.addEventListener('change', guestProsRender));
+document.querySelectorAll('input[name=type]').forEach(r => r.addEventListener('change', () => { $('gTel').style.display = isEnt() ? 'none' : ''; guestProsRender(); }));
 
 // affectation : cartes à toucher
 const SV = p => '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
@@ -1271,6 +1281,7 @@ const R = a => a[Math.floor(Math.random() * a.length)];
 const ascii = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 function sirenRandom() { const d = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)); let sum = 0; for (let i = 0; i < 8; i++) { let x = d[i]; if (i % 2 === 1) { x *= 2; if (x > 9) x -= 9; } sum += x; } for (let c = 0; c < 10; c++) if ((sum + c) % 10 === 0) return d.join('') + c; return '930755558'; }
 function fillRandom() {
+  curPr = null;
   const ent = Math.random() < 0.25, rue = R([['14 rue des Rosiers', '75004', 'Paris'], ['28 boulevard Félix Faure', '93300', 'Aubervilliers'], ['5 avenue Victor Hugo', '93300', 'Aubervilliers'], ['12 rue de la Paix', '75002', 'Paris'], ['7 cours de Vincennes', '75020', 'Paris'], ['31 avenue de Paris', '94300', 'Vincennes']]);
   const pr = R(['Esther', 'David', 'Sarah', 'Daniel', 'Léa', 'Nathan', 'Hanna', 'Samuel', 'Rachel', 'Jonathan']), nm = R(['Martin', 'Bernard', 'Dubois', 'Moreau', 'Laurent', 'Simon', 'Michel', 'Lefebvre', 'Garcia', 'Roux']);
   setType(ent); $('prenom').value = pr; $('nom').value = nm; $('rs').value = R(['Boulangerie Martin SARL', 'Cabinet Dubois & Associés', 'Garage Moreau', 'Épicerie du Marais SAS']); $('siren').value = ent ? sirenRandom() : '';
@@ -1396,9 +1407,39 @@ const PROFNAME = k => k === 'pro' ? 'Professionnel' : 'Particulier';
 const profLine = (k, p) => !p ? 'Ajouter ce profil' : (k === 'pro' ? p.raisonSociale : (p.prenom + ' ' + p.nom));
 let curPro = 0;   // société choisie (index dans me.profiles.pros), -1 = nouvelle société
 const prosOf = () => (me && me.profiles && (me.profiles.pros || (me.profiles.pro ? [me.profiles.pro] : []))) || [];
+// don au nom d'une autre personne (proche) : le reçu est à son nom, envoyé à l'email du compte
+let curPr = null;   // id du profil choisi, 'new' = nouvelle personne, null = ce n'est pas un don pour une autre personne
+const VIDEO = /[?&](embed|express)=1/.test(location.search);   // don pendant une vidéo : toujours au nom du donateur lui-même, jamais pour une autre personne
+const prochesOf = () => (!VIDEO && me && me.profiles && me.profiles.proches) || [];
+const prCur = () => curPr && curPr !== 'new' ? prochesOf().find(x => x.id === curPr) : null;
+const PRF = { prenom: 'prenom', nom: 'nom', adresse: 'adr', cp: 'cp', ville: 'ville', tel: 'tel', email: 'pEmail' };
+const prData = () => { const o = {}; for (const k in PRF) o[k] = $(PRF[k]).value.trim(); return o; };
+const prDirty = p => !p || Object.keys(PRF).some(k => String(p[k] || '') !== $(PRF[k]).value.trim());
+function upProche() {
+  const on = !!(me && curPr), p = prCur(), lie = !!(p && p.lie);
+  $('gPEmail').hidden = !on; $('gProche').hidden = !on;
+  Object.values(PRF).forEach(id => { $(id).readOnly = on && lie; $(id).classList.toggle('ro', on && lie); });
+  const sp = document.querySelector('.dn-savep'); if (sp) sp.style.display = on ? 'none' : '';
+  if (!on) return;
+  $('gProche').classList.toggle('lie', lie);
+  $('prNote').innerHTML = lie ? '<b>✓ Profil relié à l\'espace donateur de cette personne.</b> Elle voit les reçus faits à son nom, et ses informations se mettent à jour toutes seules. Le reçu fiscal vous est envoyé à <b>' + esc(me.email) + '</b>.'
+    : 'Le reçu fiscal sera établi <b>au nom de cette personne</b> et envoyé à votre adresse <b>' + esc(me.email) + '</b>.<br>Si un jour elle crée son propre espace donateur avec <b>exactement les mêmes informations</b> (prénom, nom, adresse, email, téléphone), elle verra ce reçu dans son espace. Si une seule lettre est différente dans un champ, elle ne le verra pas : c\'est une sécurité.';
+  $('prAccordRow').hidden = lie || !prDirty(p);
+}
+async function saveProche() {   // avant le paiement : le profil est enregistré (ou corrigé) dans le compte
+  upProche();
+  const p = prCur(); if (p && (p.lie || !prDirty(p))) return;
+  if (!$('pAccord').checked) throw new Error('Cochez la case : la personne doit être d\'accord pour qu\'un reçu fiscal soit établi à son nom.');
+  const r = await api('PUT', '/api/me/proche', { id: p ? p.id : undefined, data: prData(), accord: true });
+  me.profiles = r.profiles; curPr = r.id; $('pAccord').checked = false;
+  const q = prCur(); if (q) for (const k in PRF) $(PRF[k]).value = q[k] || '';   // les champs reprennent exactement ce qui est enregistré
+  renderProfiles();
+}
 function fillProfile(k, i) {
   const ent = k === 'pro' || k === 'pro-new'; if (ent) curPro = k === 'pro-new' ? -1 : (i || 0);
-  const p = k === 'particulier' ? (me && me.profiles && me.profiles.particulier) : (k === 'pro' ? prosOf()[curPro] : null);
+  curPr = VIDEO ? null : (k === 'proche' ? ((prochesOf()[i] || {}).id || 'new') : (k === 'proche-new' ? 'new' : null));
+  const p = curPr ? prCur() : (k === 'particulier' ? (me && me.profiles && me.profiles.particulier) : (k === 'pro' ? prosOf()[curPro] : null));
+  $('tel').value = p && !ent ? (p.tel || '') : ''; $('pEmail').value = curPr && p ? (p.email || '') : ''; $('pAccord').checked = false;
   setType(ent);
   $('prenom').value = p && !ent ? p.prenom : ''; $('nom').value = p && !ent ? p.nom : ''; $('rs').value = p && ent ? p.raisonSociale : ''; $('siren').value = p && ent ? (p.siren || '') : ''; $('siret').value = ''; $('siretMsg').textContent = '';
   const ps = $('proSaved'); if (ps) ps.remove();
@@ -1406,7 +1447,9 @@ function fillProfile(k, i) {
   if (me) { $('email').value = me.email; }
   renderProfiles(); upSum();
   if (k === 'pro-new') setTimeout(() => $('siret').focus(), 60);
+  if (k === 'proche-new') setTimeout(() => $('prenom').focus(), 60);
 }
+Object.values(PRF).forEach(id => $(id).addEventListener('input', () => { if (curPr) upProche(); }));
 let siretSeq = 0;
 async function siretLookup() {
   const q = $('siret').value.replace(/\s/g, ''), m = $('siretMsg'), n = ++siretSeq;
@@ -1414,7 +1457,7 @@ async function siretLookup() {
   if (!/^(\d{9}|\d{14})$/.test(q)) { if (q.length > 0 && !/^\d+$/.test(q)) { m.className = 'dn-siretmsg ko'; m.textContent = 'Chiffres uniquement.'; } return; }
   m.textContent = 'Recherche de votre entreprise…';
   try {
-    const r = await fetch('/api/siret?q=' + q), j = await r.json(); if (n !== siretSeq) return;
+    const r = await fetch('/api/siret?q=' + q), j = await r.json(); if (n !== siretSeq || !isEnt()) return;
     if (!r.ok) throw new Error(j.error || 'Introuvable');
     $('rs').value = j.nom; $('siren').value = j.siren; if (j.adresse) $('adr').value = j.adresse; if (j.cp) $('cp').value = j.cp; if (j.ville) $('ville').value = j.ville;
     m.className = 'dn-siretmsg ok'; m.textContent = '✓ ' + j.nom + ' — vérifiez et modifiez si besoin.'; upSum();
@@ -1442,6 +1485,7 @@ let proT = null;
 ['rs', 'siren', 'adr', 'cp', 'ville'].forEach(id => $(id).addEventListener('input', () => { if (!me || !isEnt() || !$('proSaved')) return; clearTimeout(proT); proT = setTimeout(saveProNow, 1200); }));
 function updHint() {
   const h = $('profHint'), k = isEnt() ? 'pro' : 'particulier', saved = me && me.profiles && me.profiles[k];
+  if (me && curPr) { h.textContent = ''; h.hidden = true; return; }
   let t = '';
   if (me && !saved) t = k === 'pro' ? 'Complétez votre profil professionnel (raison sociale, SIREN, adresse). Il sera enregistré pour vos prochains dons.' : 'Complétez votre profil particulier. Il sera enregistré pour vos prochains dons.';
   else if (!me && k === 'pro') t = 'Renseignez les informations de votre structure : elles figureront sur le reçu fiscal.';
@@ -1449,19 +1493,22 @@ function updHint() {
 }
 function curKind() { return isEnt() ? 'pro' : 'particulier'; }
 function renderProfiles() {
-  updHint();
+  updHint(); upProche();
   if (!me) return;
   const cur = curKind();
   const pa = me.profiles && me.profiles.particulier, pros = prosOf();
-  const IC = { user: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>', soc: '<svg viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16"/><path d="M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></svg>', plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' };
+  const IC = { users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8"/><circle cx="17.5" cy="9" r="2.6"/><path d="M17 14.3c2.7.2 4.5 2 4.5 4.7"/></svg>', user: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>', soc: '<svg viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16"/><path d="M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></svg>', plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' };
   const card = (k, i, on, ic, titre, ligne, add) => '<button type="button" class="dn-pcard' + (on ? ' on' : '') + (add ? ' add' : '') + '" data-k="' + k + '" data-i="' + i + '"><span class="ic">' + ic + '</span><span style="min-width:0"><b>' + esc(titre) + '</b><small>' + esc(ligne) + '</small></span></button>';
-  $('profCards').innerHTML = card('particulier', 0, cur === 'particulier', IC.user, 'Particulier', pa ? pa.prenom + ' ' + pa.nom : 'Ajouter ce profil', !pa) +
+  $('profCards').innerHTML = card('particulier', 0, cur === 'particulier' && !curPr, IC.user, 'Particulier', pa ? pa.prenom + ' ' + pa.nom : 'Ajouter ce profil', !pa) +
+    prochesOf().map((p, i) => card('proche', i, curPr === p.id, IC.users, p.prenom + ' ' + p.nom, p.lie ? 'Autre personne · reliée à son espace' : 'Autre personne', false)).join('') +
     pros.map((p, i) => card('pro', i, cur === 'pro' && curPro === i, IC.soc, p.raisonSociale, p.siren ? 'SIREN ' + p.siren.replace(/(\d{3})(?=\d)/g, '$1 ') : (p.ville || ''), false)).join('') +
-    card('pro-new', 0, cur === 'pro' && (curPro === -1 || !pros.length), IC.plus, pros.length ? 'Ajouter une autre société' : 'Professionnel', pros.length ? 'Entreprise, association…' : 'Ajouter ma société', true);
+    card('pro-new', 0, cur === 'pro' && (curPro === -1 || !pros.length), IC.plus, pros.length ? 'Ajouter une autre société' : 'Professionnel', pros.length ? 'Entreprise, association…' : 'Ajouter ma société', true) +
+    (VIDEO ? '' : card('proche-new', 0, curPr === 'new', IC.plus, 'Donner au nom d\'une autre personne', 'Proche, famille…', true));
   document.querySelectorAll('#profCards .dn-pcard').forEach(b => b.onclick = () => fillProfile(b.dataset.k, +b.dataset.i));
 }
 function renderAcct() {
-  updHint();
+  if (!me) curPr = null;
+  updHint(); upProche();
   $('f').classList.toggle('dn-conn', !!me);
   $('acctOut').hidden = !!me; $('acctIn').hidden = !me; if (me) { $('acctBox').hidden = true; $('acctEmail').textContent = me.email; }
   $('email').readOnly = !!me; if (me) $('email').value = me.email;
@@ -1492,7 +1539,7 @@ $('lgSend').onclick = lgRequest; $('lgEmail').addEventListener('keydown', e => {
 $('lgCode').addEventListener('input', () => { $('lgCode').value = $('lgCode').value.replace(/\D/g, '').slice(0, 6); if ($('lgCode').value.length === 6) lgVerify(); });
 $('lgChange').onclick = () => { $('lgStep1').hidden = false; $('lgStep2').hidden = true; lgShowErr(''); $('lgEmail').focus(); };
 $('lgResend').onclick = () => { const w = resendAt - Date.now(); if (w > 0) return lgShowErr('Patientez ' + Math.ceil(w / 1000) + ' s avant de redemander un code.'); $('lgEmail').value = lgEmail; lgRequest(); };
-$('acctLogout').onclick = async () => { try { await api('POST', '/api/auth/logout'); } catch (e) {} me = null; renderAcct(); $('email').value = ''; };
+$('acctLogout').onclick = async () => { try { await api('POST', '/api/auth/logout'); } catch (e) {} if (curPr) Object.values(PRF).forEach(id => $(id).value = ''); me = null; renderAcct(); $('email').value = ''; };
 
 // autocomplétion des adresses (Base Adresse Nationale, Géoplateforme IGN)
 (function () {
@@ -1536,9 +1583,9 @@ const AMB = (() => { const k = 'emAmb'; let v = (new URLSearchParams(location.se
   return v; })();
 function body() {
   return { amb: AMB, attr: ATTR, type: document.querySelector('input[name=type]:checked').value, prenom: $('prenom').value, nom: $('nom').value, raisonSociale: $('rs').value, siren: $('siren').value,
-    adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, email: $('email').value, montant: $('montant').value,
+    adresse: $('adr').value, cp: $('cp').value, ville: $('ville').value, tel: $('tel').value, email: $('email').value, montant: $('montant').value, ...(me && curPr && curPr !== 'new' ? { procheId: curPr } : {}),
     mode: $('mode').value, dateDon: $('dt').value, envoyerEmail: $('env').checked,
-    frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, repartition: document.querySelector('input[name=repart]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked),
+    frequence: document.querySelector('input[name=freq]:checked').value, duree: document.querySelector('input[name=duree]:checked').value, repartition: document.querySelector('input[name=repart]:checked').value, affectation: $('aff').value, saveProfile: !!(me && $('saveProf').checked && !curPr),
     ...(!$('actBox').hidden ? { lignes: Object.entries(ACTS).map(([id, m]) => ({ id, montant: m })), libre: $('libre').value } : {}) };
 }
 async function post(url, data) {
@@ -1560,6 +1607,8 @@ function check2() {
   if (!/^\d{5}$/.test($('cp').value.trim())) throw new Error('Code postal : 5 chiffres.');
   if ($('ville').value.trim().length < 2) throw new Error('Indiquez la ville.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test($('email').value.trim())) throw new Error('Email invalide.');
+  if (me && curPr && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test($('pEmail').value.trim())) throw new Error('Indiquez l\'email de cette personne.');
+  if (!isEnt() && $('tel').value.trim()) { const n = $('tel').value.replace(/\D/g, '').length; if (n < 8 || n > 15) throw new Error('Numéro de téléphone invalide (ou laissez le champ vide).'); }
 }
 
 async function act() {
@@ -1568,11 +1617,14 @@ async function act() {
   try {
     if (panel === 1) {
       check1(); if (!(await confirmMens())) return; goPanel(2);
-      // donateur connecté dont les informations sont complètes : on ne les redemande pas, on passe directement au paiement
-      if (me) { let ok = true; try { check2(); } catch (e) { ok = false; } if (ok) { setTimeout(act, 0); return; } }
+      // Don normal : on passe toujours par le formulaire (déjà rempli si le donateur est connecté).
+      // Don pendant une vidéo, donateur connecté avec UN seul profil complet (son profil particulier, ou sa seule société) : droit au paiement
+      // (« Retour » ramène au formulaire s'il veut changer quelque chose). Avec plusieurs profils, le formulaire lui demande lequel utiliser.
+      if (VIDEO && me && !curPr && !formVu) { let ok = ((me.profiles && me.profiles.particulier ? 1 : 0) + prosOf().length) === 1; if (ok) { try { check2(); } catch (e) { ok = false; } } if (ok) { setTimeout(act, 0); return; } }
     }
     else if (panel === 2) {
       check2();
+      if (me && curPr) await withLoad('Enregistrement du profil…', saveProche);
       if (mode === 'sans') { renderRes(await withLoad('Création de votre reçu fiscal…', () => post('/api/recu', body()))); }
       else {
         await withLoad('Connexion à Stripe…', ensureStripe);
@@ -1618,7 +1670,12 @@ async function act() {
       if (!paymentIntent || paymentIntent.status !== 'succeeded') { $('go').textContent = 'Réessayer'; throw new Error('Paiement non abouti (statut : ' + (paymentIntent && paymentIntent.status) + ')'); }
       renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
     }
-    else if (panel === 4) { fillRandom(); goPanel(1); }
+    else if (panel === 4) {   // nouveau don : on repart du profil du donateur (jamais d'une autre personne) ; données aléatoires seulement en mode test
+      curPr = null;
+      if (me) fillProfile((me.last && me.profiles[me.last]) ? me.last : (me.profiles.particulier ? 'particulier' : (me.profiles.pro ? 'pro' : 'particulier')));
+      else if (cfg && !cfg.live && document.body.classList.contains('test-on')) fillRandom();
+      goPanel(1);
+    }
   } catch (e) { show(e.message); } finally { busy = false; $('go').disabled = false; }
 }
 $('go').onclick = act;
@@ -1632,7 +1689,8 @@ $('go').onclick = act;
   if (document.readyState === 'complete') go(); else addEventListener('load', go);
 })();
 $('f').addEventListener('submit', e => { e.preventDefault(); act(); });
-$('back').onclick = () => { elements = null; $('payel').innerHTML = ''; goPanel(panel === 3 ? 2 : 1); };
+let formVu = false;   // le donateur est revenu au formulaire : on ne le saute plus
+$('back').onclick = () => { formVu = true; elements = null; $('payel').innerHTML = ''; goPanel(panel === 3 ? 2 : 1); };
 
 if (/[?&]diag=1/.test(location.search)) $('exDiag').hidden = false;
 function renderRes(o) {

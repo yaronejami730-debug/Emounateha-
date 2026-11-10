@@ -37,6 +37,7 @@
   .row .k { width: 52mm; flex: none; text-transform: uppercase; letter-spacing: .8px; font-size: 10.5px; color: #555; font-weight: 700; }
   .row .v { font-weight: 700; font-size: 11.5px; }
   .row .v.s { font-size: 11px; }
+  .rempl { font-size: 8px; line-height: 1.25; color: #333; margin-top: 3px; font-weight: 600; }
   .recu { border: 2px solid #111; border-radius: 8px; text-align: center; padding: 9px 10px 8px; margin: 10px 6px 4px; }
   .recu .t { font-size: 10.5px; color: #555; }
   .recu .m { font-size: 20px; font-weight: 700; margin: 6px 0 3px; }
@@ -73,7 +74,7 @@
       <div class="cn">N° Cerfa : {{cerfaNum}}</div>
     </div>
     <div class="titre">{{titreCerfa}}</div>
-    <div class="num"><div class="l">N° d'ordre du reçu</div><div class="n">{{numeroRecu}}</div></div>
+    <div class="num"><div class="l">N° d'ordre du reçu</div><div class="n">{{numeroRecu}}</div>{{mentionRemplace}}</div>
   </div>
 
   <div class="who">
