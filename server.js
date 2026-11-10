@@ -355,10 +355,12 @@ function cleanTitle(t) { // retire hashtags, B"H, numéros « N24 », nom de l'a
   c = c.charAt(0).toUpperCase() + c.slice(1);
   return c || String(t).trim();
 }
+// vidéos rangées à la main dans un onglet précis (le titre ne permet pas de deviner la fête)
+const COLIS_FORCE = { 'Y9013Gywh5A': 'simhat-torah' };   // « Colis pour fêtes/Chabbat n°8 » : Simhat Torah
 async function colisVideos() { // { fête: [id…] }
   const out = {};
   COLIS_RULES.forEach(([k]) => out[k] = []);
-  (await channelVideos()).forEach(v => { const t = noAccent(v.title); for (const [k, re] of COLIS_RULES) if (re.test(t)) { out[k].push(v.id); break; } });
+  (await channelVideos()).forEach(v => { const t = noAccent(v.title); const forced = COLIS_FORCE[v.id]; if (forced && out[forced]) { out[forced].push(v.id); return; } for (const [k, re] of COLIS_RULES) if (re.test(t)) { out[k].push(v.id); break; } });
   return out;
 }
 // les 4 actions de l'association. Vidéos déjà vues et classées une à une (titre propre) ; les nouvelles vidéos sont rangées d'après les mots de leur titre.
