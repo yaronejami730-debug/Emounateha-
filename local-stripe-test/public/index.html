@@ -544,6 +544,8 @@ body{overflow-x:hidden}
 .dn-actfree{margin-top:4px}
 .dn-actfree label{font-weight:700;font-size:14.5px;color:#14464e;margin:6px 0 8px;display:block}
 .dn-actfree label small{font-weight:500;color:#6a7f83;margin-left:6px}
+body[data-besoin] label.ad-sel,body[data-besoin] #chips,body[data-besoin] #gFreq .dn-freq,body[data-besoin] #actBox{display:none!important}
+body[data-besoin] #amtBox{display:block!important}
 .bs-card{margin:0 0 16px;padding:16px 18px;border-radius:16px;background:#f3f8f8;border:1.5px solid #cfe0e0;text-align:left}
 .bs-card .bs-k{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8842a;margin-bottom:4px}
 .bs-card>b{display:block;font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:22px;line-height:1.2;color:#1f6a72}
@@ -1163,7 +1165,7 @@ function upSum() {
   $('sAmt').innerHTML = v ? money(v) + ' <small>' + (tot ? 'en ' + n + ' mensualités' : men ? 'par mois' : '') + '</small>' : '— <small></small>';
   $('bAmt').innerHTML = v ? money(v) + (tot ? ' <em class="bl">en ' + n + ' fois</em>' : men ? ' <em>/ mois</em>' : '') : '—';
   if (typeof upDur === 'function') upDur();
-  $('sAff').textContent = $('aff').value || '—';
+  $('sAff').textContent = BESOIN ? 'Cagnotte : ' + BESOIN.titre : ($('aff').value || '—');
   const who = isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()).trim();
   $('sWho').textContent = who || '—';
 }
@@ -1218,9 +1220,10 @@ const ICONKEY = a => /colis/i.test(a) ? 'box' : /toit/i.test(a) ? 'home' : /sout
 const splitLab = a => { const m = /^(.*?)\s*\((.*)\)\s*$/.exec(a); return m ? [m[1], m[2]] : [a, '']; };
 let AFFITEMS = {};
 // ---- mini-cagnotte « besoin » : la page ne propose que ce besoin, en don ponctuel ; le don lui est attribué
-let BESOIN = null;
-async function besoinInit(slug) {
-  let b = null; try { const r = await fetch('/api/besoin/' + slug); if (r.ok) b = await r.json(); } catch (e) {}
+var BESOIN = null;
+function besoinInit() {
+  let b = null; try { b = JSON.parse(document.body.dataset.besoin || document.body.dataset.besoinOff || 'null'); } catch (e) {}
+  if ($('bsCard')) $('bsCard').remove();
   const box = document.createElement('div'); box.className = 'bs-card'; box.id = 'bsCard';
   if (!b || !b.actif) { box.classList.add('off'); box.innerHTML = '<b>' + (b ? esc(b.titre) : 'Cagnotte introuvable') + '</b><p>' + (b ? 'Cette cagnotte est terminée. Merci à tous ceux qui ont participé.' : "Cette adresse ne correspond à aucune cagnotte.") + ' Vous pouvez toujours faire un don à l\'association ci-dessous.</p>'; $('fs').after(box); return; }
   BESOIN = b;
@@ -1233,6 +1236,7 @@ async function besoinInit(slug) {
   const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => /besoin est le plus grand/i.test(r.value)); if (i >= 0) pickAff(i);
   const sel = document.querySelector('label.ad-sel'); if (sel) sel.hidden = true; $('chips').hidden = true;
   document.querySelector('input[name=freq][value=ponctuel]').checked = true; const fq = document.querySelector('#gFreq .dn-freq'); if (fq) fq.hidden = true; $('freqHint').style.display = 'none'; $('durBox').style.display = 'none';
+  $('montant').value = '52'; mark(); upSum();   // jamais le montant d'une fête (130 €) sur une cagnotte
   document.title = b.titre + ' — Cagnotte Émounatéha';
 }
 const joursTxt = j => j <= 0 ? (j === 0 ? "aujourd'hui" : 'en cours') : (j === 1 ? 'demain' : 'dans ' + j + ' jours');
@@ -1288,6 +1292,7 @@ function renderActs(it) {
   $('libre').oninput = actTotal; actTotal();
 }
 function applyAff(suggest) {
+  if (BESOIN) { const b0 = [...document.querySelectorAll('input[name=affr]')].find(x => /besoin est le plus grand/i.test(x.value)); if (b0) b0.checked = true; }   // cagnotte : aucune autre action ne peut être choisie, quoi qu'il arrive (retour arrière, formulaire restauré par le navigateur…)
   const r = document.querySelector('input[name=affr]:checked'); if (!r) return; const it = AFFITEMS[r.value] || { label: r.value };
   { const all = [...document.querySelectorAll('input[name=affr]')], sel = $('affSel'); if (sel) sel.value = String(all.indexOf(r)); }
   $('aff').value = it.label;
@@ -1345,7 +1350,7 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
     const seg = decodeURIComponent(location.pathname).split('/').filter(Boolean).pop() || '';
     if (seg) { const i = [...document.querySelectorAll('input[name=affr]')].findIndex(r => slugOf((AFFITEMS[r.value] || {}).titre || r.value) === seg); if (i >= 0) pickAff(i); }
   }
-  { const mb = decodeURIComponent(location.pathname).match(/\/besoin\/([a-z0-9-]{1,40})\/?$/); if (mb) besoinInit(mb[1]); }   // mini-cagnotte : don.emounateha.fr/besoin/<slug>
+  if (document.body.dataset.besoin || document.body.dataset.besoinOff) besoinInit();   // mini-cagnotte : don.emounateha.fr/besoin/<slug>
   if (!$('actBox').hidden) actTotal();   // fête choisie d'office : le total suit les actions cochées
   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
   if (mode === 'carte') loadMe().then(() => { if (me) afterLogin(); }); if (mode === 'carte') ensureStripe().catch(() => {});   // préchargement de Stripe
@@ -1755,7 +1760,7 @@ if (/[?&]auto=pay/.test(location.search)) cfgP.then(async () => { if (cfg.live) 
 <script>/* un clic sur la barre du haut ramène à la page principale (ou en haut de l'accueil) */
 (function(){var n=document.querySelector('.sec-nav');if(!n)return;n.style.cursor='pointer';
 n.addEventListener('click',function(e){if(e.target.closest('.burger,.links,a,button'))return;
-if(location.pathname==='/'||location.pathname==='/index.html')window.scrollTo({top:0,behavior:'smooth'});else location.href='/'})})();</script>
+if(location.pathname==='/'||location.pathname==='/index.html'||document.body.dataset.besoin)window.scrollTo({top:0,behavior:'smooth'});else location.href='/'})})();</script>
 <script src="/roch-hodech.js" defer></script>
 
 <script src="/vu.js?v=2" defer></script>

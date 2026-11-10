@@ -601,10 +601,13 @@ async function besoinInfo(slug) {
   if (besoinCache.size > 500) besoinCache.clear();
   besoinCache.set(slug, { at: Date.now(), v }); return v;
 }
+function besoinFiche(b) {   // ce que la page affiche : la fiche + le total des dons reçus par ce lien
+  let collecte = 0, dons = 0; for (const r of Object.values(load().receipts || {})) if (r.besoin === b.slug) { collecte += r.montant || 0; dons++; }
+  return { slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons };
+}
 app.get('/api/besoin/:slug', async (req, res) => {
   const b = await besoinInfo(String(req.params.slug)); if (!b) return res.status(404).json({ error: 'Cagnotte introuvable' });
-  let collecte = 0, dons = 0; for (const r of Object.values(load().receipts || {})) if (r.besoin === b.slug) { collecte += r.montant || 0; dons++; }
-  res.setHeader('Cache-Control', 'no-store'); res.json({ slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons });
+  res.setHeader('Cache-Control', 'no-store'); res.json(besoinFiche(b));
 });
 app.get('/besoin/:slug', async (req, res, next) => {
   const b = await besoinInfo(String(req.params.slug)); if (!b) return res.redirect(302, (process.env.BASE_PATH || '') + '/');
@@ -613,6 +616,8 @@ app.get('/besoin/:slug', async (req, res, next) => {
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, '$1https://don.emounateha.fr/besoin/' + b.slug + '$2')
     .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + ' — Cagnotte Émounatéha$2')
     .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q((b.description || 'Participez à cette cagnotte : chaque don compte.').slice(0, 180)) + '$2');
+  // la fiche est écrite dans la page : la cagnotte s'affiche tout de suite, sans passer par l'écran de don général (fête en cours, choix d'action…)
+  html = html.replace('<body', '<body data-besoin' + (b.actif ? '' : '-off') + '="' + q(JSON.stringify(besoinFiche(b))) + '"');   // clôturée : simple message, puis don normal
   res.setHeader('Cache-Control', 'no-store'); res.type('html').send(html);
 });
 // une adresse par action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale, /l-aide-a-la-scolarite… (la page présélectionne l'action)
