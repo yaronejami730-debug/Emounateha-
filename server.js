@@ -1131,7 +1131,8 @@ async function trafic(req, res, url) {
   const jours = [1, 7, 30, 90].includes(+url.searchParams.get('jours')) ? +url.searchParams.get('jours') : 30;
   const auj = jourParis(), hier = jourParis(new Date(Date.now() - 86400000)), depuis = jourParis(new Date(Date.now() - (jours - 1) * 86400000)), depuisG = jourParis(new Date(Date.now() - (Math.max(jours, 14) - 1) * 86400000));
   const [live, parJour, pages, sources, appareils] = await Promise.all([
-    pool.query("select site, path, count(distinct visitor)::int as n from public.visits where last_at > now() - interval '75 seconds' group by 1, 2 order by n desc, path limit 40"),
+    // en direct : chaque personne n'est montrée que sur SA page la plus récente (sinon, juste après un changement de page, elle apparaîtrait sur deux pages)
+    pool.query("select site, path, count(*)::int as n from (select distinct on (visitor) visitor, site, path from public.visits where last_at > now() - interval '75 seconds' order by visitor, last_at desc) t group by 1, 2 order by n desc, path limit 40"),
     pool.query('select day::text as day, count(distinct visitor)::int as u, sum(hits)::int as v from public.visits where day >= $1 group by day order by day', [depuisG]),
     pool.query('select site, path, count(*)::int as u, sum(hits)::int as v from public.visits where day >= $1 group by 1, 2 order by u desc, v desc limit 60', [depuis]),
     pool.query("select ref, count(*)::int as u from (select day, visitor, (array_agg(ref order by first_at))[1] as ref from public.visits where day >= $1 group by day, visitor) t group by ref order by u desc limit 12", [depuis]),
