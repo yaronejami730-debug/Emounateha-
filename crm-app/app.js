@@ -631,7 +631,7 @@ async function liveTick() {
   liveBusy = true;
   try {
     if (route === 'cerfa') {
-      const l = await api('GET', '/cerfa'); const sig = JSON.stringify((l.recus || []).map(r => [r.numero, r.montant, r.ref]));
+      const l = await api('GET', '/cerfa'); const sig = JSON.stringify((l.recus || []).map(r => [r.numero, r.montant, r.ref, r.mail && [r.mail.sent, r.mail.at], r.brevo && [r.brevo.delivered, r.brevo.opened, r.brevo.problem]])); CF.brevoOk = l.brevoOk;
       if (sig !== liveSig) { liveSig = sig; CF.recus = l.recus || []; if (l.modes) CF.modes = l.modes; if (!userBusy()) { cerfaList(); const bt = $('#cfTests'); if (bt) bt.style.display = CF.recus.some(r => /^TEST-/i.test(r.numero || '')) ? '' : 'none'; } }
     } else {
       const st = await api('GET', '/state'); const sig = JSON.stringify([st.contacts && st.contacts.length, st.campaigns, (st.sends || []).length, st.quota, st.ambassadeurs]);
@@ -1027,20 +1027,71 @@ async function cerfaSupprTests() {
   catch (e) { toast('Suppression impossible : ' + e.message, true); }
 }
 async function cerfaInit() {
-  try { const [l, c] = await Promise.all([api('GET', '/cerfa'), api('GET', '/cerfa/config').catch(() => ({ affectations: [] }))]); CF.recus = l.recus || []; if (l.modes) CF.modes = l.modes; CF.affs = (c.affectations || []).map(a => a.label); }
+  try { const [l, c] = await Promise.all([api('GET', '/cerfa'), api('GET', '/cerfa/config').catch(() => ({ affectations: [] }))]); CF.recus = l.recus || []; CF.brevoOk = l.brevoOk; if (l.modes) CF.modes = l.modes; CF.affs = (c.affectations || []).map(a => a.label); }
   catch (e) { $('#cerfaTab').innerHTML = '<p class="hint">Impossible de lire les reçus : ' + esc(e.message) + '</p>'; return; }
   { const bt = $('#cfTests'); if (bt) bt.style.display = CF.recus.some(r => /^TEST-/i.test(r.numero || '')) ? '' : 'none'; }
   cerfaList();
 }
+// état de l'e-mail d'un reçu : ce que notre serveur a fait, puis ce que Brevo en dit
+function mailEtat(m, bv) {
+  if (!m) return { c: '', t: 'Non envoyé', d: '' };
+  if (!m.sent) return { c: 'bad', t: 'Échec de l\'envoi', d: m.error || m.note || '' };
+  if (bv && bv.problem) return { c: 'bad', t: ({ hardBounces: 'Adresse inexistante', softBounces: 'Boîte pleine ou refus', blocked: 'Bloqué', invalid: 'Adresse invalide', spam: 'Signalé comme spam', unsubscribed: 'Désinscrit', deferred: 'Retardé', error: 'Erreur' })[bv.problem] || 'Problème', d: 'signalé par Brevo' };
+  if (bv && bv.opened) return { c: 'ok', t: 'Ouvert', d: 'délivré, puis ouvert' };
+  if (bv && bv.delivered) return { c: 'ok', t: 'Délivré', d: 'arrivé dans la boîte' };
+  return { c: 'blue', t: 'Parti', d: 'accepté par Brevo' };
+}
+const cfHeure = d => d ? new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 function cerfaList() {
   const f = ($('#cfFiltre') || {}).value || '', q = (($('#cfQ') || {}).value || '').toLowerCase();
   const l = CF.recus.filter(r => (!f || r.source === f) && (!q || (r.nom + ' ' + r.numero + ' ' + (r.email || '')).toLowerCase().includes(q)));
   const tot = l.reduce((t, r) => t + (r.montant || 0), 0);
-  $('#cerfaTab').innerHTML = !l.length ? '<p class="hint">Aucun reçu pour le moment.</p>' : `<div class="hint" style="margin-bottom:8px">${l.length} reçu(s) · total ${eurC(tot)}</div>
-    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>N°</th><th>Date</th><th>Donateur</th><th>Montant</th><th>Mode</th><th>Origine</th><th>E-mail</th><th></th></tr></thead><tbody>
-    ${l.map(r => `<tr><td><b>${esc(r.numero)}</b></td><td>${esc(new Date(r.dateDon).toLocaleDateString('fr-FR'))}</td><td>${esc(r.nom)}<div class="hint">${esc(r.type === 'entreprise' ? 'Professionnel' : 'Particulier')}${r.email ? ' · ' + esc(r.email) : ''}${r.tel ? ' · ' + esc(r.tel) : ''}</div></td>
-      <td>${eurC(r.montant)}</td><td>${esc(String(r.mode || '').split(' — ')[0])}</td><td><span class="pill ${r.source === 'manuel' ? 'warn' : 'ok'}">${esc(r.source)}</span></td><td>${r.emailEnvoye ? '✓ envoyé' : '—'}</td>
-      <td><a class="btn" href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">PDF</a></td></tr>`).join('')}</tbody></table></div>`;
+  $('#cerfaTab').innerHTML = !l.length ? '<p class="hint">Aucun reçu pour le moment.</p>' : `<div class="hint" style="margin-bottom:8px">${l.length} reçu(s) · total ${eurC(tot)} · du plus récent au plus ancien, dans l'ordre où ils ont été créés</div>
+    <div style="overflow-x:auto"><table class="tbl cf-tbl"><thead><tr><th>N°</th><th>Créé le</th><th>Donateur</th><th>Montant</th><th>Mode</th><th>Origine</th><th>E-mail du reçu</th><th></th></tr></thead><tbody>
+    ${l.map(r => { const e = mailEtat(r.mail, r.brevo), cree = r.creeLe || (r.source === 'en ligne' ? r.dateDon : null), jd = new Date(r.dateDon).toLocaleDateString('fr-FR');
+      return `<tr><td><b>${esc(r.numero)}</b></td>
+      <td class="cf-when">${cree ? esc(cfHeure(cree)) : '<span class="hint" style="margin:0">heure non enregistrée</span>'}<div class="hint">don du ${esc(jd)}</div></td>
+      <td>${esc(r.nom)}<div class="hint">${esc(r.type === 'entreprise' ? 'Professionnel' : 'Particulier')}${r.email ? ' · ' + esc(r.email) : ''}${r.tel ? ' · ' + esc(r.tel) : ''}</div></td>
+      <td>${eurC(r.montant)}</td><td>${esc(String(r.mode || '').split(' — ')[0])}</td><td><span class="pill ${r.source === 'manuel' ? 'warn' : 'ok'}">${esc(r.source)}</span></td>
+      <td class="cf-mail"><span class="pill ${e.c}">${esc(e.t)}</span>${r.mail ? `<div class="hint">${r.mail.at ? esc(cfHeure(r.mail.at)) : 'date non enregistrée'}${r.envois > 1 ? ' · ' + r.envois + ' envois' : ''}${e.d ? '<br>' + esc(e.d) : ''}</div>` : ''}</td>
+      <td class="cf-act"><a class="btn sm" href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">PDF</a>
+        <button class="btn sm" onclick="cerfaMail('${esc(r.ref)}')">Voir le mail</button>
+        <button class="btn sm${r.mail && r.mail.sent ? '' : ' pri'}" onclick="cerfaEnvoyer('${esc(r.ref)}')">${r.mail && r.mail.sent ? 'Renvoyer' : 'Envoyer'}</button></td></tr>`; }).join('')}</tbody></table></div>
+    ${CF.brevoOk === false ? '<p class="hint" style="margin-top:8px">Brevo ne répond pas pour l\'instant : « Parti » peut cacher un mail déjà délivré.</p>' : ''}`;
+}
+// envoyer (ou renvoyer) le reçu par e-mail, à l'adresse du donateur ou à une autre
+function cerfaEnvoyer(ref) {
+  const r = CF.recus.find(x => x.ref === ref); if (!r) return;
+  modal(`<h2>${r.mail && r.mail.sent ? 'Renvoyer' : 'Envoyer'} le reçu ${esc(r.numero)}</h2>
+    <p class="hint">Le donateur reçoit l'e-mail de remerciement avec le reçu fiscal en PDF, en pièce jointe.${r.mail && r.mail.sent ? ' Il lui a déjà été envoyé le ' + esc(cfHeure(r.mail.at) || 'jour du don') + '.' : ''}</p>
+    <label>Adresse e-mail</label><input id="ce_to" type="email" value="${esc(r.email || '')}" placeholder="donateur@mail.com">
+    <div class="row r" style="margin-top:22px"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn pri" id="ce_go" onclick="cerfaEnvoyerOk('${esc(ref)}')">Envoyer maintenant</button></div>`);
+}
+async function cerfaEnvoyerOk(ref) {
+  const to = $('#ce_to').value.trim(), go = $('#ce_go'); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) return toast('Adresse e-mail invalide', true);
+  go.disabled = true; go.textContent = 'Envoi…';
+  try { const j = await api('POST', '/cerfa/renvoyer', { ref, email: to }); closeModal(); toast('E-mail parti, accepté par Brevo'); await cerfaInit(); cerfaMail(ref); }
+  catch (e) { go.disabled = false; go.textContent = 'Envoyer maintenant'; toast(e.message, true); await cerfaInit().catch(() => {}); }
+}
+// ce que le donateur a reçu + l'historique des envois de ce reçu
+async function cerfaMail(ref) {
+  const r = CF.recus.find(x => x.ref === ref); if (!r) return;
+  modal(`<h2>E-mail du reçu ${esc(r.numero)}</h2><p class="hint">Chargement…</p>`);
+  try {
+    const j = await api('GET', '/cerfa/mail?ref=' + encodeURIComponent(ref));
+    const lignes = j.envois.length ? j.envois.slice().reverse().map(x => { const e = mailEtat(x, x.brevo);
+      return `<li><span class="pill ${e.c}">${esc(e.t)}</span><span class="cm-w"><b>${esc(x.to || '—')}</b><small>${x.at ? esc(cfHeure(x.at)) : 'date non enregistrée'} · ${x.par === 'crm' ? 'envoyé depuis le CRM' : 'envoi automatique'}${e.d ? ' · ' + esc(e.d) : ''}</small>
+        ${x.brevo && x.brevo.delivered ? `<small>Délivré le ${esc(cfHeure(x.brevo.delivered))}${x.brevo.firstOpen ? ' · ouvert le ' + esc(cfHeure(x.brevo.firstOpen)) : ''}</small>` : ''}
+        ${x.messageId ? `<small class="cm-id">Identifiant Brevo : ${esc(x.messageId)}</small>` : ''}${x.error ? `<small class="cm-err">${esc(x.error)}</small>` : ''}</span></li>`; }).join('') : '<li class="hint" style="margin:0">Aucun e-mail n\'a été envoyé pour ce reçu.</li>';
+    $('#modal').innerHTML = `<div class="box" style="width:min(760px,96vw)"><h2>E-mail du reçu ${esc(r.numero)}</h2>
+      <h3 class="cm-h">Envois</h3><ul class="cm-list">${lignes}</ul>
+      ${j.brevoOk === false ? '<p class="hint">Brevo ne répond pas pour l\'instant : le statut affiché est celui de notre serveur.</p>' : ''}
+      <h3 class="cm-h">Ce que le donateur reçoit</h3>
+      ${j.html ? `<div class="cm-sub"><b>Objet :</b> ${esc(j.sujet)}<br><b>Pièce jointe :</b> ${esc(j.piece)} · <a href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">ouvrir le PDF</a></div>
+        <iframe class="cm-pv" id="cmPv" title="Aperçu de l'e-mail" sandbox=""></iframe><p class="hint">Aperçu reconstitué à partir du modèle et des données du reçu : c'est le contenu envoyé, pas une copie de la boîte du donateur.</p>` : '<p class="hint">Aperçu indisponible (Brevo non configuré sur le serveur des dons).</p>'}
+      <div class="row r" style="margin-top:16px"><button class="btn" onclick="closeModal();cerfaEnvoyer('${esc(ref)}')">${r.mail && r.mail.sent ? 'Renvoyer' : 'Envoyer'}</button><button class="btn pri" onclick="closeModal()">Fermer</button></div></div>`;
+    const f = $('#cmPv'); if (f) f.srcdoc = j.html;
+  } catch (e) { $('#modal').innerHTML = `<div class="box"><h2>E-mail du reçu ${esc(r.numero)}</h2><p class="hint">Indisponible : ${esc(e.message)}</p><div class="row r"><button class="btn pri" onclick="closeModal()">Fermer</button></div></div>`; }
 }
 function cerfaForm() {
   cfT = 'particulier';

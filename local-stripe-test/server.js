@@ -220,6 +220,8 @@ async function fabriquer(don, { envoyerEmail }) {
   const out = { numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
   if (don.proche) { out.proche = don.proche; out.accordAt = don.accordAt || null; }
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
+  out.creeLe = new Date().toISOString();   // moment où le reçu (PDF) a été fabriqué : l'ordre de création suit la numérotation
+  if (envoyerEmail) { out.email = { ...out.email, at: out.creeLe, to: String(don.email || '').toLowerCase(), par: 'auto' }; out.mails = [out.email]; }   // trace de l'envoi
   return out;
 }
 
@@ -533,12 +535,40 @@ function adminOk(req, res) {
   if (!ok) res.status(401).json({ error: 'non autorisé' });
   return !!ok;
 }
-const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', besoin: r.besoin || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
+const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', besoin: r.besoin || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), creeLe: r.creeLe || null, envois: (r.mails || []).length || (r.email && !r.email.skipped ? 1 : 0),
+  mail: r.email && !r.email.skipped ? { sent: !!r.email.sent, messageId: r.email.messageId || '', at: r.email.at || null, to: r.email.to || r.donorEmail || '', error: r.email.error || '', note: r.email.note || '', brevo: !!r.email.brevo, par: r.email.par || 'auto' } : null, mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
+const ordreNum = n => { const m = String(n || '').match(/(\d{4})\D+(\d+)$/); return (/^TEST/i.test(String(n || '')) ? 0 : 1e12) + (m ? +m[1] * 1e6 + +m[2] : 0); };
+const trouverRecu = (d, ref) => { for (const coll of ['receipts', 'manuels']) if (d[coll] && Object.prototype.hasOwnProperty.call(d[coll], ref)) return d[coll][ref]; return null; };
+const mailDuRecu = r => mailer.donEmail({ prenom: r.type === 'entreprise' ? '' : (r.form && r.form.prenom) || '', montant: r.montant, dateDon: r.dateDon, affectation: r.affectation, mode: String(r.mode || '').replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero: r.numero, mensuel: r.mensuel, echeance: r.echeance, remplace: r.remplace || '',
+  spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
+// CRM : (r)envoyer le reçu par e-mail au donateur, avec trace de l'envoi
+app.post('/api/admin/renvoyer', async (req, res) => {
+  if (!adminOk(req, res)) return;
+  try {
+    const ref = String(req.body.ref || ''), r = trouverRecu(load(), ref); if (!r) throw new Error('Reçu introuvable');
+    const to = String(req.body.email || r.donorEmail || '').trim().toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) throw new Error('Adresse e-mail invalide');
+    let out; try { out = await envoyer({ to, numero: r.numero, pdfFile: path.join(RECUS, path.basename(r.file)), nom: r.nom, affectation: r.affectation, mensuel: r.mensuel, don: r }); } catch (e) { out = { error: e.message }; }
+    const trace = { ...out, at: new Date().toISOString(), to, par: 'crm' };
+    const d = load(), r2 = trouverRecu(d, ref); if (!r2) throw new Error('Reçu introuvable');
+    r2.mails = [...(r2.mails || (r2.email && !r2.email.skipped ? [r2.email] : [])), trace]; r2.email = trace; if (!r2.donorEmail) r2.donorEmail = to; save(d);
+    if (!out.sent) throw new Error(out.error || out.note || "L'e-mail n'a pas pu être envoyé");
+    res.json({ ok: true, mail: trace });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+// CRM : ce que le donateur reçoit (même modèle que l'envoi, reconstitué) + historique des envois de ce reçu
+app.get('/api/admin/mail', async (req, res) => {
+  if (!adminOk(req, res)) return;
+  try {
+    const r = trouverRecu(load(), String(req.query.ref || '')); if (!r) throw new Error('Reçu introuvable');
+    const m = await mailDuRecu(r);
+    res.json({ numero: r.numero, sujet: m ? m.subject : '', html: m ? m.html : '', piece: `Recu-fiscal-${nomFichier(r.numero)}.pdf`, envois: (r.mails || (r.email && !r.email.skipped ? [r.email] : [])).map(x => ({ at: x.at || null, to: x.to || r.donorEmail || '', sent: !!x.sent, messageId: x.messageId || '', error: x.error || '', note: x.note || '', par: x.par || 'auto' })) });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();
   const recus = [...Object.entries(d.receipts || {}).map(([k, r]) => ligneRecu(r, k, 'en ligne')), ...Object.entries(d.manuels || {}).map(([k, r]) => ligneRecu(r, k, 'manuel'))]
-    .sort((a, b) => String(b.dateDon).localeCompare(String(a.dateDon)) || String(b.numero).localeCompare(String(a.numero)));
+    .sort((a, b) => ordreNum(b.numero) - ordreNum(a.numero) || String(b.creeLe || b.dateDon).localeCompare(String(a.creeLe || a.dateDon)));   // ordre de création = ordre des numéros (le plus récent en premier)
   res.json({ recus, modes: MODES.slice(0, 3) });
 });
 // suppression de reçus (uniquement les reçus de TEST, ou une liste précise de numéros TEST-…) : CRM → Dons

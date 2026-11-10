@@ -1977,7 +1977,23 @@ async function cerfaProxy(req, res, url) {
   try {
     if (url.pathname === '/api/cerfa/siret') { const r = await fetch(DON_URL + '/api/siret?q=' + encodeURIComponent(url.searchParams.get('q') || '')); return send(res, r.status, await J(r)); }
     if (url.pathname === '/api/cerfa/config') { const r = await fetch(DON_URL + '/api/config'); return send(res, r.status, await J(r)); }
-    if (url.pathname === '/api/cerfa' && req.method === 'GET') { const r = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus') }); return send(res, r.status, await J(r)); }
+    if (url.pathname === '/api/cerfa' && req.method === 'GET') {   // liste des reçus + ce que Brevo dit de chaque e-mail (délivré, ouvert, rejeté)
+      const r = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus') }), j = await J(r);
+      if (r.ok && Array.isArray(j.recus)) { const ev = await brevoEvents().catch(() => ({ map: new Map(), ok: false })); j.brevoOk = !!ev.ok;
+        for (const x of j.recus) { const e = x.mail && x.mail.messageId ? ev.map.get(x.mail.messageId) : null; if (e) x.brevo = { delivered: e.delivered, opened: e.opened, firstOpen: e.firstOpen, problem: e.problem, problemAt: e.problemAt }; } }
+      return send(res, r.status, j);
+    }
+    if (url.pathname === '/api/cerfa/renvoyer' && req.method === 'POST') {   // (r)envoi du reçu par e-mail
+      const b = await readBody(req);
+      const r = await fetch(DON_URL + '/api/admin/renvoyer', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/renvoyer'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(60000) });
+      return send(res, r.status, await J(r));
+    }
+    if (url.pathname === '/api/cerfa/mail' && req.method === 'GET') {   // aperçu du mail + historique des envois, avec le statut Brevo de chacun
+      const r = await fetch(DON_URL + '/api/admin/mail?ref=' + encodeURIComponent(url.searchParams.get('ref') || ''), { headers: cerfaSig('GET', '/api/admin/mail') }), j = await J(r);
+      if (r.ok && Array.isArray(j.envois)) { const ev = await brevoEvents().catch(() => ({ map: new Map(), ok: false })); j.brevoOk = !!ev.ok;
+        for (const x of j.envois) { const e = x.messageId ? ev.map.get(x.messageId) : null; if (e) x.brevo = { delivered: e.delivered, opened: e.opened, firstOpen: e.firstOpen, problem: e.problem, problemAt: e.problemAt }; } }
+      return send(res, r.status, j);
+    }
     if (url.pathname === '/api/cerfa/supprimer' && req.method === 'POST') {   // reçus de TEST uniquement
       const b = await readBody(req);
       const r = await fetch(DON_URL + '/api/admin/supprimer', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/supprimer'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(30000) });
