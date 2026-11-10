@@ -1843,7 +1843,16 @@ async function handle(req, res) {
     let file = path.join(base, path.normalize(rel));
     if (file.startsWith(base) && fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
     if (!file.startsWith(base) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return send(res, 404, 'Not found', 'text/plain');
-    if (isCrm) return reply(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream', { 'cache-control': 'private, max-age=120' });
+    if (isCrm) {
+      // la page du CRM n'est jamais gardée en mémoire, et ses fichiers portent un numéro de version (date du fichier) :
+      // après une mise à jour, le navigateur reçoit toujours le menu ET le script qui vont ensemble
+      if (path.basename(file) === 'index.html') {
+        const ver = f => { try { return Math.round(fs.statSync(path.join(CRM_DIR, f)).mtimeMs / 1000).toString(36) + fs.statSync(path.join(CRM_DIR, f)).size.toString(36); } catch (e) { return '0'; } };
+        const html = fs.readFileSync(file, 'utf8').replace('"/crm/app.js"', '"/crm/app.js?v=' + ver('app.js') + '"').replace('"/crm/style.css"', '"/crm/style.css?v=' + ver('style.css') + '"');
+        return reply(res, 200, html, 'text/html; charset=utf-8', { 'cache-control': 'no-store' });
+      }
+      return reply(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream', { 'cache-control': url.searchParams.get('v') ? 'private, max-age=86400' : 'private, no-cache' });
+    }
     send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream');
   } catch (e) { console.error(e); send(res, 500, { error: e.message }); }
 }
