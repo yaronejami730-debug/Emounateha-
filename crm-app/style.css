@@ -278,3 +278,33 @@ table{border-radius:16px;overflow:hidden}
 .bs-url span{padding:0 0 0 12px;color:var(--mut);font-size:14px;white-space:nowrap}.bs-url b{padding:11px 12px 11px 0;font-size:14px}
 .bs-url input{border:0!important;background:transparent!important;padding-left:0!important;min-width:0;flex:1;box-shadow:none!important}
 @media(max-width:560px){.bs-list{grid-template-columns:1fr}.bs-url span{font-size:12.5px}}
+
+/* campagnes : dons par e-mail, en direct */
+.at{margin-top:28px}
+.at-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+.at-head h2{margin:0;font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:24px;color:var(--teal,#1f6a72)}.at-head .hint{margin:2px 0 0}
+.at-live{display:inline-flex;align-items:center;gap:7px;flex:none;padding:5px 12px;border-radius:99px;background:#e6f5ee;color:#047857;font-size:12.5px;font-weight:600}
+.at-live i{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:atPulse 2s infinite}
+@keyframes atPulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 8px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+.at-warn{margin-bottom:12px;padding:10px 14px;border-radius:12px;background:#fef3c7;color:#92400e;font-size:13.5px}
+.at-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+.at-kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--sh)}
+.at-kpi small{display:block;font-size:12.5px;color:var(--mut);font-weight:500}.at-kpi b{display:block;font-size:28px;line-height:1.15;margin-top:4px;color:var(--ink);font-variant-numeric:tabular-nums}.at-kpi em{display:block;font-style:normal;font-size:12px;color:var(--mut);margin-top:2px}
+.at-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;align-items:start}
+.at-card{padding:18px 20px}.at-card h3{margin:0 0 6px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.at-row{display:grid;grid-template-columns:minmax(0,1.5fr) 74px 104px minmax(120px,1fr);gap:14px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.at-row:first-of-type{border-top:0}
+.at-who b{display:block;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.at-who small,.at-n small,.at-amt small{display:block;font-size:12px;color:var(--mut)}
+.at-n{text-align:right}.at-n b{font-size:16px;font-variant-numeric:tabular-nums}
+.at-amt{text-align:right}.at-amt b{font-size:17px;color:var(--teal,#1f6a72);font-variant-numeric:tabular-nums}
+.at-amt i{display:block;height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:5px}.at-amt u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:3px;transition:width .5s}
+.at-list{list-style:none;margin:0;padding:0;max-height:430px;overflow:auto}
+.at-list li{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.at-list li:first-child{border-top:0}
+.at-d{font-size:12.5px;color:var(--mut)}.at-p b{display:block;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.at-p small{display:block;font-size:12px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.at-m{text-align:right;font-weight:700;font-size:15px;color:var(--teal,#1f6a72);font-variant-numeric:tabular-nums}.at-m small{display:block;font-weight:500;font-size:11.5px;color:var(--mut)}
+.at-list li.neuf{animation:atNeuf 2.4s ease-out}
+@keyframes atNeuf{0%{background:#fff6d8}100%{background:transparent}}
+@media(max-width:1100px){.at-cols{grid-template-columns:1fr}.at-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.at-row{grid-template-columns:1fr 1fr;gap:8px 12px}.at-who{grid-column:1/-1}.at-n{text-align:left}.at-amt{grid-column:1/-1;text-align:left}.at-kpi b{font-size:23px}.at-head{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.at-live i,.at-list li.neuf{animation:none}}

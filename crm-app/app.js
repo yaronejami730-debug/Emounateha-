@@ -653,20 +653,44 @@ function campDetail(id){
 
 // historique : chargé après affichage de la page
 (function(){ const oldRender = window.render; })();
-// Dons par e-mail : quel modèle / quelle relance a déclenché des dons (la provenance est enregistrée avec le paiement dans Stripe)
-async function loadAttribution(){
-  const el=document.getElementById('attr'); if(!el) return;
-  el.innerHTML='<div class="card" style="margin-top:18px"><b>Dons par e-mail</b><div class="hint">Chargement…</div></div>';
-  const eur=c=>(c/100).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' €';
-  try{ const a=await api('GET','/attribution');
-    const lg=a.lignes.map(r=>`<tr><td>${esc(r.campagne)}</td><td>${esc(r.modele)}</td><td align="right">${r.envois}</td><td align="right"><b>${r.dons}</b></td><td align="right">${r.taux===null?'—':r.taux+' %'}</td><td align="right"><b>${eur(r.montant)}</b></td><td align="right">${r.prelevements?r.prelevements+' ('+eur(r.montantPrelev)+')':'—'}</td></tr>`).join('');
-    const dn=a.dons.slice(0,40).map(d=>`<tr><td>${new Date(d.date).toLocaleDateString('fr-FR')}</td><td>${esc(d.nom||'')} <small style="color:var(--mut)">${esc(d.email||'')}</small></td><td>${esc(d.campagne)} · ${esc(d.modele)}</td><td align="right">${eur(d.montant)}${d.mensuel?' <small>/ mois'+(d.suite?' (suite)':'')+'</small>':''}</td></tr>`).join('');
-    el.innerHTML=`<div class="card" style="margin-top:18px"><div class="row" style="justify-content:space-between"><div><b style="font-size:16px">Dons par e-mail</b><div class="hint">Quel e-mail a déclenché le don (campagne et modèle). Le lien de chaque e-mail porte son identifiant, gardé 30 jours et envoyé à Stripe avec le paiement.</div></div><button class="btn" onclick="loadAttribution()">↻</button></div>
-      ${a.erreur?`<div class="hint" style="color:var(--warn)">⚠ ${esc(a.erreur)}</div>`:''}
-      ${a.lignes.length?`<table style="width:100%;font-size:14px;margin-top:10px"><tr><th align="left">Campagne</th><th align="left">Modèle d'e-mail</th><th align="right">Envoyés</th><th align="right">Dons</th><th align="right">Taux</th><th align="right">Montant</th><th align="right">Prélèvements suivants</th></tr>${lg}
-      <tr style="border-top:2px solid #dbe8e8"><td colspan="2"><b>Total</b></td><td align="right"><b>${a.total.envois}</b></td><td align="right"><b>${a.total.dons}</b></td><td align="right">${a.total.envois?Math.round(a.total.dons/a.total.envois*1000)/10+' %':'—'}</td><td align="right"><b>${eur(a.total.montant)}</b></td><td align="right">${a.total.prelevements?a.total.prelevements+' ('+eur(a.total.montantPrelev)+')':'—'}</td></tr></table>`:'<div class="hint" style="margin-top:8px">Aucun envoi de campagne pour l\'instant.</div>'}
-      ${dn?`<h4 style="margin:16px 0 6px">Derniers dons venus d'un e-mail</h4><table style="width:100%;font-size:14px"><tr><th align="left">Date</th><th align="left">Donateur</th><th align="left">E-mail à l'origine</th><th align="right">Montant</th></tr>${dn}</table>`:'<div class="hint" style="margin-top:10px">Aucun don rattaché à un e-mail pour l\'instant : ils apparaîtront ici dès qu\'un donateur paiera après avoir cliqué sur un lien de campagne.</div>'}</div>`;
-  }catch(e){ el.innerHTML='<div class="card" style="margin-top:18px"><b>Dons par e-mail</b><div class="hint">Indisponible : '+esc(e.message)+'</div></div>'; }
+// Dons par e-mail : quel e-mail a déclenché des dons (la provenance est enregistrée avec le paiement dans Stripe).
+// En direct : les chiffres sont gardés en mémoire et mis à jour sur place, sans « Chargement… » ni clignotement quand la page se redessine.
+const AT = { data: null, sig: '', vus: null, timer: null, busy: false };
+const atEur = c => ((c || 0) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
+function attrDraw(neufs) {
+  const el = document.getElementById('attr'); if (!el) return; const a = AT.data;
+  if (!a) { el.innerHTML = '<section class="at"><div class="at-head"><div><h2>Dons par e-mail</h2><p class="hint">Chargement…</p></div></div></section>'; return; }
+  const t = a.total, taux = t.envois ? Math.round(t.dons / t.envois * 1000) / 10 : null, max = Math.max(1, ...a.lignes.map(r => r.montant));
+  const tuile = (l, v, s) => `<div class="at-kpi"><small>${l}</small><b>${v}</b>${s ? `<em>${s}</em>` : ''}</div>`;
+  const lignes = a.lignes.map(r => `<div class="at-row">
+      <div class="at-who"><b>${esc(r.modele)}</b><small>${esc(r.campagne)}</small></div>
+      <div class="at-n"><b>${r.envois}</b><small>envoyés</small></div>
+      <div class="at-n"><b>${r.dons}</b><small>don${r.dons > 1 ? 's' : ''}${r.taux === null ? '' : ' · ' + String(r.taux).replace('.', ',') + ' %'}</small></div>
+      <div class="at-amt"><b>${atEur(r.montant)}</b><i><u style="width:${Math.round(r.montant * 100 / max)}%"></u></i>${r.prelevements ? `<small>+ ${r.prelevements} prélèvement${r.prelevements > 1 ? 's' : ''} suivant${r.prelevements > 1 ? 's' : ''} (${atEur(r.montantPrelev)})</small>` : ''}</div>
+    </div>`).join('');
+  const dons = a.dons.slice(0, 30).map(d => `<li class="${neufs && neufs.has(d.numero) ? 'neuf' : ''}">
+      <span class="at-d">${new Date(d.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+      <span class="at-p"><b>${esc(d.nom || '—')}</b><small>${esc(d.modele)} · ${esc(d.campagne)}</small></span>
+      <span class="at-m">${atEur(d.montant)}${d.mensuel ? `<small>${d.suite ? 'prélèvement mensuel' : 'par mois'}</small>` : ''}</span></li>`).join('');
+  el.innerHTML = `<section class="at">
+    <div class="at-head"><div><h2>Dons par e-mail</h2><p class="hint">Les dons faits après un clic dans un de vos e-mails, pendant 30 jours.</p></div><span class="at-live" title="Mis à jour automatiquement"><i></i>En direct</span></div>
+    ${a.erreur ? `<div class="at-warn">${esc(a.erreur)}</div>` : ''}
+    <div class="at-kpis">${tuile('Dons venus d\'un e-mail', t.dons)}${tuile('Montant collecté', atEur(t.montant), t.prelevements ? '+ ' + atEur(t.montantPrelev) + ' de prélèvements suivants' : '')}${tuile('E-mails envoyés', (t.envois || 0).toLocaleString('fr-FR'))}${tuile('Taux de don', taux === null ? '—' : String(taux).replace('.', ',') + ' %', 'dons pour 100 e-mails')}</div>
+    <div class="at-cols">
+      <div class="card at-card"><h3>Par e-mail</h3>${a.lignes.length ? lignes : '<p class="hint">Aucun envoi de campagne pour l\'instant.</p>'}</div>
+      <div class="card at-card"><h3>Derniers dons</h3>${dons ? `<ul class="at-list">${dons}</ul>` : '<p class="hint">Aucun don rattaché à un e-mail pour l\'instant. Ils apparaîtront ici dès qu\'un donateur paiera après avoir cliqué sur un lien.</p>'}</div>
+    </div></section>`;
+}
+async function attrPull() {
+  if (AT.busy || document.hidden || !document.getElementById('attr')) return; AT.busy = true;
+  try { const a = await api('GET', '/attribution'), sig = JSON.stringify(a);
+    if (sig !== AT.sig) { const nums = new Set(a.dons.map(d => d.numero)), neufs = AT.vus ? new Set([...nums].filter(n => !AT.vus.has(n))) : null; AT.data = a; AT.sig = sig; AT.vus = nums; attrDraw(neufs); } }
+  catch (e) { if (!AT.data) { const el = document.getElementById('attr'); if (el) el.innerHTML = '<section class="at"><div class="at-head"><div><h2>Dons par e-mail</h2><p class="hint">Indisponible : ' + esc(e.message) + '</p></div></div></section>'; } }
+  finally { AT.busy = false; }
+}
+function loadAttribution() {   // appelé à chaque dessin de la page Campagnes : on réaffiche tout de suite ce qu'on connaît, puis on met à jour en arrière-plan
+  attrDraw(); attrPull();
+  if (!AT.timer) AT.timer = setInterval(() => { if (document.getElementById('attr')) attrPull(); else { clearInterval(AT.timer); AT.timer = null; } }, 10000);
 }
 async function loadHistorique(){
   const el=document.getElementById('hist'); if(!el) return;
