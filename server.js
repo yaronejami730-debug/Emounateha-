@@ -1051,11 +1051,14 @@ async function chabadTexte(type, jour, jeton) {
     const a = Math.min(...nums), b = Math.max(...nums);
     const x = await sefaria(`Psalms ${a}${b > a ? '-' + b : ''}`, 'version=french&version=hebrew');
     v = { title: 'Téhilim', ref: b > a ? `Chapitres ${a} à ${b}` : `Chapitre ${a}`, trLang: x.trLang, sections: sections(x.he, x.tr, a, 1, 'Psaume') };
-    // Roch 'Hodech (pas de Ta'hanoun) : le psaume 20 n'est pas dit dans la prière ; on le dit avec les Téhilim, avant ceux du jour
-    const jh = +new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', timeZone: 'UTC' }).format(new Date(jour + 'T12:00:00Z'));
-    if ((jh === 1 || jh === 30) && !(a <= 20 && b >= 20)) {
+    // Roch 'Hodech et 'Hol Hamoèd (jours sans Ta'hanoun où l'on est devant un écran) : le psaume 20 n'est pas dit dans la prière ; on le dit avec les Téhilim, avant ceux du jour.
+    // Les jours de Yom Tov ne sont pas visés : personne n'est sur le site ces jours-là.
+    const hd = new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatToParts(new Date(jour + 'T12:00:00Z'));
+    const jh = +(hd.find(x => x.type === 'day') || {}).value, mh = String((hd.find(x => x.type === 'month') || {}).value || '');
+    const occasion = (jh === 1 || jh === 30) ? 'ראש חודש' : ((/^Nisan/i.test(mh) && jh >= 16 && jh <= 20) || (/^Tishr/i.test(mh) && jh >= 16 && jh <= 21)) ? 'חול המועד' : '';
+    if (occasion && !(a <= 20 && b >= 20)) {
       try { const p = await sefaria('Psalms 20', 'version=french&version=hebrew'), sc = sections(p.he, p.tr, 20, 1, 'Psaume')[0];
-        if (sc) { sc.note = "Roch 'Hodech"; v.sections.unshift(sc); v.ref = "Psaume 20 (Roch 'Hodech), puis " + v.ref.charAt(0).toLowerCase() + v.ref.slice(1); v.rochHodech = true; } }
+        if (sc) { sc.noteHe = occasion; v.sections.unshift(sc); v.ref = 'Psaume 20, puis ' + v.ref.charAt(0).toLowerCase() + v.ref.slice(1); v.occasion = occasion; } }
       catch (e) { console.error('[tehilim] psaume 20', e.message); }
     }
   } else {
