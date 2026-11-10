@@ -1051,6 +1051,13 @@ async function chabadTexte(type, jour, jeton) {
     const a = Math.min(...nums), b = Math.max(...nums);
     const x = await sefaria(`Psalms ${a}${b > a ? '-' + b : ''}`, 'version=french&version=hebrew');
     v = { title: 'Téhilim', ref: b > a ? `Chapitres ${a} à ${b}` : `Chapitre ${a}`, trLang: x.trLang, sections: sections(x.he, x.tr, a, 1, 'Psaume') };
+    // Roch 'Hodech (pas de Ta'hanoun) : le psaume 20 n'est pas dit dans la prière ; on le dit avec les Téhilim, avant ceux du jour
+    const jh = +new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', timeZone: 'UTC' }).format(new Date(jour + 'T12:00:00Z'));
+    if ((jh === 1 || jh === 30) && !(a <= 20 && b >= 20)) {
+      try { const p = await sefaria('Psalms 20', 'version=french&version=hebrew'), sc = sections(p.he, p.tr, 20, 1, 'Psaume')[0];
+        if (sc) { sc.note = "Roch 'Hodech"; v.sections.unshift(sc); v.ref = "Psaume 20 (Roch 'Hodech), puis " + v.ref.charAt(0).toLowerCase() + v.ref.slice(1); v.rochHodech = true; } }
+      catch (e) { console.error('[tehilim] psaume 20', e.message); }
+    }
   } else {
     const d = it.desc.toLowerCase(), nums = (it.desc.match(/\d+/g) || []).map(Number); if (!nums.length) throw new Error('portion illisible');
     const part = /kuntres|kuntras|acharon/.test(d) ? ['Part V; Kuntres Acharon', 'Kountrass Aharon'] : /kodesh/.test(d) ? ['Part IV; Iggeret HaKodesh', 'Iguérèt Hakodech'] : /teshuv|techouv/.test(d) ? ['Part III; Iggeret HaTeshuvah', 'Iguérèt Hatéchouva'] : /ichud|yichud/.test(d) ? ['Part II; Shaar HaYichud VehaEmunah', 'Chaar Hayihoud Véhaémouna'] : /likut|likkut|amarim/.test(d) ? ['Part I; Likkutei Amarim', 'Likouteï Amarim'] : null;
