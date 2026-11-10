@@ -308,3 +308,21 @@ table{border-radius:16px;overflow:hidden}
 @media(max-width:1100px){.at-cols{grid-template-columns:1fr}.at-kpis{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.at-row{grid-template-columns:1fr 1fr;gap:8px 12px}.at-who{grid-column:1/-1}.at-n{text-align:left}.at-amt{grid-column:1/-1;text-align:left}.at-kpi b{font-size:23px}.at-head{flex-direction:column}}
 @media(prefers-reduced-motion:reduce){.at-live i,.at-list li.neuf{animation:none}}
+
+/* campagnes : une carte par campagne */
+.cp-list{display:grid;gap:14px}
+.cp{padding:20px 22px}
+.cp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.cp-id{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.cp-id h3{margin:0;font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:21px;line-height:1.2;color:var(--teal,#1f6a72)}
+.cp-act{display:flex;gap:8px;flex-wrap:wrap}
+.cp-meta{margin:6px 0 0;font-size:13.5px;color:var(--mut)}
+.cp-prog{margin-top:16px}.cp-prog span{display:block;margin-top:6px;font-size:13.5px;color:var(--mut)}.cp-prog span b{color:var(--ink);font-size:15px}
+.cp-bar{height:9px;border-radius:99px;background:var(--line);overflow:hidden}.cp-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#1f6a72,#3d9aa2);min-width:4px;transition:width .6s}
+.cp-ks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.cp-k{padding:11px 14px;border-radius:12px;background:#f4f8f8;border:1px solid var(--line)}
+.cp-k b{display:block;font-size:19px;line-height:1.2;color:var(--ink);font-variant-numeric:tabular-nums}.cp-k small{display:block;font-size:12px;color:var(--mut);margin-top:2px}
+.cp-k.bad{background:#fef2f2;border-color:#fecaca}.cp-k.bad b{color:#b91c1c}
+.cp-next{margin:14px 0 0;font-size:14px;color:var(--ink)}.cp-next span{display:inline-block;margin-right:6px;padding:2px 9px;border-radius:99px;background:#dff0f1;color:#164c52;font-size:12px;font-weight:600}
+.cp-warn{margin:10px 0 0;padding:9px 12px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:13px}
+@media(max-width:640px){.cp{padding:16px}.cp-ks{grid-template-columns:repeat(2,1fr)}.cp-act{width:100%}.cp-act .btn{flex:1 1 auto}}

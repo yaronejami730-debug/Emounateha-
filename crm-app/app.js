@@ -34,7 +34,7 @@ async function load() {
 }
 const fmt = d => new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 const statusPill = s => ({ active: '<span class="pill ok">Actif</span>', unsubscribed: '<span class="pill warn">Désinscrit</span>', bounced: '<span class="pill bad">Rebond</span>', converted: '<span class="pill blue">Donateur</span>' }[s] || s);
-const campPill = s => ({ scheduled: '<span class="pill blue">⏰ Programmée</span>', draft: '<span class="pill">Brouillon</span>', running: '<span class="pill ok">● En cours</span>', paused: '<span class="pill warn">En pause</span>', done: '<span class="pill blue">Terminée</span>' }[s]);
+const campPill = s => ({ scheduled: '<span class="pill blue">Programmée</span>', draft: '<span class="pill">Brouillon</span>', running: '<span class="pill ok">● En cours</span>', paused: '<span class="pill warn">En pause</span>', done: '<span class="pill blue">Terminée</span>' }[s]);
 
 function modal(html) {
   const m = $('#modal'); m.innerHTML = `<div class="box">${html}</div>`; m.classList.remove('hidden');
@@ -152,19 +152,23 @@ const views = {
   campaigns: () => `
     <div class="head"><div><h1>Campagnes</h1><p class="sub">Séquences de mails envoyées au fil de l'eau (max ${S.today.limit}/jour) · <b style="color:${S.settings.hasKey ? 'var(--ok)' : 'var(--warn)'}">${S.settings.hasKey ? '● Brevo connecté' : '⚠ Mode simulation (Brevo non connecté)'}</b></p></div>
       <button class="btn pri" onclick="campModal()">+ Nouvelle campagne</button></div>
-    ${S.campaigns.length ? S.campaigns.map(c => {
-      const total = (c.stats.sent + 0), steps = c.steps.length;
-      return `<div class="card camp" style="margin-bottom:12px">
-        <div class="grow"><b style="font-size:16px">${esc(c.name)}</b> ${campPill(c.status)}
-          ${c.plan ? `<div class="plan" style="margin:8px 0;padding:10px 12px;border-radius:10px;background:#eef6f6;font-size:13.5px"><b>Prochaine rafale : ${c.plan.nextLabel}</b> · <b>${c.plan.nextCount}</b> mail(s)<br><small>Aujourd'hui : ${c.plan.sentToday} / ${c.plan.dayQuota} · reste ${c.plan.remaining} à envoyer · ≈ <b>${c.plan.perHour}</b> mails/heure programmés</small></div>` : ''}
-          <div class="hint">${steps} étape${steps > 1 ? 's' : ''}${c.startDate ? ' · démarre le ' + new Date(c.startDate).toLocaleDateString('fr-FR') : ''} · Audience : ${c.audienceTag ? '#' + esc(c.audienceTag) : 'tous les contacts actifs'} · ${c.stats.pending} contact(s) en cours de séquence</div>
-          ${c.stats.excluded ? `<div class="hint" style="color:var(--warn)">⚠ ${c.stats.excluded} contact(s) exclu(s) : ont déjà reçu ce mail dans une autre campagne</div>` : ''}</div>
-        <div class="stat"><b style="font-size:22px">${total}</b><em>envoyés</em></div>
-        <div class="stat"><b style="font-size:22px;color:${c.stats.errors ? 'var(--bad)' : 'inherit'}">${c.stats.errors}</b><em>erreurs</em></div>
-        <div class="row">
-          ${c.status === 'running' || c.status === 'scheduled' ? `<button class="btn" onclick="campAct('${c.id}','pause')">⏸ Pause</button>` : c.status !== 'done' ? `<button class="btn pri" onclick="campAct('${c.id}','start')">▶ Démarrer</button>` : ''}
-          <button class="btn" onclick="location.hash='#/campaigns/${c.id}'">🗓 Programmation</button><button class="btn" onclick="campDetail('${c.id}')">📊 Statistiques</button><button class="btn" onclick="campModal('${c.id}')">Modifier</button><button class="btn bad" onclick="del('campaigns','${c.id}')">✕</button></div></div>`;
-    }).join('') : `<div class="card empty"><big>➤</big>Aucune campagne. Créez « Hanouka » avec une séquence de relances.</div>`}
+    ${S.campaigns.length ? `<div class="cp-list">${S.campaigns.map(c => {
+      const st = c.stats || {}, p = c.plan, sent = st.sent || 0, steps = (c.steps || []).length, aud = Math.max(st.audience || 0, sent), pct = aud ? Math.min(100, Math.round(sent * 100 / aud)) : 0;
+      const jour = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      const quand = c.startDate || c.endDate ? (c.startDate ? 'du ' + jour(c.startDate) : '') + (c.endDate ? ' au ' + jour(c.endDate) : ' sans date de fin') : 'envoi immédiat';
+      const actif = c.status === 'running' || c.status === 'scheduled';
+      const k = (l, v, cls) => `<div class="cp-k${cls ? ' ' + cls : ''}"><b>${v}</b><small>${l}</small></div>`;
+      return `<article class="card cp">
+        <header class="cp-top"><div class="cp-id"><h3>${esc(c.name)}</h3>${campPill(c.status)}</div>
+          <div class="cp-act">${actif ? `<button class="btn sm" onclick="campAct('${c.id}','pause')">Mettre en pause</button>` : c.status !== 'done' ? `<button class="btn sm pri" onclick="campAct('${c.id}','start')">Démarrer</button>` : ''}
+            <button class="btn sm" onclick="location.hash='#/campaigns/${c.id}'">Programmation</button><button class="btn sm" onclick="campDetail('${c.id}')">Statistiques</button><button class="btn sm" onclick="campModal('${c.id}')">Modifier</button><button class="btn sm bad" aria-label="Supprimer la campagne" onclick="del('campaigns','${c.id}')">✕</button></div></header>
+        <p class="cp-meta">${steps > 1 ? '1 mail + ' + (steps - 1) + ' relance' + (steps > 2 ? 's' : '') : '1 mail'} · ${quand}${st.pending ? ' · ' + st.pending + ' contact' + (st.pending > 1 ? 's' : '') + ' en cours' : ''}</p>
+        <div class="cp-prog"><div class="cp-bar"><i style="width:${pct}%"></i></div><span><b>${sent.toLocaleString('fr-FR')}</b> envoyé${sent > 1 ? 's' : ''}${aud ? ' sur ' + aud.toLocaleString('fr-FR') + ' · ' + pct + ' %' : ''}</span></div>
+        <div class="cp-ks">${k("Aujourd'hui", p ? p.sentToday + ' / ' + p.dayQuota : '—')}${k('Reste à envoyer', p ? p.remaining : (c.status === 'done' ? 0 : '—'))}${k('Mails par heure', p ? p.perHour : '—')}${k('Erreurs', st.errors || 0, st.errors ? 'bad' : '')}</div>
+        ${p ? `<p class="cp-next"><span>Prochain envoi</span> ${esc(String(p.nextLabel))} · <b>${p.nextCount}</b> mail${p.nextCount > 1 ? 's' : ''}</p>` : ''}
+        ${st.excluded ? `<p class="cp-warn">${st.excluded} contact${st.excluded > 1 ? 's' : ''} exclu${st.excluded > 1 ? 's' : ''} : ce mail leur a déjà été envoyé dans une autre campagne.</p>` : ''}
+      </article>`;
+    }).join('')}</div>` : `<div class="card empty"><big>➤</big>Aucune campagne pour l'instant. Cliquez sur « + Nouvelle campagne ».</div>`}
     <div id="attr"></div>`,
 
   templates: () => {
