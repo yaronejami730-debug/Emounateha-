@@ -387,11 +387,13 @@ app.post('/api/intent', async (req, res) => {
       don.montant = par + reste;   // montant du 1er prélèvement
     }
     const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel', ambassadeur: amb, ...(besoin ? { besoin: besoin.slug } : {}), ...(fin ? { fin } : {}), ...attrMeta(attr) };
+    // libellé visible dans Stripe, sur chaque paiement : à quoi le don est destiné (action, fête, « là où le besoin est le plus grand », ou la cagnotte)
+    const libelle = (`Don ${mensuel ? (nb ? 'en ' + nb + ' fois ' : 'mensuel ') : ''}${ASSO.nom}${T} — ` + (besoin ? 'Besoin : ' + besoin.titre + ' (' + besoin.slug + ')' : aff)).slice(0, 240);
     let id, clientSecret, subscription = null;
     if (mensuel) {
       const cust = await stripe.customers.create({ email: don.email, name: don.nom, address: { line1: don.adresse.split(',')[0], postal_code: (don.adresse.match(/\b\d{5}\b/) || [''])[0], city: don.ville, country: 'FR' }, metadata: meta });
       const prod = await stripe.products.create({ name: `${nb ? 'Don en ' + nb + ' fois' : 'Don mensuel'} ${ASSO.nom}${T}` });
-      const sub = await stripe.subscriptions.create({ customer: cust.id, payment_behavior: 'default_incomplete', payment_settings: { payment_method_types: ['card'], save_default_payment_method: 'on_subscription' },
+      const sub = await stripe.subscriptions.create({ customer: cust.id, description: libelle, payment_behavior: 'default_incomplete', payment_settings: { payment_method_types: ['card'], save_default_payment_method: 'on_subscription' },
         items: [{ price_data: { currency: 'eur', unit_amount: par, recurring: { interval: 'month' }, product: prod.id } }],
         ...(reste ? { add_invoice_items: [{ price_data: { currency: 'eur', unit_amount: reste, product: prod.id } }] } : {}),
         ...(fin ? { cancel_at: Math.floor(Date.parse(fin + 'T23:59:59Z') / 1000) } : {}),   // Stripe arrête les prélèvements à cette date
@@ -399,7 +401,7 @@ app.post('/api/intent', async (req, res) => {
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
       // don ponctuel : carte (Apple Pay et Google Pay passent par la carte), PayPal et Klarna ; si un moyen n'est pas activé sur le compte Stripe, on retire les moyens en trop (jamais la carte)
-      const envT = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: `Don ${ASSO.nom}${T}` + (besoin ? ' — Besoin : ' + besoin.titre + ' (' + besoin.slug + ')' : ''), metadata: meta };
+      const envT = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: libelle, metadata: meta };
       const essais = [[...new Set([...envT, 'card', 'paypal', 'klarna'])], [...new Set([...envT, 'card', 'paypal'])], ['card']];
       let pi, derniere;
       for (const types of essais) { try { pi = await stripe.paymentIntents.create({ ...base, payment_method_types: types }); break; } catch (e) { derniere = e; console.error('[intent] moyens', types.join('+'), 'refusés :', e.message); } }
