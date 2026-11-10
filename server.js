@@ -1018,6 +1018,21 @@ async function tanyaFrancais(cle, items, jeton) {
   tradEnCours.set(cle, p); return p;
 }
 
+// Portion exacte du Tanya du jour (More Chiour) : Sefaria publie pour chaque jour le point de départ de l'étude (« Tanya Yomi »).
+// La portion d'un jour va de son point de départ jusqu'à celui du lendemain.
+const tanyaYomiCache = new Map();
+async function tanyaYomi(jour) {
+  if (tanyaYomiCache.has(jour)) return tanyaYomiCache.get(jour);
+  const [y, m, d] = jour.split('-').map(Number);
+  const r = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${y}&month=${m}&day=${d}`, { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Safari/605.1.15' }, signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error('Sefaria calendrier ' + r.status);
+  const it = ((await r.json()).calendar_items || []).find(x => x.title && /tanya/i.test(x.title.en || ''));
+  const mm = it && String(it.ref || '').match(/^Tanya, (Part [IVX]+; [A-Za-z' ]+?) (\d+)(?::(\d+))?$/);
+  const v = mm ? { part: mm[1], ch: +mm[2], seg: mm[3] ? +mm[3] : 1 } : null;
+  tanyaYomiCache.set(jour, v); if (tanyaYomiCache.size > 20) tanyaYomiCache.delete(tanyaYomiCache.keys().next().value);
+  return v;
+}
+const lendemain = jour => new Date(new Date(jour + 'T12:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
 async function chabadTexte(type, jour, jeton) {
   jour = await jourEtude(jour);
   const hit = texteCache.get(type + jour);
@@ -1040,14 +1055,27 @@ async function chabadTexte(type, jour, jeton) {
     const d = it.desc.toLowerCase(), nums = (it.desc.match(/\d+/g) || []).map(Number); if (!nums.length) throw new Error('portion illisible');
     const part = /kuntres|kuntras|acharon/.test(d) ? ['Part V; Kuntres Acharon', 'Kountrass Aharon'] : /kodesh/.test(d) ? ['Part IV; Iggeret HaKodesh', 'Iguérèt Hakodech'] : /teshuv|techouv/.test(d) ? ['Part III; Iggeret HaTeshuvah', 'Iguérèt Hatéchouva'] : /ichud|yichud/.test(d) ? ['Part II; Shaar HaYichud VehaEmunah', 'Chaar Hayihoud Véhaémouna'] : /likut|likkut|amarim/.test(d) ? ['Part I; Likkutei Amarim', 'Likouteï Amarim'] : null;
     if (!part) throw new Error('livre du Tanya inconnu');
-    const a = Math.min(...nums), b = Math.max(...nums);
+    let a = Math.min(...nums), b = Math.max(...nums), deb = null, fin = null;
+    try {   // portion exacte du jour : du point de départ d'aujourd'hui à celui de demain
+      const t0 = await tanyaYomi(jour), t1 = await tanyaYomi(lendemain(jour));
+      if (t0 && t0.part === part[0]) { a = b = t0.ch; deb = t0.seg;
+        if (t1 && t1.part === part[0] && (t1.ch > t0.ch || (t1.ch === t0.ch && t1.seg > t0.seg))) { if (t1.seg > 1) { b = t1.ch; fin = t1.seg; } else b = t1.ch - 1; } }
+    } catch (e) { console.error('[tanya] portion du jour', e.message); }
     const x = await sefaria(`Tanya, ${part[0]} ${a}${b > a ? '-' + b : ''}`, 'version=primary&version=english');
-    v = { title: 'Tanya', ref: part[1] + (b > a ? `, chapitres ${a} à ${b}` : `, chapitre ${a}`), trLang: 'en', sections: sections(x.he, x.tr, a, 1, 'Chapitre').map(sc => ({ head: sc.head, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr })) })) };
+    const ou = (it.desc.match(/\b(d[ée]but|milieu|fin|beginning|middle|end)\b/i) || [])[1], pos = ou ? ' (' + ({ beginning: 'début', middle: 'milieu', end: 'fin' }[ou.toLowerCase()] || ou.toLowerCase()) + ')' : '';
+    v = { title: 'Tanya', ref: part[1] + (b > a ? `, chapitres ${a} à ${b}` : `, chapitre ${a}`) + (deb ? pos : ''), trLang: 'en', sections: sections(x.he, x.tr, a, 1, 'Chapitre').map(sc => ({ head: sc.head, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr })) })) };
     try {   // anglais -> français (une seule fois par chapitre, gardé en base)
       const tous = v.sections.flatMap(sc => sc.items), fr = await tanyaFrancais('tanya:' + part[0] + ':' + a + '-' + b, tous, jeton);
       tous.forEach((it2, k) => { it2.tr = fr[k] || it2.tr; });
       v.trLang = 'fr'; v.trNote = tanyaFichier('tanya:' + part[0] + ':' + a + '-' + b) ? "Traduction française d'après l'original hébreu." : "Traduction française automatique d'après l'original hébreu (aidée de la version anglaise de Kehot, CC BY-NC).";
     } catch (e) { console.error('[trad] Tanya', e.message); }
+    if (deb) {   // on ne garde que la portion du jour (la traduction, elle, est faite et gardée par chapitre entier)
+      const n = v.sections.length; let coupe = v.sections.map(sc => ({ head: sc.head, items: sc.items.slice() }));
+      if (fin && n) coupe[n - 1].items = coupe[n - 1].items.slice(0, fin - 1);
+      if (n) coupe[0].items = coupe[0].items.slice(deb - 1);
+      coupe = coupe.filter(sc => sc.items.length);
+      if (coupe.length) { v.sections = coupe; v.portion = true; }
+    }
   }
   if (!v.sections.length) throw new Error('texte vide');
   v.jour = jour; if (!(type === 'tanya' && v.trLang !== 'fr')) texteCache.set(type + jour, { at: Date.now(), v }); if (texteCache.size > 30) texteCache.delete(texteCache.keys().next().value);
