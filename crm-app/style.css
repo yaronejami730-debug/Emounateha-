@@ -254,3 +254,12 @@ table{border-radius:16px;overflow:hidden}
 .tf-rb{height:6px;border-radius:99px;background:#eef3f3;margin-top:5px;overflow:hidden}
 .tf-rb i{display:block;height:100%;border-radius:99px;background:var(--brand)}
 @media(max-width:520px){.tf-bars,.tf-y{height:150px}.tf-live{grid-template-columns:1fr}}
+
+/* nouvelle campagne : choix « tout de suite » ou « sur une période » */
+.opt{font-weight:500;text-transform:none;letter-spacing:0;color:var(--mut);font-size:12px;margin-left:4px}
+.kwhen{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kopt{display:flex!important;align-items:flex-start;gap:10px;margin:0!important;padding:12px 14px;border:1.5px solid var(--line,#dfe6e8);border-radius:12px;cursor:pointer;text-transform:none!important;letter-spacing:0!important;color:var(--ink)!important;font-size:14px!important;background:#fff}
+.kopt input{width:auto!important;margin-top:3px;flex:none}
+.kopt b{display:block;font-weight:600}.kopt small{display:block;color:var(--mut);font-size:12.5px;line-height:1.35;margin-top:2px}
+.kopt:has(input:checked){border-color:var(--teal,#1f6a72);background:#f2f8f8}
+@media(max-width:560px){.kwhen{grid-template-columns:1fr}}

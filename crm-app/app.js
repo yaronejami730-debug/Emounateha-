@@ -368,44 +368,66 @@ function holPick() {
 function campModal(id, preset) {
   const c = S.campaigns.find(x => x.id === id) || preset && { ...preset } || { name: '', audienceTag: '', steps: [{ templateId: S.templates[0]?.id, delayDays: 0 }] };
   campSteps = JSON.parse(JSON.stringify(c.steps));
-  modal(`<h2>${id ? 'Modifier' : 'Nouvelle'} campagne</h2>
-    <label>Nom</label><input id="k_name" value="${esc(c.name)}" placeholder="Hanouka 2026">
-    <label>Lien du bouton (facultatif : remplace celui du template pour cette campagne)</label><input id="k_btn" value="${esc(c.buttonUrl || '')}" placeholder="https://don.emounateha.fr/?aff=hanouka">
-    <label>Nom de l'audience</label><input id="k_tag" value="${esc(c.audienceTag)}" placeholder="auto : nom de la campagne">
-    <label>Contacts de la campagne (CSV)</label>
+  window.__camp = { tag: c.audienceTag || '', btn: c.buttonUrl || '' };   // conservés tels quels (plus de champ dans le formulaire)
+  const periode = !!(c.startDate || c.endDate);
+  modal(`<h2>${id ? 'Modifier la' : 'Nouvelle'} campagne</h2>
+    <label>Nom <span class="opt">facultatif</span></label><input id="k_name" value="${esc(c.name)}" placeholder="ex. Hanouka 2026">
+    <label>Contacts (CSV)</label>
     <input type="file" accept=".csv,.txt,.tsv" onchange="readFile(this,'k_csv')">
     <textarea id="k_csv" rows="3" placeholder="…ou collez : Prénom;Nom;email (l'en-tête est reconnu)" style="min-height:70px;margin-top:6px"></textarea>
-    <div class="hint">Les contacts importés reçoivent le tag de l'audience. Un email déjà connu n'est jamais dupliqué ni renvoyé deux fois.</div>
-    <label>Période de diffusion</label>
-    <div class="row"><div class="grow"><div class="hint" style="margin:0 0 4px">Du</div><input id="k_start" type="date" value="${esc(c.startDate || '')}"></div>
-      <div class="grow"><div class="hint" style="margin:0 0 4px">Au</div><input id="k_end" type="date" value="${esc(c.endDate || '')}"></div></div>
-    <div class="row" style="margin-top:8px"><span class="hint">Début aidé par une fête :</span>
-      <select id="k_hol" onchange="holPick()" class="grow"><option value="">— ou X jours avant une fête —</option>${S.holidays.map(h => `<option value="${h.date}">${esc(h.title)} (${h.date})</option>`).join('')}</select>
-      <input id="k_off" type="number" min="0" value="7" style="width:64px" oninput="holPick()"><span class="hint">j avant</span></div>
-    <div class="hint">Les mails sont répartis automatiquement sur la période (max ${S.today.limit}/jour). Après la date de fin, la campagne s'arrête.</div>
-    <label>Template à envoyer</label><div id="k_steps"></div>
-    <button class="btn sm" onclick="addStep()">+ Ajouter une relance (autre template, quelques jours plus tard)</button>
-    <label class="row" style="margin-top:16px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input id="k_auto" type="checkbox" checked style="width:auto"> Lancer automatiquement à la date de début (envois réels via Brevo)</label>
-    <div class="hint">Un contact passe à l'étape suivante X jours après la précédente. Désinscrit / Donateur = séquence stoppée.</div>
-    <div class="row r" style="margin-top:22px"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn pri" onclick="saveCamp('${id || ''}')">Enregistrer</button></div>`);
-  drawSteps();
+    <div class="hint">Un email déjà connu n'est jamais dupliqué ni contacté deux fois.</div>
+    <label>Mail à envoyer</label><div id="k_steps"></div>
+    <button class="btn sm" onclick="addStep()">+ Ajouter une relance</button>
+    <div class="hint">La relance part X jours après le mail précédent. Un contact désinscrit ou devenu donateur ne la reçoit pas.</div>
+    <label>Quand envoyer ?</label>
+    <div class="kwhen">
+      <label class="kopt"><input type="radio" name="k_when" value="now" ${periode ? '' : 'checked'} onchange="campWhen()"><span><b>Tout de suite</b><small>Les mails partent dès l'enregistrement.</small></span></label>
+      <label class="kopt"><input type="radio" name="k_when" value="per" ${periode ? 'checked' : ''} onchange="campWhen()"><span><b>Sur une période</b><small>Les mails sont répartis entre deux dates.</small></span></label>
+    </div>
+    <div id="k_per" ${periode ? '' : 'hidden'}>
+      <div class="row" style="margin-top:10px"><div class="grow"><div class="hint" style="margin:0 0 4px">Du</div><input id="k_start" type="date" value="${esc(c.startDate || '')}"></div>
+        <div class="grow"><div class="hint" style="margin:0 0 4px">Au</div><input id="k_end" type="date" value="${esc(c.endDate || '')}"></div></div>
+      <div class="row" style="margin-top:8px"><span class="hint">Début aidé par une fête :</span>
+        <select id="k_hol" onchange="holPick()" class="grow"><option value="">— X jours avant une fête —</option>${S.holidays.map(h => `<option value="${h.date}">${esc(h.title)} (${h.date})</option>`).join('')}</select>
+        <input id="k_off" type="number" min="0" value="7" style="width:64px" oninput="holPick()"><span class="hint">j avant</span></div>
+    </div>
+    <div class="hint" id="k_whint"></div>
+    <div class="row r" style="margin-top:22px"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn pri" id="k_go" onclick="saveCamp('${id || ''}')"></button></div>`);
+  drawSteps(); campWhen();
+}
+function campWhen() {
+  const per = document.querySelector('input[name=k_when]:checked').value === 'per';
+  $('#k_per').hidden = !per;
+  $('#k_go').textContent = per ? 'Programmer la campagne' : 'Envoyer maintenant';
+  $('#k_whint').textContent = per ? `Répartition automatique sur la période (max ${S.today.limit}/jour). Après la date de fin, la campagne s'arrête.`
+    : `Envoi réel via Brevo, dans la limite de ${S.today.limit} mails par jour et des heures d'envoi réglées.`;
 }
 function drawSteps() {
   $('#k_steps').innerHTML = campSteps.map((s, i) => `<div class="seq"><span class="n">${i + 1}</span>
-    <select onchange="campSteps[${i}].templateId=this.value" class="grow">${S.templates.map(t => `<option value="${t.id}" ${t.id === s.templateId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
-    ${i === 0 ? '<span class="hint" style="white-space:nowrap">immédiat</span>' : `<span class="hint">+</span><input type="number" min="0" style="width:70px" value="${s.delayDays}" onchange="campSteps[${i}].delayDays=+this.value"><span class="hint">j</span>`}
-    ${campSteps.length > 1 ? `<button class="btn sm bad" onclick="campSteps.splice(${i},1);drawSteps()">✕</button>` : ''}</div>`).join('');
+    <select onchange="campSteps[${i}].templateId=this.value" class="grow" aria-label="${i ? 'Template de la relance' : 'Template du mail'}">${S.templates.map(t => `<option value="${t.id}" ${t.id === s.templateId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
+    ${i === 0 ? '<span class="hint" style="white-space:nowrap">1er mail</span>' : `<span class="hint" style="white-space:nowrap">relance après</span><input type="number" min="1" style="width:64px" value="${s.delayDays}" onchange="campSteps[${i}].delayDays=+this.value"><span class="hint">j</span>`}
+    ${i > 0 ? `<button class="btn sm bad" aria-label="Retirer cette relance" onclick="campSteps.splice(${i},1);drawSteps()">✕</button>` : ''}</div>`).join('');
 }
 function addStep() { campSteps.push({ templateId: S.templates[0]?.id, delayDays: 3 }); drawSteps(); }
 async function saveCamp(id) {
-  const name = $('#k_name').value.trim() || 'Sans titre';
-  let tag = $('#k_tag').value.trim(); const csv = $('#k_csv').value.trim();
-  if (!tag) tag = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const body = { name, audienceTag: tag, steps: campSteps, startDate: $('#k_start').value || '', endDate: $('#k_end').value || '', buttonUrl: ($('#k_btn').value || '').trim() };
-  if (csv) { const r = await api('POST', '/contacts/import', { csv, tags: tag }); toast(`${r.added} nouveau(x), ${r.existing} déjà connu(s), ${r.skipped} ignoré(s)`); }
-  const saved = await api(id ? 'PUT' : 'POST', '/campaigns' + (id ? '/' + id : ''), body);
-  if ($('#k_auto').checked && !['running', 'done'].includes(saved.status)) { await api('POST', `/campaigns/${saved.id}/start`); toast('Campagne programmée'); }
-  closeModal(); await render();
+  const per = document.querySelector('input[name=k_when]:checked').value === 'per';
+  const start = per ? $('#k_start').value || '' : '', end = per ? $('#k_end').value || '' : '';
+  if (per && !end) return toast('Indiquez la date de fin de la période', true);
+  if (per && start && end < start) return toast('La date de fin est avant la date de début', true);
+  const tpl = S.templates.find(t => t.id === campSteps[0]?.templateId);
+  if (!tpl) return toast('Choisissez le mail à envoyer', true);
+  // nom facultatif : à défaut, le nom du template et la date du jour
+  const name = $('#k_name').value.trim() || `${tpl.name} — ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  const csv = $('#k_csv').value.trim();
+  const tag = window.__camp.tag || name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const body = { name, audienceTag: tag, steps: campSteps, startDate: start, endDate: end, buttonUrl: window.__camp.btn };
+  const go = $('#k_go'); go.disabled = true;
+  try {
+    if (csv) { const r = await api('POST', '/contacts/import', { csv, tags: tag }); toast(`${r.added} nouveau(x), ${r.existing} déjà connu(s), ${r.skipped} ignoré(s)`); }
+    const saved = await api(id ? 'PUT' : 'POST', '/campaigns' + (id ? '/' + id : ''), body);
+    if (!['running', 'done'].includes(saved.status)) { await api('POST', `/campaigns/${saved.id}/start`); toast(per ? 'Campagne programmée' : 'Campagne lancée'); }
+    closeModal(); await render();
+  } catch (e) { go.disabled = false; toast(e.message, true); }
 }
 
 // Templates

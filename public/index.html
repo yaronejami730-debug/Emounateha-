@@ -478,6 +478,57 @@ body{overflow-x:hidden}
 @media(min-width:801px){
   body:has(#paracha:not([hidden])) .hero::after{height:150px;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 14%,rgba(255,255,255,.14) 30%,rgba(255,255,255,.34) 48%,rgba(255,255,255,.62) 66%,rgba(255,255,255,.86) 84%,#fff 100%);pointer-events:none}
 }
+
+/* en-tête : on glisse vers la droite pour voir les raccourcis (aperçu de chaque page) */
+.hsl{display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
+.hsl::-webkit-scrollbar{display:none}
+.hp1{flex:0 0 100%;min-width:0;scroll-snap-align:start}
+.orb{flex:0 0 100%;align-self:stretch;position:relative;overflow:hidden;scroll-snap-align:start}
+.orbray{position:absolute;left:50%;top:50%;width:var(--ray,900px);height:var(--ray,900px);margin:calc(var(--ray,900px)/-2) 0 0 calc(var(--ray,900px)/-2);border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(228,205,138,.2) 0 7deg,rgba(228,205,138,0) 7deg 18deg);-webkit-mask-image:radial-gradient(closest-side,#000 0%,rgba(0,0,0,.55) 45%,transparent 100%);mask-image:radial-gradient(closest-side,#000 0%,rgba(0,0,0,.55) 45%,transparent 100%);pointer-events:none}
+.orbring{position:absolute;left:50%;top:50%;border:1.5px dashed rgba(228,205,138,.55);border-radius:50%;pointer-events:none}
+.orbc{position:absolute;left:50%;top:50%;border-radius:50%;background:#fff;box-shadow:0 0 0 6px rgba(228,205,138,.55),0 0 0 14px rgba(255,255,255,.14),0 0 70px 18px rgba(240,220,160,.5);display:flex;align-items:center;justify-content:center}
+.hero .orb img{animation:none;filter:none;margin:0;display:block}
+.hero .orbc img{width:88%;height:auto}
+.ob{position:absolute;left:50%;top:50%;width:var(--ob,104px);height:var(--ob,104px);margin:calc(var(--ob,104px)/-2) 0 0 calc(var(--ob,104px)/-2);text-decoration:none;color:#fff;will-change:transform}
+.obi{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;background:#fff;border:2.5px solid var(--gold-l);box-shadow:0 0 0 5px rgba(255,255,255,.16),0 10px 22px -8px rgba(0,0,0,.6);transition:transform .2s}
+.ob:hover .obi,.ob:focus-visible .obi{transform:scale(1.1)}
+.hero .ob img{width:66%;height:auto}
+.ob svg{position:absolute;left:-50%;top:-50%;width:200%;height:200%;overflow:visible;pointer-events:none}
+.ob text{font-family:Inter,system-ui,sans-serif;paint-order:stroke;stroke:rgba(9,48,53,.6);stroke-width:2.6px;stroke-linejoin:round}
+.ob .ta{fill:#f6e3a4;font-weight:800;font-size:12.5px;letter-spacing:.3px}.ob .tb{fill:#fff;font-weight:600;font-size:10.8px;letter-spacing:.2px}
+.hero .obi.ph img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.obi.ph{overflow:hidden;background:#1b1b1e}
+.hero .obi.big img{width:80%}
+.ob.on{z-index:6}.ob.on .obi{transform:scale(1.1);border-color:#fff}
+.orbc{transition:transform .2s}.orbc:hover{transform:scale(1.04)}
+.fly{position:absolute;left:50%;top:50%;z-index:5;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:#fff;border:3px solid #fff;outline:1.5px solid var(--gold-l);box-shadow:0 24px 50px -14px rgba(0,0,0,.7),0 0 0 8px rgba(255,255,255,.14);text-decoration:none;opacity:0;transform:scale(.86) rotate(-2deg);pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.2)}
+.fly.on{opacity:1;transform:none}
+.fly.tap.on{pointer-events:auto}
+.hero .fly img{width:100%;height:100%;flex:1;min-height:0;object-fit:cover;object-position:top;border-radius:16px 16px 0 0}
+.fly span{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;background:var(--teal);color:#fff;font:600 13px/1.2 Inter,system-ui,sans-serif;text-align:left}
+.fly span i{font-style:normal;flex:none;background:var(--gold);color:#1b2b2d;border-radius:99px;padding:4px 10px;font-size:12px;font-weight:700}
+/* page ouverte par-dessus le site (sans quitter l'accueil) */
+#wv{position:fixed;inset:0;z-index:130;display:none;align-items:center;justify-content:center;background:rgba(8,26,29,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#wv.on{display:flex}
+#wv .wvin{display:flex;flex-direction:column;width:min(1120px,94vw);height:92vh;height:92dvh;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+#wv .wvbar{flex:none;display:flex;align-items:center;gap:10px;padding:8px 10px 8px 18px;background:var(--teal);color:#fff}
+#wv .wvt{flex:1;min-width:0;font:400 17px 'Bree Serif',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#wv .wvo{flex:none;color:var(--gold-l);font:600 13px Inter,system-ui,sans-serif;text-decoration:none;white-space:nowrap}
+#wv .wvx{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:var(--teal);font-size:18px;cursor:pointer}
+#wv iframe{flex:1;min-height:0;width:100%;border:0;display:block;background:#fff}
+@media(max-width:800px){#wv{align-items:flex-end}#wv .wvin{width:100%;height:62vh;height:62dvh;border-radius:22px 22px 0 0;animation:wvUp .28s cubic-bezier(.2,.8,.2,1)}#wv .wvbar{position:relative;padding:16px 8px 8px 16px}#wv .wvbar::before{content:"";position:absolute;left:50%;top:6px;width:44px;height:4px;margin-left:-22px;border-radius:4px;background:rgba(255,255,255,.5)}#wv iframe{padding-bottom:env(safe-area-inset-bottom)}}
+@keyframes wvUp{from{transform:translateY(60%);opacity:.4}to{transform:none;opacity:1}}
+.hgo{position:absolute;z-index:3;top:calc(50% - 38px);display:flex;align-items:center;gap:6px;height:40px;padding:0 13px;border-radius:99px;border:1.5px solid var(--gold-l);background:rgba(20,70,76,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;font:600 14px Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.hgo i{font-style:normal;font-size:24px;line-height:1;color:var(--gold-l);margin-top:-3px}
+.hnx{right:16px}.hpv{left:16px;display:none}
+.hero.moved .hpv{display:flex}.hero.moved .hnx span{display:none}.hero.fin .hnx{display:none}
+@media(max-width:800px){
+  .ob{--ob:62px}.obi{border-width:2px;box-shadow:0 0 0 3px rgba(255,255,255,.16),0 6px 14px -6px rgba(0,0,0,.6)}.ob .ta{font-size:16px;letter-spacing:.2px}.ob .tb{font-size:14px}.ob text{stroke-width:3.4px}.fly{border-radius:16px;border-width:2px}.hero .fly img{border-radius:13px 13px 0 0}.fly span{padding:6px 9px;font-size:12px}
+  .orbc{box-shadow:0 0 0 4px rgba(228,205,138,.55),0 0 0 9px rgba(255,255,255,.14),0 0 40px 10px rgba(240,220,160,.5)}
+  .hgo{height:36px;padding:0 11px;font-size:13px}
+  .hnx{right:8px;top:216px}.hpv{left:6px}
+  .hero.moved .hnx{top:calc(50% - 26px);right:6px}.hero.moved .hpv{top:60px;left:8px}
+}
 </style>
 <link rel="stylesheet" href="/mobile.css">
 <link rel="stylesheet" href="/fade.css?v=3">
@@ -516,7 +567,8 @@ body{overflow-x:hidden}
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="#contact">Contact</a></div></div></nav>
 <header class="hero">
-  <div class="wrap">
+  <div class="hsl" id="hsl">
+    <div class="hp1"><div class="wrap">
     <div class="top"><span class="hdate" id="hdate"></span><span class="bsd">בס״ד</span></div>
     <a href="https://don.emounateha.fr/?aff=besoin" title="Faire un don — là où le besoin est le plus grand"><img class="logo-complet" src="/logo-complet-site.png?v=5" alt="Émounatéha — אמונתך — Sensibiliser, Aider, Lutter, Distribuer, Favoriser"></a>
     <h1>ÉMOUNATÉHA</h1>
@@ -526,7 +578,10 @@ body{overflow-x:hidden}
       <a class="btn gold" href="https://don.emounateha.fr/">Aidez-nous à les aider</a>
       <a class="btn line" href="#actions">Nos actions</a>
     </div>
+  </div></div>
+    <nav class="orb" id="orb" aria-label="Raccourcis vers les pages du site"><span class="orbray" aria-hidden="true"></span><span class="orbring" aria-hidden="true"></span><a class="orbc" href="https://don.emounateha.fr/?aff=besoin" title="Faire un don — là où le besoin est le plus grand"><img src="/logo.png?v=2" alt="Faire un don à Émounatéha — là où le besoin est le plus grand" width="230" height="230" loading="lazy"></a><a class="ob" href="/colis/" aria-label="Colis de Chabbat et de fêtes" data-t="Colis de Chabbat et de fêtes" data-ap="/apercus/mini/colis.jpg?v=1" data-a="Colis de Chabbat et de fêtes" data-b="Livré aux familles" data-c="Livré aux familles"><span class="obi"><img src="/tuiles/colis.png?v=4" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/torah/" aria-label="Diffusion de la Torah" data-t="Diffusion de la Torah" data-ap="/apercus/mini/torah.jpg?v=1" data-a="Diffusion de la Torah" data-b="Tanya · Houmach · Téhilim" data-c="Vidéo chaque jour"><span class="obi"><img src="/tuiles/torah.png?v=4" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/horaires/" aria-label="Horaires de Chabbat" data-t="Horaires de Chabbat" data-ap="/apercus/mini/horaires.jpg?v=1" data-a="Horaires de Chabbat" data-b="Allumage · Havdala · Zmanim" data-c="Allumage · Havdala"><span class="obi"><img src="/tuiles/horaires.png?v=4" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/un-toit-sur-la-tete/" aria-label="Un toit sur la tête" data-t="Un toit sur la tête" data-ap="/apercus/mini/un-toit-sur-la-tete.jpg?v=1" data-a="Un toit sur la tête" data-b="Hébergement d'urgence" data-c="Hébergement d'urgence"><span class="obi"><img src="/tuiles/act-toit.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/vetements-et-soins/" aria-label="Vêtements et soins" data-t="Vêtements et soins" data-ap="/apercus/mini/vetements-et-soins.jpg?v=1" data-a="Vêtements &amp; soins" data-b="Pour les plus démunis" data-c="Pour les plus démunis"><span class="obi"><img src="/tuiles/act-vetements.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/reinsertion-sociale/" aria-label="Réinsertion sociale" data-t="Réinsertion sociale" data-ap="/apercus/mini/reinsertion-sociale.jpg?v=1" data-a="Réinsertion sociale" data-b="Démarches · Vers l'emploi" data-c="Vers l'emploi"><span class="obi"><img src="/tuiles/act-reinsertion.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/soutien-moral-et-financier/" aria-label="Soutien moral et financier" data-t="Soutien moral et financier" data-ap="/apercus/mini/soutien-moral-et-financier.jpg?v=1" data-a="Soutien moral &amp; financier" data-b="Écoute · Aide concrète" data-c="Écoute · Aide"><span class="obi"><img src="/tuiles/act-soutien.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="https://don.emounateha.fr/" aria-label="Faire un don" data-t="Faire un don" data-ap="/apercus/mini/don.jpg?v=1" data-a="Faire un don" data-b="Mensuel ou ponctuel · Reçu fiscal" data-c="Reçu fiscal"><span class="obi"><img src="/tuiles/step-don.png" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/ecrire-au-rabbi/" aria-label="Écrire au Rabbi" data-t="Écrire au Rabbi" data-ap="/apercus/mini/ecrire-au-rabbi.jpg?v=4" data-a="Écrire au Rabbi" data-b="Votre lettre au Rabbi" data-c="Votre lettre au Rabbi"><span class="obi ph"><img src="/tuiles/rabbi.jpg?v=9" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/ambassadeur/" aria-label="Devenir ambassadeur" data-t="Devenir ambassadeur" data-ap="/apercus/mini/ambassadeur.jpg?v=2" data-a="Devenir ambassadeur" data-b="Collecter pour les familles" data-c="Votre collecte"><span class="obi big"><img src="/tuiles/ambassadeur.png?v=1" alt="" width="64" height="64" loading="lazy"></span></a><a class="fly" id="fly" href="#" aria-hidden="true" tabindex="-1"><img alt="" width="560" height="700"><span><b></b><i>Ouvrir ›</i></span></a></nav>
   </div>
+  <button class="hgo hpv" type="button" aria-label="Revenir"><i aria-hidden="true">‹</i></button>
 </header>
 
 <section class="qa" aria-label="Accès rapides"><div class="wrap">
@@ -728,6 +783,62 @@ addEventListener('message',e=>{if(e.origin!=='https://don.emounateha.fr')return;
   if(t==='don:done'){const d=v.querySelector('.vpdon');if(d){d.dataset.label='Merci de tout cœur pour votre don 🙏';d.textContent=d.dataset.label}}});
 function closeVid(){const v=document.getElementById('vp');if(v){v.classList.remove('on','don');v.querySelector('iframe').src='';const df=v.querySelector('.vpdonf');if(df)df.innerHTML='';const bd=v.querySelector('.vpdon');if(bd&&bd.dataset.label)bd.textContent=bd.dataset.label;document.body.style.overflow=''}}
 function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.remove('on');document.body.style.overflow=''}}
+// ---- en-tête : glisser vers les raccourcis (ronds qui gravitent autour du logo, aperçu au survol, page ouverte par-dessus)
+(function(){const h=document.querySelector('.hero'),t=document.getElementById('hsl'),o=document.getElementById('orb');if(!h||!t||!o)return;
+  const obs=[...o.querySelectorAll('.ob')],ring=o.querySelector('.orbring'),ctr=o.querySelector('.orbc'),ray=o.querySelector('.orbray'),fly=document.getElementById('fly');
+  const LOC=/^(localhost|127\.0\.0\.1)$/.test(location.hostname),url=u=>LOC?u.replace('https://don.emounateha.fr','http://localhost:3199'):u;
+  let rx=0,ry=0,cy=0,ang=0,tab=[],last=0,hold=0,raf=0,cur=null,touch=false,pre=false;
+  function lay(){const W=o.clientWidth,H=o.clientHeight;if(!W||!H)return;const mob=W<=800,b0=obs[0].offsetWidth,pad=Math.round(b0*(mob?.23:.19)),bs=b0+2*pad;arcs(mob);
+    ry=Math.max(60,(H-bs)/2-(mob?2:8));rx=Math.max(60,Math.min((W-bs)/2-(mob?2:8),480));cy=0;
+    const c=Math.max(70,Math.min(2*Math.min(rx,ry)-bs-(mob?66:56),250));
+    ctr.style.cssText='width:'+c+'px;height:'+c+'px;margin:'+(cy-c/2)+'px 0 0 '+(-c/2)+'px';
+    ring.style.cssText='width:'+2*rx+'px;height:'+2*ry+'px;margin:'+(cy-ry)+'px 0 0 '+(-rx)+'px';
+    ray.style.setProperty('--ray',Math.round(2.6*Math.max(rx,ry))+'px');
+    const fh=Math.min(2*ry-(mob?8:16),H-12,440),fw=Math.min(fh*.76,2*rx-b0-(mob?14:40));
+    fly.style.width=fw+'px';fly.style.height=fh+'px';fly.style.margin=(cy-fh/2)+'px 0 0 '+(-fw/2)+'px';
+    tab=[0];for(let i=1,px=0,py=-ry;i<=720;i++){const a=-Math.PI/2+i*Math.PI/360,x=rx*Math.cos(a),y=ry*Math.sin(a);tab.push(tab[i-1]+Math.hypot(x-px,y-py));px=x;py=y}put()}
+  function pt(u){u-=Math.floor(u);const L=tab[720]*u;let lo=0,hi=720;while(hi-lo>1){const m=(lo+hi)>>1;tab[m]<=L?lo=m:hi=m}const a=-Math.PI/2+(lo+(L-tab[lo])/((tab[hi]-tab[lo])||1))*Math.PI/360;return [rx*Math.cos(a),cy+ry*Math.sin(a)]}
+  let arcM=null;const esc=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  function arcs(mob){if(arcM===mob)return;arcM=mob;const r1=mob?58:57,r2=mob?70.5:66;obs.forEach((e,i)=>{let g=e.querySelector('svg');if(g)g.remove();
+    e.insertAdjacentHTML('beforeend','<svg viewBox="-100 -100 200 200" aria-hidden="true"><defs><path id="oa'+i+'" d="M0 '+r1+'A'+r1+' '+r1+' 0 1 1 .01 '+r1+'"/><path id="ob'+i+'" d="M0 -'+r2+'A'+r2+' '+r2+' 0 1 0 .01 -'+r2+'"/></defs><text class="ta" text-anchor="middle"><textPath href="#oa'+i+'" startOffset="50%">'+esc(e.dataset.a)+'</textPath></text><text class="tb" text-anchor="middle"><textPath href="#ob'+i+'" startOffset="50%">'+esc(mob?e.dataset.c:e.dataset.b)+'</textPath></text></svg>')})}
+  function put(){const n=obs.length;if(!tab.length)return;obs.forEach((e,i)=>{const q=pt(ang+i/n);e.style.transform='translate('+q[0].toFixed(1)+'px,'+q[1].toFixed(1)+'px)'})}
+  const calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function vis(){return t.scrollLeft>t.clientWidth*.4&&!document.hidden}
+  function tick(ts){raf=0;if(!vis())return;const dt=last?Math.min(ts-last,60):0;last=ts;if(ts>hold&&!cur){ang+=dt/110000;put()}raf=requestAnimationFrame(tick)}
+  function run(){if(vis()&&!pre){pre=true;obs.forEach(e=>{new Image().src=e.dataset.ap})}if(calm||raf||!vis())return;last=0;raf=requestAnimationFrame(tick)}
+  const pause=ms=>{hold=performance.now()+ms};
+  // aperçu de la page : au survol (souris) ou au premier toucher (téléphone)
+  function show(e,tap){if(cur&&cur!==e)cur.classList.remove('on');cur=e;e.classList.add('on');fly.querySelector('img').src=e.dataset.ap;fly.querySelector('b').textContent=e.dataset.t;fly.href=e.href;fly.classList.toggle('tap',!!tap);fly.classList.add('on')}
+  function hide(){if(cur)cur.classList.remove('on');cur=null;fly.classList.remove('on','tap')}
+  // page ouverte par-dessus l'accueil
+  function wvOpen(u,title){let w=document.getElementById('wv');
+    if(!w){w=document.createElement('div');w.id='wv';w.innerHTML='<div class="wvin" role="dialog" aria-modal="true"><div class="wvbar"><span class="wvt"></span><a class="wvo" target="_blank" rel="noopener">Ouvrir en grand ↗</a><button class="wvx" type="button" aria-label="Fermer">✕</button></div></div>';document.body.appendChild(w);
+      w.addEventListener('click',ev=>{if(ev.target===w)wvClose()});w.querySelector('.wvx').onclick=wvClose;
+      addEventListener('keydown',ev=>{if(ev.key==='Escape'&&w.classList.contains('on'))wvClose()});
+      addEventListener('popstate',()=>{if(w.classList.contains('on'))wvShut()})}
+    w.querySelector('.wvt').textContent=title;w.querySelector('.wvo').href=u;{const o=w.querySelector('iframe');if(o)o.remove();const f=document.createElement('iframe');f.title=title;f.allow='payment';f.src=url(u);w.querySelector('.wvin').appendChild(f)}w.classList.add('on');document.body.style.overflow='hidden';
+    try{history.pushState({wv:1},'')}catch(e){}hide()}
+  function wvShut(){const w=document.getElementById('wv');if(!w)return;w.classList.remove('on');const f=w.querySelector('iframe');if(f)f.remove();document.body.style.overflow=''}
+  function wvClose(){wvShut();if(history.state&&history.state.wv)history.back()}
+  addEventListener('pointerdown',ev=>{touch=ev.pointerType!=='mouse'},true);
+  obs.forEach(e=>{
+    e.addEventListener('pointerenter',ev=>{if(ev.pointerType==='mouse')show(e)});
+    e.addEventListener('pointerleave',ev=>{if(ev.pointerType==='mouse'&&cur===e)hide()});
+    e.addEventListener('focus',()=>{if(!touch)show(e)});e.addEventListener('blur',()=>{if(!touch&&cur===e)hide()});
+    e.addEventListener('click',ev=>{if(ev.metaKey||ev.ctrlKey||ev.shiftKey||ev.button)return;ev.preventDefault();
+      if(touch&&cur!==e){show(e,true);return}wvOpen(e.href,e.dataset.t)})});
+  fly.addEventListener('click',ev=>{ev.preventDefault();if(cur)wvOpen(cur.href,cur.dataset.t)});
+  o.addEventListener('click',ev=>{if(touch&&cur&&!ev.target.closest('.ob,.fly'))hide()});
+  o.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')pause(1e9)});o.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')pause(400)});
+  o.addEventListener('touchstart',()=>pause(3500),{passive:true});
+  function st(){const x=t.scrollLeft,m=t.scrollWidth-t.clientWidth;h.classList.toggle('moved',x>30);h.classList.toggle('fin',x>=m-6);if(cur&&x<t.clientWidth*.6)hide();run()}
+  // pas de bouton : c'est une cachette. On glisse (doigt, pavé tactile, ou souris en tirant l'en-tête)
+  {let d=null;t.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button)return;d={x:e.clientX,s:t.scrollLeft,m:false}});
+   let sup=0;t.addEventListener('dragstart',e=>e.preventDefault());t.addEventListener('click',e=>{if(Date.now()<sup){e.preventDefault();e.stopPropagation()}},true);
+   addEventListener('pointermove',e=>{if(!d)return;const dx=e.clientX-d.x;if(!d.m&&Math.abs(dx)<8)return;d.m=true;if(cur)hide();t.style.scrollSnapType='none';t.scrollLeft=d.s-dx});
+   addEventListener('pointerup',()=>{if(!d)return;const m=d.m,w=t.clientWidth,s0=d.s;d=null;if(!m)return;sup=Date.now()+350;t.style.scrollSnapType='';t.scrollTo({left:t.scrollLeft>w*(s0>w/2?.75:.25)?w:0,behavior:'smooth'})})}h.querySelector('.hpv').onclick=()=>t.scrollTo({left:0,behavior:'smooth'});
+  t.addEventListener('scroll',st,{passive:true});document.addEventListener('visibilitychange',run);
+  new ResizeObserver(()=>{lay();st()}).observe(o);lay();st()})();
 // ---- carrousel : Nos actions + diffusion du jour
 (function(){
   const box=document.getElementById('slides'), dots=document.getElementById('sDots');
