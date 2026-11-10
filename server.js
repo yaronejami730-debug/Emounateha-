@@ -1847,7 +1847,7 @@ async function handle(req, res) {
       // la page du CRM n'est jamais gardée en mémoire, et ses fichiers portent un numéro de version (date du fichier) :
       // après une mise à jour, le navigateur reçoit toujours le menu ET le script qui vont ensemble
       if (path.basename(file) === 'index.html') {
-        const ver = f => { try { return Math.round(fs.statSync(path.join(CRM_DIR, f)).mtimeMs / 1000).toString(36) + fs.statSync(path.join(CRM_DIR, f)).size.toString(36); } catch (e) { return '0'; } };
+        const ver = f => { try { return crypto.createHash('md5').update(fs.readFileSync(path.join(CRM_DIR, f))).digest('hex').slice(0, 10); } catch (e) { return '0'; } };   // empreinte du contenu : change à chaque modification du fichier
         const html = fs.readFileSync(file, 'utf8').replace('"/crm/app.js"', '"/crm/app.js?v=' + ver('app.js') + '"').replace('"/crm/style.css"', '"/crm/style.css?v=' + ver('style.css') + '"');
         return reply(res, 200, html, 'text/html; charset=utf-8', { 'cache-control': 'no-store' });
       }
