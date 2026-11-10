@@ -167,6 +167,7 @@ const views = {
         <div class="cp-ks">${k("Aujourd'hui", p ? p.sentToday + ' / ' + p.dayQuota : '—')}${k('Reste à envoyer', p ? p.remaining : (c.status === 'done' ? 0 : '—'))}${k('Mails par heure', p ? p.perHour : '—')}${k('Erreurs', st.errors || 0, st.errors ? 'bad' : '')}</div>
         <div class="cp-eng" data-id="${c.id}">${engHtml(c.id)}</div>
         ${p ? `<p class="cp-next"><span>Prochain envoi</span> ${esc(String(p.nextLabel))} · <b>${p.nextCount}</b> mail${p.nextCount > 1 ? 's' : ''}</p>` : ''}
+        ${p && p.raison ? `<p class="cp-why">${esc(p.raison)}</p>` : ''}
         ${st.excluded ? `<p class="cp-warn">${st.excluded} contact${st.excluded > 1 ? 's' : ''} exclu${st.excluded > 1 ? 's' : ''} : ce mail leur a déjà été envoyé dans une autre campagne.</p>` : ''}
       </article>`;
     }).join('')}</div>` : `<div class="card empty"><big>➤</big>Aucune campagne pour l'instant. Cliquez sur « + Nouvelle campagne ».</div>`}

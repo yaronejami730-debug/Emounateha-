@@ -73,7 +73,16 @@ const fromRow = (t, r) => { const o = { id: r.id }; for (const [k, c] of Object.
 async function loadDb() {
   let loaded = null;
   if (pool) {
-    if (!loadDb.migrated) { await pool.query(fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261102230000_crm_schema.sql'), 'utf8')); loadDb.migrated = true; }
+    if (!loadDb.migrated) {   // schéma : sous verrou, un seul démarrage à la fois (deux instances lancées ensemble se bloquaient : « deadlock detected »)
+      const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261102230000_crm_schema.sql'), 'utf8');
+      for (let essai = 0; ; essai++) {
+        const cl = await pool.connect();
+        try { await cl.query('begin'); await cl.query('select pg_advisory_xact_lock(7390142)'); await cl.query(sql); await cl.query('commit'); break; }
+        catch (e) { await cl.query('rollback').catch(() => {}); if (e.code !== '40P01' || essai >= 3) throw e; await new Promise(r => setTimeout(r, 250 + 400 * essai)); }
+        finally { cl.release(); }
+      }
+      loadDb.migrated = true;
+    }
     const [st, ...rows] = await Promise.all([
       pool.query('select data from public.settings where id = 1'),
       ...Object.keys(TABLES).map(t => pool.query(`select * from public.${t}` + (t === 'sends' ? ' order by at' : ' order by created_at')))
@@ -1179,21 +1188,22 @@ function publicSettings() {
 
 // plan d'envoi d'une campagne en cours : même règle que le moteur (quota du jour, étalé sur la plage horaire)
 function campaignPlan(c) {
-  if (c.status !== 'running' || !c.endDate) return null;
-  const s = db.settings, nowD = new Date(), todayStr = parisDay(Date.now());
-  const daysLeft = Math.max(1, Math.round((new Date(c.endDate) - new Date(todayStr)) / 86400000) + 1);
+  if (c.status !== 'running') return null;
+  const s = db.settings, nowD = new Date(), todayStr = parisDay(Date.now()), etale = !!c.endDate;   // sans date de fin : envoi « tout de suite », seulement borné par la limite du jour et les heures d'envoi
+  const daysLeft = etale ? Math.max(1, Math.round((new Date(c.endDate) - new Date(todayStr)) / 86400000) + 1) : 1;
   const sentC = db.sends.filter(x => x.campaignId === c.id && x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
   const sentTot = db.sends.filter(x => x.campaignId === c.id && x.status !== 'error').length;
   const rem = remaining(c);
-  const dayQuota = Math.min(s.dailyLimit, Math.ceil((rem + sentTot) / daysLeft));
+  const dayQuota = etale ? Math.min(s.dailyLimit, Math.ceil((rem + sentTot) / daysLeft)) : s.dailyLimit;
   const winMin = Math.max(1, (s.hourTo - s.hourFrom) * 60);
   const h = +nowD.toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
   const nowMin = h * 60 + (+nowD.toLocaleString('en-GB', { timeZone: 'Europe/Paris', minute: 'numeric' }));
   const fromMin = s.hourFrom * 60, toMin = s.hourTo * 60;
   const inWindow = nowMin >= fromMin && nowMin < toMin;
   const elapsed = Math.min(winMin, Math.max(0, nowMin - fromMin));
-  const capNow = Math.max(0, Math.ceil(dayQuota * elapsed / winMin) - sentC);
-  const dayLeft = Math.max(0, dayQuota - sentC);
+  const capNow = etale ? Math.max(0, Math.ceil(dayQuota * elapsed / winMin) - sentC) : Math.max(0, dayQuota - sentC);
+  const globLeft = Math.max(0, s.dailyLimit - usedToday()), bloque = !!(s.pausedUntil && Date.now() < +new Date(s.pausedUntil)) || globLeft <= 0;   // limite du jour, tous envois confondus
+  const dayLeft = bloque ? 0 : Math.min(Math.max(0, dayQuota - sentC), globLeft);
   const perHour = Math.round(dayQuota / (winMin / 60) * 10) / 10;
   const fmtW = m => (m >= 60 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min' : m + ' min');
   let waitMin, nextLabel, nextCount;
@@ -1207,7 +1217,14 @@ function campaignPlan(c) {
   }
   else if (!inWindow && nowMin < fromMin && dayLeft > 0) { waitMin = fromMin - nowMin; nextLabel = 'dans ' + fmtW(waitMin) + ' (à ' + String(s.hourFrom).padStart(2, '0') + ' h)'; nextCount = Math.min(s.perMinute, Math.ceil(dayQuota / winMin), rem); }
   else { waitMin = (24 * 60 - nowMin) + fromMin; nextLabel = 'demain à ' + String(s.hourFrom).padStart(2, '0') + ' h'; nextCount = Math.min(s.perMinute, Math.ceil(dayQuota / winMin), rem); }
-  return { dayQuota, sentToday: sentC, dayLeft, remaining: rem, perHour, waitMin, nextLabel, nextCount };
+  // pourquoi la campagne n'envoie pas en ce moment (affiché dans le CRM)
+  const hh = n => String(n).padStart(2, '0') + ' h', dem = 'Reprise demain à ' + hh(s.hourFrom) + '.';
+  let raison = '';
+  if (bloque) raison = `La limite de ${s.dailyLimit} mails par jour est atteinte, tous envois confondus. ${dem}`;
+  else if (!inWindow) raison = `Hors des heures d'envoi (${hh(s.hourFrom)} – ${hh(s.hourTo)}). ` + (nowMin < fromMin ? `Reprise à ${hh(s.hourFrom)}.` : dem);
+  else if (dayLeft === 0) raison = `La part d'aujourd'hui est envoyée : ${dayQuota} mails par jour pour finir le ${new Date(c.endDate + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}. ${dem}`;
+  else if (etale && capNow === 0) raison = `Envoi étalé sur la journée : environ ${String(perHour).replace('.', ',')} mails par heure.`;
+  return { dayQuota, sentToday: sentC, dayLeft, remaining: rem, perHour, waitMin, nextLabel, nextCount, raison, etale };
 }
 function campaignStats(c) {
   const s = db.sends.filter(x => x.campaignId === c.id);

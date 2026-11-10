@@ -354,3 +354,5 @@ table{border-radius:16px;overflow:hidden}
 .eg-w b{display:block;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.eg-w small,.eg-d small{display:block;font-size:12px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eg-d{font-size:13px;color:var(--mut);text-align:right;white-space:nowrap}
 @media(max-width:640px){.cp-es{grid-template-columns:repeat(2,1fr)}.eg-list li{grid-template-columns:minmax(0,1fr) auto}.eg-d{grid-column:1/-1;text-align:left;grid-row:2}}
+
+.cp-why{margin:10px 0 0;padding:9px 12px;border-radius:10px;background:#eaf3fb;color:#1e4b73;font-size:13.5px}
