@@ -102,12 +102,12 @@ async function lignesFete(b) {
   const lignes = [], vu = new Set();
   for (const l of (Array.isArray(b.lignes) ? b.lignes : []).slice(0, 12)) {
     const a = f.actions.find(x => x.id === String(l && l.id)); if (!a || vu.has(a.id)) throw new Error('Choix invalide');
-    const c = eur(l.montant); if (!(c >= 100 && c <= 10000000)) throw new Error('Montant invalide pour « ' + a.court + ' » (de 1 € à 100 000 €)');
+    const c = eur(l.montant); if (!(c >= 100 && c <= 99999900)) throw new Error('Montant invalide pour « ' + a.court + ' » (de 1 € à 999 999 €)');
     vu.add(a.id); lignes.push({ id: a.id, label: a.court, montant: c });
   }
-  if (b.libre !== undefined && b.libre !== '' && Number(String(b.libre).replace(',', '.')) !== 0) { const c = eur(b.libre); if (!(c >= 100 && c <= 10000000)) throw new Error('Don libre invalide (de 1 € à 100 000 €)'); lignes.push({ id: 'libre', label: 'Don libre', montant: c }); }
+  if (b.libre !== undefined && b.libre !== '' && Number(String(b.libre).replace(',', '.')) !== 0) { const c = eur(b.libre); if (!(c >= 100 && c <= 99999900)) throw new Error('Don libre invalide (de 1 € à 999 999 €)'); lignes.push({ id: 'libre', label: 'Don libre', montant: c }); }
   if (!lignes.length) throw new Error('Choisissez au moins une action.');
-  const total = lignes.reduce((t, l) => t + l.montant, 0); if (total > 10000000) throw new Error('Montant invalide (de 1 € à 100 000 €)');
+  const total = lignes.reduce((t, l) => t + l.montant, 0); if (total > 99999900) throw new Error('Montant invalide (de 1 € à 999 999 €)');
   return { lignes, total, affectation: (f.kind === 'fete' ? f.titre + ' : ' + lignes.map(l => l.label).join(', ') : f.label).slice(0, 78) };
 }
 async function affectationsOk() { const l = await affectations(); return new Set([...l.map(a => a.label), ...AFFECT_ANCIEN]); }
@@ -125,7 +125,7 @@ function validerDonateur(b) {
   const email = clean(b.email, 160).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error('Email invalide');
   const montant = Math.round(Number(String(b.montant).replace(',', '.')) * 100);
-  if (!Number.isInteger(montant) || montant < 100 || montant > 10000000) throw new Error('Montant invalide (de 1 € à 100 000 €)');
+  if (!Number.isInteger(montant) || montant < 100 || montant > 99999900) throw new Error('Montant invalide (de 1 € à 999 999 €)');
   return { type, nom, siren: type === 'entreprise' ? siren : '', adresse: `${rue}, ${cp} ${ville}`, ville, email, montant, form: { prenom: clean(b.prenom, 60), nom: clean(b.nom, 60), raisonSociale: clean(b.raisonSociale, 120), siren, adresse: rue, cp, ville, tel: type === 'entreprise' ? '' : clean(b.tel, 24) } };
 }
 

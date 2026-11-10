@@ -1286,6 +1286,7 @@ function actTotal() {
 }
 function renderActs(it) {
   ACTS = {}; $('libre').value = '';
+  { const fr = document.querySelector('.dn-actfree'); if (fr) fr.hidden = it.actions.length === 1 && !it.actions[0].montant; }   // une seule action, à montant libre : le champ « don libre » ferait doublon
   $('actLab').textContent = 'Comment souhaitez-vous participer ?';
   const hero = $('feteHero');
   if (hero) hero.innerHTML = (it.image || it.intro) ? ('<div class="fh-top">' + (it.image ? '<img src="' + esc(it.image) + '" alt="">' : '') + '<div class="fh-t"><span class="fh-k">' + esc(it.jours != null ? joursTxt(it.jours) : (/chabbat/i.test(it.label) ? 'Chaque semaine' : 'Nos actions')) + '</span><b>' + esc(it.titre || it.label) + '</b></div></div>' +
@@ -1345,7 +1346,7 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   if (!c.live && (mode === 'sans' || /[?&]test=1/.test(location.search))) { document.body.classList.add('test-on'); fillRandom(); } else { $('montant').value = '52'; mark(); upSum(); }
   { // lien depuis la page Torah (ou ailleurs) : ?montant=26|52…&express=1&retour=https://www.emounateha.fr/torah/
     const q = new URLSearchParams(location.search), m = Number(String(q.get('montant') || '').replace(',', '.'));
-    if (Number.isFinite(m) && m >= 1 && m <= 100000) { $('montant').value = String(m).replace('.', ','); mark(); upSum(); }
+    if (Number.isFinite(m) && m >= 1 && m <= 999999) { $('montant').value = String(m).replace('.', ','); mark(); upSum(); }
     const ret = q.get('retour') || ''; if (/^https:\/\/(www\.)?emounateha\.fr\//.test(ret)) { const a = document.querySelector('.dn-topbar .dn-back'); if (a) { a.href = ret; a.innerHTML = '<span>←</span> Retour à la vidéo'; } }
   }
   pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
@@ -1641,6 +1642,7 @@ async function post(url, data) {
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status); return j;
 }
 function check1() {
+  if (nf($('montant').value) > 999999) throw new Error('Le montant maximum par don en ligne est de 999 999 €. Au-delà, contactez-nous pour un virement.');
   if (!$('actBox').hidden) {
     const vide = Object.entries(ACTS).find(([, m]) => !(eurTxt(m) > 0)); if (vide) throw new Error('Indiquez un montant pour chaque action cochée.');
     if (!(nf($('montant').value) >= 1)) throw new Error('Cochez au moins une action ou ajoutez un don libre.');
