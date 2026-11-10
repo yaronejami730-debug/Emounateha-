@@ -1429,7 +1429,7 @@ async function api(req, res, url) {
     const out = [];
     for (const ph of phones) {
       try {
-        const r = await fetch('https://api.brevo.com/v3/transactionalSMS/statistics/events?days=1&limit=50&sort=desc&phoneNumber=' + ph, { headers: { 'api-key': key, accept: 'application/json' } }); const j = await r.json().catch(() => ({}));
+        const r = await fetch('https://api.brevo.com/v3/transactionalSMS/statistics/events?limit=50&sort=desc&phoneNumber=' + ph, { headers: { 'api-key': key, accept: 'application/json' } }); const j = await r.json().catch(() => ({}));
         const by = new Map(); for (const e of (j.events || [])) if (+new Date(e.date) >= since - 5000) { const k = e.messageId || e.date; (by.get(k) || by.set(k, []).get(k)).push(e); }
         for (const [id, ev] of by) { ev.sort((a, b) => (a.date < b.date ? -1 : 1)); const fin = [...ev].reverse().find(e => /delivered|bounce|blocked|rejected|skipped|unsubscribed/i.test(e.event)); out.push({ phone: ph, id, state: fin ? (/delivered/i.test(fin.event) ? 'delivered' : 'failed') : 'pending', event: fin ? fin.event : ev[ev.length - 1].event, reason: fin && fin.reason || '', at: (fin || ev[ev.length - 1]).date }); }
       } catch (e) { out.push({ phone: ph, state: 'unknown', error: e.message }); }
