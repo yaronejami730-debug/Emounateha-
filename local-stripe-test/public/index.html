@@ -547,10 +547,10 @@ body{overflow-x:hidden}
 body[data-besoin] label.ad-sel,body[data-besoin] #chips,body[data-besoin] #gFreq .dn-freq,body[data-besoin] #actBox{display:none!important}
 body[data-besoin] #amtBox{display:block!important}
 /* reçu fiscal instantané : rappel à côté du montant */
-.rf{display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:11px 14px;border-radius:14px;background:#fffaeb;border:1.5px solid #ecd999;text-align:left}
-.rf-ic{flex:none;display:flex;filter:drop-shadow(0 2px 3px rgba(120,90,20,.18))}.rf-t b{display:block;font-size:15px;line-height:1.25;color:#14464e}.rf-t small{display:block;font-size:12.5px;line-height:1.35;color:#5a6d70;margin-top:1px}
-.rf-b{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:#8a6a14;white-space:nowrap;margin-top:2px}
-.rf-s{margin:0 0 12px;text-align:center;font-size:13.5px;font-weight:600;color:#8a6a14}.rf-s span{display:block;font-weight:500;font-size:12px;color:#5a6d70;margin-top:1px}
+.rf{display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:11px 14px;border-radius:14px;background:#f3f8f8;border:1.5px solid #cfe0e0;text-align:left}
+.rf-ic{flex:none;display:flex}.rf-t b{display:block;font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:16.5px;line-height:1.2;color:#1f6a72}.rf-t small{display:block;font-size:12.5px;line-height:1.35;color:#51666a;margin-top:2px}
+.rf-b{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:#1f6a72;white-space:nowrap;margin-top:2px}
+.rf-s{margin:0 0 12px;text-align:center;font-size:13.5px;font-weight:600;color:#1f6a72}.rf-s span{display:block;font-weight:500;font-size:12px;color:#5a6d70;margin-top:1px}
 body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
 .bs-card{margin:0 0 16px;padding:16px 18px;border-radius:16px;background:#f3f8f8;border:1.5px solid #cfe0e0;text-align:left}
 .bs-card .bs-k{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8842a;margin-bottom:4px}
@@ -562,7 +562,7 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
 .bs-dons{margin-top:14px;padding-top:12px;border-top:1px solid #d6e4e4}.bs-dons ul{list-style:none;margin:6px 0 0;padding:0;max-height:190px;overflow:auto}
 .bs-dons li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:14.5px;color:#14272a;border-bottom:1px dashed #dbe7e7}.bs-dons li:last-child{border-bottom:0}.bs-dons li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bs-dons li b{flex:none;color:#1f6a72}.bs-dons li.an span{color:#6a7f83;font-style:italic}
 .bs-nom{display:flex;align-items:flex-start;gap:10px;margin:4px 0 12px;font-size:15px;color:#14272a;cursor:pointer}.bs-nom input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:#1f6a72}.bs-nom small{display:block;font-size:12.5px;color:#51666a;margin-top:2px;line-height:1.35}
-.dn-acttotal{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 18px;border-radius:16px;background:#14464e;color:#fff}
+.dn-acttotal{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 18px;border-radius:16px;background:#1f6a72 url(/header.jpg) center/cover;color:#fff;box-shadow:0 6px 16px rgba(20,60,66,.18)}
 .dn-acttotal span{font-size:14px;letter-spacing:.6px;text-transform:uppercase;opacity:.85}
 .dn-acttotal b{font-family:'Bree Serif',serif;font-weight:400;font-size:26px}
 #actBox[hidden],#amtBox[hidden]{display:none!important}
@@ -991,9 +991,9 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
             <div class="dn-freq"><label><input type="radio" name="repart" value="mois" checked><span>Par mois</span></label><label><input type="radio" name="repart" value="total"><span>Total à répartir</span></label></div></div>
           <p class="dn-datehint" id="durHint" style="display:none"></p>
         </div>
-        <div class="rf" id="rfBadge"><span class="rf-ic"><svg viewBox="0 0 32 40" width="26" height="33" aria-hidden="true"><path d="M3 1h17l9 9v27a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2z" fill="#fff" stroke="#c4a24a" stroke-width="2" stroke-linejoin="round"/><path d="M20 1v7a2 2 0 0 0 2 2h7" fill="#f6e9c4" stroke="#c4a24a" stroke-width="2" stroke-linejoin="round"/><rect x="5" y="20" width="22" height="11" rx="2.5" fill="#c0392b"/><text x="16" y="28.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="8.2" font-weight="700" fill="#fff">PDF</text></svg></span><span class="rf-t"><b>Reçu fiscal CERFA instantané</b><small>Envoyé en PDF par e-mail, juste après votre paiement.</small></span></div>
+        <div class="rf" id="rfBadge"><span class="rf-ic"><svg viewBox="0 0 32 40" width="26" height="33" aria-hidden="true"><path d="M3 1h17l9 9v27a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2z" fill="#fff" stroke="#1f6a72" stroke-width="2" stroke-linejoin="round"/><path d="M20 1v7a2 2 0 0 0 2 2h7" fill="#e4f0f0" stroke="#1f6a72" stroke-width="2" stroke-linejoin="round"/><rect x="5" y="20" width="22" height="11" rx="2.5" fill="#c4a24a"/><text x="16" y="28.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="8.2" font-weight="700" fill="#fff">PDF</text></svg></span><span class="rf-t"><b>Reçu fiscal CERFA instantané</b><small>Envoyé en PDF par e-mail, juste après votre paiement.</small></span></div>
       </div>
-      <label class="ad-box ad-sel" for="affSel"><span class="ad-k">Pour quoi donnez-vous ?</span><select id="affSel" aria-label="Affectation du don"></select></label>
+      <label class="ad-box ad-sel" for="affSel"><span class="ad-k">Pourquoi donnez-vous ?</span><select id="affSel" aria-label="Affectation du don"></select></label>
       <div class="dn-chips" id="chips" role="radiogroup" aria-label="Affectation du don" hidden></div>
       <input type="hidden" id="aff">
       <div id="actBox" hidden>
