@@ -1,0 +1,92 @@
+// Dons mensuels dont le prélèvement a échoué (carte refusée, expirée, provision insuffisante).
+// LECTURE SEULE sur le compte Stripe : ce module ne relance aucun paiement lui-même. C'est Stripe qui retente le prélèvement,
+// selon le calendrier réglé dans Stripe (Facturation → Recouvrement → Nouvelles tentatives). Ici, on prévient :
+//   - le donateur, à chaque nouvel échec, 4 fois au plus pour une même échéance (ton bienveillant, lien pour changer de carte, lien pour arrêter) ;
+//   - l'administrateur, une fois, au 4e échec d'une même échéance.
+// Le serveur du site appelle ce point d'entrée toutes les heures. À la mise en service, les échecs déjà en cours sont notés sans e-mail.
+
+const MAX_DONATEUR = 4;
+const eur = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(',00', '') + ' €';
+const P = { timeZone: 'Europe/Paris' };
+const jour = t => new Date(t * 1000).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', ...P });
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const subDe = inv => inv.subscription && typeof inv.subscription === 'object' ? inv.subscription.id : inv.subscription || (inv.parent && inv.parent.subscription_details && inv.parent.subscription_details.subscription) || null;
+
+// Message au donateur. etape = 1 à 4 (numéro du rappel pour cette échéance).
+function texteDonateur(d) {
+  const m = eur(d.montant), k = d.etape, dernier = k >= MAX_DONATEUR;
+  const titre = k === 1 ? 'Votre don mensuel n\'a pas pu être prélevé' : dernier ? 'Dernier rappel pour votre don mensuel' : 'Votre don mensuel est toujours en attente';
+  const intro = k === 1
+    ? `Le prélèvement de votre don mensuel de ${m} n'a pas abouti. Cela arrive : carte expirée ou remplacée, plafond atteint, provision insuffisante ce jour-là.`
+    : dernier
+      ? `Le prélèvement de votre don mensuel de ${m} n'a toujours pas abouti. C'est notre dernier message à ce sujet pour cette échéance.`
+      : `Le prélèvement de votre don mensuel de ${m} n'a pas abouti lors de la nouvelle tentative.`;
+  const suite = d.prochain ? `Vous n'avez rien à faire si c'est passager : une nouvelle tentative aura lieu automatiquement le ${jour(d.prochain)}.` : `Aucune nouvelle tentative automatique n'est prévue pour cette échéance : vous pouvez la régler avec le bouton ci-dessous si vous le souhaitez.`;
+  const carte = 'Si votre carte a changé, vous pouvez régler cette échéance avec une autre carte en un instant.';
+  const libre = 'Votre don reste entièrement libre : vous pouvez l\'arrêter ou le reprendre à tout moment depuis votre espace donateur, sans justification.';
+  const subject = (d.test ? '[TEST] ' : '') + (k === 1 ? `Votre don mensuel de ${m} n'a pas pu être prélevé` : dernier ? `Dernier rappel : votre don mensuel de ${m}` : `Rappel : votre don mensuel de ${m} est en attente`);
+  return { titre, intro, suite, carte, libre, subject, m };
+}
+async function mailDonateur(mailer, d) {
+  const s = await mailer.settings(); if (!s) return null;
+  const t = texteDonateur(d), color = '#1f6a72', accent = '#c4a24a', f = "font-family:Inter,-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;";
+  const bouton = (href, txt, plein) => `<table role="presentation" align="center" style="margin:${plein ? '22px' : '10px'} auto 4px;"><tr><td style="${plein ? 'background:' + accent + ';' : 'border:1.5px solid ' + color + ';'}border-radius:999px;"><a href="${esc(href)}" style="display:inline-block;padding:${plein ? '12px 28px' : '9px 22px'};font-size:${plein ? 15 : 13}px;font-weight:bold;color:${plein ? '#1b2b2d' : color};text-decoration:none;${f}">${txt}</a></td></tr></table>`;
+  const inner = `<h1 style="margin:0 0 14px;${f}font-weight:bold;font-size:21px;line-height:1.3;color:${color};text-align:center;">${esc(t.titre)}</h1>
+  <p style="margin:0 0 12px;${f}font-size:15px;line-height:1.6;color:#22383b;">Bonjour${d.nom ? ' ' + esc(d.nom) : ''},</p>
+  <p style="margin:0 0 12px;${f}font-size:15px;line-height:1.6;color:#22383b;">${esc(t.intro)}</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6faf9;border:1px solid #dbe8e8;border-radius:12px;margin:0 0 14px;"><tr><td style="padding:12px 18px;${f}font-size:14px;line-height:1.6;color:#14272a;"><b>${esc(t.m)} par mois</b>${d.affectation ? ' · ' + esc(d.affectation) : ''}<br><span style="color:#51666a;">${esc(t.suite)}</span></td></tr></table>
+  <p style="margin:0 0 4px;${f}font-size:14.5px;line-height:1.6;color:#22383b;">${esc(t.carte)}</p>
+  ${d.payer ? bouton(d.payer, 'Régler avec une autre carte', true) : ''}
+  <p style="margin:18px 0 4px;${f}font-size:13.5px;line-height:1.6;color:#51666a;text-align:center;">${esc(t.libre)}</p>
+  ${d.espace ? bouton(d.espace, 'Gérer ou arrêter mon don mensuel', false) : ''}
+  <p style="margin:20px 0 0;${f}font-size:14px;line-height:1.6;color:#22383b;text-align:center;">Merci de tout cœur pour votre soutien.</p>`;
+  return { subject: t.subject,
+    html: mailer.shell(s, inner, { preheader: t.intro, testBanner: !!d.test }).replace('{{pied}}', `Vous recevez cet email car vous avez mis en place un don mensuel à ${esc(s.orgName)}. Rappel ${d.etape} sur ${MAX_DONATEUR} au plus pour cette échéance.`),
+    text: `Bonjour${d.nom ? ' ' + d.nom : ''},\n\n${t.intro}\n\n${t.m} par mois${d.affectation ? ' · ' + d.affectation : ''}\n${t.suite}\n\n${t.carte}${d.payer ? '\nRégler avec une autre carte : ' + d.payer : ''}\n\n${t.libre}${d.espace ? '\nGérer ou arrêter mon don mensuel : ' + d.espace : ''}\n\nMerci de tout cœur pour votre soutien.\n${s.orgName}` };
+}
+function mailAdmin(d) {
+  const L = [`Le don mensuel de ${d.nom || 'un donateur'} (${d.email}) n'a pas pu être prélevé : ${d.tentatives} tentatives sans succès pour l'échéance de ${eur(d.montant)}${d.affectation ? ' (' + d.affectation + ')' : ''}.`,
+    `Le donateur a été prévenu ${d.rappels} fois par e-mail, avec un lien pour changer de carte.`,
+    d.prochain ? `Stripe fera une nouvelle tentative le ${jour(d.prochain)}.` : `Stripe ne prévoit plus de nouvelle tentative pour cette échéance. Le don mensuel reste en place : la prochaine échéance sera tentée normalement le mois suivant, sauf si le donateur l'arrête.`,
+    `Si vous connaissez ce donateur, un appel est souvent plus efficace qu'un e-mail. Aucune action n'est obligatoire.`,
+    `Référence Stripe : ${d.ref}`];
+  return { subject: (d.test ? '[TEST] ' : '') + `Don mensuel en échec : ${d.nom || d.email}, ${eur(d.montant)} (${d.tentatives} tentatives)`, text: L.join('\n\n'), html: '<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:560px;font-size:14.5px;line-height:1.55">' + L.map((l, i) => `<p style="margin:0 0 12px${i === L.length - 1 ? ';font-size:12px;color:#6b7280' : ''}">${esc(l)}</p>`).join('') + '</div>' };
+}
+
+function monter(app, { stripe, adminOk, mailer, load, save }) {
+  app.post('/api/admin/echecs/verifier', async (req, res) => {
+    if (!adminOk(req, res)) return;
+    if (!stripe) return res.status(503).json({ error: 'Stripe non configuré' });
+    try {
+      const test = !/^sk_live_/.test(process.env.STRIPE_SECRET_KEY || ''), espace = process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '';
+      const ouvertes = []; for await (const inv of stripe.invoices.list({ status: 'open', limit: 100, expand: ['data.customer'] })) { if ((inv.attempt_count || 0) >= 1 && inv.billing_reason === 'subscription_cycle') ouvertes.push(inv); if (ouvertes.length > 500) break; }
+      const d = load(), avant = d.echecs || null, etat = {}, subs = new Map(), envois = [], erreurs = [];
+      for (const inv of ouvertes) {
+        const sid = subDe(inv); if (!sid) continue;
+        if (!subs.has(sid)) subs.set(sid, await stripe.subscriptions.retrieve(sid).catch(() => null));
+        const sub = subs.get(sid), md = (sub && sub.metadata) || {}; if (!sub || md.frequence !== 'mensuel') continue;   // seulement les dons mensuels créés par cette page
+        const cu = inv.customer && typeof inv.customer === 'object' ? inv.customer : null, email = cu && !cu.deleted ? String(cu.email || '').trim() : '';
+        const st = { ...(avant && avant[inv.id] ? avant[inv.id] : { tentatives: 0, donateur: 0, admin: false }) };
+        if (!avant) { etat[inv.id] = { tentatives: inv.attempt_count, donateur: 0, admin: inv.attempt_count >= MAX_DONATEUR, depuis: new Date().toISOString() }; continue; }   // mise en service : pas d'e-mail pour le passé
+        const base = { nom: cu && cu.name ? String(cu.name).slice(0, 80) : '', email, montant: inv.amount_remaining != null ? inv.amount_remaining : inv.amount_due, affectation: md.affectation || '', prochain: inv.next_payment_attempt || null, test };
+        try {
+          if (inv.attempt_count > st.tentatives && st.donateur < MAX_DONATEUR && email) {
+            const m = await mailDonateur(mailer, { ...base, etape: st.donateur + 1, payer: inv.hosted_invoice_url || '', espace });
+            if (m) { const env = await mailer.send({ to: email, toName: base.nom, subject: m.subject, html: m.html, text: m.text }); st.donateur++; envois.push({ facture: inv.id, a: 'donateur', rappel: st.donateur, mail: env && env.sent !== undefined ? env.sent : true }); }
+          }
+          st.tentatives = Math.max(st.tentatives, inv.attempt_count);
+          if (inv.attempt_count >= MAX_DONATEUR && !st.admin) {
+            const m = mailAdmin({ ...base, tentatives: inv.attempt_count, rappels: st.donateur, ref: inv.id });
+            await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text }); st.admin = true; envois.push({ facture: inv.id, a: 'administrateur' });
+          }
+        } catch (e) { erreurs.push(inv.id + ' : ' + e.message); }
+        etat[inv.id] = { ...st, vuLe: new Date().toISOString() };
+      }
+      const d2 = load(); d2.echecs = etat; save(d2);   // on ne garde que les échéances encore impayées : une échéance réglée ou annulée sort de la liste
+      if (erreurs.length) console.error('echecs', erreurs.join(' | '));
+      res.json({ ok: true, miseEnService: !avant, enEchec: Object.keys(etat).length, envois: envois.length, detail: envois, erreurs });
+    } catch (e) { console.error('echecs', e.message); res.status(502).json({ error: 'Lecture Stripe impossible : ' + e.message }); }
+  });
+}
+
+module.exports = { texteDonateur, mailDonateur, mailAdmin, monter, MAX_DONATEUR };

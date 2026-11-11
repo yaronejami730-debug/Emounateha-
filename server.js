@@ -635,6 +635,19 @@ async function verifierVirements() {
     return j;
   } catch (e) { s.virementsVerif = ''; save(); console.error('virements', e.message); return null; }
 }
+// Dons mensuels dont le prélèvement a échoué : une fois par heure, le serveur des dons prévient le donateur (4 rappels au plus par échéance) puis l'administrateur.
+async function verifierEchecs() {
+  const s = db.settings, cle = parisDay(Date.now()) + ' ' + parisHour();
+  if (s.echecsVerif === cle) return null;
+  s.echecsVerif = cle; save();
+  try {
+    const r = await fetch(DON_URL + '/api/admin/echecs/verifier', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/echecs/verifier') }, body: '{}', signal: AbortSignal.timeout(40000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { s.echecsVerif = ''; save(); console.error('echecs refusé', r.status, JSON.stringify(j).slice(0, 160)); }
+    else if (j.envois || j.miseEnService || (j.erreurs || []).length) console.log('echecs', JSON.stringify(j).slice(0, 300));
+    return j;
+  } catch (e) { s.echecsVerif = ''; save(); console.error('echecs', e.message); return null; }
+}
 // Envois uniques demandés par Yarone le 11 nov. 2026 (un marqueur par envoi, jamais dans les réglages par défaut) :
 //  - relevé de commission de rattrapage : dons reçus avant la mise en place du relevé hebdomadaire (le 1er relevé hebdomadaire couvre la semaine du 9 novembre) ;
 //  - e-mail d'exemple « virement Stripe » à l'administrateur.
@@ -656,6 +669,7 @@ async function tick(force = false) {
     ensureForfait(); ensureAccords(); nettoyerContactsTest();
     await releveCommission();
     await verifierVirements();
+    await verifierEchecs();
     await envoisUniques();
     const s = db.settings;
     const q = await brevoQuota(force); await alerteQuota(q);

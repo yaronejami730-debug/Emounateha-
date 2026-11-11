@@ -1,0 +1,35 @@
+// Dons mensuels en échec : essais sur des factures inventées (aucun appel à Stripe, aucun e-mail réel).
+const E = require('../echecs.js'); let pass = 0, fail = 0; const ok = (c, m, x) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  ECHEC', m, c ? '' : JSON.stringify(x === undefined ? null : x).slice(0, 400)); };
+const t = j => Math.floor(Date.parse(j + 'T08:00:00Z') / 1000);
+(async () => {
+  let x = E.texteDonateur({ montant: 2600, etape: 1, prochain: t('2026-11-18') }); ok(/26 €/.test(x.subject) && /n'a pas pu être prélevé/.test(x.subject) && /mercredi 18 novembre/.test(x.suite) && /libre/.test(x.libre), '1er message : bienveillant, date de la prochaine tentative, don libre', x);
+  x = E.texteDonateur({ montant: 2600, etape: 4, prochain: null }); ok(/Dernier rappel/.test(x.subject) && /dernier message/.test(x.intro) && /Aucune nouvelle tentative automatique/.test(x.suite), '4e message : dernier rappel, plus de tentative prévue', x);
+  const routes = {}, app = { post: (p, f) => routes[p] = f }; let data = {}, mails = [], factures = [], autorise = true, panne = false;
+  const F = (id, n, o = {}) => ({ id, attempt_count: n, billing_reason: 'subscription_cycle', amount_due: 2600, amount_remaining: 2600, next_payment_attempt: t('2026-11-18'), hosted_invoice_url: 'https://invoice.stripe.com/i/' + id, subscription: 'sub_' + id, customer: { id: 'cus_' + id, email: id + '@donateur.fr', name: 'Sarah Lévy' }, ...o });
+  const subs = { sub_in_1: { metadata: { frequence: 'mensuel', affectation: 'Colis de Chabbat' } }, sub_in_ancien: { metadata: { frequence: 'mensuel' } }, sub_in_autre: { metadata: {} }, sub_in_2: { metadata: { frequence: 'mensuel' } } };
+  const stripe = { invoices: { list: () => (async function* () { for (const f of factures) yield f; })() }, subscriptions: { retrieve: async id => subs[id] || Promise.reject(new Error('introuvable')) } };
+  const mailer = { ADMIN_EMAIL: () => 'admin@exemple.com', settings: async () => ({ orgName: 'Émounatéha', publicUrl: 'https://www.emounateha.fr' }), shell: (s, inner) => '<html>' + inner + '{{pied}}</html>', send: async m => { if (panne) throw new Error('Brevo en panne'); mails.push(m); return { sent: true }; } };
+  process.env.STRIPE_SECRET_KEY = 'sk_test_x'; process.env.PUBLIC_URL = 'https://don.emounateha.fr';
+  E.monter(app, { stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; } });
+  const appel = async () => { let code = 200, corps; const res = { status: c => (code = c, res), json: j => (corps = j, res) }; await routes['/api/admin/echecs/verifier']({ body: {} }, res); return { code, corps }; };
+  factures = [F('in_ancien', 2)]; let r = await appel(); ok(r.corps.miseEnService && mails.length === 0 && data.echecs.in_ancien.tentatives === 2, 'mise en service : un échec déjà en cours ne déclenche aucun e-mail', r.corps);
+  factures.push(F('in_1', 1), F('in_autre', 1), F('in_ponctuel', 1, { billing_reason: 'manual' }), F('in_ok', 0)); r = await appel();
+  ok(mails.length === 1 && mails[0].to === 'in_1@donateur.fr' && /n'a pas pu être prélevé/.test(mails[0].subject) && /invoice\.stripe\.com\/i\/in_1/.test(mails[0].html) && /don\.emounateha\.fr\/espace\//.test(mails[0].html) && /Colis de Chabbat/.test(mails[0].html), '1er échec d\'un don mensuel : un e-mail au donateur, lien pour changer de carte et lien pour arrêter', [r.corps, mails.map(m => m.to + ' ' + m.subject)]);
+  ok(!mails.some(m => /in_autre|in_ponctuel|in_ok|in_ancien/.test(m.to)), 'abonnement étranger au site, facture manuelle, facture sans échec, échec ancien : aucun e-mail');
+  r = await appel(); r = await appel(); ok(mails.length === 1, 'même tentative revue chaque heure : pas de second e-mail');
+  factures[1] = F('in_1', 2); r = await appel(); ok(mails.length === 2 && /^\[TEST\] Rappel/.test(mails[1].subject), '2e échec : un rappel', mails.map(m => m.subject));
+  factures[1] = F('in_1', 3); r = await appel(); ok(mails.length === 3, '3e échec : un rappel');
+  factures[1] = F('in_1', 4, { next_payment_attempt: null }); r = await appel();
+  ok(mails.length === 5 && /Dernier rappel/.test(mails[3].subject) && mails[4].to === 'admin@exemple.com' && /4 tentatives/.test(mails[4].subject) && /prévenu 4 fois/.test(mails[4].text) && /mois suivant/.test(mails[4].text), '4e échec : dernier rappel au donateur + alerte à l\'administrateur', mails.slice(3).map(m => m.to + ' | ' + m.subject));
+  factures[1] = F('in_1', 5); r = await appel(); factures[1] = F('in_1', 6); r = await appel(); ok(mails.length === 5, '5e et 6e échecs : plus aucun e-mail (4 rappels au plus, une seule alerte)');
+  factures[0] = F('in_ancien', 3); r = await appel(); ok(mails.length === 6 && mails[5].to === 'in_ancien@donateur.fr' && /n'a pas pu être prélevé/.test(mails[5].subject), 'échec ancien qui échoue de nouveau : le donateur reçoit son 1er message');
+  factures = factures.filter(f => f.id !== 'in_1'); r = await appel(); ok(!data.echecs.in_1, 'échéance réglée : elle sort du suivi');
+  factures.push(F('in_1', 1)); r = await appel(); ok(mails.length === 7 && /n'a pas pu être prélevé/.test(mails[6].subject), 'nouvelle échéance en échec plus tard : les rappels repartent de 1');
+  factures.push(F('in_2', 1)); panne = true; r = await appel(); ok(r.corps.erreurs.length === 1 && data.echecs.in_2.donateur === 0 && data.echecs.in_2.tentatives === 0, 'e-mail en panne : le rappel n\'est pas compté', [r.corps.erreurs, data.echecs.in_2]);
+  panne = false; r = await appel(); ok(mails.length === 8 && data.echecs.in_2.donateur === 1, 'à la vérification suivante : le rappel part');
+  factures.push(F('in_sansmail', 1, { subscription: 'sub_in_2', customer: { id: 'c', email: '' } })); r = await appel(); ok(mails.length === 8, 'donateur sans adresse e-mail : rien n\'est envoyé');
+  autorise = false; r = await appel(); ok(r.code === 401, 'sans signature du serveur du site : refusé');
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../echecs.js'), 'utf8').replace(/\/\/.*$/gm, '');
+  ok(!/invoices\.(pay|update|voidInvoice|finalizeInvoice|markUncollectible|sendInvoice)|subscriptions\.(update|cancel|del)|paymentIntents\./.test(src), 'lecture seule : aucun paiement relancé, aucun abonnement modifié par ce module');
+  console.log(pass + ' ok, ' + fail + ' échec'); process.exit(fail ? 1 : 0);
+})();

@@ -576,6 +576,7 @@ app.get('/api/admin/mail', async (req, res) => {
 require('./commission').monter(app, { stripe, adminOk, mailer, load, save });   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
 require('./cagnottes').monter(app, { stripe, adminOk });   // mini-cagnottes : net réellement encaissé par cagnotte (lecture seule), pour la somme à reverser affichée dans le CRM
 require('./virements').monter(app, { stripe, adminOk, mailer, load, save, pdfTampon });   // e-mail à l'administrateur à chaque virement de Stripe vers la banque (lecture seule)
+require('./echecs').monter(app, { stripe, adminOk, mailer, load, save });   // dons mensuels dont le prélèvement échoue : rappels au donateur (4 au plus), alerte à l'administrateur (lecture seule, c'est Stripe qui retente)
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();

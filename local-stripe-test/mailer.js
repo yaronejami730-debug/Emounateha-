@@ -127,4 +127,4 @@ async function notifyAdminDon(d) {   // ne casse jamais le flux du don
   catch (e) { console.error('[mail admin] échec :', e.message); return { sent: false, error: e.message }; }
 }
 
-module.exports = { settings, isFake, send, otpEmail, donEmail, adminDonEmail, notifyAdminDon, ADMIN_EMAIL };
+module.exports = { settings, isFake, send, shell, otpEmail, donEmail, adminDonEmail, notifyAdminDon, ADMIN_EMAIL };
