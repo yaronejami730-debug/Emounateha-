@@ -1,14 +1,13 @@
 BEGIN:VCARD
 VERSION:3.0
-N:Sidbon;Ygal;;;
-FN:Ygal Sidbon
+N:Sitbon;Ygal;;;
+FN:Ygal Sitbon
 ORG:Émounatéha
 TITLE:Président
 TEL;TYPE=CELL,VOICE:+33669670770
 EMAIL;TYPE=INTERNET,WORK:emounateha770@gmail.com
 URL:https://www.emounateha.fr
-ADR;TYPE=WORK:;;76 boulevard Félix Faure;Aubervilliers;;93300;France
-NOTE:Émounatéha — association à but non lucratif. Faire un don : https://don.emounateha.fr
+NOTE:Émounatéha — association à but non lucratif. Faire un don : https://don.emounateha.fr/?aff=besoin
 PHOTO;ENCODING=b;TYPE=JPEG:/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUG
  BgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2w
  BDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk
