@@ -1270,8 +1270,8 @@ const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
   alter table public.besoins enable row level security;`).catch(e => { besoinsReady = null; throw e; }));
 const besoinSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
 // Compte d'une cagnotte : ce qui est dû au bénéficiaire. total = dons d'après les reçus ; st = chiffres Stripe (brut, frais, remboursements, net).
-// À reverser = net Stripe (dons − frais bancaires réels − remboursements) − retenue éventuelle (CAGNOTTE_RETENUE, en %, 0 par défaut). Jamais d'estimation des frais.
-const CAGNOTTE_RETENUE = Math.max(0, Math.min(100, Number(process.env.CAGNOTTE_RETENUE || 0)));
+// À reverser = net Stripe (dons − frais bancaires réels − remboursements) − frais de collecte (CAGNOTTE_RETENUE, en % du net, 7 par défaut ; annoncés sur la page de la cagnotte). Jamais d'estimation des frais bancaires.
+const CAGNOTTE_RETENUE = (v => Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 7)(process.env.CAGNOTTE_RETENUE == null || process.env.CAGNOTTE_RETENUE === '' ? 7 : Number(process.env.CAGNOTTE_RETENUE));
 function besoinCompte(total, st, versements) {
   const vs = (Array.isArray(versements) ? versements : []).filter(v => v && Number.isFinite(v.montant)), verse = vs.reduce((t, v) => t + v.montant, 0);
   if (!st || !st.dons) return { versements: vs, verse, compte: null };

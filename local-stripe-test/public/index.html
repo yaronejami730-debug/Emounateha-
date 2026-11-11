@@ -554,6 +554,7 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
 .bs-card .bs-k{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a8842a;margin-bottom:4px}
 .bs-card>b{display:block;font-family:'Bree Serif',Georgia,serif;font-weight:400;font-size:22px;line-height:1.2;color:#1f6a72}
 .bs-card p{margin:6px 0 0;font-size:14.5px;line-height:1.5;color:#3a4f52}
+.bs-card p.bs-frais{margin:12px 0 0;font-size:11px;line-height:1.35;color:#5f7377;font-weight:400}
 .bs-n{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:12px}.bs-n strong{font-size:24px;color:#14464e}.bs-n span{font-size:13.5px;color:#51666a}
 .bs-bar{height:10px;border-radius:99px;background:#dbe7e7;overflow:hidden;margin-top:8px}.bs-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:6px}
 .bs-card.off{background:#fbf6ea;border-color:#ead9a0}
@@ -1244,7 +1245,8 @@ function besoinInit() {
     box.innerHTML = '<span class="bs-k">Cagnotte</span><b>' + esc(b.titre) + '</b>' + (b.description ? '<p>' + esc(b.description).replace(/\n/g, '<br>') + '</p>' : '') +
       '<div class="bs-n"><strong>' + (connu ? e2(b.collecte) : '…') + '</strong><span>' + (b.objectif ? 'collectés sur ' + e2(b.objectif) : 'collectés') + (b.dons ? ' · ' + b.dons + ' don' + (b.dons > 1 ? 's' : '') : '') + '</span></div>' +
       (b.objectif ? '<div class="bs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : '') +
-      ((b.donateurs || []).length ? '<div class="bs-dons"><span class="bs-k">Ils ont participé</span><ul>' + b.donateurs.map(d => '<li' + (d.nom === 'Anonyme' ? ' class="an"' : '') + '><span>' + esc(d.nom) + '</span><b>' + e2(d.montant) + '</b></li>').join('') + '</ul></div>' : ''); };
+      ((b.donateurs || []).length ? '<div class="bs-dons"><span class="bs-k">Ils ont participé</span><ul>' + b.donateurs.map(d => '<li' + (d.nom === 'Anonyme' ? ' class="an"' : '') + '><span>' + esc(d.nom) + '</span><b>' + e2(d.montant) + '</b></li>').join('') + '</ul></div>' : '') +
+      '<p class="bs-frais">Les dons sont reversés au bénéficiaire après déduction des frais de collecte.</p>'; };
   dessine(b);
   if (b.collecte == null) fetch('/api/besoin/' + b.slug).then(r => r.ok ? r.json() : null).then(j => { if (j) { BESOIN = j; dessine(j); } }).catch(() => {});   // total des dons reçus par ce lien
   $('fs').after(box); $('h1').textContent = 'Votre don pour cette cagnotte';
