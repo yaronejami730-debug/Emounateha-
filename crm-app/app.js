@@ -171,7 +171,7 @@ const views = {
             <button class="btn sm" onclick="location.hash='#/campaigns/${c.id}'">Programmation</button><button class="btn sm" onclick="campDetail('${c.id}')">Statistiques</button><button class="btn sm" onclick="campModal('${c.id}')">Modifier</button><button class="btn sm bad" aria-label="Supprimer la campagne" onclick="del('campaigns','${c.id}')">✕</button></div></header>
         <p class="cp-meta">${steps > 1 ? '1 mail + ' + (steps - 1) + ' relance' + (steps > 2 ? 's' : '') : '1 mail'} · ${quand}${st.pending ? ' · ' + st.pending + ' contact' + (st.pending > 1 ? 's' : '') + ' en cours' : ''}</p>
         <div class="cp-prog"><div class="cp-bar"><i style="width:${pct}%"></i></div><span><b>${sent.toLocaleString('fr-FR')}</b> envoyé${sent > 1 ? 's' : ''}${aud ? ' sur ' + aud.toLocaleString('fr-FR') + ' · ' + pct + ' %' : ''}</span></div>
-        <div class="cp-ks">${k("Aujourd'hui", p ? p.sentToday + (p.dayQuota ? ' / ' + p.dayQuota : '') : '—')}${k('Reste à envoyer', p ? p.remaining : (c.status === 'done' ? 0 : '—'))}${k('Mails par heure', p ? p.perHour : '—')}${k('Erreurs', st.errors || 0, st.errors ? 'bad' : '')}</div>
+        <div class="cp-ks">${k(p && p.dayQuota ? "Envoyés aujourd'hui / prévus" : "Envoyés aujourd'hui", p ? p.sentToday + (p.dayQuota ? ' / ' + p.dayQuota : '') : '—')}${k('Reste à envoyer', p ? p.remaining : (c.status === 'done' ? 0 : '—'))}${k('Mails par heure', p ? p.perHour : '—')}${k('Erreurs', st.errors || 0, st.errors ? 'bad' : '')}</div>
         <div class="cp-eng" data-id="${c.id}">${engHtml(c.id)}</div>
         ${p ? `<p class="cp-next"><span>Prochain envoi</span> ${esc(String(p.nextLabel))} · <b>${p.nextCount}</b> mail${p.nextCount > 1 ? 's' : ''}</p>` : ''}
         ${p && p.raison ? `<p class="cp-why">${esc(p.raison)}</p>` : ''}
@@ -446,13 +446,13 @@ function holPick() {
 function campModal(id, preset) {
   const c = S.campaigns.find(x => x.id === id) || preset && { ...preset } || { name: '', audienceTag: '', steps: [{ templateId: S.templates[0]?.id, delayDays: 0 }] };
   campSteps = JSON.parse(JSON.stringify(c.steps));
-  window.__camp = { tag: c.audienceTag || '', btn: c.buttonUrl || '' };   // conservés tels quels (plus de champ dans le formulaire)
+  window.__camp = { tag: c.audienceTag || '', btn: c.buttonUrl || '', id: id || '', reste: id && c.plan ? c.plan.remaining : 0 };   // conservés tels quels (plus de champ dans le formulaire)
   const periode = !!(c.startDate || c.endDate);
   modal(`<h2>${id ? 'Modifier la' : 'Nouvelle'} campagne</h2>
     <label>Nom <span class="opt">facultatif</span></label><input id="k_name" value="${esc(c.name)}" placeholder="ex. Hanouka 2026">
     <label>Contacts (CSV)</label>
     <input type="file" accept=".csv,.txt,.tsv" onchange="readFile(this,'k_csv')">
-    <textarea id="k_csv" rows="3" placeholder="…ou collez : Prénom;Nom;email (l'en-tête est reconnu)" style="min-height:70px;margin-top:6px"></textarea>
+    <textarea id="k_csv" rows="3" oninput="campBudget()" placeholder="…ou collez : Prénom;Nom;email (l'en-tête est reconnu)" style="min-height:70px;margin-top:6px"></textarea>
     <div class="hint">Un email déjà connu n'est jamais dupliqué ni contacté deux fois.</div>
     <label>Mail à envoyer</label><div id="k_steps"></div>
     <button class="btn sm" onclick="addStep()">+ Ajouter une relance</button>
@@ -470,6 +470,7 @@ function campModal(id, preset) {
         <input id="k_off" type="number" min="0" value="7" style="width:64px" oninput="holPick()"><span class="hint">j avant</span></div>
     </div>
     <div class="hint" id="k_whint"></div>
+    <div id="k_budget"></div>
     <div class="row r" style="margin-top:22px"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn pri" id="k_go" onclick="saveCamp('${id || ''}')"></button></div>`);
   drawSteps(); campWhen();
 }
@@ -477,11 +478,33 @@ function campWhen() {
   const per = document.querySelector('input[name=k_when]:checked').value === 'per';
   $('#k_per').hidden = !per;
   $('#k_go').textContent = per ? 'Programmer la campagne' : 'Envoyer maintenant';
-  const fm = S.month ? ` Forfait du mois : il reste ${S.month.left} mails sur ${S.month.limit} (dont ${S.month.reserve || 0} gardés pour les reçus fiscaux), remise à zéro le ${new Date(S.month.end + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.` : '';
-  $('#k_whint').textContent = (per ? `Répartition automatique sur la période. Après la date de fin, la campagne s'arrête.`
-    : `Envoi réel via Brevo, aux heures d'envoi réglées.`) + fm;
+  $('#k_whint').textContent = per ? `Répartition automatique sur la période. Après la date de fin, la campagne s'arrête.` : `Envoi réel via Brevo, aux heures d'envoi réglées.`;
+  campBudget();
+}
+// Budget de mails de la campagne : ce qu'elle va consommer, ce qui restera sur le forfait du mois
+function campBudget() {
+  const el = $('#k_budget'); if (!el) return;
+  const m = S.month; if (!m) { el.innerHTML = ''; return; }
+  const txt = ($('#k_csv') || {}).value || '', mails = new Set((txt.match(/[^\s;,<>"']+@[^\s;,<>"']+\.[a-z]{2,}/gi) || []).map(x => x.toLowerCase()));
+  const etapes = Math.max(1, (typeof campSteps !== 'undefined' && campSteps || []).length), w = window.__camp || {};
+  const nouveaux = mails.size * etapes, besoin = nouveaux + (w.reste || 0);
+  const autres = Math.max(0, (S.today.queue || 0) - (w.reste || 0));               // déjà en attente dans les autres campagnes
+  const res = Math.min(m.reserve || 0, m.left), dispo = Math.max(0, m.left - res), libre = Math.max(0, dispo - autres);
+  const fin = new Date(m.end + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const apres = libre - besoin, manque = Math.max(0, -apres), nb = n => n.toLocaleString('fr-FR');
+  const etat = !besoin ? '' : manque ? 'bad' : apres < 200 ? 'warn' : 'ok';
+  el.innerHTML = `<div class="kbud ${etat}">
+    <b class="kbud-t">Budget de mails</b>
+    <div class="kbud-g">
+      <div><small>Cette campagne</small><b>${besoin ? nb(besoin) : '—'}</b><em>${mails.size ? nb(mails.size) + ' contact' + (mails.size > 1 ? 's' : '') + (etapes > 1 ? ' × ' + etapes + ' mails' : '') : (w.reste ? 'mails restant à envoyer' : 'collez vos contacts')}${mails.size && w.reste ? ' + ' + nb(w.reste) + ' déjà prévus' : ''}</em></div>
+      <div><small>Disponibles ce mois-ci</small><b>${nb(libre)}</b><em>${nb(m.left)} restants − ${nb(res)} gardés pour les reçus fiscaux${autres ? ' − ' + nb(autres) + ' déjà en attente' : ''}</em></div>
+      <div><small>Après cette campagne</small><b>${besoin ? nb(Math.max(0, apres)) : '—'}</b><em>pour d'autres campagnes, jusqu'au ${esc(fin)}</em></div>
+    </div>
+    ${manque ? `<p class="kbud-m">Le forfait ne suffit pas : <b>${nb(Math.max(0, besoin - manque))}</b> mail(s) partiront maintenant, les <b>${nb(manque)}</b> autres attendront la remise à zéro du ${esc(fin)}. Les ${nb(res)} mails de réserve ne sont pas touchés.</p>` : besoin && apres < 200 ? `<p class="kbud-m">Après cet envoi il restera peu de mails pour les campagnes jusqu'au ${esc(fin)}.</p>` : ''}
+  </div>`;
 }
 function drawSteps() {
+  setTimeout(campBudget, 0);
   $('#k_steps').innerHTML = campSteps.map((s, i) => `<div class="seq"><span class="n">${i + 1}</span>
     <select onchange="campSteps[${i}].templateId=this.value" class="grow" aria-label="${i ? 'Template de la relance' : 'Template du mail'}">${S.templates.map(t => `<option value="${t.id}" ${t.id === s.templateId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
     ${i === 0 ? '<span class="hint" style="white-space:nowrap">1er mail</span>' : `<span class="hint" style="white-space:nowrap">relance après</span><input type="number" min="1" style="width:64px" value="${s.delayDays}" onchange="campSteps[${i}].delayDays=+this.value"><span class="hint">j</span>`}
@@ -656,7 +679,7 @@ function campDetail(id){
   const st=c.stats||{}, p=c.plan, steps=c.steps||[];
   const cell=(l,v,col)=>`<div class="card" style="padding:12px 14px;text-align:center"><small style="display:block;color:var(--mut);font-size:12px">${l}</small><b style="font-size:22px;color:${col||'inherit'}">${v}</b></div>`;
   const grid=`<div class="grid g4" style="gap:10px;margin:12px 0">
-    ${cell('Audience',st.audience||0)}${cell('Déjà envoyés',st.sent||0,'var(--ok)')}${cell('Aujourd\'hui',p?p.sentToday+(p.dayQuota?' / '+p.dayQuota:''):'—')}${cell('Restant à envoyer',p?p.remaining:(st.pending||0))}
+    ${cell('Audience',st.audience||0)}${cell('Déjà envoyés',st.sent||0,'var(--ok)')}${cell(p&&p.dayQuota?'Envoyés aujourd\'hui / prévus':'Envoyés aujourd\'hui',p?p.sentToday+(p.dayQuota?' / '+p.dayQuota:''):'—')}${cell('Restant à envoyer',p?p.remaining:(st.pending||0))}
     ${cell('En séquence',st.pending||0)}${cell('Exclus (autre campagne)',st.excluded||0,st.excluded?'var(--warn)':'inherit')}${cell('Erreurs',st.errors||0,st.errors?'var(--bad)':'inherit')}${cell('Mails / heure',p?p.perHour:'—')}</div>`;
   const next=p?`<div class="card" style="padding:12px 14px;margin-bottom:12px"><b>Prochaine rafale</b> : ${p.nextLabel} · <b>${p.nextCount}</b> mail(s)<br><small class="hint">${p.dayQuota ? 'Part du jour ' + p.dayQuota + ' ·' : ''} ${p.dayLeft} restant aujourd'hui · moyenne ≈ ${p.perHour} mails/heure programmés</small></div>`:'';
   const perStep=steps.length?`<table style="width:100%;font-size:14px;margin-bottom:12px"><tr><th align="left">Mail</th><th align="right">Envois</th><th align="right">Délai</th></tr>${steps.map((x,i)=>`<tr><td>${i?'Relance '+i:'Premier envoi'}</td><td align="right"><b>${(st.steps||[])[i]||0}</b></td><td align="right">${i?'+'+(x.delayDays||0)+' j':'immédiat'}</td></tr>`).join('')}</table>`:'';

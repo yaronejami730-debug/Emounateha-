@@ -432,3 +432,15 @@ table{border-radius:16px;overflow:hidden}
   .cfd-r{grid-template-columns:minmax(0,1fr)}.cfd-act{grid-column:1;grid-row:auto;justify-content:flex-start}.cfd-act .btn{flex:1 1 auto;text-align:center}
   .cfd-tools select{flex:1 1 140px}.cfd-search input{font-size:16px}
 }
+
+/* ---------- Nouvelle campagne : budget de mails ---------- */
+.kbud{margin-top:12px;padding:13px 14px;border-radius:14px;border:1px solid #dbe6e8;background:#f6fafa}
+.kbud.ok{border-color:#a7e3c9;background:#effaf5}.kbud.warn{border-color:#f5d48a;background:#fff9ea}.kbud.bad{border-color:#f3b4b4;background:#fff4f4}
+.kbud-t{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+.kbud-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kbud-g>div{background:#fff;border:1px solid #e6eef0;border-radius:11px;padding:9px 11px;min-width:0}
+.kbud-g small{display:block;font-size:11.5px;color:var(--mut)}.kbud-g b{display:block;font-size:21px;line-height:1.2;color:var(--brand);margin:2px 0}
+.kbud-g em{display:block;font-style:normal;font-size:11.5px;color:#64748b;line-height:1.35}
+.kbud.bad .kbud-g>div:last-child b{color:#b91c1c}
+.kbud-m{margin:10px 2px 0;font-size:13.5px;line-height:1.45;color:#7c2d12}.kbud.warn .kbud-m{color:#92400e}
+@media(max-width:640px){.kbud-g{grid-template-columns:minmax(0,1fr)}.kbud-g>div{display:grid;grid-template-columns:1fr auto;column-gap:10px;align-items:baseline}.kbud-g small{grid-column:1}.kbud-g b{grid-column:2;grid-row:1;margin:0;font-size:19px}.kbud-g em{grid-column:1/-1}}
