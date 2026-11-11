@@ -30,7 +30,7 @@ function defaultDb() {
   return {
     settings: {
       brevoApiKey: '', senderName: 'Emounateha', senderEmail: '',
-      dailyLimit: 100000, monthlyLimit: 5000, forfaitMensuel: 4, reserveCerfa: 300, alertEmail: 'emounateha770@gmail.com', perMinute: 5, hourFrom: 8, hourTo: 21,
+      dailyLimit: 100000, monthlyLimit: 5000, forfaitMensuel: 5, reserveCerfa: 300, alertEmail: 'emounateha770@gmail.com', perMinute: 5, hourFrom: 8, hourTo: 21,
       publicUrl: '', logoUrl: '/logo.png', orgName: 'Émounatéha',
       address: '', donateUrl: 'https://don.emounateha.fr/',
       phone: '06 69 67 07 70', social: 'emounateha_', minGapHours: 24,
@@ -547,8 +547,8 @@ const alerteSeuils = () => [...new Set([500, reserveCerfa(), 100])].filter(x => 
 let brevoPlanCache = { at: 0, v: null };
 function ensureForfait() {   // passage du gratuit (300/jour) au forfait mensuel : une seule fois
   const s = db.settings;
-  if (s.forfaitMensuel === 4) return;
-  s.forfaitMensuel = 4; if (!(Number(s.reserveCerfa) >= 0)) s.reserveCerfa = 300; s.monthlyLimit = s.monthlyLimit || 5000; s.alertEmail = s.alertEmail || 'emounateha770@gmail.com';
+  if (s.forfaitMensuel === 5) return;
+  s.forfaitMensuel = 5; if (!(Number(s.reserveCerfa) >= 0)) s.reserveCerfa = 300; s.monthlyLimit = s.monthlyLimit || 5000; s.alertEmail = s.alertEmail || 'emounateha770@gmail.com';
   s.dailyLimit = 100000;   // plus aucun plafond journalier : seul le forfait du mois compte
   s.pausedUntil = null; save();
 }
