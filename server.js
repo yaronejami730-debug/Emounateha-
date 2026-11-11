@@ -630,9 +630,10 @@ async function verifierVirements() {
   try {
     const r = await fetch(DON_URL + '/api/admin/virements/verifier', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/virements/verifier') }, body: '{}', signal: AbortSignal.timeout(25000) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) console.error('virements refusé', r.status, JSON.stringify(j).slice(0, 160)); else if (j.envoyes || j.miseEnService || (j.erreurs || []).length) console.log('virements', JSON.stringify(j).slice(0, 300));
+    if (!r.ok) { s.virementsVerif = ''; save(); console.error('virements refusé', r.status, JSON.stringify(j).slice(0, 160)); }   // raté : nouvel essai à la minute suivante
+    else if (j.envoyes || j.miseEnService || (j.erreurs || []).length) console.log('virements', JSON.stringify(j).slice(0, 300));
     return j;
-  } catch (e) { console.error('virements', e.message); return null; }
+  } catch (e) { s.virementsVerif = ''; save(); console.error('virements', e.message); return null; }
 }
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
