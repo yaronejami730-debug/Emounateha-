@@ -187,6 +187,14 @@ async function pdf1(html, file) {
   try { await page.setContent(html, { waitUntil: 'networkidle0', timeout: 20000 }).catch(() => {}); await page.evaluate(() => document.fonts.ready); vault.writeFile(file, Buffer.from(await page.pdf({ format: 'A4', printBackground: true }))); } finally { await page.close(); }
 }
 
+// PDF en mémoire (relevé de virement joint à l'e-mail de l'administrateur) : même navigateur que les reçus, rien n'est écrit sur disque
+async function pdfTampon(html) {
+  await pdfPlace();
+  try { const b = await browser(), page = await b.newPage(); try { await page.setContent(html, { waitUntil: 'load', timeout: 20000 }); return Buffer.from(await page.pdf({ format: 'A4', printBackground: true })); } finally { await page.close(); } }
+  catch (e) { const vieux = browserP; browserP = null; try { if (vieux) (await vieux).close().catch(() => {}); } catch (x) {} throw e; }
+  finally { pdfLibere(); }
+}
+
 // --- email : vrai envoi si SMTP configuré, sinon fichier .eml (ouvrable dans Mail) ---
 async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, don }) {
   if (don && !mailer.isFake(to)) {     // vraie adresse : email Brevo (modèle unique pour tous les dons), reçu en pièce jointe
@@ -567,7 +575,7 @@ app.get('/api/admin/mail', async (req, res) => {
 });
 require('./commission').monter(app, { stripe, adminOk, mailer, load, save });   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
 require('./cagnottes').monter(app, { stripe, adminOk });   // mini-cagnottes : net réellement encaissé par cagnotte (lecture seule), pour la somme à reverser affichée dans le CRM
-require('./virements').monter(app, { stripe, adminOk, mailer, load, save });   // e-mail à l'administrateur à chaque virement de Stripe vers la banque (lecture seule)
+require('./virements').monter(app, { stripe, adminOk, mailer, load, save, pdfTampon });   // e-mail à l'administrateur à chaque virement de Stripe vers la banque (lecture seule)
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();

@@ -641,12 +641,12 @@ async function verifierVirements() {
 async function envoisUniques() {
   const s = db.settings, faire = async (marque, chemin, corps, bon) => {
     if (s[marque]) return;
-    try { const r = await fetch(DON_URL + chemin, { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', chemin) }, body: JSON.stringify(corps), signal: AbortSignal.timeout(40000) }); const j = await r.json().catch(() => ({}));
+    try { const r = await fetch(DON_URL + chemin, { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', chemin) }, body: JSON.stringify(corps), signal: AbortSignal.timeout(110000) }); const j = await r.json().catch(() => ({}));
       if (r.ok && bon(j)) { s[marque] = new Date().toISOString(); save(); console.log('envoi unique', marque, JSON.stringify(j).slice(0, 300)); } else console.error('envoi unique', marque, r.status, JSON.stringify(j).slice(0, 200)); }
     catch (e) { console.error('envoi unique', marque, e.message); }
   };
   await faire('rattrapageCommission', '/api/admin/commission/envoyer', { du: '2025-11-10', au: '2026-11-08' }, j => j.envoye === true);
-  await faire('exempleVirement', '/api/admin/virements/verifier', { exemple: true }, j => j.exemple === true && j.envoye === true);
+  await faire('exempleVirement2', '/api/admin/virements/verifier', { exemple: true }, j => j.exemple === true && j.envoye === true);   // 2e version : trois virements simulés, avec CSV et PDF
 }
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
