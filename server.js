@@ -644,7 +644,7 @@ async function verifierEchecs() {
     const r = await fetch(DON_URL + '/api/admin/echecs/verifier', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/echecs/verifier') }, body: '{}', signal: AbortSignal.timeout(40000) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { s.echecsVerif = ''; save(); console.error('echecs refusé', r.status, JSON.stringify(j).slice(0, 160)); }
-    else if (j.envois || j.miseEnService || (j.erreurs || []).length) console.log('echecs', JSON.stringify(j).slice(0, 300));
+    else if (j.envois || j.miseEnService || (j.arretes || []).length || (j.erreurs || []).length) console.log('echecs', JSON.stringify(j).slice(0, 400));
     return j;
   } catch (e) { s.echecsVerif = ''; save(); console.error('echecs', e.message); return null; }
 }
