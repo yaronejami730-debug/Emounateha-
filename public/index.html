@@ -260,22 +260,21 @@ body{overflow-x:hidden}
 
 /* paracha de la semaine + horaires de Chabbat (Hebcal) */
 .parsec{padding:0;margin-top:-26px;position:relative;z-index:5}
-/* cagnottes urgentes mises en avant depuis le CRM : sous la carte des horaires de Chabbat quand elle est affichée, sinon juste sous l'en-tête ; jamais superposées */
-.urgsec{padding:26px 0 0;position:relative;z-index:4}.urgsec[hidden]{display:none}
+/* cagnottes urgentes mises en avant depuis le CRM : posées à cheval sur le bas de l'en-tête (entre le bleu et le blanc), au-dessus des tuiles et de la carte des horaires de Chabbat, sans jamais les recouvrir */
+.urgsec{position:relative;z-index:6;margin-top:-58px;padding:0}.urgsec[hidden]{display:none}
 .urgsec .wrap{max-width:1000px}
-.urgh{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;text-align:center}
-.urgk{display:inline-block;padding:4px 11px;border-radius:99px;background:#b3261e;color:#fff;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
-.urgt{margin:0;font-weight:800;font-size:20px;line-height:1.2;color:var(--teal)}
+body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding-top:18px}
 .urgl{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-.urgc{display:flex;flex-direction:column;min-width:0;padding:16px 18px;background:#fff;border:1.5px solid var(--gold-l);border-radius:16px;box-shadow:0 12px 32px rgba(20,60,66,.14);color:var(--ink);text-decoration:none;transition:transform .15s,box-shadow .15s}
-.urgc:hover{transform:translateY(-2px);box-shadow:0 16px 38px rgba(20,60,66,.2)}
-.urgc b.ut{display:block;font-weight:800;font-size:18px;line-height:1.25;color:var(--teal);overflow-wrap:anywhere}
-.urgc p{margin:6px 0 0;font-size:14px;line-height:1.45;color:var(--mut);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.urgn{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-top:12px}.urgn strong{font-size:22px;line-height:1;color:var(--teal-d)}.urgn span{font-size:13px;color:var(--mut)}
-.urgb{height:9px;border-radius:99px;background:#dbe7e7;overflow:hidden;margin-top:8px}.urgb i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:6px}
-.urgg{align-self:flex-start;margin-top:14px;padding:10px 20px;border-radius:99px;background:linear-gradient(180deg,#e4cd8a,#c4a24a);color:#1b2b2d;font-weight:800;font-size:14.5px;box-shadow:0 4px 12px rgba(196,162,74,.35)}
 .urgl.un{grid-template-columns:minmax(0,640px);justify-content:center}
-@media(max-width:800px){.urgsec{padding:16px 12px 0}.urgt{font-size:17px}.urgl{grid-template-columns:minmax(0,1fr)}.urgg{align-self:stretch;text-align:center}}
+.urgc{position:relative;display:flex;flex-direction:column;min-width:0;padding:16px 18px;background:#fff;border:1.5px solid var(--gold-l);border-radius:16px;box-shadow:0 14px 36px rgba(20,60,66,.22);color:var(--ink);text-decoration:none;transition:transform .15s,box-shadow .15s}
+.urgc:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(20,60,66,.28)}
+.urgk{align-self:flex-start;display:inline-block;margin:0 0 8px;padding:4px 11px;border-radius:99px;background:#b3261e;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.urgc b.ut{display:block;font-weight:800;font-size:18px;line-height:1.25;color:var(--teal);overflow-wrap:anywhere}
+.urgc p{margin:6px 0 0;font-size:14px;line-height:1.45;color:var(--mut);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.urgn{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-top:10px}.urgn strong{font-size:22px;line-height:1;color:var(--teal-d)}.urgn span{font-size:13px;color:var(--mut)}
+.urgb{height:9px;border-radius:99px;background:#dbe7e7;overflow:hidden;margin-top:8px}.urgb i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:6px}
+.urgg{align-self:flex-start;margin-top:12px;padding:10px 20px;border-radius:99px;background:linear-gradient(180deg,#e4cd8a,#c4a24a);color:#1b2b2d;font-weight:800;font-size:14.5px;box-shadow:0 4px 12px rgba(196,162,74,.35)}
+@media(max-width:800px){.urgsec{margin-top:-74px;padding:0 12px}.urgl{grid-template-columns:minmax(0,1fr);gap:10px}.urgc{padding:14px 16px}.urgc b.ut{font-size:17px}.urgg{align-self:stretch;text-align:center}body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding:12px 12px 0}body:has(#urgent:not([hidden])) .qa{margin-top:0!important;padding-top:14px}}
 .parall{display:block;grid-column:1/-1;text-align:center;margin-top:10px;padding:9px 14px;border-radius:99px;background:#fff7e0;border:1.5px solid #ecd9a0;color:#8a6c1c;font-weight:700;font-size:14px;text-decoration:none}
 .parall:hover{background:#fff0c8}
 .parcard{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:#fff;border:1px solid #e3ecec;border-radius:16px;box-shadow:0 12px 32px rgba(20,60,66,.14);overflow:hidden}
@@ -592,7 +591,7 @@ var pret=new Promise(function(ok){if(document.readyState==='loading')document.ad
 Promise.all([fetch('/api/besoins-accueil').then(function(r){return r.ok?r.json():null}),pret]).then(function(a){var j=a[0],l=j&&j.list||[],sec=document.getElementById('urgent'),box=document.getElementById('urgl');if(!l.length||!sec||!box)return;
 box.className='urgl'+(l.length===1?' un':'');
 box.innerHTML=l.map(function(b){var connu=b.collecte!=null,pct=connu&&b.objectif?Math.min(100,Math.round(b.collecte*100/b.objectif)):0;
-return '<a class="urgc" href="'+esc(b.lien)+'"><b class="ut">'+esc(b.titre)+'</b>'+(b.description?'<p>'+esc(b.description)+'</p>':'')+(connu||b.objectif?'<span class="urgn">'+(connu?'<strong>'+eur(b.collecte)+'</strong>':'')+'<span>'+(connu?(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):'Objectif : '+eur(b.objectif))+(b.dons?' · '+b.dons+' don'+(b.dons>1?'s':''):'')+'</span></span>':'')+(b.objectif?'<span class="urgb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></span>':'')+'<span class="urgg">Je participe →</span></a>'}).join('');
+return '<a class="urgc" href="'+esc(b.lien)+'"><span class="urgk">Urgent</span><b class="ut">'+esc(b.titre)+'</b>'+(b.description?'<p>'+esc(b.description)+'</p>':'')+(connu||b.objectif?'<span class="urgn">'+(connu?'<strong>'+eur(b.collecte)+'</strong>':'')+'<span>'+(connu?(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):'Objectif : '+eur(b.objectif))+(b.dons?' · '+b.dons+' don'+(b.dons>1?'s':''):'')+'</span></span>':'')+(b.objectif?'<span class="urgb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></span>':'')+'<span class="urgg">Je participe →</span></a>'}).join('');
 sec.hidden=false}).catch(function(){})})();</script>
 <script>/* apercuscroll : en aperçu jeudi, descend vers la carte des horaires */if(/apercu=jeudi/.test(location.search))addEventListener("load",function(){setTimeout(function(){var c=document.getElementById("paracha");if(c)window.scrollTo(0,Math.max(0,c.getBoundingClientRect().top+scrollY-170))},1200)})</script>
 <script src="/wa-bouton.js?v=2" defer></script>
@@ -642,6 +641,7 @@ sec.hidden=false}).catch(function(){})})();</script>
   <button class="hgo hpv" type="button" aria-label="Revenir"><i aria-hidden="true">‹</i></button>
 </header>
 
+<section class="urgsec" id="urgent" hidden aria-label="Cagnottes urgentes"><div class="wrap"><div class="urgl" id="urgl"></div></div></section>
 <section class="qa" aria-label="Accès rapides"><div class="wrap">
   <a href="/colis/"><img class="qi" src="/tuiles/colis.png?v=4" alt="" width="40" height="40" loading="eager"><span>Colis de Chabbat<small>et de fêtes, aux familles</small></span></a>
   <a href="/torah/"><img class="qi" src="/tuiles/torah.png?v=4" alt="" width="40" height="40" loading="eager"><span>Diffusion de la Torah<small>Vidéo et cours chaque jour</small></span></a>
@@ -655,7 +655,6 @@ sec.hidden=false}).catch(function(){})})();</script>
   <div class="pc"><span class="plab">Votre ville</span><label class="citysel" title="Cliquez pour changer de ville"><select id="parcity" aria-label="Choisir votre ville"></select><span class="chev">▾</span></label><small id="parnote"></small></div>
   <a class="parall" href="/horaires/">Voir tous les horaires de votre ville <span aria-hidden="true">→</span></a>
 </div></div></section>
-<section class="urgsec" id="urgent" hidden aria-label="Cagnottes urgentes"><div class="wrap"><div class="urgh"><span class="urgk">Urgent</span><p class="urgt">Ils ont besoin de vous maintenant</p></div><div class="urgl" id="urgl"></div></div></section>
 <section class="parole" id="parole" aria-label="Parole du Rabbi"><div class="wrap"><h2>Parole du Rabbi</h2><div class="gline"></div><blockquote class="rebbe"><div class="rtxt">« Rien n'est jamais perdu. On peut toujours réparer. Celui qui est impur ou éloigné, même s'il est responsable d'un tel état de fait, même s'il l'a voulu, peut, malgré tout, réparer. »<cite><span>Rabbi de Loubavitch</span><span class="mflag" role="img" aria-label="Drapeau Machia'h"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></cite></div></blockquote></div></section>
 <div class="parmailwrap"><a class="parmail" href="#chabbat-mail" id="parmail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>Recevoir les horaires de Chabbat par e-mail<span aria-hidden="true">›</span></a></div>
 
