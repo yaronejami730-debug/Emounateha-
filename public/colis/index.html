@@ -429,6 +429,7 @@ body{overflow-x:hidden}
 <script src="/attribution.js" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/ecriture.css?v=12">
+<noscript><style>#colis .ctabs,#colis #colisPanel{opacity:1!important}</style></noscript>
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -517,6 +518,13 @@ body{overflow-x:hidden}
 .tabwrap small{font-family:Inter,system-ui,sans-serif}
 @media(max-width:800px){.tabwrap .ctab{min-height:104px;font-size:10.5px;letter-spacing:.08em;padding:11px 3px 28px;gap:4px}.ctab .cfr{padding-left:.08em}.ctab .che{font-size:21px}}
 @media(max-width:360px){.tabwrap .ctab{font-size:9.6px;letter-spacing:.05em}.ctab .che{font-size:19px}}
+/* la page n'affiche les cases et la fiche qu'une fois rangées (plus de saut à l'arrivée) */
+#colis .ctabs,#colis #colisPanel{opacity:0;transition:opacity .28s ease}
+#colis.pret .ctabs,#colis.pret #colisPanel{opacity:1}
+/* liste du colis : le point doré collé à son texte */
+#colis .colis li{display:flex;align-items:flex-start;gap:8px;padding-left:0;text-align:left}
+#colis .colis li::before{position:static;flex:none;width:8px;height:8px;margin-top:.52em}
+
 /* cases plus petites et plus discrètes ; sans délai affiché, le contenu est centré */
 .ctabs{max-width:760px;gap:8px}
 .tabwrap .ctab{min-height:84px;padding:9px 4px 26px;gap:3px;font-size:11px;border-width:1.5px;border-radius:14px;box-shadow:0 3px 10px rgba(20,60,66,.07)}
@@ -532,11 +540,11 @@ body{overflow-x:hidden}
     <div class="title"><h2>Les colis</h2><p>Aider au quotidien : choisissez le colis auquel vous souhaitez participer.</p></div>
     <div class="ctabs" role="tablist">
       <div class="tabwrap"><button class="ctab on feat" data-k="chabbat" role="tab"><span class="che" lang="he" dir="rtl">שבת</span><span class="cfr">Chabbat</span></button><small>chaque semaine</small></div>
-      <button class="ctab" data-k="roch-hachana" role="tab"><span class="che" lang="he" dir="rtl">ראש השנה</span><span class="cfr">Roch Hachana</span></button>
-      <button class="ctab" data-k="simhat-torah" role="tab"><span class="che" lang="he" dir="rtl">שמחת תורה</span><span class="cfr">Simhat Torah</span></button>
-      <button class="ctab" data-k="hanouka" role="tab"><span class="che" lang="he" dir="rtl">חנוכה</span><span class="cfr">Hanouka</span></button>
-      <button class="ctab" data-k="pourim" role="tab"><span class="che" lang="he" dir="rtl">פורים</span><span class="cfr">Pourim</span></button>
-      <button class="ctab" data-k="pessah" role="tab"><span class="che" lang="he" dir="rtl">פסח</span><span class="cfr">Pessa'h</span></button>
+      <div class="tabwrap sans"><button class="ctab" data-k="roch-hachana" role="tab"><span class="che" lang="he" dir="rtl">ראש השנה</span><span class="cfr">Roch Hachana</span></button></div>
+      <div class="tabwrap sans"><button class="ctab" data-k="simhat-torah" role="tab"><span class="che" lang="he" dir="rtl">שמחת תורה</span><span class="cfr">Simhat Torah</span></button></div>
+      <div class="tabwrap sans"><button class="ctab" data-k="hanouka" role="tab"><span class="che" lang="he" dir="rtl">חנוכה</span><span class="cfr">Hanouka</span></button></div>
+      <div class="tabwrap sans"><button class="ctab" data-k="pourim" role="tab"><span class="che" lang="he" dir="rtl">פורים</span><span class="cfr">Pourim</span></button></div>
+      <div class="tabwrap sans"><button class="ctab" data-k="pessah" role="tab"><span class="che" lang="he" dir="rtl">פסח</span><span class="cfr">Pessa'h</span></button></div>
     </div>
     <div class="colis" id="colisPanel"></div>
   </div>
@@ -652,7 +660,7 @@ fetch('/holidays.json').then(r=>r.json()).then(list=>{
     const h=list.find(x=>re.test(x.title)&&new Date(x.date)>=today); if(!h) continue;
     const d=Math.round((new Date(h.date)-today)/86400000);
     const tab=document.querySelector('.ctab[data-k="'+k+'"]');
-    const w=document.createElement('div');w.className='tabwrap';tab.parentNode.insertBefore(w,tab);w.appendChild(tab);
+    let w=tab.parentNode;if(!w.classList.contains('tabwrap')){w=document.createElement('div');w.className='tabwrap';tab.parentNode.insertBefore(w,tab);w.appendChild(tab)}
     w.dataset.d=d;
     if(d<=60){const sm=document.createElement('small');sm.textContent=d<=0?"aujourd'hui":d===1?'demain':'dans '+d+' jours';w.appendChild(sm)}   // le délai n'est affiché que pour la fête qui arrive dans les deux mois
     if(!best||d<best.d) best={k,d};
@@ -660,11 +668,13 @@ fetch('/holidays.json').then(r=>r.json()).then(list=>{
   // rangement : Chabbat d'abord, puis les fêtes de la plus proche à la plus lointaine ; chaque bouton dans sa case
   const box=document.querySelector('.ctabs');
   box.querySelectorAll(':scope > .ctab').forEach(t=>{const w=document.createElement('div');w.className='tabwrap';w.dataset.d=9999;box.insertBefore(w,t);w.appendChild(t)});
+  box.querySelectorAll(':scope > .tabwrap').forEach(w=>{if(w.dataset.d===undefined&&!w.querySelector('.ctab[data-k="chabbat"]'))w.dataset.d=9999});
   [...box.querySelectorAll(':scope > .tabwrap')].sort((a,b)=>(a.dataset.d===undefined?-1:+a.dataset.d)-(b.dataset.d===undefined?-1:+b.dataset.d)).forEach(w=>box.appendChild(w));
   if(best){const w=box.querySelector('.ctab[data-k="'+best.k+'"]').parentNode;w.classList.add('proche')}
   box.querySelectorAll('.tabwrap').forEach(w=>w.classList.toggle('sans',!w.querySelector('small')));
   if(best) showColis(best.k);
-}).catch(()=>{});
+}).catch(()=>{}).finally(()=>document.getElementById('colis').classList.add('pret'));
+setTimeout(()=>document.getElementById('colis').classList.add('pret'),1500);
 (function(){const nav=document.querySelector('.sec-nav'),b=document.getElementById('burger');
  b.addEventListener('click',()=>{const o=nav.classList.toggle('open');b.setAttribute('aria-expanded',o)});
  nav.querySelectorAll('.links a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');b.setAttribute('aria-expanded',false)}));})();</script>
