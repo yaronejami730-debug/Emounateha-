@@ -474,7 +474,7 @@ body{overflow-x:hidden}
 <script src="/jour-hebraique.js"></script>
 <script src="/attribution.js" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=1">
+<link rel="stylesheet" href="/ecriture.css?v=4">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -904,7 +904,7 @@ if(location.pathname==='/'||location.pathname==='/index.html')window.scrollTo({t
 <script>/* téléphone : « + Ajouter une ville » déplie la recherche */
 (function(){var b=document.getElementById('cityopen'),c=document.querySelector('.cityadd');if(!b||!c)return;
 b.addEventListener('click',function(){var o=c.classList.toggle('show');b.textContent=o?'− Masquer':'+ Ajouter une ville';if(o){var i=document.getElementById('cityq');if(i)i.focus()}})})();</script>
-<script src="/roch-hodech.js" defer></script>
+<script src="/roch-hodech.js?v=1" defer></script>
 <script>/* clic sur une ville : tous les horaires halakhiques du jour */
 (function(){var b=document.getElementById('hbody');if(!b)return;
 b.addEventListener('click',function(e){var tr=e.target.closest('tr[data-z]');if(!tr||e.target.closest('.rm'))return;

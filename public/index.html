@@ -586,7 +586,7 @@ body{overflow-x:hidden}
 <script src="/jour-hebraique.js"></script>
 <script src="/attribution.js" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=1">
+<link rel="stylesheet" href="/ecriture.css?v=4">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="#contact">Contact</a></div></div></nav>
@@ -825,7 +825,10 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   function pt(u){u-=Math.floor(u);const L=tab[720]*u;let lo=0,hi=720;while(hi-lo>1){const m=(lo+hi)>>1;tab[m]<=L?lo=m:hi=m}const a=-Math.PI/2+(lo+(L-tab[lo])/((tab[hi]-tab[lo])||1))*Math.PI/360;return [rx*Math.cos(a),cy+ry*Math.sin(a)]}
   let arcM=null;const esc=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   function arcs(mob){if(arcM===mob)return;arcM=mob;const r1=mob?58:57,r2=mob?70.5:66;obs.forEach((e,i)=>{let g=e.querySelector('svg');if(g)g.remove();
-    e.insertAdjacentHTML('beforeend','<svg viewBox="-100 -100 200 200" aria-hidden="true"><defs><path id="oa'+i+'" d="M0 '+r1+'A'+r1+' '+r1+' 0 1 1 .01 '+r1+'"/><path id="ob'+i+'" d="M0 -'+r2+'A'+r2+' '+r2+' 0 1 0 .01 -'+r2+'"/></defs><text class="ta" text-anchor="middle"><textPath href="#oa'+i+'" startOffset="50%">'+esc(e.dataset.a)+'</textPath></text><text class="tb" text-anchor="middle"><textPath href="#ob'+i+'" startOffset="50%">'+esc(mob?e.dataset.c:e.dataset.b)+'</textPath></text></svg>')})}
+    e.insertAdjacentHTML('beforeend','<svg viewBox="-100 -100 200 200" aria-hidden="true"><defs><path id="oa'+i+'" d="M0 '+r1+'A'+r1+' '+r1+' 0 1 1 .01 '+r1+'"/><path id="ob'+i+'" d="M0 -'+r2+'A'+r2+' '+r2+' 0 1 0 .01 -'+r2+'"/></defs><text class="ta" text-anchor="middle"><textPath href="#oa'+i+'" startOffset="50%">'+esc(e.dataset.a)+'</textPath></text><text class="tb" text-anchor="middle"><textPath href="#ob'+i+'" startOffset="50%">'+esc(mob?e.dataset.c:e.dataset.b)+'</textPath></text></svg>')});fitArcs(r1,r2)}
+  // les deux textes courbes ne se touchent jamais : chacun rétrécit s'il dépasse son arc (haut : demi-cercle, bas : un tiers)
+  function fitArcs(r1,r2){obs.forEach(e=>{[['.ta',Math.PI*r1*.86],['.tb',Math.PI*r2*.72]].forEach(q=>{const x=e.querySelector(q[0]);if(!x)return;x.style.fontSize='';x.style.letterSpacing='';let n=0;try{n=x.getComputedTextLength()}catch(_){}if(n>q[1]){x.style.letterSpacing='0';try{n=x.getComputedTextLength()}catch(_){}if(n>q[1])x.style.fontSize=(parseFloat(getComputedStyle(x).fontSize)*q[1]/n).toFixed(2)+'px'}})})}
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(arcM!==null&&arcM!==undefined)fitArcs(arcM?58:57,arcM?70.5:66)});
   function put(){const n=obs.length;if(!tab.length)return;obs.forEach((e,i)=>{const q=pt(ang+i/n);e.style.transform='translate('+q[0].toFixed(1)+'px,'+q[1].toFixed(1)+'px)'})}
   const calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
   function vis(){return t.scrollLeft>t.clientWidth*.4&&!document.hidden}
@@ -926,7 +929,7 @@ if(location.pathname==='/'||location.pathname==='/index.html')window.scrollTo({t
 a.addEventListener('click',function(e){e.preventDefault();var h=document.getElementById('chabbat-mail');if(!h)return;
 var t=h.querySelector('.nltog'),box=h.querySelector('.nlbox');if(t&&box&&box.hidden)t.click();
 h.scrollIntoView({behavior:'smooth',block:'center'})})})();</script>
-<script src="/roch-hodech.js" defer></script>
+<script src="/roch-hodech.js?v=1" defer></script>
 <script src="/langue.js?v=3" defer></script>
 <script src="/vu.js?v=2" defer></script>
 </body>

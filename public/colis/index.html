@@ -428,7 +428,7 @@ body{overflow-x:hidden}
 <script src="/jour-hebraique.js"></script>
 <script src="/attribution.js" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=1">
+<link rel="stylesheet" href="/ecriture.css?v=4">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -672,7 +672,7 @@ fetch('/holidays.json').then(r=>r.json()).then(list=>{
 (function(){var n=document.querySelector('.sec-nav');if(!n)return;n.style.cursor='pointer';
 n.addEventListener('click',function(e){if(e.target.closest('.burger,.links,a,button'))return;
 if(location.pathname==='/'||location.pathname==='/index.html')window.scrollTo({top:0,behavior:'smooth'});else location.href='/'})})();</script>
-<script src="/roch-hodech.js" defer></script>
+<script src="/roch-hodech.js?v=1" defer></script>
 <script src="/apercu-video.js?v=3" defer></script>
 <script src="/langue.js?v=3" defer></script>
 <script src="/vu.js?v=2" defer></script>
