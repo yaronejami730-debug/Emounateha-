@@ -126,6 +126,7 @@ const views = {
     const queueTxt = q ? `${q} mail(s) en attente` + (q > left ? ` · le forfait n'en permet plus que ${left} ce mois-ci` : '') : 'File vide';
     const nextTxt = nextWave().txt;
     return `
+    <div class="app-home"><p class="ah-t">Que voulez-vous faire ?</p><div class="ah-g"><a class="ah-b" href="#/cerfa"><i aria-hidden="true">🧾</i><b>Voir les dons</b><span>Donateurs et reçus fiscaux</span></a><a class="ah-b" href="#/besoins"><i aria-hidden="true">♥</i><b>Cagnottes</b><span>Sommes collectées, à reverser</span></a><a class="ah-b" href="#/campaigns"><i aria-hidden="true">➤</i><b>Envoyer des e-mails</b><span>Campagnes en cours et nouvelles</span></a><a class="ah-b" href="#/contacts"><i aria-hidden="true">☺</i><b>Contacts</b><span>Chercher, ajouter une personne</span></a><a class="ah-b" href="#/trafic"><i aria-hidden="true">◔</i><b>Visites du site</b><span>Qui regarde quoi, en direct</span></a><a class="ah-b" href="#/settings"><i aria-hidden="true">⚙</i><b>Réglages</b><span>Compte, e-mails, sécurité</span></a></div></div>
     <div class="head"><div><h1>Tableau de bord</h1><p class="sub">Vue d'ensemble de vos relances</p></div>
       <button class="btn pri" onclick="runTick()">Envoyer maintenant le prochain lot</button></div>
     <div class="grid g4">

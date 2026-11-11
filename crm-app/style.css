@@ -494,5 +494,17 @@ table{border-radius:16px;overflow:hidden}
   .card{border-radius:16px}
 }
 @media(max-width:360px){.tabbar a,.tabbar button{font-size:9.5px;letter-spacing:-.01em}.tabbar svg{width:23px;height:23px}}
+.app-home{display:none}
+@media(max-width:900px){
+  .app-home{display:block;margin:0 0 22px}
+  .ah-t{margin:2px 2px 12px;font:600 22px/1.2 Fraunces,serif;color:var(--ink)}
+  .ah-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .ah-b{display:flex;flex-direction:column;gap:4px;min-height:118px;padding:16px 14px;border-radius:18px;background:#fff;border:1px solid var(--line);box-shadow:var(--sh);color:var(--ink);text-decoration:none;transition:transform .1s}
+  .ah-b:active{transform:scale(.97)}
+  .ah-b i{font-style:normal;font-size:26px;line-height:1;color:var(--gold);margin-bottom:6px}
+  .ah-b b{font-size:16px;line-height:1.2}
+  .ah-b span{font-size:12.5px;line-height:1.3;color:var(--mut)}
+  .ah-b:nth-child(1){background:var(--brand);border-color:var(--brand);color:#fff}.ah-b:nth-child(1) span{color:#cfe6e3}.ah-b:nth-child(1) i{color:#f4d58a}
+}
 @keyframes feuille{from{transform:translateY(28px);opacity:.6}to{transform:none;opacity:1}}
 @media(max-width:900px) and (prefers-reduced-motion:reduce){.modal .box{animation:none}.tabbar a,.tabbar button{transition:none}}
