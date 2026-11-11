@@ -2,7 +2,14 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#123f45">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CRM">
+<link rel="manifest" href="/crm.webmanifest">
+<link rel="apple-touch-icon" href="/crm-icone-180.png">
 <title>Emounateha CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bree+Serif&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
@@ -43,6 +50,13 @@
   <a href="/auth/logout" style="margin-top:10px;text-align:center;color:#9fcdc9;font-size:12px">Se déconnecter</a>
 </aside>
 <main id="main"></main>
+<div class="tabbar" id="tabbar" role="navigation" aria-label="Navigation principale">
+  <a href="#/" data-t=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg><span>Accueil</span></a>
+  <a href="#/campaigns" data-t="campaigns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5 21 3Z"/></svg><span>Campagnes</span></a>
+  <a href="#/cerfa" data-t="cerfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/></svg><span>Reçus</span></a>
+  <a href="#/besoins" data-t="besoins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.600-7.5 10.200-7.5 10.200Z"/></svg><span>Besoins</span></a>
+  <button type="button" id="tabPlus" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>Plus</span></button>
+</div>
 <div id="modal" class="modal hidden"></div>
 <div id="toast" class="toast"></div>
 <script>(function(){var K="crmNav",st={};try{st=JSON.parse(localStorage.getItem(K)||"{}")||{}}catch(e){}
@@ -52,6 +66,12 @@ document.querySelectorAll(".ng").forEach(function(b){var g=b.dataset.g;set(g,g==
 document.querySelectorAll(".ng").forEach(function(b){b.addEventListener("click",function(){var g=b.dataset.g,o=b.getAttribute("aria-expanded")!=="true";st[g]=o;try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}set(g,o)})});
 addEventListener("hashchange",sync);sync()})();</script>
 <script src="/crm/app.js"></script>
-<script>(function(){const s=document.querySelector(".side"),b=document.getElementById("mburger");b.onclick=()=>{const o=s.classList.toggle("open");b.setAttribute("aria-expanded",o)};document.querySelectorAll("#nav a").forEach(a=>a.addEventListener("click",()=>{s.classList.remove("open");b.setAttribute("aria-expanded",false)}))})()</script>
+<script>(function(){const s=document.querySelector(".side"),b=document.getElementById("mburger"),p=document.getElementById("tabPlus"),tb=document.getElementById("tabbar"),PRINC=["","campaigns","cerfa","besoins"];
+function menu(o){s.classList.toggle("open",o);document.body.classList.toggle("menu-ouvert",o);b.setAttribute("aria-expanded",o);p.setAttribute("aria-expanded",o);if(o)s.scrollTop=0;marque()}
+function marque(){const r=(location.hash.replace(/^#\/?/,"")||"").split("/")[0],o=s.classList.contains("open");tb.querySelectorAll("a").forEach(a=>a.classList.toggle("on",!o&&a.dataset.t===r));p.classList.toggle("on",o||PRINC.indexOf(r)<0)}
+b.onclick=()=>menu(!s.classList.contains("open"));p.onclick=()=>menu(!s.classList.contains("open"));
+document.querySelectorAll("#nav a").forEach(a=>a.addEventListener("click",()=>menu(false)));
+tb.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{menu(false);if(a.getAttribute("href")===(location.hash||"#/"))scrollTo({top:0,behavior:"smooth"})}));
+addEventListener("hashchange",()=>{menu(false);scrollTo(0,0)});addEventListener("keydown",e=>{if(e.key==="Escape")menu(false)});marque()})()</script>
 </body>
 </html>

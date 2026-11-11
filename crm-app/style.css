@@ -455,3 +455,44 @@ table{border-radius:16px;overflow:hidden}
   .side.open nav{flex:0 0 auto;min-height:auto;overflow:visible;margin-right:0;padding-right:0}
   .side.open .quota{flex:0 0 auto;margin-top:14px}
 }
+
+/* ===== téléphone : le CRM se présente comme une application (barre d'onglets en bas, menu « Plus » plein écran, fenêtres en feuille) ===== */
+.tabbar{display:none}
+@media(max-width:900px){
+  html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+  body{overscroll-behavior-y:none}
+  .mburger{display:none!important}
+  .side{padding:calc(8px + env(safe-area-inset-top)) 16px 8px;box-shadow:0 2px 14px rgba(14,52,58,.18)}
+  .side .logo{width:34px;height:34px}.side .brand b{font-size:16px}
+  main{padding:16px 14px calc(96px + env(safe-area-inset-bottom))}
+  .tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:45;background:rgba(255,255,255,.97);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);box-shadow:0 -6px 22px rgba(14,52,58,.08);padding:5px max(4px,env(safe-area-inset-left)) calc(5px + env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-right))}
+  .tabbar a,.tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;min-width:0;padding:5px 2px;border:0;border-radius:12px;background:none;font:600 10.5px/1.1 Inter,system-ui,sans-serif;color:#7b8d90;text-decoration:none;cursor:pointer;-webkit-user-select:none;user-select:none;transition:color .15s,transform .1s}
+  .tabbar svg{width:25px;height:25px;flex:none}
+  .tabbar span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tabbar .on{color:var(--brand)}.tabbar .on svg{stroke-width:2.3}
+  .tabbar a:active,.tabbar button:active{transform:scale(.94)}
+  /* menu « Plus » : plein écran au-dessus de la barre d'onglets, toutes les rubriques en grandes touches */
+  body.menu-ouvert{overflow:hidden}
+  .side.open{position:fixed;inset:0;z-index:44;max-height:none;height:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(10px + env(safe-area-inset-top)) 16px calc(92px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(14,52,58,.94),rgba(18,63,69,.97)),url(/header.jpg) center/cover #123f45}
+  .side.open nav{display:flex;gap:0;margin-top:14px}
+  .side.open nav>a{display:none}
+  .side.open nav .ng{pointer-events:none;margin:16px 0 8px;padding:0 4px;font-size:11.5px;color:rgba(214,235,233,.75)}
+  .side.open nav .ng i{display:none}
+  .side.open nav .ngb,.side.open nav .ngb[hidden]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0;padding:0;border:0}
+  .side.open nav .ngb a{flex-direction:column;align-items:flex-start;justify-content:space-between;gap:10px;min-height:86px;padding:14px;border-radius:16px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:600;font-size:14.5px;line-height:1.2;box-shadow:none}
+  .side.open nav .ngb a .i{width:auto;font-size:22px;line-height:1}
+  .side.open nav .ngb a.on{background:rgba(196,162,74,.22);border-color:rgba(196,162,74,.6)}
+  .side.open nav .ngb a:active{transform:scale(.97)}
+  .side.open .quota{margin-top:20px}
+  .side.open>a{display:block;margin-top:16px!important;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.16);font-size:14px!important;font-weight:600;color:#fff!important}
+  /* fenêtres : feuille qui monte du bas, au-dessus de tout */
+  .modal{z-index:60}
+  .modal .box{max-height:92dvh;padding-bottom:calc(24px + env(safe-area-inset-bottom));animation:feuille .22s ease-out}
+  .modal .box::before{content:"";display:block;width:40px;height:4px;border-radius:9px;background:#d5dddd;margin:-8px auto 14px}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom));z-index:99}
+  .btn{min-height:44px}.btn.sm{min-height:40px;padding:8px 13px;font-size:13px}
+  .card{border-radius:16px}
+}
+@media(max-width:360px){.tabbar a,.tabbar button{font-size:9.5px;letter-spacing:-.01em}.tabbar svg{width:23px;height:23px}}
+@keyframes feuille{from{transform:translateY(28px);opacity:.6}to{transform:none;opacity:1}}
+@media(max-width:900px) and (prefers-reduced-motion:reduce){.modal .box{animation:none}.tabbar a,.tabbar button{transition:none}}

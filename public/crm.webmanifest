@@ -1,0 +1,15 @@
+{
+  "name": "Émounatéha CRM",
+  "short_name": "CRM",
+  "start_url": "/crm",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "fr",
+  "background_color": "#f3f6f6",
+  "theme_color": "#123f45",
+  "icons": [
+    { "src": "/crm-icone-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/crm-icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
