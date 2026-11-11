@@ -96,7 +96,7 @@ function monter(app, { stripe, adminOk, mailer, load, save }) {
       const p = rattrapage ? { du: b.du, au: b.au } : semainePrecedente(semaine(parisJour(Date.now()))), d = load();
       if (!rattrapage && d.commission && d.commission.dernierReleve === p.du && !b.forcer) return res.json({ ok: true, envoye: false, raison: 'déjà envoyé pour la semaine du ' + p.du });
       const live = /^sk_live_/.test(process.env.STRIPE_SECRET_KEY || ''), r = calculer(await mouvementsStripe(stripe, p.du, p.au)), m = releveMail(p, r, live, rattrapage);
-      const env = await mailer.send({ to, toName: 'Prestataire technique', subject: m.subject, html: m.html, text: m.text, attachments: [{ filename: m.fichier, content: Buffer.from(m.csv, 'utf8'), contentType: 'text/csv; charset=utf-8' }] });
+      const env = await mailer.send({ to, toName: 'Prestataire technique', subject: m.subject, html: m.html, text: m.text, attachments: [{ name: m.fichier, content: Buffer.from(m.csv, 'utf8').toString('base64') }] });   // format attendu par l'envoi Brevo : nom + contenu en base64
       const d2 = load(); d2.commission = rattrapage ? { ...(d2.commission || {}), rattrapage: { du: p.du, au: p.au, envoyeLe: new Date().toISOString(), net: r.net, commission: r.commission } } : { ...(d2.commission || {}), dernierReleve: p.du, envoyeLe: new Date().toISOString() }; save(d2);
       res.json({ ok: true, envoye: true, rattrapage, periode: p, nbDons: r.nbDons, commission: r.commission, net: r.net, controle: r.controle, mail: env && (env.sent !== undefined ? env.sent : true) });
     } catch (e) { console.error('commission/envoyer', e.message); res.status(502).json({ error: e.message }); }
