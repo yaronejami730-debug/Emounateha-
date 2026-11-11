@@ -51,6 +51,25 @@ function open(){
   document.addEventListener('keydown',function k(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',k)}});
 }
 window.hnOpen=open;
+/* film Hanouka : s'ouvre quand on touche la banderole « Offrez la lumière à une famille » ; bouton « Offrir un colis de Hanouka » dessous */
+function film(){
+  if(document.getElementById('hnfilm'))return;
+  if(!document.getElementById('hnfilmcss')){var st=document.createElement('style');st.id='hnfilmcss';
+    st.textContent='#hnfilm{position:fixed;inset:0;z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(14px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom));background:rgba(6,20,26,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}#hnfilm.on{opacity:1}'+
+    '#hnfilm .vf{position:relative;flex:0 1 auto;min-height:0;height:min(72dvh,calc((100vw - 28px)*16/9));aspect-ratio:9/16;max-width:100%;border-radius:20px;overflow:hidden;background:#000;box-shadow:0 20px 50px rgba(0,0,0,.55),0 0 0 1px rgba(243,213,140,.45)}#hnfilm video{display:block;width:100%;height:100%;object-fit:cover;background:#000}'+
+    '#hnfilm .x{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer;z-index:2}#hnfilm .x svg{width:16px;height:16px}'+
+    '#hnfilm .go{flex:none;display:block;width:min(100%,360px);padding:14px 20px;border-radius:99px;text-align:center;text-decoration:none;font:800 16px/1.2 Inter,system-ui,sans-serif;color:#1b2b2d;background:linear-gradient(180deg,#f3e09a,#c9a850);box-shadow:0 10px 24px -6px rgba(201,168,80,.7),inset 0 1px 0 rgba(255,255,255,.55)}'+
+    '#hnfilm .su{flex:none;margin:-6px 0 0;font:500 12.5px/1.3 Inter,system-ui,sans-serif;color:#cfe6e3;text-align:center}@media(prefers-reduced-motion:reduce){#hnfilm{transition:none}}';
+    document.head.appendChild(st)}
+  var o=document.createElement('div');o.id='hnfilm';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Film Hanouka 5787');
+  o.innerHTML='<button class="x" aria-label="Fermer" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button><div class="vf"><video src="/hanouka/film.mp4?v=1" poster="/hanouka/film.jpg?v=1" controls playsinline preload="metadata"></video></div><a class="go" href="'+LINKDON+'" target="_blank" rel="noopener">Offrir un colis de Hanouka</a><p class="su">Un colis alimentaire pour la fête · 130 €</p>';
+  document.body.appendChild(o);document.documentElement.style.overflow='hidden';requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})});
+  var v=o.querySelector('video');try{var p=v.play();if(p&&p.catch)p.catch(function(){v.muted=true;v.play().catch(function(){})})}catch(e){}   /* le son part avec le toucher ; si le navigateur le refuse, lecture sans le son */
+  function close(){try{v.pause()}catch(e){}o.classList.remove('on');document.documentElement.style.overflow='';document.removeEventListener('keydown',k);setTimeout(function(){o.remove()},260)}
+  function k(e){if(e.key==='Escape')close()}
+  o.querySelector('.x').onclick=close;o.addEventListener('click',function(e){if(e.target===o)close()});document.addEventListener('keydown',k);
+}
+window.hnFilm=film;
 b.addEventListener('click',function(e){e.preventDefault();open()});
 /* banderole Hanouka sous la citation du Rabbi */
 function mountBanner(){
@@ -60,7 +79,7 @@ function mountBanner(){
   document.head.appendChild(st);
   var a=document.createElement('a');a.id='hnbanner';a.href=HANOUKA_DON;a.target='_blank';a.rel='noopener';a.setAttribute('aria-label','Hanouka 5787 : offrez la lumière à une famille. Un colis alimentaire pour la fête, 130 euros');
   a.innerHTML='<img src="/hanouka/banderole.jpg?v=6" alt="Hanouka 5787 — Offrez la lumière à une famille. Un colis alimentaire pour la fête. Pour 130 € · Émounatéha × AlloDons" width="1046" height="262" loading="eager">';
-  a.addEventListener('click',function(e){if(window.hnOpen){e.preventDefault();window.hnOpen()}});
+  a.addEventListener('click',function(e){if(e.metaKey||e.ctrlKey)return;e.preventDefault();film()});
   r.parentNode.insertBefore(a,r.nextSibling)}
 if(document.readyState!=='loading')mountBanner();else document.addEventListener('DOMContentLoaded',mountBanner);
 /* ouverture automatique : UNE seule fois, au bout de ~20 s ; une fois ouverte (ou fermée par la croix) on ne la relance plus jamais */

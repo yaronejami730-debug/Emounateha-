@@ -262,15 +262,21 @@ body{overflow-x:hidden}
 .parsec{padding:0;margin-top:-26px;position:relative;z-index:5}
 /* cagnottes mises en avant depuis le CRM (« Mettre sur la page d'accueil ») : rubans dorés, une ligne par cagnotte, posés à cheval sur le bas de l'en-tête,
    au-dessus des tuiles et de la carte des horaires de Chabbat, sans jamais les recouvrir. Un appui ouvre l'aperçu de la cagnotte. */
-.urgsec{position:relative;z-index:6;margin-top:-46px;padding:0}.urgsec[hidden]{display:none}
-.urgl{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:620px;margin:0 auto}
-.urgc{position:relative;display:flex;align-items:center;gap:6px;min-width:0;flex:0 0 auto;max-width:min(78%,300px);padding:5px 10px 5px 5px;border-radius:99px;background:linear-gradient(180deg,#f3e09a,#c9a850);color:#1b2b2d;text-decoration:none;cursor:pointer;box-shadow:0 10px 22px -8px rgba(14,52,58,.5),inset 0 1px 0 rgba(255,255,255,.5);-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.urgsec{position:relative;z-index:6;margin-top:-62px;padding:0;text-align:center}.urgsec[hidden]{display:none}
+.urgh{display:inline-block;margin:0 0 8px;padding:4px 14px;border-radius:99px;background:#164c52;color:#f6e094;font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;box-shadow:0 4px 12px rgba(14,52,58,.35),inset 0 0 0 1px rgba(246,224,148,.45)}
+.urgl{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:620px;margin:0 auto}
+.urgc{position:relative;display:flex;align-items:center;gap:10px;min-width:0;width:min(86%,340px);box-sizing:border-box;padding:8px 14px 8px 8px;border-radius:99px;overflow:hidden;text-align:left;text-decoration:none;cursor:pointer;color:#1b2b2d;background:linear-gradient(180deg,#f8e9ad 0%,#e7cc78 46%,#c9a850 100%);border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 22px -8px rgba(14,52,58,.55),0 0 0 1px rgba(170,134,44,.55),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -6px 10px -6px rgba(120,90,20,.45);-webkit-tap-highlight-color:transparent;transition:transform .15s}
 .urgc:active{transform:scale(.985)}
-.urgc .uic{display:grid;place-items:center;flex:none;width:21px;height:21px;border-radius:50%;background:#164c52;color:#f6e094}.urgc .uic svg{width:55%;height:55%}
-.urgc .utx{display:flex;align-items:baseline;gap:6px;flex:1;min-width:0}
-.urgc .ut{display:block;font-weight:800;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1b2b2d;flex:0 1 auto}
-.urgc .um{font-size:11px;white-space:nowrap;color:#4a3c12;flex:none}.urgc .um b{font-weight:800;color:#1b2b2d}.urgc .um small{display:none}
-.urgc .ugo{flex:none;font-size:15px;font-weight:800;line-height:1}
+/* reflet qui traverse le ruban */
+.urgc::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:34%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.75) 50%,rgba(255,255,255,0));transform:skewX(-18deg);animation:urgBrille 3.6s ease-in-out infinite;pointer-events:none}
+.urgc:nth-child(3)::after{animation-delay:.5s}.urgc:nth-child(4)::after{animation-delay:1s}
+@keyframes urgBrille{0%,55%{left:-40%}85%,100%{left:120%}}
+.urgc .uic{position:relative;display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(160deg,#267a83,#123f45);color:#f6e094;box-shadow:inset 0 0 0 1px rgba(246,224,148,.5)}.urgc .uic svg{width:52%;height:52%}
+.urgc .utx{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex:1;min-width:0}
+.urgc .ut{display:block;font-weight:800;font-size:13.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1b2b2d;flex:0 1 auto}
+.urgc .um{font-size:12.5px;white-space:nowrap;color:#4a3c12;flex:none}.urgc .um b{font-weight:800;color:#123f45}.urgc .um small{display:none}
+.urgc .ugo{position:relative;flex:none;font-size:18px;font-weight:800;line-height:1;color:#123f45}
+@media(prefers-reduced-motion:reduce){.urgc::after{animation:none;display:none}}
 /* aperçu d'une cagnotte : fiche qui monte du bas de l'écran quand on appuie sur un ruban */
 #urgap{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,36,41,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;transition:opacity .22s}
 #urgap.on{opacity:1}
@@ -598,7 +604,7 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script src="/typo.js?v=5" defer></script>
 <script src="/apercu-video.js?v=2" defer></script>
 <script src="/geoloc.js?v=1" defer></script>
-<script src="/hanouka-annonce.js?v=42" defer></script>
+<script src="/hanouka-annonce.js?v=43" defer></script>
 <script src="/ecrire-rabbi.js?v=33" defer></script>
 <script src="/partager.js?v=1" defer></script>
 <script>/* cagnottes urgentes : choisies dans le CRM (« Mettre sur la page d'accueil »). Rien ne s'affiche s'il n'y en a pas. */
@@ -669,7 +675,7 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
   <button class="hgo hpv" type="button" aria-label="Revenir"><i aria-hidden="true">‹</i></button>
 </header>
 
-<section class="urgsec" id="urgent" hidden aria-label="Cagnottes en cours"><div class="wrap"><div class="urgl" id="urgl"></div></div></section>
+<section class="urgsec" id="urgent" hidden aria-label="Cagnottes en cours"><div class="wrap"><span class="urgh">Cagnottes</span><div class="urgl" id="urgl"></div></div></section>
 <section class="qa" aria-label="Accès rapides"><div class="wrap">
   <a href="/colis/"><img class="qi" src="/tuiles/colis.png?v=4" alt="" width="40" height="40" loading="eager"><span>Colis de Chabbat<small>et de fêtes, aux familles</small></span></a>
   <a href="/torah/"><img class="qi" src="/tuiles/torah.png?v=4" alt="" width="40" height="40" loading="eager"><span>Diffusion de la Torah<small>Vidéo et cours chaque jour</small></span></a>
