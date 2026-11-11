@@ -627,7 +627,7 @@ async function tick(force = false) {
   ticking = true;
   try {
     let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
-    ensureForfait(); ensureAccords();
+    ensureForfait(); ensureAccords(); nettoyerContactsTest();
     await releveCommission();
     const s = db.settings;
     const q = await brevoQuota(force); await alerteQuota(q);
@@ -685,6 +685,16 @@ function ensureAccords() {   // une seule fois : les inscrits venus uniquement p
   s.accordsHoraires = 1; let n = 0;
   for (const c of db.contacts) if (/^Inscrit via le site \(horaires de Chabbat/.test(c.notes || '') && !(c.tags || []).some(t => /^(infos|horaires-seuls)$/i.test(t))) { c.tags = [...(c.tags || []), 'horaires-seuls']; n++; }
   console.log('accords : ' + n + ' inscrit(s) aux seuls horaires, retirés des campagnes'); save();
+}
+// Demandé par Yarone le 11 nov. 2026 : supprimer tous les contacts d'essai (« TestN Mailing », adresse en +testN@, étiquette test). Une seule fois.
+// Même effet que le ✕ du CRM. L'historique des envois est conservé. Le critère est volontairement étroit : les trois conditions à la fois.
+function nettoyerContactsTest() {
+  const s = db.settings; if (s.nettoyageTests === 1) return 0;
+  const estTest = c => /\+test\d+@/i.test(c.email || '') && (c.tags || []).some(t => String(t).toLowerCase() === 'test') && /^test\d+$/i.test(String(c.firstName || '').trim());
+  const avant = db.contacts.length; db.contacts = db.contacts.filter(c => !estTest(c));
+  s.nettoyageTests = 1; save();
+  console.log('contacts de test supprimés : ' + (avant - db.contacts.length) + ' (reste ' + db.contacts.length + ' contacts)');
+  return avant - db.contacts.length;
 }
 function remaining(camp) { // nombre de mails encore à envoyer
   const tag = (camp.audienceTag || '').trim().toLowerCase();
