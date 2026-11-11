@@ -276,7 +276,7 @@ const views = {
     ${list.length ? `<div class="bs-list">${list.map(x => { const pct = x.objectif ? Math.min(100, Math.round((x.total || 0) * 100 / x.objectif)) : 0;
       return `<div class="card bs-it${x.actif ? '' : ' off'}">
         <div class="bs-top"><div><b class="bs-t">${esc(x.titre)}</b><div class="hint" style="margin:2px 0 0">${x.beneficiaire ? 'Pour : <b>' + esc(x.beneficiaire) + '</b> · ' : ''}créé le ${fmt(x.created_at)}</div></div>
-          <span class="pill ${x.actif ? 'ok' : ''}">${x.actif ? 'Ouvert' : 'Clôturé'}</span></div>
+          <span class="bs-pills">${x.accueil && x.actif ? '<span class="pill warn" title="Cette cagnotte est affichée sur la page d\'accueil du site">★ Sur l\'accueil</span>' : ''}<span class="pill ${x.actif ? 'ok' : ''}">${x.actif ? 'Ouvert' : 'Clôturé'}</span></span></div>
         ${x.description ? `<p class="bs-d">${esc(x.description)}</p>` : ''}
         <div class="bs-amt"><strong>${eur(x.total)}</strong><span>${x.objectif ? 'collectés sur ' + eur(x.objectif) + ' (' + pct + ' %)' : 'collectés · pas d\'objectif'} · ${x.dons || 0} don${x.dons > 1 ? 's' : ''}${x.dernier ? ' · dernier le ' + new Date(x.dernier).toLocaleDateString('fr-FR') : ''}</span></div>
         ${x.objectif ? `<div class="bs-bar"><i style="width:${pct}%"></i></div>` : ''}
@@ -284,6 +284,7 @@ const views = {
         <div class="bs-link"><a href="${lien(x)}" target="_blank" rel="noopener">don.emounateha.fr/besoin/${esc(x.slug)}</a></div>
         <div class="row bs-act"><button class="btn sm pri" onclick="navigator.clipboard.writeText('${lien(x)}');toast('Lien copié')">Copier le lien</button>
           <button class="btn sm" onclick="besoinModal('${x.id}')">Modifier</button>
+          ${x.actif ? `<button class="btn sm${x.accueil ? '' : ' bs-star'}" onclick="besoinAccueil('${x.id}',${x.accueil ? 'false' : 'true'})">${x.accueil ? 'Retirer de l\'accueil' : '★ Mettre sur la page d\'accueil'}</button>` : ''}
           ${x.dons ? `<button class="btn sm" onclick="besoinDons('${x.id}')">Voir les dons</button>` : ''}
           ${x.dons || (x.versements || []).length ? `<button class="btn sm" onclick="besoinVerse('${x.id}')">Noter un versement</button>` : ''}
           <button class="btn sm" onclick="besoinActif('${x.id}',${x.actif ? 'false' : 'true'})">${x.actif ? 'Clôturer' : 'Rouvrir'}</button>
@@ -422,6 +423,14 @@ function bsCompte(x) {
     ${c.litiges ? `<p class="bs-cn">${c.litiges} paiement${c.litiges > 1 ? 's' : ''} contesté${c.litiges > 1 ? 's' : ''} par un donateur : attendez l'issue avant de tout reverser.</p>` : ''}
     ${x.actif && !solde ? '<p class="bs-cn">Cagnotte encore ouverte : le montant peut encore augmenter.</p>' : ''}
   </div>`;
+}
+// cagnotte urgente : mise en avant sur la page d'accueil du site (3 au plus à la fois)
+async function besoinAccueil(id, oui) {
+  const b = besoinOf(id); if (!b) return;
+  const deja = ((S.besoins || {}).list || []).filter(x => x.accueil && x.actif && x.id !== id).length;
+  if (oui && deja >= 3) return toast('Trois cagnottes sont déjà sur l\'accueil : retirez-en une d\'abord.', true);
+  if (oui && !confirm('Afficher « ' + b.titre + ' » sur la page d\'accueil du site ? Elle sera visible par tous les visiteurs, avec son titre, son texte et le montant collecté.')) return;
+  try { await api('POST', '/besoins/' + id + '/accueil', { accueil: !!oui }); await load(); await render(); toast(oui ? 'Cagnotte affichée sur l\'accueil (visible d\'ici une minute)' : 'Cagnotte retirée de l\'accueil'); } catch (e) { toast(e.message, true); }
 }
 function besoinVerse(id) {
   const b = besoinOf(id); if (!b) return; const c = b.compte, vs = [...(b.versements || [])].sort((x, y) => String(y.date).localeCompare(String(x.date)));

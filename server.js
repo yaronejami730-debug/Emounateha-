@@ -1313,6 +1313,7 @@ const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
     beneficiaire text not null default '', description text not null default '', objectif integer,
     actif boolean not null default true, created_at timestamptz not null default now());
   alter table public.besoins add column if not exists versements jsonb not null default '[]'::jsonb;
+  alter table public.besoins add column if not exists accueil boolean not null default false;
   alter table public.besoins enable row level security;`).catch(e => { besoinsReady = null; throw e; }));
 const besoinSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
 // Compte d'une cagnotte : ce qui est dû au bénéficiaire. total = dons d'après les reçus ; st = chiffres Stripe (brut, frais, remboursements, net).
@@ -1323,6 +1324,25 @@ function besoinCompte(total, st, versements) {
   if (!st || !st.dons) return { versements: vs, verse, compte: null };
   const retenue = Math.round(Math.max(0, st.net) * CAGNOTTE_RETENUE / 100), aReverser = Math.max(0, st.net - retenue);
   return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, retenue, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
+}
+// public : les cagnottes mises en avant sur la page d'accueil (ouvertes, choisies dans le CRM, 3 au plus). Jamais le nom du bénéficiaire.
+// Le montant collecté vient du serveur des dons (total des dons reçus par le lien de la cagnotte).
+const accueilCache = { at: 0, v: [] };
+async function besoinsAccueil(req, res) {
+  let v = accueilCache.v;
+  if (pool && Date.now() - accueilCache.at > 60000) {
+    try {
+      await ensureBesoins();
+      const rows = (await pool.query('select slug, titre, description, objectif from public.besoins where actif and accueil order by created_at desc limit 3')).rows;
+      v = await Promise.all(rows.map(async b => {
+        let collecte = null, dons = 0;
+        try { const x = await fetch(DON_URL + '/api/besoin/' + b.slug, { signal: AbortSignal.timeout(6000) }); if (x.ok) { const j = await x.json(); collecte = j.collecte == null ? null : j.collecte; dons = j.dons || 0; } } catch (e) { /* total indisponible : la carte s'affiche sans montant */ }
+        return { slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, collecte, dons, lien: DON_URL + '/besoin/' + b.slug };
+      }));
+      accueilCache.v = v; accueilCache.at = Date.now();
+    } catch (e) { console.error('[besoins accueil]', e.message); }
+  }
+  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' }); res.end(JSON.stringify({ list: v }));
 }
 // public : ce que la page de don affiche (jamais le nom du bénéficiaire, qui reste dans le CRM)
 async function besoinPublic(req, res, url) {
@@ -1705,7 +1725,7 @@ async function api(req, res, url) {
     const propre = b => ({ titre: String(b.titre || '').trim().slice(0, 70), beneficiaire: String(b.beneficiaire || '').trim().slice(0, 120), description: String(b.description || '').trim().slice(0, 600),
       objectif: (() => { const n = Math.round(Number(String(b.objectif == null ? '' : b.objectif).replace(',', '.')) * 100); return Number.isFinite(n) && n >= 100 && n <= 100000000 ? n : null; })() });
     if (m === 'GET') {
-      const r = await pool.query('select id, slug, titre, beneficiaire, description, objectif, actif, created_at, versements from public.besoins order by actif desc, created_at desc');
+      const r = await pool.query('select id, slug, titre, beneficiaire, description, objectif, actif, accueil, created_at, versements from public.besoins order by actif desc, created_at desc');
       let recus = [], erreur = '';
       try { const x = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus'), signal: AbortSignal.timeout(15000) }); const j = await x.json(); if (!x.ok) throw new Error(j.error || x.status); recus = j.recus || []; } catch (e) { erreur = 'Dons indisponibles : ' + e.message; }
       const par = {}; for (const x of recus) if (x.besoin) { const p = par[x.besoin] = par[x.besoin] || { dons: 0, total: 0, dernier: null, liste: [] }; p.dons++; p.total += x.montant || 0; if (!p.dernier || x.dateDon > p.dernier) p.dernier = x.dateDon; p.liste.push({ nom: x.nom, montant: x.montant, dateDon: x.dateDon, numero: x.numero }); }
@@ -1714,6 +1734,11 @@ async function api(req, res, url) {
       const slugs = r.rows.filter(a => par[a.slug]).map(a => a.slug);
       if (slugs.length) try { const x = await fetch(DON_URL + '/api/admin/cagnottes?slugs=' + slugs.join(','), { headers: cerfaSig('GET', '/api/admin/cagnottes'), signal: AbortSignal.timeout(25000) }); const j = await x.json(); if (!x.ok) throw new Error(j.error || x.status); stripe = j.par || {}; } catch (e) { erreurFrais = 'Frais bancaires indisponibles : ' + e.message; }
       return send(res, 200, { list: r.rows.map(a => ({ ...a, ...(par[a.slug] || { dons: 0, total: 0, dernier: null, liste: [] }), ...besoinCompte((par[a.slug] || {}).total || 0, stripe[a.slug], a.versements) })), erreur, erreurFrais });
+    }
+    if (m === 'POST' && parts[1] && parts[2] === 'accueil') {   // mettre la cagnotte en avant sur la page d'accueil du site, ou l'en retirer
+      const u = await pool.query('update public.besoins set accueil = $1 where id = $2', [body.accueil === true, parts[1]]);
+      if (!u.rowCount) return send(res, 404, { error: 'Besoin introuvable' });
+      accueilCache.at = 0; return send(res, 200, { ok: true, accueil: body.accueil === true });
     }
     if (m === 'POST' && parts[1] && parts[2] === 'versements') {   // la trésorière note un virement fait au bénéficiaire (le serveur ne déplace aucun argent)
       const montant = Math.round(Number(String(body.montant == null ? '' : body.montant).replace(/\s/g, '').replace(',', '.')) * 100);
@@ -1739,7 +1764,8 @@ async function api(req, res, url) {
     }
     if (m === 'PUT' && parts[1]) {   // l'adresse (slug) ne change jamais : les liens déjà partagés et les dons déjà reçus y restent attachés
       const v = propre(body); if (!v.titre) return send(res, 400, { error: 'Indiquez le besoin' });
-      await pool.query('update public.besoins set titre = $1, beneficiaire = $2, description = $3, objectif = $4, actif = $5 where id = $6', [v.titre, v.beneficiaire, v.description, v.objectif, body.actif !== false, parts[1]]);
+      await pool.query('update public.besoins set titre = $1, beneficiaire = $2, description = $3, objectif = $4, actif = $5, accueil = coalesce($7, accueil) where id = $6', [v.titre, v.beneficiaire, v.description, v.objectif, body.actif !== false, parts[1], typeof body.accueil === 'boolean' ? body.accueil : null]);   // « accueil » absent de la demande : inchangé
+      accueilCache.at = 0;
       return send(res, 200, { ok: true });
     }
     if (m === 'DELETE' && parts[1]) { await pool.query('delete from public.besoins where id = $1', [parts[1]]); return send(res, 200, { ok: true }); }
@@ -2024,6 +2050,7 @@ async function handle(req, res) {
         res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Horaires indisponibles' }); }
     }
+    if (url.pathname === '/api/besoins-accueil' && req.method === 'GET') return await besoinsAccueil(req, res);   // public : cagnottes mises en avant sur l'accueil
     if (url.pathname === '/api/besoin' && req.method === 'GET') return await besoinPublic(req, res, url);   // public : une mini-cagnotte (titre, texte, objectif)
     if (url.pathname === '/api/position') {   // ville par défaut des horaires : position approximative donnée par notre hébergeur, jamais enregistrée, aucun service tiers
       const la = parseFloat(req.headers['x-vercel-ip-latitude']), lo = parseFloat(req.headers['x-vercel-ip-longitude']);
