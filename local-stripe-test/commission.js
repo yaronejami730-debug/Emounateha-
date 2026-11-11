@@ -59,7 +59,46 @@ async function mouvementsStripe(stripe, du, au) {   // bornes incluses, jours de
   return out;
 }
 
-function monter(app, { stripe, adminOk }) {
+// Relevé de la semaine écoulée, en texte, en HTML et en CSV (pièce jointe). Aucune donnée de donateur : dates, libellés Stripe, montants.
+const eur = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const jourLong = j => new Date(j + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+function releveMail(p, r, live) {
+  const titre = `Semaine du ${jourLong(p.du)} au ${jourLong(p.au)}`, tx = String(r.taux).replace('.', ',');
+  const L = [['Dons encaissés (' + r.nbDons + ')', eur(r.brut)], ['− Frais Stripe', '− ' + eur(r.frais)]];
+  if (r.rembourse) L.push(['− Remboursements', '− ' + eur(-r.rembourse)]);
+  if (r.litiges) L.push([r.litiges < 0 ? '− Litiges' : '+ Litiges regagnés', (r.litiges < 0 ? '− ' : '+ ') + eur(Math.abs(r.litiges))]);
+  L.push(['= Net encaissé par l\'association', eur(r.net)], ['× ' + tx + ' % = Commission', eur(r.commission)]);
+  const alertes = [];
+  if (!r.controle) alertes.push('CONTRÔLE EN ÉCHEC : la somme des lignes ne redonne pas le net. Ne rien facturer sur cette base.');
+  if (Object.keys(r.inconnus).length) alertes.push('Mouvements non reconnus, donc non comptés : ' + Object.entries(r.inconnus).map(([k, n]) => k + ' (' + n + ')').join(', '));
+  if (r.net < 0) alertes.push('Semaine négative (plus de remboursements que de dons) : commission de 0 €.');
+  if (!live) alertes.push('Compte Stripe de TEST : ce ne sont pas de vrais dons.');
+  const subject = `${live ? '' : '[TEST] '}Commission — ${titre.toLowerCase()} : ${eur(r.commission)}`;
+  const text = `${titre}\n\n` + L.map(x => x[0] + ' : ' + x[1]).join('\n') + `\n\nMode à blanc : aucune facture créée, aucun prélèvement.\n` + (alertes.length ? '\n' + alertes.map(x => '⚠ ' + x).join('\n') + '\n' : '') + `\nContrôle au centime : ${r.controle ? 'OK' : 'ÉCHEC'}. Détail ligne par ligne en pièce jointe (${r.nbLignes} mouvement(s)).`;
+  const e = s => String(s).replace(/[&<>]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]));
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:560px"><h2 style="color:#1f6a72;margin:0 0 4px">Relevé de commission</h2><p style="margin:0 0 14px;color:#6b7280">${e(titre)}</p><table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse">` + L.map((x, i) => `<tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;${i >= L.length - 2 ? 'font-weight:bold;' : ''}${i === L.length - 1 ? 'color:#8a6a14;font-size:17px;border-bottom:0;' : ''}">${e(x[0])}</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;${i >= L.length - 2 ? 'font-weight:bold;' : ''}${i === L.length - 1 ? 'color:#8a6a14;font-size:17px;border-bottom:0;' : ''}">${e(x[1])}</td></tr>`).join('') + `</table><p style="margin:14px 0 0;padding:10px 12px;background:#fff9ea;border:1px solid #f5d48a;border-radius:8px;font-size:13px;color:#7a5a10"><b>Mode à blanc.</b> Aucune facture créée, aucun prélèvement.</p>` + alertes.map(x => `<p style="margin:8px 0 0;font-size:13px;color:#b45309">⚠ ${e(x)}</p>`).join('') + `<p style="margin:12px 0 0;font-size:13px;color:#6b7280">Contrôle au centime : ${r.controle ? 'OK' : 'ÉCHEC'}. Frais et net sont ceux appliqués par Stripe. Détail ligne par ligne en pièce jointe (${r.nbLignes} mouvement(s)).</p></div>`;
+  const q = s => '"' + String(s).replace(/"/g, '""') + '"', n = c => (c / 100).toFixed(2).replace('.', ',');
+  const csv = '\ufeff' + ['Date;Heure;Mouvement;Libellé;Montant;Frais;Net;Identifiant Stripe'].concat(r.lignes.map(l => [l.jour, new Date(l.at).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' }), l.genre, q(l.description), n(l.brut), n(l.frais), n(l.net), l.id].join(';'))).concat(['', ';;;' + q('Net') + ';;;' + n(r.net), ';;;' + q('Commission ' + tx + ' %') + ';;;' + n(r.commission)]).join('\r\n');
+  return { subject, text, html, csv, fichier: `commission_${p.du}_${p.au}.csv` };
+}
+
+function monter(app, { stripe, adminOk, mailer, load, save }) {
+  // Appelé chaque lundi par le serveur du site : envoie au prestataire le relevé de la semaine écoulée (lundi → dimanche). Une seule fois par semaine.
+  app.post('/api/admin/commission/envoyer', async (req, res) => {
+    if (!adminOk(req, res)) return;
+    try {
+      const to = String(process.env.COMMISSION_EMAIL || '').trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) return res.json({ ok: true, envoye: false, raison: 'COMMISSION_EMAIL non renseigné' });
+      if (!stripe) return res.status(503).json({ error: 'Stripe non configuré' });
+      const p = semainePrecedente(semaine(parisJour(Date.now()))), d = load();
+      if (d.commission && d.commission.dernierReleve === p.du && !req.body.forcer) return res.json({ ok: true, envoye: false, raison: 'déjà envoyé pour la semaine du ' + p.du });
+      const live = /^sk_live_/.test(process.env.STRIPE_SECRET_KEY || ''), r = calculer(await mouvementsStripe(stripe, p.du, p.au)), m = releveMail(p, r, live);
+      const env = await mailer.send({ to, toName: 'Prestataire technique', subject: m.subject, html: m.html, text: m.text, attachments: [{ filename: m.fichier, content: Buffer.from(m.csv, 'utf8'), contentType: 'text/csv; charset=utf-8' }] });
+      const d2 = load(); d2.commission = { ...(d2.commission || {}), dernierReleve: p.du, envoyeLe: new Date().toISOString() }; save(d2);
+      res.json({ ok: true, envoye: true, periode: p, commission: r.commission, net: r.net, controle: r.controle, mail: env && (env.sent !== undefined ? env.sent : true) });
+    } catch (e) { console.error('commission/envoyer', e.message); res.status(502).json({ error: e.message }); }
+  });
+
   // CRM → relevé d'une période (par défaut : la semaine en cours) et rappel des périodes précédentes
   app.get('/api/admin/commission', async (req, res) => {
     if (!adminOk(req, res)) return;
@@ -79,4 +118,4 @@ function monter(app, { stripe, adminOk }) {
   });
 }
 
-module.exports = { calculer, semaine, semainePrecedente, minuitParis, mouvementsStripe, monter, TAUX, CLIENT };
+module.exports = { releveMail, calculer, semaine, semainePrecedente, minuitParis, mouvementsStripe, monter, TAUX, CLIENT };

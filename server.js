@@ -611,12 +611,24 @@ async function alerteQuota(q) {   // un seul e-mail par seuil et par période de
   catch (e) { console.error('alerte forfait', e.message); return null; }
 }
 
+// Chaque lundi à partir de 8 h (Paris) : demande au serveur des dons d'envoyer le relevé de commission de la semaine écoulée. Une fois par semaine.
+async function releveCommission() {
+  const s = db.settings, auj = parisDay(Date.now()), d = new Date(auj + 'T12:00:00Z');
+  if (d.getUTCDay() !== 1 || parisHour() < 8 || s.releveCommission === auj) return null;
+  try {
+    const r = await fetch(DON_URL + '/api/admin/commission/envoyer', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/commission/envoyer') }, body: '{}' });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) { s.releveCommission = auj; save(); console.log('relevé de commission', JSON.stringify(j).slice(0, 200)); } else console.error('relevé de commission refusé', r.status, JSON.stringify(j).slice(0, 160));
+    return j;
+  } catch (e) { console.error('relevé de commission', e.message); return null; }
+}
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
   ticking = true;
   try {
     let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
     ensureForfait(); ensureAccords();
+    await releveCommission();
     const s = db.settings;
     const q = await brevoQuota(force); await alerteQuota(q);
     const h = parisHour();

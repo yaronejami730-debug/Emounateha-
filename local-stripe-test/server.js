@@ -536,7 +536,7 @@ function adminOk(req, res) {
   if (!ok) res.status(401).json({ error: 'non autorisé' });
   return !!ok;
 }
-const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, adresse: r.adresse || '', prenom: (r.form && r.form.prenom) || '', nomFamille: (r.form && r.form.nom) || '', cp: (r.form && r.form.cp) || '', ville: r.ville || (r.form && r.form.ville) || '', siren: r.siren || '', montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', besoin: r.besoin || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), creeLe: r.creeLe || null, envois: (r.mails || []).length || (r.email && !r.email.skipped ? 1 : 0),
+const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, adresse: r.adresse || (r.form && r.form.adresse ? [r.form.adresse, [r.form.cp, r.form.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ') : ''), prenom: (r.form && r.form.prenom) || '', nomFamille: (r.form && r.form.nom) || '', cp: (r.form && r.form.cp) || '', ville: r.ville || (r.form && r.form.ville) || '', siren: r.siren || (r.form && r.form.siren) || '', montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', besoin: r.besoin || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), creeLe: r.creeLe || null, envois: (r.mails || []).length || (r.email && !r.email.skipped ? 1 : 0),
   mail: r.email && !r.email.skipped ? { sent: !!r.email.sent, messageId: r.email.messageId || '', at: r.email.at || null, to: r.email.to || r.donorEmail || '', error: r.email.error || '', note: r.email.note || '', brevo: !!r.email.brevo, par: r.email.par || 'auto' } : null, mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
 const ordreNum = n => { const m = String(n || '').match(/(\d{4})\D+(\d+)$/); return (/^TEST/i.test(String(n || '')) ? 0 : 1e12) + (m ? +m[1] * 1e6 + +m[2] : 0); };
 const trouverRecu = (d, ref) => { for (const coll of ['receipts', 'manuels']) if (d[coll] && Object.prototype.hasOwnProperty.call(d[coll], ref)) return d[coll][ref]; return null; };
@@ -565,7 +565,7 @@ app.get('/api/admin/mail', async (req, res) => {
     res.json({ numero: r.numero, sujet: m ? m.subject : '', html: m ? m.html : '', piece: `Recu-fiscal-${nomFichier(r.numero)}.pdf`, envois: (r.mails || (r.email && !r.email.skipped ? [r.email] : [])).map(x => ({ at: x.at || null, to: x.to || r.donorEmail || '', sent: !!x.sent, messageId: x.messageId || '', error: x.error || '', note: x.note || '', par: x.par || 'auto' })) });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
-require('./commission').monter(app, { stripe, adminOk });   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
+require('./commission').monter(app, { stripe, adminOk, mailer, load, save });   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();
