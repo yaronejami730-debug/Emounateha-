@@ -72,7 +72,7 @@ function nextWave(){
   const st=S.settings||{}, from=+st.hourFrom||8, to=+st.hourTo||21, pm=+st.perMinute||5;
   const p=Object.fromEntries(new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',hour:'numeric',minute:'numeric',hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));
   const h=+p.hour%24, mi=+p.minute, nowMin=h*60+mi;
-  const left=Math.max(0,(S.today.limit||300)-(S.today.sent||0));
+  const left=S.month?Math.max(0,S.month.left-(S.month.reserve||0)):1e9;   // ce que le forfait laisse aux campagnes (plus de limite par jour)
   const paused=S.today.pausedUntil && new Date(S.today.pausedUntil)>new Date();
   const q=S.today.queue||0;
   let wait, label;
@@ -121,9 +121,9 @@ const views = {
     const running = S.campaigns.filter(c => c.status === 'running').length;
     const totalSent = S.campaigns.reduce((a, c) => a + c.stats.sent, 0);
     const active = S.contacts.filter(c => c.status === 'active').length;
-    const pct = Math.min(100, S.today.sent / S.today.limit * 100);
-    const q = S.today.queue, left = Math.max(0, S.today.limit - S.today.sent), days = q > left ? 1 + Math.ceil((q - left) / S.today.limit) : (q ? 1 : 0);
-    const queueTxt = q ? `${q} mail(s) en attente · fin estimée ${days <= 1 ? "aujourd'hui" : 'dans ' + days + ' jours'}` : 'File vide';
+    const pct = 0;
+    const q = S.today.queue, left = S.month ? Math.max(0, S.month.left - (S.month.reserve || 0)) : 1e9;
+    const queueTxt = q ? `${q} mail(s) en attente` + (q > left ? ` · le forfait n'en permet plus que ${left} ce mois-ci` : '') : 'File vide';
     const nextTxt = nextWave().txt;
     return `
     <div class="head"><div><h1>Tableau de bord</h1><p class="sub">Vue d'ensemble de vos relances</p></div>
@@ -171,7 +171,7 @@ const views = {
             <button class="btn sm" onclick="location.hash='#/campaigns/${c.id}'">Programmation</button><button class="btn sm" onclick="campDetail('${c.id}')">Statistiques</button><button class="btn sm" onclick="campModal('${c.id}')">Modifier</button><button class="btn sm bad" aria-label="Supprimer la campagne" onclick="del('campaigns','${c.id}')">✕</button></div></header>
         <p class="cp-meta">${steps > 1 ? '1 mail + ' + (steps - 1) + ' relance' + (steps > 2 ? 's' : '') : '1 mail'} · ${quand}${st.pending ? ' · ' + st.pending + ' contact' + (st.pending > 1 ? 's' : '') + ' en cours' : ''}</p>
         <div class="cp-prog"><div class="cp-bar"><i style="width:${pct}%"></i></div><span><b>${sent.toLocaleString('fr-FR')}</b> envoyé${sent > 1 ? 's' : ''}${aud ? ' sur ' + aud.toLocaleString('fr-FR') + ' · ' + pct + ' %' : ''}</span></div>
-        <div class="cp-ks">${k("Aujourd'hui", p ? p.sentToday + ' / ' + p.dayQuota : '—')}${k('Reste à envoyer', p ? p.remaining : (c.status === 'done' ? 0 : '—'))}${k('Mails par heure', p ? p.perHour : '—')}${k('Erreurs', st.errors || 0, st.errors ? 'bad' : '')}</div>
+        <div class="cp-ks">${k("Aujourd'hui", p ? p.sentToday + (p.dayQuota ? ' / ' + p.dayQuota : '') : '—')}${k('Reste à envoyer', p ? p.remaining : (c.status === 'done' ? 0 : '—'))}${k('Mails par heure', p ? p.perHour : '—')}${k('Erreurs', st.errors || 0, st.errors ? 'bad' : '')}</div>
         <div class="cp-eng" data-id="${c.id}">${engHtml(c.id)}</div>
         ${p ? `<p class="cp-next"><span>Prochain envoi</span> ${esc(String(p.nextLabel))} · <b>${p.nextCount}</b> mail${p.nextCount > 1 ? 's' : ''}</p>` : ''}
         ${p && p.raison ? `<p class="cp-why">${esc(p.raison)}</p>` : ''}
@@ -656,9 +656,9 @@ function campDetail(id){
   const st=c.stats||{}, p=c.plan, steps=c.steps||[];
   const cell=(l,v,col)=>`<div class="card" style="padding:12px 14px;text-align:center"><small style="display:block;color:var(--mut);font-size:12px">${l}</small><b style="font-size:22px;color:${col||'inherit'}">${v}</b></div>`;
   const grid=`<div class="grid g4" style="gap:10px;margin:12px 0">
-    ${cell('Audience',st.audience||0)}${cell('Déjà envoyés',st.sent||0,'var(--ok)')}${cell('Aujourd\'hui',p?p.sentToday+' / '+p.dayQuota:'—')}${cell('Restant à envoyer',p?p.remaining:(st.pending||0))}
+    ${cell('Audience',st.audience||0)}${cell('Déjà envoyés',st.sent||0,'var(--ok)')}${cell('Aujourd\'hui',p?p.sentToday+(p.dayQuota?' / '+p.dayQuota:''):'—')}${cell('Restant à envoyer',p?p.remaining:(st.pending||0))}
     ${cell('En séquence',st.pending||0)}${cell('Exclus (autre campagne)',st.excluded||0,st.excluded?'var(--warn)':'inherit')}${cell('Erreurs',st.errors||0,st.errors?'var(--bad)':'inherit')}${cell('Mails / heure',p?p.perHour:'—')}</div>`;
-  const next=p?`<div class="card" style="padding:12px 14px;margin-bottom:12px"><b>Prochaine rafale</b> : ${p.nextLabel} · <b>${p.nextCount}</b> mail(s)<br><small class="hint">Quota du jour ${p.dayQuota} · ${p.dayLeft} restant aujourd'hui · moyenne ≈ ${p.perHour} mails/heure programmés</small></div>`:'';
+  const next=p?`<div class="card" style="padding:12px 14px;margin-bottom:12px"><b>Prochaine rafale</b> : ${p.nextLabel} · <b>${p.nextCount}</b> mail(s)<br><small class="hint">${p.dayQuota ? 'Part du jour ' + p.dayQuota + ' ·' : ''} ${p.dayLeft} restant aujourd'hui · moyenne ≈ ${p.perHour} mails/heure programmés</small></div>`:'';
   const perStep=steps.length?`<table style="width:100%;font-size:14px;margin-bottom:12px"><tr><th align="left">Mail</th><th align="right">Envois</th><th align="right">Délai</th></tr>${steps.map((x,i)=>`<tr><td>${i?'Relance '+i:'Premier envoi'}</td><td align="right"><b>${(st.steps||[])[i]||0}</b></td><td align="right">${i?'+'+(x.delayDays||0)+' j':'immédiat'}</td></tr>`).join('')}</table>`:'';
   const days=(st.daily||[]).length?`<h3 style="margin:12px 0 6px">Envois par jour</h3><table style="width:100%;font-size:14px">${st.daily.map(d=>`<tr><td>${new Date(d.day+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</td><td align="right"><b>${d.n}</b></td></tr>`).join('')}</table>`:'<p class="hint">Aucun envoi pour le moment.</p>';
   const period=`<p class="hint">Période : ${c.startDate?new Date(c.startDate).toLocaleDateString('fr-FR'):'—'} → ${c.endDate?new Date(c.endDate).toLocaleDateString('fr-FR'):'sans fin'} · statut : ${esc(c.status)}</p>`;

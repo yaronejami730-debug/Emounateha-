@@ -30,7 +30,7 @@ function defaultDb() {
   return {
     settings: {
       brevoApiKey: '', senderName: 'Emounateha', senderEmail: '',
-      dailyLimit: 100000, monthlyLimit: 5000, forfaitMensuel: 3, reserveCerfa: 300, alertEmail: 'emounateha770@gmail.com', perMinute: 5, hourFrom: 8, hourTo: 21,
+      dailyLimit: 100000, monthlyLimit: 5000, forfaitMensuel: 4, reserveCerfa: 300, alertEmail: 'emounateha770@gmail.com', perMinute: 5, hourFrom: 8, hourTo: 21,
       publicUrl: '', logoUrl: '/logo.png', orgName: 'Émounatéha',
       address: '', donateUrl: 'https://don.emounateha.fr/',
       phone: '06 69 67 07 70', social: 'emounateha_', minGapHours: 24,
@@ -541,13 +541,14 @@ async function sendOne(campaign, { contact, stepIndex, step }) {
 
 let ticking = false;
 // ---------- Forfait mensuel Brevo : crédits restants, date de remise à zéro, alerte à l'administrateur ----------
+const SANS_PLAFOND = 1e9;   // plus de limite par jour : le réglage enregistré « dailyLimit » n'est plus lu nulle part
 const reserveCerfa = () => { const r = Number(db.settings.reserveCerfa); return r >= 0 ? Math.floor(r) : 300; };   // mails gardés pour les reçus fiscaux : les campagnes n'y touchent pas
 const alerteSeuils = () => [...new Set([500, reserveCerfa(), 100])].filter(x => x > 0);
 let brevoPlanCache = { at: 0, v: null };
 function ensureForfait() {   // passage du gratuit (300/jour) au forfait mensuel : une seule fois
   const s = db.settings;
-  if (s.forfaitMensuel === 3) return;
-  s.forfaitMensuel = 3; if (!(Number(s.reserveCerfa) >= 0)) s.reserveCerfa = 300; s.monthlyLimit = s.monthlyLimit || 5000; s.alertEmail = s.alertEmail || 'emounateha770@gmail.com';
+  if (s.forfaitMensuel === 4) return;
+  s.forfaitMensuel = 4; if (!(Number(s.reserveCerfa) >= 0)) s.reserveCerfa = 300; s.monthlyLimit = s.monthlyLimit || 5000; s.alertEmail = s.alertEmail || 'emounateha770@gmail.com';
   s.dailyLimit = 100000;   // plus aucun plafond journalier : seul le forfait du mois compte
   s.pausedUntil = null; save();
 }
@@ -615,9 +616,8 @@ async function tick(force = false) {
     if (dispo <= 0) return { skipped: 'réserve de ' + reserveCerfa() + ' mails gardée pour les reçus fiscaux, reprise le ' + q.end };
     if (s.pausedUntil && Date.now() < +new Date(s.pausedUntil)) return { skipped: 'limite Brevo atteinte, reprise demain' };
     await brevoToday(force);
-    let budget = Math.min(s.dailyLimit - usedToday(), force ? 50 : s.perMinute, dispo);
+    let budget = Math.min(force ? 50 : s.perMinute, dispo);
     await brevoToday(force);
-    if (s.dailyLimit - usedToday() <= 0) { s.pausedUntil = nextMidnight(); save(); return { skipped: 'envois en pause, reprise demain' }; }
     let n = 0, errors = 0;
     const todayStr = parisDay(Date.now());
     for (const c of db.campaigns) if (c.status === 'scheduled' && (!c.startDate || c.startDate <= todayStr)) c.status = 'running';
@@ -631,7 +631,7 @@ async function tick(force = false) {
         const daysLeft = Math.max(1, Math.round((new Date(camp.endDate) - new Date(todayStr)) / 86400000) + 1);
         const sentC = db.sends.filter(x => x.campaignId === camp.id && x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
         const sentTot = db.sends.filter(x => x.campaignId === camp.id && x.status !== 'error').length;
-        const dayQuota = Math.min(db.settings.dailyLimit, Math.ceil((remaining(camp) + sentTot) / daysLeft));
+        const dayQuota = Math.min(SANS_PLAFOND, Math.ceil((remaining(camp) + sentTot) / daysLeft));
         const winMin = Math.max(1, (db.settings.hourTo - db.settings.hourFrom) * 60);
         const nowMin = (+new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24) * 60 + (+new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', minute: 'numeric' }));
         const elapsed = Math.min(winMin, Math.max(0, nowMin - db.settings.hourFrom * 60));
@@ -894,7 +894,7 @@ async function shabbatSubscribe(req, res) {
   // premier envoi tout de suite (confirme l'adresse et montre le format). Il part AVANT la réponse :
   // sur Vercel, tout ce qui suit la réponse peut être coupé (l'e-mail n'arrivait jamais).
   const key = 'chabbat-bienvenue';
-  const room = (brevoPlanCache.v || quotaLocal()).left > reserveCerfa() && db.settings.dailyLimit - usedToday() > 25 && !(db.settings.pausedUntil && Date.now() < +new Date(db.settings.pausedUntil)); // on garde de la marge pour les envois planifiés
+  const room = (brevoPlanCache.v || quotaLocal()).left > reserveCerfa() && !(db.settings.pausedUntil && Date.now() < +new Date(db.settings.pausedUntil)); // on garde de la marge pour les envois planifiés
   let envoye = false;
   if (room && !db.sends.some(x => x.contactId === c.id && x.templateId === key && (x.status === 'sent' || x.status === 'simulated'))) {
     try { const r = await Promise.race([sendChabbat(c, key, 'weekly', {}), new Promise((_, no) => setTimeout(() => no(new Error('délai dépassé')), 20000))]); envoye = r && r.status === 'sent'; }
@@ -1297,7 +1297,7 @@ function campaignPlan(c) {
   const sentC = db.sends.filter(x => x.campaignId === c.id && x.status !== 'error' && dayKey(x.at) === dayKey(Date.now())).length;
   const sentTot = db.sends.filter(x => x.campaignId === c.id && x.status !== 'error').length;
   const rem = remaining(c);
-  const dayQuota = etale ? Math.min(s.dailyLimit, Math.ceil((rem + sentTot) / daysLeft)) : s.dailyLimit;
+  const dayQuota = etale ? Math.ceil((rem + sentTot) / daysLeft) : SANS_PLAFOND, dqAff = etale ? dayQuota : null;   // envoi immédiat : pas de quota du jour à afficher
   const winMin = Math.max(1, (s.hourTo - s.hourFrom) * 60);
   const h = +nowD.toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
   const nowMin = h * 60 + (+nowD.toLocaleString('en-GB', { timeZone: 'Europe/Paris', minute: 'numeric' }));
@@ -1305,13 +1305,13 @@ function campaignPlan(c) {
   const inWindow = nowMin >= fromMin && nowMin < toMin;
   const elapsed = Math.min(winMin, Math.max(0, nowMin - fromMin));
   const capNow = etale ? Math.max(0, Math.ceil(dayQuota * elapsed / winMin) - sentC) : Math.max(0, dayQuota - sentC);
-  const globLeft = Math.max(0, s.dailyLimit - usedToday()), bloque = !!(s.pausedUntil && Date.now() < +new Date(s.pausedUntil)) || globLeft <= 0;   // limite du jour, tous envois confondus
+  const globLeft = SANS_PLAFOND, bloque = !!(s.pausedUntil && Date.now() < +new Date(s.pausedUntil));   // limite du jour, tous envois confondus
   const dayLeft = bloque ? 0 : Math.min(Math.max(0, dayQuota - sentC), globLeft);
-  const perHour = Math.round(dayQuota / (winMin / 60) * 10) / 10;
+  const perHour = etale ? Math.round(dayQuota / (winMin / 60) * 10) / 10 : (s.perMinute || 5) * 60;
   const fmtW = m => (m >= 60 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min' : m + ' min');
   let waitMin, nextLabel, nextCount;
   if (rem === 0 || dayLeft === 0 && !inWindow && nowMin < fromMin) {
-    if (rem === 0) return { dayQuota, sentToday: sentC, dayLeft: 0, remaining: 0, perHour, nextLabel: 'plus rien à envoyer', nextCount: 0 };
+    if (rem === 0) return { dayQuota: dqAff, sentToday: sentC, dayLeft: 0, remaining: 0, perHour, nextLabel: 'plus rien à envoyer', nextCount: 0 };
   }
   if (inWindow && dayLeft > 0 && capNow > 0) { waitMin = 0; nextLabel = 'maintenant'; nextCount = Math.min(capNow, s.perMinute, dayLeft, rem); }
   else if (inWindow && dayLeft > 0) { // le quota étalé n'a pas encore avancé : prochain mail quand le temps écoulé le permet
@@ -1330,7 +1330,7 @@ function campaignPlan(c) {
   else if (!inWindow) raison = `Hors des heures d'envoi (${hh(s.hourFrom)} – ${hh(s.hourTo)}). ` + (nowMin < fromMin ? `Reprise à ${hh(s.hourFrom)}.` : dem);
   else if (dayLeft === 0) raison = `La part d'aujourd'hui est envoyée : ${dayQuota} mails par jour pour finir le ${new Date(c.endDate + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}. ${dem}`;
   else if (etale && capNow === 0) raison = `Envoi étalé sur la journée : environ ${String(perHour).replace('.', ',')} mails par heure.`;
-  return { dayQuota, sentToday: sentC, dayLeft, remaining: rem, perHour, waitMin, nextLabel, nextCount, raison, etale };
+  return { dayQuota: dqAff, sentToday: sentC, dayLeft: Math.min(dayLeft, rem), remaining: rem, perHour, waitMin, nextLabel, nextCount, raison, etale };
 }
 function campaignStats(c) {
   const s = db.sends.filter(x => x.campaignId === c.id);
@@ -1407,12 +1407,12 @@ function campaignSchedule(c) {
     if (pausedUntil && mid + 86399000 < pausedUntil) continue;
     const sentC = isToday ? mine.filter(x => x.status !== 'error' && dayKey(x.at) === today).length : 0;
     const usedDay = isToday ? usedToday() : 0;
-    let dayQuota = s.dailyLimit;
+    let dayQuota = SANS_PLAFOND;
     if (c.endDate) {
       const daysLeft = Math.max(1, Math.round((new Date(c.endDate) - new Date(day)) / DAY) + 1);
-      dayQuota = Math.min(s.dailyLimit, Math.ceil((left + sentOk + assigned) / daysLeft));
+      dayQuota = Math.ceil((left + sentOk + assigned) / daysLeft);
     }
-    let doneDay = sentC, budgetDay = s.dailyLimit - usedDay;
+    let doneDay = sentC, budgetDay = SANS_PLAFOND;
     let startM = fromMin;
     if (isToday) startM = Math.max(fromMin, pOf(nowMs) + 1);
     for (let m = startM; m < toMin && left > 0 && budgetDay > 0; m++) {
@@ -1481,7 +1481,7 @@ async function api(req, res, url) {
       settings: publicSettings(), contacts: db.contacts, templates: db.templates,
       campaigns: db.campaigns.map(c => ({ ...c, stats: campaignStats(c), plan: campaignPlan(c) })),
       month: { ...(brevoPlanCache.v || quotaLocal()), reserve: reserveCerfa() },
-      today: { sent: usedToday(), limit: db.settings.dailyLimit, pausedUntil: db.settings.pausedUntil || null, queue: db.campaigns.filter(c => c.status === 'running').reduce((a, c) => a + remaining(c), 0) },
+      today: { sent: usedToday(), limit: null, pausedUntil: db.settings.pausedUntil || null, queue: db.campaigns.filter(c => c.status === 'running').reduce((a, c) => a + remaining(c), 0) },
       sends: db.sends.slice(-60).reverse()
     });
   }
