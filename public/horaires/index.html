@@ -6,8 +6,6 @@
 <title>Horaires de Chabbat (Shabbat) : entrée, sortie, zmanim | Émounatéha</title>
 <meta name="description" content="Horaires de Chabbat (Shabbat) à Paris, Jérusalem et 1 000 villes : allumage, sortie (Havdala), téfilin, fin du Chéma, Min'ha, Tset Hakokhavim. Reçus par e-mail.">
 <link rel="icon" href="/logo.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -472,9 +470,10 @@ body{overflow-x:hidden}
 <!-- seo:end -->
 <script src="/appel.js?v=5" defer></script>
 <script src="/jour-hebraique.js"></script>
-<script src="/attribution.js" defer></script>
+<script src="/consentement.js?v=1"></script>
+<script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=12">
+<link rel="stylesheet" href="/ecriture.css?v=13">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -704,7 +703,7 @@ tbody tr{cursor:pointer}
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
+  <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a><a href="/confidentialite/">Confidentialité</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -736,8 +735,8 @@ document.getElementById('y').textContent=new Date().getFullYear();
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
-   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
+   fetch('/hebcal/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('/hebcal/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
  ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ})}
  (window.jourHeb?window.jourHeb():Promise.resolve(null)).then(J=>{last=J;go(J)});
@@ -771,7 +770,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
   const CALP=fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null);
   const MFH={Tishrei:'Tichri',Cheshvan:"Mar'Hechvan",Kislev:'Kislev',Tevet:'Tévet',Shvat:'Chevat','Adar I':'Adar I','Adar II':'Adar II',Adar:'Adar',Nisan:'Nissan',Iyyar:'Iyar',Sivan:'Sivan',Tamuz:'Tamouz',Av:'Av',Elul:'Eloul'};
   async function hebDay(d,cal){const e=cal&&cal[ymd(d)];if(e)return{d:e[2],m:e[3],y:e[4]};
-    try{const j=await (await fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1')).json();return{d:j.hd,m:MFH[j.hm]||j.hm,y:j.hy}}catch(e){return null}}
+    try{const j=await (await fetch('/hebcal/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1')).json();return{d:j.hd,m:MFH[j.hm]||j.hm,y:j.hy}}catch(e){return null}}
   async function hebRange(a,b){const k='h'+ymd(a)+ymd(b);if(cache[k])return cache[k];
     const cal=await CALP,[x,y]=await Promise.all([hebDay(a,cal),hebDay(b,cal)]);
     if(!x||!y) return '';
@@ -787,7 +786,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
   const zc=async(lieu,d)=>{const k='c'+lieu+d;if(cache[k])return cache[k];const j=await (await fetch('/api/zmanim?id='+lieu+'&date='+d)).json();if(!j.items)throw 0;cache[k]=j;return j};
   const pick=(z,re)=>{const it=z.items.find(x=>re.test(x.label));return it?it.time:null};
   const geoOf=async n=>{const k='geo:'+n;try{const c=localStorage.getItem(k);if(c)return +c}catch(e){}
-    try{const r=await (await fetch('https://www.hebcal.com/complete.php?q='+encodeURIComponent(n))).json();const x=r.find(y=>y.id&&/^\d+$/.test(String(y.id)));if(x){try{localStorage.setItem(k,String(x.id))}catch(e){}return +x.id}}catch(e){}return null};
+    try{const r=await (await fetch('/hebcal/complete.php?q='+encodeURIComponent(n))).json();const x=r.find(y=>y.id&&/^\d+$/.test(String(y.id)));if(x){try{localStorage.setItem(k,String(x.id))}catch(e){}return +x.id}}catch(e){}return null};
   const hm=t=>t?t.replace(/^0(\d):/,'$1:'):'—';
   const weekDay=(d,wd)=>{const x=new Date(d);x.setDate(x.getDate()-x.getDay()+wd);return ymd(x)};
   const ZL=[['Aube (Alot Hacha‘har)','alosBaalHatanya'],['Mise du talit et des téfilin (Misheyakir)','misheyakirMachmir'],['Lever du soleil (Hanets Ha\'hama)','sunrise'],['Fin de l\'heure du Chéma','sofZmanShmaBaalHatanya'],['Cha‘harit au plus tard','sofZmanTfilaBaalHatanya'],['Mi-journée (‘Hatsot Hayom)','chatzot'],['Min‘ha Guédola','minchaGedolaBaalHatanya'],['Min‘ha Ketana','minchaKetanaBaalHatanya'],['Plag Hamin‘ha','plagHaminchaBaalHatanya'],['Coucher du soleil (Chkia)','sunset'],['Tombée de la nuit (Tset Hakokhavim)','tzaisBaalHatanya'],['Mi-nuit (‘Hatsot Halaïla)','chatzotNight']];
@@ -795,14 +794,14 @@ document.getElementById('y').textContent=new Date().getFullYear();
     if(d.z)return '<div class="zbox"><h4>Horaires halakhiques · '+n+'</h4><p class="zday">'+dayLabel+'</p><ul>'+d.z.items.map(x=>'<li><span>'+x.label+'</span><b>'+hm(x.time)+'</b></li>').join('')+'</ul><p class="zsrc">Source : fr.chabad.org</p></div>';
     return '<div class="zbox"><h4>Horaires halakhiques · '+n+'</h4><p class="zday">'+dayLabel+'</p><ul>'+ZL.map(([l,k])=>'<li><span>'+l+'</span><b>'+(d.j.times[k]&&d.j.times[k][d.dk]?fmt(d.j.times[k][d.dk],d.tz):'—')+'</b></li>').join('')+'</ul><p class="zsrc">Source : <a href="https://www.hebcal.com/home/zmanim" target="_blank" rel="noopener">Hebcal.com</a> (calcul des zemanim). Méthode du Baal HaTanya pour l\'aube, le Chéma, Cha‘harit, Min‘ha, Plag et la tombée de la nuit ; lever, coucher et mi-journée astronomiques. Consultez votre Rav.</p></div>'}
   async function shab(id,a,b){const k='s'+id+ymd(a)+ymd(b);if(cache[k])return cache[k];
-    const j=await (await fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&c=on&M=on&b='+(id===281184?40:18)+'&geonameid='+id+'&start='+ymd(a)+'&end='+ymd(b)+'&lg=fr')).json();
+    const j=await (await fetch('/hebcal/hebcal?v=1&cfg=json&c=on&M=on&b='+(id===281184?40:18)+'&geonameid='+id+'&start='+ymd(a)+'&end='+ymd(b)+'&lg=fr')).json();
     const tz=(j.location&&j.location.tzid)||'Europe/Paris',it=j.items||[];
     const wd=x=>new Intl.DateTimeFormat('en-US',{timeZone:tz,weekday:'short'}).format(new Date(x.date));
     const hm=x=>x?new Date(x.date).toLocaleTimeString('fr-FR',{hour:'numeric',minute:'2-digit',timeZone:tz,hour12:false}).replace(/^0(\d)/,'$1'):'—';
     const r=[hm(it.find(x=>x.category==='candles'&&wd(x)==='Fri')),hm(it.find(x=>x.category==='havdalah'&&wd(x)==='Sat'))];
     cache[k]=r;return r;}
   async function zman(id,a,b){const k='z'+id+ymd(a)+ymd(b);if(cache[k])return cache[k];
-    const j=await (await fetch('https://www.hebcal.com/zmanim?cfg=json&geonameid='+id+'&start='+ymd(a)+'&end='+ymd(b)+'&sec=1')).json();cache[k]=j;return j;}
+    const j=await (await fetch('/hebcal/zmanim?cfg=json&geonameid='+id+'&start='+ymd(a)+'&end='+ymd(b)+'&sec=1')).json();cache[k]=j;return j;}
   const fmt=(iso,tz)=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('fr-FR',{timeZone:tz,hour:'numeric',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(d);const g=t=>p.find(x=>x.type===t).value;return (+g('hour'))+':'+g('minute')+'<small>:'+g('second')+'</small>'};
   function drawDays(a){const el=document.getElementById('hdays');el.innerHTML='';for(let i=0;i<7;i++){const d=new Date(a);d.setDate(a.getDate()+i);const b=document.createElement('button');b.textContent=fr(d,{weekday:'short',day:'numeric'});b.className=i===dayIdx?'on':'';b.onclick=()=>{dayIdx=i;render()};el.appendChild(b)}}
   async function render(){
@@ -869,7 +868,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
   (function(){let has=null;try{has=localStorage.getItem('parcity')}catch(e){}if(has)return;
     const done=(id,name)=>{try{localStorage.setItem('parcity',String(id))}catch(e){}if(!cities.some(c=>c[1]===id)){cities.push([name,id]);save()}try{localStorage.setItem('geoinfo',JSON.stringify({n:name,km:0,gps:0}))}catch(e){}geoNote(name,0,false);render();
       const a=document.getElementById('locno');if(a)a.onclick=e=>{e.preventDefault();try{localStorage.setItem('parcity','2988507')}catch(e){}document.getElementById('cityq').focus();render()}};
-    fetch('https://ipwho.is/').then(r=>r.json()).then(j=>{if(!j||!j.success||typeof j.latitude!=='number'){done(2988507,'Paris');return}
+    fetch('/api/position',{cache:'no-store'}).then(r=>r.json()).then(j=>{if(!j||!j.success||typeof j.latitude!=='number'){done(2988507,'Paris');return}
       const d2=(a,b)=>(a[2]-j.latitude)**2+((a[3]-j.longitude)*Math.cos(j.latitude*Math.PI/180))**2;
       let best=null,bd=1e9;for(const c of ALL){const d=d2(c);if(d<bd){bd=d;best=c}}
       // plus proche à moins de ~150 km, sinon Paris
@@ -887,7 +886,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
       const nz=x=>x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),nv=nz(v);
       const VIL=await (VILLES||(VILLES=fetch('/chabad-villes.json').then(r=>r.json()).catch(()=>[])));
       const ch=VIL.filter(x=>nz(x[1]).includes(nv)).sort((a,b)=>nz(a[1]).startsWith(nv)===nz(b[1]).startsWith(nv)?0:nz(a[1]).startsWith(nv)?-1:1).slice(0,8).map(x=>({id:'c'+x[0],value:x[1],ch:1}));
-      let hc=[];try{hc=(await (await fetch('https://www.hebcal.com/complete.php?q='+encodeURIComponent(v))).json()).filter(x=>x.id).slice(0,4)}catch(e){}
+      let hc=[];try{hc=(await (await fetch('/hebcal/complete.php?q='+encodeURIComponent(v))).json()).filter(x=>x.id).slice(0,4)}catch(e){}
       const list=ch.concat(hc.filter(x=>!ch.some(c=>nz(c.value.split(',')[0])===nz(x.value.split(',')[0])))).slice(0,10);
       sg.innerHTML=list.map(x=>'<div data-id="'+x.id+'" data-n="'+x.value.replace(/"/g,'')+'">'+x.value+'</div>').join('');sg.style.display=list.length?'block':'none';
       sg.querySelectorAll('div').forEach(d=>d.onclick=()=>{const id=/^c/.test(d.dataset.id)?d.dataset.id:+d.dataset.id,n=d.dataset.n.split(',')[0];if(!cities.some(c=>c[1]===id))cities.push([n,id]);save();q.value='';sg.style.display='none';render()});}catch(e){sg.style.display='none'}},250)});
@@ -896,7 +895,7 @@ document.getElementById('y').textContent=new Date().getFullYear();
   render();
 })();
 </script>
-<script src="/chabbat-mail.js?v=3" defer></script>
+<script src="/chabbat-mail.js?v=4" defer></script>
 <script>/* un clic sur la barre du haut ramène à la page principale (ou en haut de l'accueil) */
 (function(){var n=document.querySelector('.sec-nav');if(!n)return;n.style.cursor='pointer';
 n.addEventListener('click',function(e){if(e.target.closest('.burger,.links,a,button'))return;

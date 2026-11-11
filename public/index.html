@@ -7,8 +7,6 @@
 <title>Émounatéha — Association d'aide aux nécessiteux · But non lucratif</title>
 <meta name="description" content="Émounatéha (Emouna) : association à but non lucratif, aide aux nécessiteux. Colis de Chabbat, logement, soutien. Écrire au Rabbi, Torah, Tanya, horaires de Chabbat.">
 <link rel="icon" href="/logo.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@600;700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -568,7 +566,7 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script src="/apercu-video.js?v=2" defer></script>
 <script src="/geoloc.js?v=1" defer></script>
 <script src="/hanouka-annonce.js?v=42" defer></script>
-<script src="/ecrire-rabbi.js?v=30" defer></script>
+<script src="/ecrire-rabbi.js?v=31" defer></script>
 <script src="/partager.js?v=1" defer></script>
 <script>/* apercuscroll : en aperçu jeudi, descend vers la carte des horaires */if(/apercu=jeudi/.test(location.search))addEventListener("load",function(){setTimeout(function(){var c=document.getElementById("paracha");if(c)window.scrollTo(0,Math.max(0,c.getBoundingClientRect().top+scrollY-170))},1200)})</script>
 <script src="/wa-bouton.js?v=2" defer></script>
@@ -593,9 +591,10 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <!-- seo:end -->
 <script src="/appel.js?v=5" defer></script>
 <script src="/jour-hebraique.js"></script>
-<script src="/attribution.js" defer></script>
+<script src="/consentement.js?v=1"></script>
+<script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=12">
+<link rel="stylesheet" href="/ecriture.css?v=13">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="#contact">Contact</a></div></div></nav>
@@ -700,7 +699,7 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="/ecrire-au-rabbi/">Écrire au Rabbi</a><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
+  <div class="legal"><a href="/ecrire-au-rabbi/">Écrire au Rabbi</a><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a><a href="/confidentialite/">Confidentialité</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -731,7 +730,7 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
    /* parachat : serveur (Hebcal, mise en cache), même pour toutes les villes ; sert aussi si l'appel par ville échoue */
    const PP=fetch('/api/parasha?id='+v[1]).then(r=>r.ok?r.json():null).catch(()=>null);
    const withPar=d=>PP.then(x=>{if(x&&x.p){d.p=x.p;d.ph=x.ph||d.ph}return d});
-   fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid='+v[1]+'&M=on&b='+v[2]+'&lg=fr').then(r=>r.json()).then(j=>{
+   fetch('/hebcal/shabbat?cfg=json&geonameid='+v[1]+'&M=on&b='+v[2]+'&lg=fr').then(r=>r.json()).then(j=>{
      const tz=(j.location&&j.location.tzid)||'Europe/Paris';const it=j.items||[];
      const p=it.find(x=>x.category==='parashat'),ca=it.find(x=>x.category==='candles'),ha=it.find(x=>x.category==='havdalah'),hol=it.find(x=>x.category==='holiday'&&x.yomtov);
      const hm=s=>new Date(s).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:tz}).replace(':',' h ');
@@ -785,8 +784,8 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
-   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
+   fetch('/hebcal/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('/hebcal/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
  ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ})}
  (window.jourHeb?window.jourHeb():Promise.resolve(null)).then(J=>{last=J;go(J)});
@@ -910,7 +909,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
     const hasDoc=d.has_image!==false;
     el.innerHTML='<div class="dcard"><div class="dhead"><div class="dkick">Diffusion du jour</div><h3>'+esc(d.name||"Machia'h Now")+'</h3><div class="when">'+esc(dt)+'</div></div>'+
       '<div class="dbody'+(hasDoc&&d.youtube?'':' solo')+'">'+(hasDoc?'<div class="dcol"><div class="dlab">📄 Le document</div><div class="dprev"><img src="'+src+'" alt="Diffusion du '+esc(dt)+'" loading="lazy"><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>':'')+
-      (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" data-yt="'+id+'" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>'+
+      (id?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" data-yt="'+id+'" aria-label="Lire la vidéo en grand"><img src="/yt/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'/yt/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'/yt/'+id+'/hqdefault.jpg\'"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div class="dcol"><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>'+
       '<div class="dmore"><a class="btn gold" href="/torah/">Voir plus de diffusions</a></div></div>';
     el.querySelectorAll('.ytplay').forEach(x=>x.addEventListener('click',()=>openVid(x.dataset.yt,esc(dt))));
     el.querySelectorAll('.dopen,.dprev img').forEach(x=>x.addEventListener('click',()=>openLb(src,esc(dt))));
@@ -928,7 +927,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   drawDots();
 })();
 </script>
-<script src="/chabbat-mail.js?v=3" defer></script>
+<script src="/chabbat-mail.js?v=4" defer></script>
 <script>/* un clic sur la barre du haut ramène à la page principale (ou en haut de l'accueil) */
 (function(){var n=document.querySelector('.sec-nav');if(!n)return;n.style.cursor='pointer';
 n.addEventListener('click',function(e){if(e.target.closest('.burger,.links,a,button'))return;

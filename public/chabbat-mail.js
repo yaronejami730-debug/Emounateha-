@@ -17,7 +17,7 @@
     '<select name="city" aria-label="Votre ville">' + opts + '</select>' +
     '<input type="email" name="email" placeholder="Votre adresse email" autocomplete="email" inputmode="email" aria-label="Votre email" required>' +
     '<input class="nlhp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
-    '<button type="submit">Je m\'inscris</button></div><p class="nlmsg" role="status" aria-live="polite"></p><p class="nlsmall">Gratuit · un email par semaine · désinscription en un clic</p></div></form></div>';
+    '<button type="submit">Je m\'inscris</button></div><p class="nlmsg" role="status" aria-live="polite"></p><p class="nlsmall">Gratuit · un email par semaine · désinscription en un clic · <a href="/confidentialite/" style="color:inherit;text-decoration:underline">confidentialité</a></p></div></form></div>';
   // bouton qui plie / déplie le formulaire (replié par défaut)
   (function () {
     var wrap = host.querySelector('.wrap'), box = host.querySelector('.nlbox');

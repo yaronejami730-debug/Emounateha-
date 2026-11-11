@@ -8,8 +8,6 @@
 <meta property="og:type" content="website"><meta property="og:site_name" content="Émounatéha"><meta property="og:url" content="https://don.emounateha.fr/espace/"><meta property="og:title" content="Mon espace donateur · Émounatéha"><meta property="og:description" content="Retrouvez tous vos reçus fiscaux. Connexion par code envoyé par e-mail, sans mot de passe."><meta property="og:image" content="https://www.emounateha.fr/apercus/don-espace-donateur.jpg?v=1"><meta property="og:image:width" content="1080"><meta property="og:image:height" content="1350"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://www.emounateha.fr/apercus/don-espace-donateur.jpg?v=1">
 
 <link rel="icon" href="/logo.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -693,7 +691,7 @@ body{overflow-x:hidden}
 @media(max-width:600px){.dn-pcards{grid-template-columns:1fr}.sp-yh{flex-direction:column;gap:2px}.sp-yh span{text-align:left}.sp-head .act{margin-left:0;width:100%}.dn-row{flex-direction:column}.dn-btn.sm{height:48px}}
 </style>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=12">
+<link rel="stylesheet" href="/ecriture.css?v=13">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="http://localhost:3000/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="http://localhost:3000/#mission">Qui sommes-nous</a><a href="http://localhost:3000/#actions">Nos actions</a><a href="http://localhost:3000/torah/">Diffusion de la Torah</a><a href="http://localhost:3000/colis/">Les colis</a><a href="http://localhost:3000/#aider">Comment aider</a><a href="http://localhost:3000/horaires/">Horaires</a><a href="http://localhost:3000/#contact">Contact</a></div></div></nav>
@@ -810,7 +808,7 @@ body::before,body::after{display:none!important}
         <div class="sp-links"><button type="button" id="spResend">Renvoyer le code</button><button type="button" id="spChange">Changer d'email</button></div>
         <p class="dn-sub" id="spDev" style="margin:8px 0 0"></p></div>
       <p class="dn-acct-err" id="spErr" hidden></p>
-      <p class="sp-safe"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> <span>Connexion sécurisée, sans mot de passe</span></p>
+      <p class="sp-safe"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> <span>Connexion sécurisée, sans mot de passe · <a href="https://www.emounateha.fr/confidentialite/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">confidentialité</a></span></p>
     </div>
     <div class="sp-pitch">
       <div><span>🧾</span>Tous vos reçus fiscaux, classés par année</div>
@@ -864,7 +862,7 @@ body::before,body::after{display:none!important}
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="http://localhost:3000/mentions-legales/">Mentions légales</a><a href="http://localhost:3000/cgv/">CGV</a></div>
+  <div class="legal"><a href="http://localhost:3000/mentions-legales/">Mentions légales</a><a href="http://localhost:3000/cgv/">CGV</a><a href="http://localhost:3000/confidentialite/">Confidentialité</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -896,8 +894,8 @@ body::before,body::after{display:none!important}
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
-   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
+   fetch('https://www.emounateha.fr/hebcal/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('https://www.emounateha.fr/hebcal/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
  ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
 })();

@@ -6,8 +6,6 @@
 <title>Diffusion de la Torah : Tanya du jour, Houmach, Téhilim — Émounatéha</title>
 <meta name="description" content="Diffusion de la Torah chaque jour : Tanya en vidéo, Houmach, Téhilim, Hayom Yom et Machia'h Now, avec les archives. Association Émounatéha, à but non lucratif.">
 <link rel="icon" href="/logo.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@600;700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -436,9 +434,10 @@ body{overflow-x:hidden}
 <!-- seo:end -->
 <script src="/appel.js?v=5" defer></script>
 <script src="/jour-hebraique.js"></script>
-<script src="/attribution.js" defer></script>
+<script src="/consentement.js?v=1"></script>
+<script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=12">
+<link rel="stylesheet" href="/ecriture.css?v=13">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -709,7 +708,7 @@ html body .pagehead{padding-bottom:70px}
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
+  <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a><a href="/confidentialite/">Confidentialité</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -741,8 +740,8 @@ document.getElementById('y').textContent=new Date().getFullYear();
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
-   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
+   fetch('/hebcal/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('/hebcal/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
  ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ})}
  (window.jourHeb?window.jourHeb():Promise.resolve(null)).then(J=>{last=J;go(J)});
@@ -808,12 +807,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     setTimeout(drawHayomCanvases,0);
     el.innerHTML='<div class="dkick">Diffusion du jour</div><h2>'+esc(d.name||"Machia'h Now")+'</h2><div class="when">'+esc(dj(d.day))+'<span class="dhe" id="dhe"></span><span class="dph" id="dph"></span></div>'+
       '<div class="tbody'+(d.youtube?'':' solo')+'"><div><div class="dlab"><svg class="dico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#f5c400" stroke="#c99a00" stroke-width="1"/><rect x="8" y="11" width="8" height="7" rx="1" fill="#fff"/></svg> Hayom Yom du jour</div><div class="dprev" onclick="openLb(\''+src+'\',\''+esc(dj(d.day))+'\')"><img src="'+src+'" alt=""><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
-      (id?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" onclick="openVm(\''+id+'\',\''+esc(dj(d.day))+'\')" aria-label="Lire la vidéo en grand"><img src="https://i.ytimg.com/vi/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>';}
+      (id?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" onclick="openVm(\''+id+'\',\''+esc(dj(d.day))+'\')" aria-label="Lire la vidéo en grand"><img src="/yt/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'/yt/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'/yt/'+id+'/hqdefault.jpg\'"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>';}
   function renderArch(){const el=document.getElementById('archives');if(!el)return;let out='';let n=0;
     for(const m of months){if(mois&&m.key!==mois)continue;let cards='';
       for(const x of m.items){const id=ytId(x.youtube),src='/diffusion/'+x.id+'.jpg',cap=dj(x.day);
         if(filter!=='video'&&x.has_image!==false)cards+='<div class="it" onclick="openLb(\''+src+'\',\''+esc(cap)+'\')"><div class="th"><img src="'+src+'" alt="" loading="lazy"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.name||"Machia'h Now")+'</small></div></div>';
-        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="https://i.ytimg.com/vi/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg\'"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.has_image===false&&x.name?x.name:'Vidéo de Tanya')+'</small></div></div>';}
+        if(filter!=='doc'&&id)cards+='<div class="it" onclick="openVm(\''+id+'\',\''+esc(cap)+'\')"><div class="th v"><img src="/yt/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'/yt/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'/yt/'+id+'/hqdefault.jpg\'"></div><div class="cap"><b>'+esc(cap)+'</b><small>'+esc(x.has_image===false&&x.name?x.name:'Vidéo de Tanya')+'</small></div></div>';}
       if(cards){n++;out+='<div class="month">'+esc(dm(m.key))+'</div><div class="grid4">'+cards+'</div>';}}
     el.innerHTML=out||'<div class="empty">Rien dans cette sélection.</div>';}
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');filter=b.dataset.f;renderArch()}));

@@ -9,8 +9,6 @@
 <meta property="og:description" content="Relayez la lumière de la Torah et aidez à la collecte, là où vous êtes.">
 <meta property="og:image" content="https://www.emounateha.fr/apercus/ambassadeur.jpg?v=3"><meta property="og:image:width" content="1080"><meta property="og:image:height" content="1350"><meta property="og:url" content="https://ambassadeur.emounateha.fr/">
 <link rel="icon" href="/logo.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -369,11 +367,13 @@ body{overflow-x:hidden}
 .hero .btns{display:none}
 .hero{padding-bottom:96px}
 @media(max-width:800px){.hero{padding-bottom:72px}}
+.rgpd{margin:10px 0 0;font-size:11.5px;line-height:1.45;color:#6a7d81;text-align:center}.rgpd a{color:#1f6a72;text-decoration:underline}
 </style>
 <script src="/jour-hebraique.js"></script>
-<script src="/attribution.js" defer></script>
+<script src="/consentement.js?v=1"></script>
+<script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=12">
+<link rel="stylesheet" href="/ecriture.css?v=13">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="https://www.emounateha.fr/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="https://www.emounateha.fr/#mission">Qui sommes-nous</a><a href="https://www.emounateha.fr/#actions">Nos actions</a><a href="https://www.emounateha.fr/#actions" id="navDif">Diffusion de la Torah</a><a href="https://www.emounateha.fr/colis/">Les colis</a><a href="https://www.emounateha.fr/#aider">Comment aider</a><a href="https://www.emounateha.fr/#contact">Contact</a><a href="/ambassadeur/">Devenir ambassadeur</a></div></div></nav>
@@ -452,6 +452,7 @@ html,body{background:linear-gradient(180deg,#eef5f5 0,#f8fbfb 320px,#fff 100%)!i
     <div class="row"><div><label for="aC">Code postal *</label><input id="aC" name="cp" inputmode="numeric" maxlength="5" required autocomplete="postal-code"></div><div><label for="aV">Ville *</label><input id="aV" name="city" required autocomplete="address-level2"></div></div>
     <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
     <button class="btn gold" type="submit">Recevoir mon lien ambassadeur</button>
+    <p class="rgpd">Ces informations servent uniquement à créer votre lien et à suivre la collecte qui passe par lui. <a href="/confidentialite/">Confidentialité</a></p>
     <div class="err" id="err"></div>
   </form>
   <div class="ok" id="ok"><div style="font-size:30px">🙏</div><b style="display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:22px;margin:4px 0 6px">Merci, vous êtes ambassadeur !</b>
@@ -463,7 +464,7 @@ html,body{background:linear-gradient(180deg,#eef5f5 0,#f8fbfb 320px,#fff 100%)!i
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a><a href="https://www.emounateha.fr/cgv/">CGV</a></div>
+  <div class="legal"><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a><a href="https://www.emounateha.fr/cgv/">CGV</a><a href="https://www.emounateha.fr/confidentialite/">Confidentialité</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -495,8 +496,8 @@ document.getElementById('y').textContent=new Date().getFullYear();
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
-   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]}))
+   fetch('/hebcal/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('/hebcal/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]}))
  ]).then(([j,ev])=>{const heb=(j.hebrew||'').normalize('NFD').replace(/[\u0591-\u05C7]/g,'');const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ})}
  (window.jourHeb?window.jourHeb():Promise.resolve(null)).then(J=>{last=J;go(J)});
  setInterval(()=>{if(window.jourHeb)window.jourHeb().then(J=>{if(J!==last){last=J;go(J)}})},60000);

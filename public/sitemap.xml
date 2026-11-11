@@ -126,4 +126,11 @@
     <priority>0.2</priority>
     <image:image><image:loc>https://www.emounateha.fr/logo.png</image:loc></image:image>
   </url>
+  <url>
+    <loc>https://www.emounateha.fr/confidentialite/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+    <image:image><image:loc>https://www.emounateha.fr/logo.png</image:loc></image:image>
+  </url>
 </urlset>

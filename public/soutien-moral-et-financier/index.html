@@ -6,8 +6,6 @@
 <title>Soutien moral &amp; financier : écoute et aide aux nécessiteux — Émounatéha</title>
 <meta name="description" content="Soutien moral et financier : l'association Émounatéha apporte une écoute, un accompagnement et une aide matérielle aux familles quand c'est le plus difficile.">
 <link rel="icon" href="/logo.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -501,9 +499,10 @@ body{overflow-x:hidden}
 </style>
 <noscript><style>.rv{opacity:1!important;transform:none!important}</style></noscript>
 <script src="/jour-hebraique.js"></script>
-<script src="/attribution.js" defer></script>
+<script src="/consentement.js?v=1"></script>
+<script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=12">
+<link rel="stylesheet" href="/ecriture.css?v=13">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
@@ -578,7 +577,7 @@ body{overflow-x:hidden}
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a></div>
+  <div class="legal"><a href="/mentions-legales/">Mentions légales</a><a href="/cgv/">CGV</a><a href="/confidentialite/">Confidentialité</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -610,8 +609,8 @@ body{overflow-x:hidden}
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
-   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
+   fetch('/hebcal/converter?cfg=json&gy='+hd.getFullYear()+'&gm='+(hd.getMonth()+1)+'&gd='+hd.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('/hebcal/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
  ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ})}
  (window.jourHeb?window.jourHeb():Promise.resolve(null)).then(J=>{last=J;go(J)});
@@ -622,7 +621,7 @@ body{overflow-x:hidden}
 const ACTION='soutien',ART={"icon": "act-soutien.png", "name": "Soutien moral & financier", "msg": "Les vidéos de cette action arrivent bientôt."};
 const RET='?retour='+encodeURIComponent(location.href.split('#')[0]),DON='https://don.emounateha.fr/soutien-moral-et-financier/'+RET,COLIS='https://don.emounateha.fr/colis-de-chabbat/'+RET;   // le don s'ouvre avec cette action déjà choisie, et un lien de retour vers cette page
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const vbtn=v=>'<button type="button" class="cv" data-id="'+v.id+'" data-t="'+esc(v.title)+'" aria-label="Lire : '+esc(v.title)+'"><img src="https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg" alt="" loading="lazy"><span class="cvp" aria-hidden="true"></span></button>';
+const vbtn=v=>'<button type="button" class="cv" data-id="'+v.id+'" data-t="'+esc(v.title)+'" aria-label="Lire : '+esc(v.title)+'"><img src="/yt/'+v.id+'/hqdefault.jpg" alt="" loading="lazy"><span class="cvp" aria-hidden="true"></span></button>';
 function renderLib(list){const feat=document.getElementById('feat'),lib=document.getElementById('lib'),g=document.getElementById('libGrid');
   if(!list||!list.length){feat.innerHTML='<div class="art"><div><img src="/tuiles/'+ART.icon+'?v=3" alt=""><b>'+esc(ART.name)+'</b><span>'+ART.msg+' <a href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener">Voir la chaîne</a></span><div class="artact"><a class="btn gold" href="'+DON+'">♥ Faire un don</a><a class="btn artcolis" href="'+COLIS+'">Offrir un colis</a></div></div></div>';lib.hidden=true;return}
   const f=list[0];feat.innerHTML=vbtn(f)+'<div class="flab">▶ En vidéo</div><div class="ftit">'+esc(f.title)+'</div>';

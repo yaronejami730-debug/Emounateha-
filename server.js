@@ -1905,6 +1905,11 @@ async function handle(req, res) {
       catch (e) { return send(res, 502, { error: 'Horaires indisponibles' }); }
     }
     if (url.pathname === '/api/besoin' && req.method === 'GET') return await besoinPublic(req, res, url);   // public : une mini-cagnotte (titre, texte, objectif)
+    if (url.pathname === '/api/position') {   // ville par défaut des horaires : position approximative donnée par notre hébergeur, jamais enregistrée, aucun service tiers
+      const la = parseFloat(req.headers['x-vercel-ip-latitude']), lo = parseFloat(req.headers['x-vercel-ip-longitude']);
+      res.setHeader('cache-control', 'private, no-store');
+      return send(res, 200, Number.isFinite(la) && Number.isFinite(lo) ? { success: true, latitude: la, longitude: lo } : { success: false });
+    }
     if (url.pathname === '/api/vu' && req.method === 'POST') return vu(req, res);   // public : mesure d'audience anonyme (onglet Trafic)
     if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
     if (url.pathname === '/api/shabbat-city' && req.method === 'POST') return shabbatCity(req, res);

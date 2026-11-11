@@ -19,8 +19,6 @@
 
 
 <link rel="icon" href="/logo.png?v=2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@700&family=Frank+Ruhl+Libre:wght@500;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--teal:#1f6a72;--teal-d:#164c52;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a}
 *{box-sizing:border-box;margin:0}
@@ -781,7 +779,8 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
 @media(max-width:600px){.dn-pcards{grid-template-columns:1fr}.sp-yh{flex-direction:column;gap:2px}.sp-yh span{text-align:left}.sp-head .act{margin-left:0;width:100%}.dn-row{flex-direction:column}.dn-btn.sm{height:48px}}
 </style>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=12">
+<link rel="stylesheet" href="/ecriture.css?v=13">
+<script src="/consentement.js?v=1"></script>
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="http://localhost:3000/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="http://localhost:3000/#mission">Qui sommes-nous</a><a href="http://localhost:3000/#actions">Nos actions</a><a href="http://localhost:3000/torah/">Diffusion de la Torah</a><a href="http://localhost:3000/colis/">Les colis</a><a href="http://localhost:3000/#aider">Comment aider</a><a href="http://localhost:3000/horaires/">Horaires</a><a href="http://localhost:3000/#contact">Contact</a></div></div></nav>
@@ -1017,7 +1016,7 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
 
     <div class="dn-panel" id="p2">
       <h2 class="dn-h">Vos coordonnées</h2>
-      <p class="dn-p">Elles figurent sur votre reçu fiscal.</p>
+      <p class="dn-p">Elles figurent sur votre reçu fiscal et sont conservées 6 ans, comme la loi le demande. <a href="https://www.emounateha.fr/confidentialite/" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Confidentialité</a></p>
       <div class="dn-profs" id="profSwitch"><div class="dn-lab" style="margin-top:0">Je donne avec mon profil</div><div class="dn-pcards" id="profCards"></div></div>
       <div class="dn-type">
         <label><input type="radio" name="type" value="particulier" checked><span>Particulier<small>je donne en mon nom</small></span></label>
@@ -1096,7 +1095,7 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
   </aside>
   </div>
 </div>
-<p class="dn-legal">Émounatéha · association déclarée · SIREN 930 755 558<br><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a> · <a href="https://www.emounateha.fr/cgv/">CGV</a></p>
+<p class="dn-legal">Émounatéha · association déclarée · SIREN 930 755 558<br><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a> · <a href="https://www.emounateha.fr/cgv/">CGV</a> · <a href="https://www.emounateha.fr/confidentialite/">Confidentialité</a></p>
 <div class="dn-load" id="dnLoad" role="status" aria-live="polite"><div><img src="/logo.png?v=2" alt=""><p id="dnLoadTxt">Un instant…</p><small>Merci de patienter</small></div></div>
 </section>
 
@@ -1104,7 +1103,7 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
-  <div class="legal"><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a><a href="https://www.emounateha.fr/cgv/">CGV</a></div>
+  <div class="legal"><a href="https://www.emounateha.fr/mentions-legales/">Mentions légales</a><a href="https://www.emounateha.fr/cgv/">CGV</a> · <a href="https://www.emounateha.fr/confidentialite/">Confidentialité</a></div>
   <p class="copy">© <span id="y"></span> Émounatéha — Tous droits réservés</p>
   <p class="dev">Site réalisé par <a href="https://wa.me/33783259157" target="_blank" rel="noopener"><b>YJ Solutions</b> (contacter le développeur)</a></p>
 </footer>
@@ -1136,8 +1135,8 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
  }
  try{const c=JSON.parse(sessionStorage.getItem(k)||'null');if(c){show(c.h,c.f);return}}catch(e){}
  Promise.all([
-   fetch('https://www.hebcal.com/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
-   fetch('https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
+   fetch('https://www.emounateha.fr/hebcal/converter?cfg=json&gy='+d.getFullYear()+'&gm='+(d.getMonth()+1)+'&gd='+d.getDate()+'&g2h=1&strict=1').then(r=>r.json()),
+   fetch('https://www.emounateha.fr/hebcal/hebcal?v=1&cfg=json&maj=on&min=on&mod=off&nx=on&s=on&ss=on&mf=off&c=off&geo=none&lg=fr&i=off&start='+ymd+'&end='+ymd).then(r=>r.json()).catch(()=>({items:[]})),
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
  ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ});
 })();
@@ -1619,13 +1618,19 @@ $('acctLogout').onclick = async () => { try { await api('POST', '/api/auth/logou
 })();
 
 // ambassadeur : lien https://ambassadeur.emounateha.fr/<prenom> → ?amb=<prenom>, retenu en permanence sur cet appareil
-// provenance du don : lien d'un e-mail de campagne (?utm_campaign=…&utm_content=…&sid=…). Gardée 30 jours dans un cookie partagé avec www.emounateha.fr :
+// provenance du don : lien d'un e-mail de campagne (?utm_campaign=…&utm_content=…&sid=…). Avec l'accord du visiteur, gardée 30 jours dans un cookie partagé avec www.emounateha.fr :
 // le donateur peut lire l'e-mail, visiter le site, puis donner plus tard, la campagne reste attribuée (dernier e-mail cliqué).
 const ATTR = (() => {
   const q = new URLSearchParams(location.search), clean = (v, n) => String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, n);
   const dom = /(^|\.)emounateha\.fr$/.test(location.hostname) ? '; Domain=.emounateha.fr' : '';
   let a = { c: clean(q.get('utm_campaign'), 60), t: clean(q.get('utm_content'), 60), s: clean(q.get('sid'), 60), src: clean(q.get('utm_source'), 30), med: clean(q.get('utm_medium'), 30) };
-  if (a.c || a.s) { try { document.cookie = 'em_attr=' + encodeURIComponent(JSON.stringify(a)) + '; Max-Age=' + 30 * 86400 + '; Path=/; SameSite=Lax' + dom + (location.protocol === 'https:' ? '; Secure' : ''); } catch (e) {} return a; }
+  if (a.c || a.s) {   // RGPD : le cookie de 30 jours n'est déposé qu'avec l'accord du visiteur ; sans accord, l'identifiant de personne (sid) n'est pas utilisé
+    const garder = () => { try { document.cookie = 'em_attr=' + encodeURIComponent(JSON.stringify(a)) + '; Max-Age=' + 30 * 86400 + '; Path=/; SameSite=Lax' + dom + (location.protocol === 'https:' ? '; Secure' : ''); } catch (e) {} };
+    const C = window.emConsent, sid = a.s;
+    if (C && C.etat() === 'oui') garder();
+    else { a.s = ''; if (C && !C.etat()) C.demander(ok => { if (ok) { a.s = sid; garder(); } }); }
+    return a;
+  }
   try { const m = document.cookie.match(/(?:^|; )em_attr=([^;]*)/); if (m) { const o = JSON.parse(decodeURIComponent(m[1])); return { c: clean(o.c, 60), t: clean(o.t, 60), s: clean(o.s, 60), src: clean(o.src, 30), med: clean(o.med, 30) }; } } catch (e) {}
   return {};
 })();
@@ -1683,7 +1688,7 @@ async function act() {
         const j = await withLoad('Préparation du paiement sécurisé…', () => post('/api/intent', body()));
         payAmount = j.montant; payMen = j.mensuel;
         clientSecret = j.clientSecret;
-        elements = stripe.elements({ clientSecret: j.clientSecret, fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap' }], appearance: {
+        elements = stripe.elements({ clientSecret: j.clientSecret, appearance: {
           theme: 'flat', labels: 'above',
           variables: { colorPrimary: '#1f6a72', colorText: '#14272a', colorTextSecondary: '#51666a', colorDanger: '#8a2a22', fontFamily: 'Inter, system-ui, sans-serif', fontSizeBase: '16px', borderRadius: '14px', spacingUnit: '4px', spacingGridRow: '14px', spacingGridColumn: '12px' },
           rules: { '.Input': { border: '2px solid #d3e0e0', backgroundColor: '#fff', padding: '13px 14px', boxShadow: 'none' }, '.Input:focus': { border: '2px solid #c4a24a', boxShadow: '0 0 0 4px rgba(196,162,74,0.22)' }, '.Input--invalid': { border: '2px solid #c0564b', boxShadow: 'none' }, '.Label': { fontWeight: '600', fontSize: '13px', color: '#24505a', marginBottom: '6px' }, '.Error': { fontSize: '13px' } } } });

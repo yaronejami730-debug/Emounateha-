@@ -9,6 +9,14 @@
   },
   "rewrites": [
     {
+      "source": "/hebcal/:chemin*",
+      "destination": "https://www.hebcal.com/:chemin*"
+    },
+    {
+      "source": "/yt/:id/:fichier",
+      "destination": "https://i.ytimg.com/vi/:id/:fichier"
+    },
+    {
       "source": "/.well-known/apple-developer-merchantid-domain-association",
       "destination": "https://emounateha-don.vercel.app/.well-known/apple-developer-merchantid-domain-association"
     },
