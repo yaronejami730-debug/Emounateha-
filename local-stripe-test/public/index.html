@@ -608,6 +608,7 @@ body.test-on .rf,body.test-on .rf-b,body.test-on .rf-s{}
 .dn-bamt b em{font-style:normal;font-family:Inter,sans-serif;font-weight:600;font-size:13px;color:#51666a}
 .dn-bamt b em.bl{display:block;margin-top:2px;font-size:12.5px}
 #go{white-space:nowrap}
+@media(max-width:350px){.dn-actions{gap:8px!important;padding-left:10px!important;padding-right:10px!important}#go{font-size:14px!important;padding-left:10px!important;padding-right:10px!important;min-width:0;flex:1 1 auto}.dn-actions>*{min-width:0}form#f.dn-card{max-width:calc(100vw - 24px);box-sizing:border-box}}   /* très petits téléphones : le bouton de paiement et la carte restent dans l'écran */
 .dn-btn{flex:1;border:0;border-radius:99px;height:50px;padding:0 18px;font:inherit;font-weight:700;font-size:16px;cursor:pointer;background:linear-gradient(180deg,var(--gold-l),var(--gold));color:#1b2b2d;box-shadow:0 10px 24px rgba(196,162,74,.45);transition:transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .dn-btn:active{transform:scale(.97)}
 .dn-btn:disabled{opacity:.55;cursor:wait}
@@ -1321,7 +1322,9 @@ function applyAff(suggest) {
   { const fq = $('gFreq'), tot = document.querySelector('.dn-acttotal');   // le choix ponctuel / mensuel est toujours juste au-dessus du total
     if (fete && tot) tot.parentNode.insertBefore(fq, tot); else if (!fete) $('amtBox').after(fq); }
   if (fete) { if ($('actBox').dataset.for !== it.label || suggest) { $('actBox').dataset.for = it.label; renderActs(it); } upDur(); }
-  else { $('actBox').dataset.for = ''; if (suggest && it.montant) { $('montant').value = String(it.montant); mark(); } }
+  else { const venaitDUneFete = !!$('actBox').dataset.for; $('actBox').dataset.for = '';
+    if (suggest && it.montant) { $('montant').value = String(it.montant); mark(); }
+    else if (venaitDUneFete) { const on = document.querySelector('#amts button.on'), def = on || document.querySelector('#amts button[data-v="52"]') || document.querySelector('#amts button'); $('montant').value = def ? def.dataset.v : ''; mark(); } }   // on quitte une fête (colis à 130 €) pour une action ordinaire : le montant redevient celui du bouton mis en avant, jamais le total de la fête
   upSum();
 }
 function pickAff(i) { const r = document.querySelectorAll('input[name=affr]')[i]; if (r) { r.checked = true; applyAff(false); } }

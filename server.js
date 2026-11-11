@@ -1168,12 +1168,73 @@ async function tanyaYomi(jour) {
   const r = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${y}&month=${m}&day=${d}`, { headers: { 'user-agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Safari/605.1.15' }, signal: AbortSignal.timeout(8000) });
   if (!r.ok) throw new Error('Sefaria calendrier ' + r.status);
   const it = ((await r.json()).calendar_items || []).find(x => x.title && /tanya/i.test(x.title.en || ''));
-  const mm = it && String(it.ref || '').match(/^Tanya, (Part [IVX]+; [A-Za-z' ]+?) (\d+)(?::(\d+))?$/);
-  const v = mm ? { part: mm[1], ch: +mm[2], seg: mm[3] ? +mm[3] : 1 } : null;
+  // Chapitre numéroté : « Tanya, Part I; Likkutei Amarim 4:5 ». Page d'ouverture : « Tanya, Part I; Likkutei Amarim, Approbation 3:1 » (un nom de plus après une virgule).
+  const mm = it && String(it.ref || '').match(/^Tanya, (Part [IVX]+; [A-Za-z' ]+?)(?:, ([A-Za-z' ]+?))? (\d+)(?::(\d+))?$/);
+  // Pour une page d'ouverture, « part » porte le nom complet (livre + page) : il ne peut donc jamais être pris pour un chapitre numéroté par chabadTexte.
+  // n1 et n2 sont les nombres bruts : leur sens (section ou passage) dépend de la forme du texte, connue seulement une fois chargé (voir tanyaIntro).
+  const v = !mm ? null : !mm[2] ? { part: mm[1], ch: +mm[3], seg: mm[4] ? +mm[4] : 1 } : { part: mm[1] + ', ' + mm[2], livre: mm[1], intro: mm[2], n1: +mm[3], n2: mm[4] ? +mm[4] : 0 };
   tanyaYomiCache.set(jour, v); if (tanyaYomiCache.size > 20) tanyaYomiCache.delete(tanyaYomiCache.keys().next().value);
   return v;
 }
 const lendemain = jour => new Date(new Date(jour + 'T12:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
+// ---------- Tanya : pages d'ouverture d'un livre (page de titre, approbations, préface du compilateur) ----------
+// Le 19 Kislev le cycle recommence par ces pages, qui n'ont pas de numéro de chapitre. Sefaria les range dans des nœuds nommés.
+const TANYA_LIVRES = { 'Part I; Likkutei Amarim': 'Likouteï Amarim', 'Part II; Shaar HaYichud VehaEmunah': 'Chaar Hayihoud Véhaémouna', 'Part III; Iggeret HaTeshuvah': 'Iguérèt Hatéchouva', 'Part IV; Iggeret HaKodesh': 'Iguérèt Hakodech', 'Part V; Kuntres Acharon': 'Kountrass Aharon' };
+// nom Sefaria du nœud -> [titre de section, mot employé dans la référence affichée]
+const TANYA_INTRO = { 'Title Page': ['Page de titre', 'page de titre'], 'Approbation': ['Approbation', 'approbations'], "Compiler's Foreword": ['Préface du compilateur', 'préface du compilateur'], 'Chinukh Katan': ['Hinoukh Katan', 'Hinoukh Katan'] };
+// Charge un nœud entier. Il est soit « plat » (une liste de passages : page de titre, préface), soit « profond » (plusieurs sections : les trois approbations).
+async function tanyaNoeud(livre, noeud) {
+  const x = await sefaria(`Tanya, ${livre}, ${noeud}`, 'version=primary&version=english');
+  const he = Array.isArray(x.he) ? x.he : [x.he], tr = Array.isArray(x.tr) ? x.tr : [x.tr];
+  const deep = Array.isArray(he[0]), t = (TANYA_INTRO[noeud] || [noeud])[0];
+  // sections() numérote d'après la position d'origine : sc.head = « # 3 », i.n = rang du passage dans sa section
+  const secs = sections(he, tr, 1, 1, '#').map(sc => ({ noeud, ch: +sc.head.slice(2), head: deep ? t + ' ' + sc.head.slice(2) : t, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr, seg: i.n })) }));
+  // clé de traduction, même format que pour les chapitres : « tanya:<référence Sefaria>:<première section>-<dernière> »
+  return { noeud, deep, secs, cle: 'tanya:' + livre + ', ' + noeud + ':1-' + (deep ? he.length : 1) };
+}
+// Renvoie le texte du jour si ce jour porte sur une page d'ouverture, sinon null (le code habituel des chapitres numérotés prend alors la main).
+async function tanyaIntro(it, jour, jeton, lang) {
+  let t0 = null, t1 = null;
+  try { t0 = await tanyaYomi(jour); t1 = await tanyaYomi(lendemain(jour)); } catch (e) { console.error('[tanya] portion du jour', e.message); }
+  const d = it.desc.toLowerCase(), cal = !!(t0 && t0.intro);
+  let livre, noms = null;
+  if (cal) {   // cas normal : le calendrier Sefaria dit où commence l'étude du jour
+    livre = t0.livre; noms = [t0.intro];
+    // si l'étude de demain commence au milieu d'une autre page d'ouverture, celle d'aujourd'hui déborde dessus (29 novembre : page de titre + deux premières approbations)
+    if (t1 && t1.intro && t1.livre === livre && t1.intro !== t0.intro && !(t1.n1 === 1 && t1.n2 <= 1)) noms.push(t1.intro);
+  } else if (!/\d/.test(it.desc)) {   // calendrier Sefaria muet ou en panne : on se rabat sur l'intitulé de Chabad, et l'on donne les pages entières
+    livre = 'Part I; Likkutei Amarim';
+    noms = /title page|page de titre/.test(d) ? ['Title Page', 'Approbation'] : /approbation|haskam/.test(d) ? ['Approbation'] : /foreword|pr[ée]face|avant-propos/.test(d) ? ["Compiler's Foreword"] : null;
+  }
+  if (!noms) return null;
+  const nds = [];
+  for (const nom of noms) {   // la première page est indispensable ; si la suivante manque, on sert au moins la première
+    try { nds.push(await tanyaNoeud(livre, nom)); } catch (e) { if (!nds.length) throw e; console.error('[tanya] ' + nom, e.message); }
+  }
+  let trLang = 'en', trNote;
+  if (lang === 'en') trNote = 'English translation: Kehot Publication Society (Lessons in Tanya).';
+  else try {   // français : fichier relu à la main, sinon base, sinon traduction automatique — par page entière, tout ou rien (pas de mélange français/anglais)
+    const frs = await Promise.all(nds.map(nd => tanyaFrancais(nd.cle, nd.secs.flatMap(sc => sc.items), jeton)));
+    nds.forEach((nd, k) => nd.secs.flatMap(sc => sc.items).forEach((i, q) => { i.tr = frs[k][q] || i.tr; }));
+    trLang = 'fr'; trNote = nds.every(nd => tanyaFichier(nd.cle)) ? "Traduction française d'après l'original hébreu." : "Traduction française automatique d'après l'original hébreu (aidée de la version anglaise de Kehot, CC BY-NC).";
+  } catch (e) { console.error('[trad] Tanya', e.message); }   // en cas d'échec : hébreu + anglais
+  let secs = nds.flatMap((nd, k) => nd.secs.map(sc => ({ k, noeud: sc.noeud, ch: sc.ch, head: sc.head, items: sc.items })));
+  let portion = false;
+  if (cal) {   // on ne garde que la portion du jour : du point de départ d'aujourd'hui à celui de demain (exclu)
+    const rang = (k, t) => nds[k].deep ? [k, t.n1, t.n2 || 1] : [k, 1, t.n1];   // [page, section, passage]
+    const cmp = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+    const p0 = rang(0, t0), k1 = t1 && t1.intro && t1.livre === livre ? nds.findIndex(nd => nd.noeud === t1.intro) : -1;
+    let p1 = k1 >= 0 ? rang(k1, t1) : null;   // sans lendemain exploitable : jusqu'à la fin de la page
+    if (p1 && cmp(p1, p0) <= 0) p1 = null;
+    const coupe = secs.map(sc => ({ ...sc, items: sc.items.filter(i => cmp([sc.k, sc.ch, i.seg], p0) >= 0 && (!p1 || cmp([sc.k, sc.ch, i.seg], p1) < 0)) })).filter(sc => sc.items.length);
+    if (coupe.length) { secs = coupe; portion = true; }
+  }
+  const ou = (it.desc.match(/\b(d[ée]but|milieu|fin|beginning|middle|end)\b/i) || [])[1], pos = /cont'd|suite/.test(d) ? ' (suite)' : ou ? ' (' + ({ beginning: 'début', middle: 'milieu', end: 'fin' }[ou.toLowerCase()] || ou.toLowerCase()) + ')' : '';
+  const v = { title: 'Tanya', ref: (TANYA_LIVRES[livre] || livre.split('; ')[1]) + ', ' + [...new Set(secs.map(sc => sc.noeud))].map(n => (TANYA_INTRO[n] || [n, n.toLowerCase()])[1]).join(' et ') + (cal ? pos : ''), trLang, sections: secs.map(sc => ({ head: sc.head, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr })) })) };
+  if (trNote) v.trNote = trNote;
+  if (portion) v.portion = true;
+  return v;
+}
 // lang : 'fr' (défaut) ou 'en'. En anglais, le texte vient tel quel de la source anglaise (pas une retraduction du français).
 async function chabadTexte(type, jour, jeton, lang) {
   lang = lang === 'en' ? 'en' : 'fr'; const VQ = (lang === 'en' ? 'version=english' : 'version=french') + '&version=hebrew';
@@ -1204,6 +1265,8 @@ async function chabadTexte(type, jour, jeton, lang) {
         if (sc) { sc.noteHe = occasion; v.sections.unshift(sc); v.ref = 'Psaume 20, puis ' + v.ref.charAt(0).toLowerCase() + v.ref.slice(1); v.occasion = occasion; } }
       catch (e) { console.error('[tehilim] psaume 20', e.message); }
     }
+  } else if (type === 'tanya' && (v = await tanyaIntro(it, jour, jeton, lang))) {
+    // page d'ouverture d'un livre du Tanya (page de titre, approbations, préface) : tout est fait dans tanyaIntro
   } else {
     const d = it.desc.toLowerCase(), nums = (it.desc.match(/\d+/g) || []).map(Number); if (!nums.length) throw new Error('portion illisible');
     const part = /kuntres|kuntras|acharon/.test(d) ? ['Part V; Kuntres Acharon', 'Kountrass Aharon'] : /kodesh/.test(d) ? ['Part IV; Iggeret HaKodesh', 'Iguérèt Hakodech'] : /teshuv|techouv/.test(d) ? ['Part III; Iggeret HaTeshuvah', 'Iguérèt Hatéchouva'] : /ichud|yichud/.test(d) ? ['Part II; Shaar HaYichud VehaEmunah', 'Chaar Hayihoud Véhaémouna'] : /likut|likkut|amarim/.test(d) ? ['Part I; Likkutei Amarim', 'Likouteï Amarim'] : null;

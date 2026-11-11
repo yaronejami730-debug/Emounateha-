@@ -656,8 +656,12 @@ app.get('/api/besoin/:slug', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store'); res.json(besoinFiche(b));
 });
 app.get('/besoin/:slug', async (req, res, next) => {
-  const b = await besoinInfo(String(req.params.slug)); if (!b) return res.redirect(302, (process.env.BASE_PATH || '') + '/');
+  const b = await besoinInfo(String(req.params.slug));
   let html; try { html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8'); } catch (e) { return next(); }
+  if (!b) {   // adresse de cagnotte inconnue : on le dit clairement (« Cagnotte introuvable »), au lieu d'afficher le don général comme si de rien n'était
+    res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8'); res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Robots-Tag', 'noindex');
+    return res.send(html.replace('<body', '<body data-besoin-off="null"'));
+  }
   const q = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, '$1https://don.emounateha.fr/besoin/' + b.slug + '$2')
     .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + ' — Cagnotte Émounatéha$2')
