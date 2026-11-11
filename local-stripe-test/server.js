@@ -565,6 +565,7 @@ app.get('/api/admin/mail', async (req, res) => {
     res.json({ numero: r.numero, sujet: m ? m.subject : '', html: m ? m.html : '', piece: `Recu-fiscal-${nomFichier(r.numero)}.pdf`, envois: (r.mails || (r.email && !r.email.skipped ? [r.email] : [])).map(x => ({ at: x.at || null, to: x.to || r.donorEmail || '', sent: !!x.sent, messageId: x.messageId || '', error: x.error || '', note: x.note || '', par: x.par || 'auto' })) });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
+require('./commission').monter(app, { stripe, adminOk });   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();

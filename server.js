@@ -2128,6 +2128,11 @@ async function cerfaProxy(req, res, url) {
   try {
     if (url.pathname === '/api/cerfa/siret') { const r = await fetch(DON_URL + '/api/siret?q=' + encodeURIComponent(url.searchParams.get('q') || '')); return send(res, r.status, await J(r)); }
     if (url.pathname === '/api/cerfa/config') { const r = await fetch(DON_URL + '/api/config'); return send(res, r.status, await J(r)); }
+    if (url.pathname === '/api/cerfa/commission' && req.method === 'GET') {   // relevé de commission (à blanc) calculé par le serveur des dons
+      const q = new URLSearchParams(); for (const k of ['du', 'au', 'historique']) if (url.searchParams.get(k)) q.set(k, url.searchParams.get(k));
+      const r = await fetch(DON_URL + '/api/admin/commission' + (q.toString() ? '?' + q : ''), { headers: cerfaSig('GET', '/api/admin/commission') });
+      return send(res, r.status, await J(r));
+    }
     if (url.pathname === '/api/cerfa' && req.method === 'GET') {   // liste des reçus + ce que Brevo dit de chaque e-mail (délivré, ouvert, rejeté)
       const r = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus') }), j = await J(r);
       if (r.ok && Array.isArray(j.recus)) { const ev = await brevoEvents().catch(() => ({ map: new Map(), ok: false })); j.brevoOk = !!ev.ok;

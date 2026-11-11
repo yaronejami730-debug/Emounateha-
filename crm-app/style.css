@@ -450,3 +450,18 @@ table{border-radius:16px;overflow:hidden}
   .side.open nav{flex:0 0 auto;min-height:auto;overflow:visible;margin-right:0;padding-right:0}
   .side.open .quota{flex:0 0 auto;margin-top:14px}
 }
+
+/* ---------- Commission (relevé à blanc) ---------- */
+.com-note{margin:0 0 12px;padding:11px 14px;border-radius:12px;background:#fff9ea;border:1px solid #f5d48a;color:#7a5a10;font-size:13.5px;line-height:1.45}
+.com-per{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 2px 12px;font-size:16px}
+.com-tot{border-color:#e4cd8a!important;background:linear-gradient(180deg,#fffdf5,#fff7e0)!important}.com-tot b{color:#8a6a14!important}
+.com-calc{max-width:560px}.com-l{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px dashed #e6eef0;font-size:14.5px}
+.com-l.tot{border-bottom:0;border-top:1.5px solid #cfdcde;font-weight:700;margin-top:2px}.com-l.or{color:#8a6a14;font-size:16px;border-top:0}
+.com-tbl .r{text-align:right;white-space:nowrap}.com-tbl td{vertical-align:middle}
+@media(max-width:700px){
+  .com-tbl,.com-tbl tbody{display:block;width:100%}.com-tbl thead{display:none}
+  .com-tbl tr{display:block;border:1px solid #e7eef0;border-radius:12px;padding:8px 12px;margin-bottom:8px;background:#fff}
+  .com-tbl td{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border:0;text-align:right;white-space:normal}
+  .com-tbl td[data-l]::before{content:attr(data-l);color:var(--mut);font-size:12.5px;text-align:left;flex:none}
+  .com-tbl td:not([data-l]){justify-content:flex-end}
+}
