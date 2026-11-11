@@ -444,3 +444,9 @@ table{border-radius:16px;overflow:hidden}
 .kbud.bad .kbud-g>div:last-child b{color:#b91c1c}
 .kbud-m{margin:10px 2px 0;font-size:13.5px;line-height:1.45;color:#7c2d12}.kbud.warn .kbud-m{color:#92400e}
 @media(max-width:640px){.kbud-g{grid-template-columns:minmax(0,1fr)}.kbud-g>div{display:grid;grid-template-columns:1fr auto;column-gap:10px;align-items:baseline}.kbud-g small{grid-column:1}.kbud-g b{grid-column:2;grid-row:1;margin:0;font-size:19px}.kbud-g em{grid-column:1/-1}}
+/* téléphone : menu ouvert — le compteur de mails vient APRÈS la liste, il ne se pose plus dessus ; c'est tout le menu qui défile */
+@media(max-width:900px){
+  .side.open{max-height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  .side.open nav{flex:0 0 auto;min-height:auto;overflow:visible;margin-right:0;padding-right:0}
+  .side.open .quota{flex:0 0 auto;margin-top:14px}
+}

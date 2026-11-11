@@ -556,7 +556,7 @@ function quotaLocal() {      // repli si Brevo ne répond pas : mois civil, d'ap
   const now = new Date(), mois = parisDay(now).slice(0, 7), lim = db.settings.monthlyLimit || 5000;
   const used = db.sends.filter(x => x.status !== 'error' && parisDay(x.at).slice(0, 7) === mois).length;
   const [y, m] = mois.split('-').map(Number), fin = new Date(Date.UTC(m === 12 ? y + 1 : y, m === 12 ? 0 : m, 1));
-  return { left: Math.max(0, lim - used), limit: lim, end: fin.toISOString().slice(0, 10), source: 'local' };
+  return { left: Math.max(0, lim - used), limit: lim, used, end: fin.toISOString().slice(0, 10), source: 'local' };
 }
 function planDepuisCompte(j, lim) {   // réponse de GET /v3/account → { left, limit, end }
   const plans = (j && j.plan) || [];
@@ -564,7 +564,8 @@ function planDepuisCompte(j, lim) {   // réponse de GET /v3/account → { left,
   if (!p || !(Number(p.credits) >= 0)) return null;
   let end = p.endDate ? String(p.endDate).slice(0, 10) : null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(end || '')) end = null;
-  return { left: Math.floor(Number(p.credits)), limit: lim, end, source: 'brevo' };
+  let start = p.startDate ? String(p.startDate).slice(0, 10) : null; if (!/^\d{4}-\d{2}-\d{2}$/.test(start || '')) start = null;
+  return { left: Math.floor(Number(p.credits)), limit: lim, end, start, source: 'brevo' };
 }
 async function brevoQuota(force) {
   const s = db.settings, loc = quotaLocal();
@@ -576,6 +577,15 @@ async function brevoQuota(force) {
     if (r.ok) v = planDepuisCompte(await r.json(), loc.limit);
   } catch {}
   if (v && !v.end) v.end = loc.end;
+  if (v) {   // forfait réel du compte : ce qui a été envoyé depuis le début de la période + ce qui reste (le réglage « 5000 » n'est qu'un repli)
+    let used = null;
+    try {
+      const fin = parisDay(Date.now()), deb = v.start && v.start <= fin ? v.start : null;
+      if (deb) { const r = await fetch(`https://api.brevo.com/v3/smtp/statistics/aggregatedReport?startDate=${deb}&endDate=${fin}`, { headers: { 'api-key': s.brevoApiKey, accept: 'application/json' } }); if (r.ok) { const n = Number((await r.json()).requests); if (n >= 0) used = Math.floor(n); } }
+    } catch {}
+    if (used !== null) { v.used = used; v.limit = v.left + used; }
+    else { if (v.left > v.limit) v.limit = v.left; v.used = Math.max(0, v.limit - v.left); }
+  }
   v = v || loc; brevoPlanCache = { at: Date.now(), v };
   console.log('forfait mails', JSON.stringify(v));
   return v;
