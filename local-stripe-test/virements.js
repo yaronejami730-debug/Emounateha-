@@ -43,7 +43,7 @@ function lignes(mouvements, recus) {
 }
 
 function csvVirement(p, c, L) {
-  const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"', n = v => (v / 100).toFixed(2).replace('.', ',');
+  const q = s => { let t = String(s == null ? '' : s); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; }, n = v => (v / 100).toFixed(2).replace('.', ',');   // un texte qui commence par = + - @ serait lu comme une formule par le tableur : on le neutralise
   const rows = ['Date;Heure;Type;Libellé;Donateur;N° de reçu;Montant;Frais Stripe;Net;Référence Stripe'].concat(L.map(l => [jourCourt(l.t), heure(l.t), l.genre, q(l.libelle), q(l.donateur), q(l.recu), n(l.brut), n(l.frais), n(l.net), l.ref].join(';')));
   rows.push('', ';;;' + q('Total des dons') + ';;;' + n(c.brut), ';;;' + q('Frais Stripe') + ';;;;' + n(c.frais));
   if (c.rembourse) rows.push(';;;' + q('Dons remboursés') + ';;;' + n(c.rembourse));
@@ -136,7 +136,7 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon }) {
     const m = pdf ? brouillon : mailVirement(p, c, { ...opt, lignes: L, pdf: false }), pj = [];
     if (!echec) { pj.push({ name: m.fichier + '.csv', content: Buffer.from(csvVirement(p, c, L), 'utf8').toString('base64') }); if (pdf) pj.push({ name: m.fichier + '.pdf', content: Buffer.from(pdf).toString('base64') }); }
     const env = await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text, attachments: pj });
-    return { mail: env && env.sent !== undefined ? env.sent : true, pdf: !!pdf, lignes: L.length };
+    return { mail: !!(env && env.sent === true), pdf: !!pdf, lignes: L.length };
   }
 
   app.post('/api/admin/virements/verifier', async (req, res) => {
@@ -162,6 +162,7 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon }) {
         try {
           const mv = []; if (!echec) for await (const m of stripe.balanceTransactions.list({ payout: p.id, limit: 100, expand: ['data.source'] })) { mv.push(m); if (mv.length > 5000) break; }
           const r = await envoyer(p, mv, load().receipts || {}, { echec, test });
+          if (r.mail !== true) throw new Error('e-mail non envoyé');   // pas noté comme vu : nouvel essai à la prochaine vérification
           vus[p.id] = echec ? 'echec' : 'vu'; envoyes.push({ id: p.id, montant: p.amount, echec, ...r });
         } catch (e) { erreurs.push(p.id + ' : ' + e.message); }   // pas noté comme vu : nouvel essai à la prochaine vérification
       }

@@ -11,6 +11,7 @@ const t = j => Math.floor(Date.parse(j + 'T08:00:00Z') / 1000);
   const mailer = { ADMIN_EMAIL: () => 'admin@exemple.com', settings: async () => ({ orgName: 'Émounatéha', publicUrl: 'https://www.emounateha.fr' }), shell: (s, inner) => '<html>' + inner + '{{pied}}</html>', send: async m => { if (panne) throw new Error('Brevo en panne'); mails.push(m); return { sent: true }; } };
   process.env.STRIPE_SECRET_KEY = 'sk_test_x'; process.env.PUBLIC_URL = 'https://don.emounateha.fr';
   E.monter(app, { stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; } });
+  const vieillir = j => { for (const k in (data.echecs || {})) data.echecs[k].depuis = new Date(Date.now() - j * 86400000).toISOString(); };
   const appel = async () => { let code = 200, corps; const res = { status: c => (code = c, res), json: j => (corps = j, res) }; await routes['/api/admin/echecs/verifier']({ body: {} }, res); return { code, corps }; };
   factures = [F('in_ancien', 2)]; let r = await appel(); ok(r.corps.miseEnService && mails.length === 0 && data.echecs.in_ancien.tentatives === 2, 'mise en service : un échec déjà en cours ne déclenche aucun e-mail', r.corps);
   factures.push(F('in_1', 1), F('in_autre', 1), F('in_ponctuel', 1, { billing_reason: 'manual' }), F('in_ok', 0)); r = await appel();
@@ -34,15 +35,29 @@ const t = j => Math.floor(Date.parse(j + 'T08:00:00Z') / 1000);
   const maint = Math.floor(Date.now() / 1000);
   factures.push(F('in_l1', 8, { subscription: 'sub_long', created: maint - 50 * 86400, customer: { id: 'c1', email: 'long@donateur.fr', name: 'David Cohen' } }), F('in_l2', 8, { subscription: 'sub_long', created: maint - 20 * 86400, customer: { id: 'c1', email: 'long@donateur.fr', name: 'David Cohen' } }), F('in_l3', 3, { subscription: 'sub_long', created: maint - 2 * 86400, customer: { id: 'c1', email: 'long@donateur.fr', name: 'David Cohen' } }));
   let n0 = mails.length; r = await appel(); ok(r.corps.arretes.length === 0 && !ecrits.length, '19 tentatives cumulées sur 3 échéances : le don continue', [r.corps.arretes, ecrits]);
-  factures.find(f => f.id === 'in_l3').attempt_count = 4; n0 = mails.length; r = await appel();
+  factures.find(f => f.id === 'in_l3').attempt_count = 4; r = await appel(); ok(r.corps.arretes.length === 0 && !ecrits.length, '20 tentatives mais premier rappel envoyé il y a moins de 3 jours : le don n\'est pas arrêté', [r.corps.arretes, ecrits]);
+  vieillir(4); subs.sub_long.status = 'active'; r = await appel(); ok(r.corps.arretes.length === 0 && !ecrits.length, 'le don a repris chez Stripe (actif) : jamais arrêté pour de vieilles échéances', [r.corps.arretes, ecrits]);
+  subs.sub_long.status = 'past_due'; { const vrai = mailer.settings; mailer.settings = async () => null; r = await appel(); mailer.settings = vrai; ok(r.corps.arretes.length === 0 && !ecrits.length && r.corps.erreurs.some(x => /arrêt reporté/.test(x)), 'envoi d\'e-mails indisponible : arrêt reporté, personne n\'est arrêté sans être prévenu', [r.corps.arretes, r.corps.erreurs]); }
+  n0 = mails.length; r = await appel();
   const fin = mails.slice(n0);
   ok(r.corps.arretes.length === 1 && /20 tentatives/.test(r.corps.arretes[0].motif) && ecrits.join(',') === 'cancel sub_long,void in_l1,void in_l2,void in_l3', '20 tentatives cumulées : abonnement annulé et ses 3 échéances impayées annulées', [r.corps.arretes, ecrits]);
   ok(fin.some(m => m.to === 'long@donateur.fr' && /est arrêté/.test(m.subject) && /vous ne devez rien/.test(m.text) && /Plus aucune tentative/.test(m.text)) && fin.some(m => m.to === 'admin@exemple.com' && /Don mensuel arrêté : David Cohen, 26 € par mois/.test(m.subject) && /20 tentatives/.test(m.text)), 'arrêt : le donateur est prévenu sans reproche, l\'administrateur aussi', fin.map(m => m.to + ' | ' + m.subject));
   ok(!data.echecs.in_l1 && !data.echecs.in_l3, 'les échéances annulées sortent du suivi');
   n0 = ecrits.length; r = await appel(); ok(ecrits.length === n0, 'vérification suivante : rien n\'est annulé une seconde fois');
   factures.push(F('in_v1', 2, { subscription: 'sub_vieux', created: maint - 61 * 86400, next_payment_attempt: null, customer: { id: 'c2', email: 'vieux@donateur.fr', name: 'Rachel T.' } })); n0 = ecrits.length; r = await appel();
+  ok(r.corps.arretes.length === 0 && ecrits.length === n0 && mails.some(m => m.to === 'vieux@donateur.fr' && /n'a pas pu être prélevé/.test(m.subject)), 'échéance de 61 jours vue pour la première fois : d\'abord un rappel, pas d\'arrêt', [r.corps.arretes, ecrits.slice(n0)]);
+  vieillir(4); r = await appel();
   ok(r.corps.arretes.length === 1 && /depuis 61 jours/.test(r.corps.arretes[0].motif) && ecrits.slice(n0).join(',') === 'cancel sub_vieux,void in_v1', 'Stripe ne retente plus et l\'échéance a plus de 60 jours : don arrêté', [r.corps.arretes, ecrits.slice(n0)]);
   { const d0 = data; data = {}; subs.sub_ms = { status: 'past_due', metadata: { frequence: 'mensuel' }, items: { data: [{ price: { unit_amount: 2600 } }] } }; const sauve = factures; factures = [F('in_ms', 30, { subscription: 'sub_ms', created: maint - 200 * 86400 })]; n0 = ecrits.length; r = await appel(); ok(r.corps.miseEnService && ecrits.length === n0, 'mise en service : rien n\'est arrêté sans que le donateur ait d\'abord été prévenu', [r.corps, ecrits.slice(n0)]); data = d0; factures = sauve; }
+  // e-mail « non envoyé » (réglages Brevo illisibles, envoi simulé) : rien n'est compté
+  { subs.sub_sim = { status: 'past_due', metadata: { frequence: 'mensuel' }, items: { data: [{ price: { unit_amount: 2600 } }] } }; factures.push(F('in_sim', 1, { subscription: 'sub_sim', customer: { id: 'c9', email: 'sim@donateur.fr', name: 'Simon' } }));
+    const vrai = mailer.send; mailer.send = async () => ({ sent: false, simulated: true, reason: 'Brevo non configuré' }); r = await appel(); mailer.send = vrai;
+    ok(data.echecs.in_sim.donateur === 0 && data.echecs.in_sim.tentatives === 0 && r.corps.erreurs.some(x => /in_sim/.test(x)), 'e-mail simulé ou non configuré : le rappel n\'est pas compté comme envoyé', [data.echecs.in_sim, r.corps.erreurs]);
+    n0 = mails.length; r = await appel(); ok(mails.length === n0 + 1 && data.echecs.in_sim.donateur === 1, 'à la vérification suivante le rappel part vraiment'); }
+  // Stripe ne répond pas pour un abonnement : le suivi est gardé, les rappels ne repartent pas de zéro
+  { const avantPanne = JSON.stringify(data.echecs.in_sim); const vrai = stripe.subscriptions.retrieve; stripe.subscriptions.retrieve = async id => { if (id === 'sub_sim') throw new Error('Stripe indisponible'); return vrai(id); }; n0 = mails.length; r = await appel(); stripe.subscriptions.retrieve = vrai;
+    ok(JSON.stringify(data.echecs.in_sim) === avantPanne && mails.length === n0, 'panne passagère de Stripe : le suivi du donateur est conservé tel quel', [data.echecs.in_sim, avantPanne]);
+    n0 = mails.length; r = await appel(); ok(mails.length === n0, 'après la panne : aucun rappel renvoyé en double'); }
   autorise = false; r = await appel(); ok(r.code === 401, 'sans signature du serveur du site : refusé');
   const src = require('fs').readFileSync(require('path').join(__dirname, '../echecs.js'), 'utf8').replace(/\/\/.*$/gm, '');
   ok(!/invoices\.(pay|update|finalizeInvoice|markUncollectible|sendInvoice)|subscriptions\.(update|create|resume)|paymentIntents\.|charges\.|refunds\./.test(src) && (src.match(/subscriptions\.cancel\(/g) || []).length === 1 && (src.match(/invoices\.voidInvoice\(/g) || []).length === 1, 'seules écritures Stripe : l\'arrêt du don et l\'annulation de ses échéances impayées ; aucun paiement relancé ni créé');

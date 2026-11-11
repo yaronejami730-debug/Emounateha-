@@ -614,11 +614,12 @@ async function alerteQuota(q) {   // un seul e-mail par seuil et par période de
 // Chaque lundi à partir de 8 h (Paris) : demande au serveur des dons d'envoyer le relevé de commission de la semaine écoulée. Une fois par semaine.
 async function releveCommission() {
   const s = db.settings, auj = parisDay(Date.now()), d = new Date(auj + 'T12:00:00Z');
-  if (d.getUTCDay() !== 1 || parisHour() < 8 || s.releveCommission === auj) return null;
+  if (parisHour() < 8 || s.releveCommission === auj || s.releveCommission === auj + ' ' + parisHour()) return null;   // tenté chaque jour : le serveur des dons n'envoie qu'une fois par semaine écoulée, donc un lundi manqué est rattrapé le lendemain
   try {
-    const r = await fetch(DON_URL + '/api/admin/commission/envoyer', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/commission/envoyer') }, body: '{}' });
+    const r = await fetch(DON_URL + '/api/admin/commission/envoyer', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/commission/envoyer') }, body: '{}', signal: AbortSignal.timeout(40000) });
     const j = await r.json().catch(() => ({}));
-    if (r.ok) { s.releveCommission = auj; save(); console.log('relevé de commission', JSON.stringify(j).slice(0, 200)); } else console.error('relevé de commission refusé', r.status, JSON.stringify(j).slice(0, 160));
+    if (r.ok && (j.envoye === true || /déjà envoyé/.test(String(j.raison || '')))) { s.releveCommission = auj; save(); if (j.envoye) console.log('relevé de commission', JSON.stringify(j).slice(0, 200)); }
+    else if (r.ok) { s.releveCommission = auj + ' ' + parisHour(); save(); console.error('relevé de commission non envoyé', JSON.stringify(j).slice(0, 200)); }   // nouvel essai à l'heure suivante else console.error('relevé de commission refusé', r.status, JSON.stringify(j).slice(0, 160));
     return j;
   } catch (e) { console.error('relevé de commission', e.message); return null; }
 }
@@ -648,19 +649,6 @@ async function verifierEchecs() {
     return j;
   } catch (e) { s.echecsVerif = ''; save(); console.error('echecs', e.message); return null; }
 }
-// Envois uniques demandés par Yarone le 11 nov. 2026 (un marqueur par envoi, jamais dans les réglages par défaut) :
-//  - relevé de commission de rattrapage : dons reçus avant la mise en place du relevé hebdomadaire (le 1er relevé hebdomadaire couvre la semaine du 9 novembre) ;
-//  - e-mail d'exemple « virement Stripe » à l'administrateur.
-async function envoisUniques() {
-  const s = db.settings, faire = async (marque, chemin, corps, bon) => {
-    if (s[marque]) return;
-    try { const r = await fetch(DON_URL + chemin, { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', chemin) }, body: JSON.stringify(corps), signal: AbortSignal.timeout(110000) }); const j = await r.json().catch(() => ({}));
-      if (r.ok && bon(j)) { s[marque] = new Date().toISOString(); save(); console.log('envoi unique', marque, JSON.stringify(j).slice(0, 300)); } else console.error('envoi unique', marque, r.status, JSON.stringify(j).slice(0, 200)); }
-    catch (e) { console.error('envoi unique', marque, e.message); }
-  };
-  await faire('rattrapageCommission', '/api/admin/commission/envoyer', { du: '2025-11-10', au: '2026-11-08' }, j => j.envoye === true);
-  await faire('exempleVirement3', '/api/admin/virements/verifier', { exemple: true, version: 3 }, j => j.exemple === true && j.envoye === true && j.nombre === 3);   // trois virements simulés, avec CSV et PDF ; « nombre » n'existe que dans la version détaillée du serveur des dons
-}
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
   ticking = true;
@@ -670,7 +658,6 @@ async function tick(force = false) {
     await releveCommission();
     await verifierVirements();
     await verifierEchecs();
-    await envoisUniques();
     const s = db.settings;
     const q = await brevoQuota(force); await alerteQuota(q);
     const h = parisHour();

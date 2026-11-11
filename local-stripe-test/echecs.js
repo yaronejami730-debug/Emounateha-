@@ -55,7 +55,7 @@ async function mailDonateur(mailer, d) {
 function mailAdmin(d) {
   const L = [`Le don mensuel de ${d.nom || 'un donateur'} (${d.email}) n'a pas pu être prélevé : ${d.tentatives} tentatives sans succès pour l'échéance de ${eur(d.montant)}${d.affectation ? ' (' + d.affectation + ')' : ''}.`,
     `Le donateur a été prévenu ${d.rappels} fois par e-mail, avec un lien pour changer de carte.`,
-    d.prochain ? `Stripe fera une nouvelle tentative le ${jour(d.prochain)}.` : `Stripe ne prévoit plus de nouvelle tentative pour cette échéance. Le don mensuel reste en place : la prochaine échéance sera tentée normalement le mois suivant, sauf si le donateur l'arrête.`,
+    d.prochain ? `Stripe fera une nouvelle tentative le ${jour(d.prochain)}.` : `Stripe ne prévoit plus de nouvelle tentative pour cette échéance. La prochaine échéance sera tentée normalement le mois suivant. Si rien ne passe, le don mensuel sera arrêté automatiquement (${MAX_TENTATIVES()} tentatives sans succès, ou ${MAX_JOURS()} jours d'impayé) et vous en serez prévenu.`,
     `Si vous connaissez ce donateur, un appel est souvent plus efficace qu'un e-mail. Aucune action n'est obligatoire.`,
     `Référence Stripe : ${d.ref}`];
   return { subject: (d.test ? '[TEST] ' : '') + `Don mensuel en échec : ${d.nom || d.email}, ${eur(d.montant)} (${d.tentatives} tentatives)`, text: L.join('\n\n'), html: '<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:560px;font-size:14.5px;line-height:1.55">' + L.map((l, i) => `<p style="margin:0 0 12px${i === L.length - 1 ? ';font-size:12px;color:#6b7280' : ''}">${esc(l)}</p>`).join('') + '</div>' };
@@ -88,35 +88,48 @@ function monter(app, { stripe, adminOk, mailer, load, save }) {
     try {
       const test = !/^sk_live_/.test(process.env.STRIPE_SECRET_KEY || ''), espace = process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '';
       const ouvertes = []; for await (const inv of stripe.invoices.list({ status: 'open', limit: 100, expand: ['data.customer'] })) { if ((inv.attempt_count || 0) >= 1 && inv.billing_reason === 'subscription_cycle') ouvertes.push(inv); if (ouvertes.length > 500) break; }
-      const d = load(), avant = d.echecs || null, etat = {}, subs = new Map(), envois = [], erreurs = [], parSub = {}, arretes = [];
+      const tronque = ouvertes.length > 500;   // liste incomplète : on ne retire alors personne du suivi
+      const d = load(), avant = d.echecs || null, etat = {}, subs = new Map(), envois = [], erreurs = [], parSub = {}, arretes = [], illisibles = new Set();
+      const parti = env => !!(env && env.sent === true);   // un e-mail « simulé » ou non configuré n'est pas un e-mail envoyé : on ne note rien, on réessaiera
       for (const inv of ouvertes) {
         const sid = subDe(inv); if (!sid) continue;
-        if (!subs.has(sid)) subs.set(sid, await stripe.subscriptions.retrieve(sid).catch(() => null));
+        if (!subs.has(sid)) subs.set(sid, await stripe.subscriptions.retrieve(sid).catch(e => { illisibles.add(sid); erreurs.push(sid + ' (lecture) : ' + e.message); return null; }));
+        if (illisibles.has(sid)) { if (avant && avant[inv.id]) etat[inv.id] = avant[inv.id]; continue; }   // Stripe muet un instant : le suivi est gardé tel quel (sinon les rappels repartiraient de zéro)
         const sub = subs.get(sid), md = (sub && sub.metadata) || {}; if (!sub || md.frequence !== 'mensuel') continue;   // seulement les dons mensuels créés par cette page
         (parSub[sid] = parSub[sid] || []).push(inv);
         const cu = inv.customer && typeof inv.customer === 'object' ? inv.customer : null, email = cu && !cu.deleted ? String(cu.email || '').trim() : '';
-        const st = { ...(avant && avant[inv.id] ? avant[inv.id] : { tentatives: 0, donateur: 0, admin: false }) };
+        const st = { ...(avant && avant[inv.id] ? avant[inv.id] : { tentatives: 0, donateur: 0, admin: false, depuis: new Date().toISOString() }) };
         if (!avant) { etat[inv.id] = { tentatives: inv.attempt_count, donateur: 0, admin: inv.attempt_count >= MAX_DONATEUR, depuis: new Date().toISOString() }; continue; }   // mise en service : pas d'e-mail pour le passé
         const base = { nom: cu && cu.name ? String(cu.name).slice(0, 80) : '', email, montant: inv.amount_remaining != null ? inv.amount_remaining : inv.amount_due, affectation: md.affectation || '', prochain: inv.next_payment_attempt || null, test };
         try {
           if (inv.attempt_count > st.tentatives && st.donateur < MAX_DONATEUR && email) {
             const m = await mailDonateur(mailer, { ...base, etape: st.donateur + 1, payer: inv.hosted_invoice_url || '', espace });
-            if (m) { const env = await mailer.send({ to: email, toName: base.nom, subject: m.subject, html: m.html, text: m.text }); st.donateur++; envois.push({ facture: inv.id, a: 'donateur', rappel: st.donateur, mail: env && env.sent !== undefined ? env.sent : true }); }
+            const env = m ? await mailer.send({ to: email, toName: base.nom, subject: m.subject, html: m.html, text: m.text }) : null;
+            if (!parti(env)) throw new Error('rappel non envoyé (' + ((env && env.reason) || 'e-mail indisponible') + ')');   // la tentative n'est pas notée : nouvel essai à la prochaine vérification
+            st.donateur++; envois.push({ facture: inv.id, a: 'donateur', rappel: st.donateur });
           }
           st.tentatives = Math.max(st.tentatives, inv.attempt_count);
           if (inv.attempt_count >= MAX_DONATEUR && !st.admin) {
             const m = mailAdmin({ ...base, tentatives: inv.attempt_count, rappels: st.donateur, ref: inv.id });
-            await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text }); st.admin = true; envois.push({ facture: inv.id, a: 'administrateur' });
+            const env = await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text });
+            if (parti(env)) { st.admin = true; envois.push({ facture: inv.id, a: 'administrateur' }); } else erreurs.push(inv.id + ' : alerte administrateur non envoyée');
           }
         } catch (e) { erreurs.push(inv.id + ' : ' + e.message); }
         etat[inv.id] = { ...st, vuLe: new Date().toISOString() };
       }
-      // arrêt des dons mensuels qui n'aboutissent plus (jamais à la mise en service : on laisse d'abord partir les rappels)
+      // Arrêt des dons mensuels qui n'aboutissent plus. Garde-fous, tous obligatoires :
+      //  - jamais à la mise en service ;
+      //  - seulement si Stripe lui-même considère le don en retard (past_due / unpaid) : un don qui a repris n'est jamais arrêté pour une vieille échéance ;
+      //  - seulement si le donateur a reçu au moins un rappel lors d'une vérification PRÉCÉDENTE, et que l'échéance est suivie depuis 3 jours au moins ;
+      //  - seulement si l'envoi d'e-mails fonctionne (le donateur et l'administrateur doivent pouvoir être prévenus).
       if (avant) for (const [sid, invs] of Object.entries(parSub)) {
-        const sub = subs.get(sid); if (!sub || ['canceled', 'incomplete_expired'].includes(sub.status)) continue;
+        const sub = subs.get(sid); if (!sub || !['past_due', 'unpaid'].includes(sub.status)) continue;
+        const prevenu = invs.some(i => avant[i.id] && avant[i.id].donateur >= 1 && Date.now() - Date.parse(avant[i.id].depuis || 0) >= 3 * 86400000);
+        if (!prevenu) continue;
         const total = invs.reduce((t, i) => t + (i.attempt_count || 0), 0), age = Math.floor((Date.now() / 1000 - Math.min(...invs.map(i => i.created || Date.now() / 1000))) / 86400);
         const motif = total >= MAX_TENTATIVES() ? `${total} tentatives de prélèvement sans succès` : age >= MAX_JOURS() ? `échéance impayée depuis ${age} jours` : '';
         if (!motif) continue;
+        if (!(await mailer.settings())) { erreurs.push(sid + ' : arrêt reporté, envoi d\'e-mails indisponible'); continue; }
         try {
           await stripe.subscriptions.cancel(sid);
           let annulees = 0; for (const i of invs) { try { await stripe.invoices.voidInvoice(i.id); annulees++; } catch (e) { erreurs.push(i.id + ' (annulation de l\'échéance) : ' + e.message); } delete etat[i.id]; }
@@ -128,7 +141,7 @@ function monter(app, { stripe, adminOk, mailer, load, save }) {
           catch (e) { erreurs.push(sid + ' (e-mail d\'arrêt) : ' + e.message); }
         } catch (e) { erreurs.push(sid + ' (arrêt) : ' + e.message); }
       }
-      const d2 = load(); d2.echecs = etat; save(d2);   // on ne garde que les échéances encore impayées : une échéance réglée ou annulée sort de la liste
+      const d2 = load(); d2.echecs = tronque ? { ...(avant || {}), ...etat } : etat; save(d2);   // on ne garde que les échéances encore impayées : une échéance réglée ou annulée sort de la liste
       if (erreurs.length) console.error('echecs', erreurs.join(' | '));
       if (arretes.length) console.log('echecs : dons mensuels arrêtés', JSON.stringify(arretes));
       res.json({ ok: true, miseEnService: !avant, enEchec: Object.keys(etat).length, envois: envois.length, arretes, detail: envois, erreurs });
