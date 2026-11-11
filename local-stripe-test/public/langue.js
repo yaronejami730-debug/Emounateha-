@@ -4,15 +4,20 @@
   var LANGS = [['fr', 'Français', '🇫🇷'], ['en', 'English', '🇬🇧'], ['he', 'עברית', '🇮🇱']];
   // Google appelle l'hébreu « iw » (et non « he ») : avec « he », la traduction ne se lançait pas
   var G = { he: 'iw' }, DEG = { iw: 'he' };
-  function lireLangue() { var m = document.cookie.match(/(?:^|;\s*)googtrans=\/fr\/([a-z-]+)/i), l = m ? m[1].toLowerCase() : 'fr'; l = DEG[l] || l; return /^(fr|en|he)$/.test(l) ? l : 'fr'; }
-  function ecrireLangue(l) {
-    var d = location.hostname.replace(/^www\./, ''), exp = l === 'fr' ? '; expires=Thu, 01 Jan 1970 00:00:00 GMT' : '; max-age=31536000';
-    var v = l === 'fr' ? '' : '/fr/' + (G[l] || l);
-    document.cookie = 'googtrans=' + v + '; path=/' + exp;
-    document.cookie = 'googtrans=' + v + '; path=/; domain=.' + d + exp;
-    document.cookie = 'googtrans=' + v + '; path=/; domain=' + location.hostname + exp;
+  // Le choix du visiteur est gardé dans NOTRE cookie « em_lang », posé sur le domaine racine (commun à www et à don).
+  // « googtrans » (lu par Google) est réaligné dessus à chaque page : un vieux cookie resté sur un seul des deux sites ne peut plus imposer sa langue.
+  var H = location.hostname, P = H.split('.'), RACINE = P.length >= 2 && !/^\d+$/.test(P[P.length - 1]) ? P.slice(-2).join('.') : H;
+  function poser(nom, val, duree) { document.cookie = nom + '=' + val + '; path=/; max-age=' + duree + '; SameSite=Lax' + (P.length >= 2 ? '; domain=.' + RACINE : ''); }
+  function effacerGoog() { var doms = ['', '; domain=' + H, '; domain=.' + H, '; domain=' + RACINE, '; domain=.' + RACINE], vu = {}; doms.forEach(function (d) { if (vu[d]) return; vu[d] = 1; document.cookie = 'googtrans=; path=/' + d + '; expires=Thu, 01 Jan 1970 00:00:00 GMT'; }); }
+  function alignerGoog(l) { effacerGoog(); if (l === 'fr') return; var v = '/fr/' + (G[l] || l); document.cookie = 'googtrans=' + v + '; path=/; max-age=31536000'; if (P.length >= 2) document.cookie = 'googtrans=' + v + '; path=/; domain=.' + RACINE + '; max-age=31536000'; }
+  function lireLangue() {
+    var m = document.cookie.match(/(?:^|;\s*)em_lang=(fr|en|he)/); if (m) return m[1];
+    var g = document.cookie.match(/(?:^|;\s*)googtrans=\/fr\/([a-z-]+)/i), l = g ? g[1].toLowerCase() : 'fr'; l = DEG[l] || l;   // visiteur d'avant : on reprend son ancien choix une fois
+    return /^(fr|en|he)$/.test(l) ? l : 'fr';
   }
+  function ecrireLangue(l) { poser('em_lang', l, 31536000); alignerGoog(l); }
   var cur = lireLangue();
+  try { alignerGoog(cur); if (!/(?:^|;\s*)em_lang=/.test(document.cookie) && cur !== 'fr') poser('em_lang', cur, 31536000); } catch (e) {}
   // masque toute l'interface Google (bandeau, infobulles, surlignage) : seule la traduction reste
   var st = document.createElement('style');
   st.textContent = '.goog-te-banner-frame,.skiptranslate,#goog-gt-tt,.goog-te-balloon-frame,.goog-tooltip,.VIpgJd-ZVi9od-ORHb-OEVmcd,.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,.VIpgJd-yAWNEb-L7lbkb{display:none!important;visibility:hidden!important}' +
@@ -41,7 +46,6 @@
   // si une langue étrangère est choisie : traduction de la page au chargement
   if (cur !== 'fr') {
     document.documentElement.setAttribute('lang', cur);
-    if (document.cookie.indexOf('googtrans=/fr/he') >= 0) ecrireLangue('he');   // ancien code enregistré chez un visiteur : remis au bon
     window.gtInit = function () { try { new google.translate.TranslateElement({ pageLanguage: 'fr', includedLanguages: 'en,iw,fr', autoDisplay: false }, 'gt_el'); } catch (e) {} };
     var el = document.createElement('div'); el.id = 'gt_el';
     var add = function () { try { proteger(); } catch (e) {} document.body.appendChild(el); var s = document.createElement('script'); s.src = 'https://translate.google.com/translate_a/element.js?cb=gtInit'; s.async = true; document.body.appendChild(s); };
