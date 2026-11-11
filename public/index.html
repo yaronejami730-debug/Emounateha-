@@ -262,15 +262,15 @@ body{overflow-x:hidden}
 .parsec{padding:0;margin-top:-26px;position:relative;z-index:5}
 /* cagnottes mises en avant depuis le CRM (« Mettre sur la page d'accueil ») : rubans dorés, une ligne par cagnotte, posés à cheval sur le bas de l'en-tête,
    au-dessus des tuiles et de la carte des horaires de Chabbat, sans jamais les recouvrir. Un appui ouvre l'aperçu de la cagnotte. */
-.urgsec{position:relative;z-index:6;margin-top:-58px;padding:0}.urgsec[hidden]{display:none}
-.urgl{display:flex;flex-direction:column;gap:7px;max-width:560px;margin:0 auto}
-.urgc{position:relative;display:flex;align-items:center;gap:9px;min-width:0;padding:9px 14px 9px 9px;border-radius:99px;background:linear-gradient(180deg,#f3e09a,#c9a850);color:#1b2b2d;text-decoration:none;cursor:pointer;box-shadow:0 10px 22px -8px rgba(14,52,58,.5),inset 0 1px 0 rgba(255,255,255,.5);-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.urgsec{position:relative;z-index:6;margin-top:-46px;padding:0}.urgsec[hidden]{display:none}
+.urgl{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;max-width:620px;margin:0 auto}
+.urgc{position:relative;display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 auto;max-width:calc(50% - 4px);padding:5px 10px 5px 5px;border-radius:99px;background:linear-gradient(180deg,#f3e09a,#c9a850);color:#1b2b2d;text-decoration:none;cursor:pointer;box-shadow:0 10px 22px -8px rgba(14,52,58,.5),inset 0 1px 0 rgba(255,255,255,.5);-webkit-tap-highlight-color:transparent;transition:transform .15s}
 .urgc:active{transform:scale(.985)}
-.urgc .uic{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:#164c52;color:#f6e094}.urgc .uic svg{width:55%;height:55%}
-.urgc .utx{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0}
-.urgc .ut{display:block;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1b2b2d;flex:0 1 auto}
-.urgc .um{font-size:12px;white-space:nowrap;color:#4a3c12;flex:none}.urgc .um b{font-weight:800;color:#1b2b2d}.urgc .um small{font-size:.86em}
-.urgc .ugo{flex:none;font-size:20px;font-weight:800;line-height:1}
+.urgc .uic{display:grid;place-items:center;flex:none;width:21px;height:21px;border-radius:50%;background:#164c52;color:#f6e094}.urgc .uic svg{width:55%;height:55%}
+.urgc .utx{display:flex;align-items:baseline;gap:6px;flex:1;min-width:0}
+.urgc .ut{display:block;font-weight:800;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1b2b2d;flex:0 1 auto}
+.urgc .um{font-size:11px;white-space:nowrap;color:#4a3c12;flex:none}.urgc .um b{font-weight:800;color:#1b2b2d}.urgc .um small{display:none}
+.urgc .ugo{flex:none;font-size:15px;font-weight:800;line-height:1}
 /* aperçu d'une cagnotte : fiche qui monte du bas de l'écran quand on appuie sur un ruban */
 #urgap{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,36,41,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;transition:opacity .22s}
 #urgap.on{opacity:1}
@@ -291,7 +291,7 @@ body{overflow-x:hidden}
 @media(prefers-reduced-motion:reduce){#urgap,#urgap .ap{transition:none}}
 body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding-top:18px}
 @media(max-width:800px){.urgsec{padding-left:12px;padding-right:12px}body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding:12px 12px 0}body:has(#urgent:not([hidden])) .qa{margin-top:0!important;padding-top:12px}}
-@media(max-width:340px){.urgc .um small{display:none}}
+@media(min-width:801px){.urgc{max-width:300px}}
 .parall{display:block;grid-column:1/-1;text-align:center;margin:2px 12px 12px;padding:9px 14px;border-radius:99px;background:#fff7e0;border:1.5px solid #ecd9a0;color:#8a6c1c;font-weight:700;font-size:14px;text-decoration:none}
 .parall:hover{background:#fff0c8}
 .parcard{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:#fff;border:1px solid #e3ecec;border-radius:16px;box-shadow:0 12px 32px rgba(20,60,66,.14);overflow:hidden}
@@ -605,19 +605,23 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script>/* cagnottes urgentes : choisies dans le CRM (« Mettre sur la page d'accueil »). Rien ne s'affiche s'il n'y en a pas. */
 (function(){var esc=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})},eur=function(c){return(c/100).toLocaleString('fr-FR',{maximumFractionDigits:2})+'\u00a0€'};
 var pret=new Promise(function(ok){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ok);else ok()});   /* la réponse peut arriver avant que la page soit entièrement lue */
-Promise.all([fetch('/api/besoins-accueil').then(function(r){return r.ok?r.json():null}),pret]).then(function(a){var j=a[0],l=j&&j.list||[],sec=document.getElementById('urgent'),box=document.getElementById('urgl');if(!l.length||!sec||!box)return;
+/* la liste est relue toutes les 5 minutes et au retour sur la page : au-delà de trois cagnottes, le site les fait alterner toutes les 20 minutes */
+var signature='';
+function charge(){Promise.all([fetch('/api/besoins-accueil').then(function(r){return r.ok?r.json():null}),pret]).then(function(a){var j=a[0],sec=document.getElementById('urgent'),box=document.getElementById('urgl');if(!j||!sec||!box)return;var l=j.list||[];
+var sig=JSON.stringify(l);if(sig===signature)return;signature=sig;box._l=l;if(!l.length){sec.hidden=true;box.innerHTML='';return}
 var coeur='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 7.500 2.700c0 5.600-7.500 10.200-7.500 10.200Z"/></svg>';
 box.innerHTML=l.map(function(b,n){var connu=b.collecte!=null;
 var m=connu?'<b>'+eur(b.collecte)+'</b> <small>'+(b.objectif?'sur '+eur(b.objectif):'collectés')+'</small>':(b.objectif?'<small>Objectif </small><b>'+eur(b.objectif)+'</b>':'');
 return '<a class="urgc" href="'+esc(b.lien)+'" data-i="'+n+'" aria-label="Cagnotte : '+esc(b.titre)+'"><span class="uic">'+coeur+'</span><span class="utx"><b class="ut">'+esc(b.titre)+'</b>'+(m?'<span class="um">'+m+'</span>':'')+'</span><span class="ugo" aria-hidden="true">›</span></a>'}).join('');
 /* un appui ouvre l'aperçu (titre, texte, montant, bouton Participer) au lieu de quitter la page ; sans JavaScript, le lien mène à la page de la cagnotte */
-box.addEventListener('click',function(ev){var a=ev.target.closest('.urgc');if(!a||ev.metaKey||ev.ctrlKey)return;var b=l[+a.dataset.i];if(!b)return;ev.preventDefault();
+if(!box._pret){box._pret=1;box.addEventListener('click',function(ev){var a=ev.target.closest('.urgc');if(!a||ev.metaKey||ev.ctrlKey)return;var b=(box._l||[])[+a.dataset.i];if(!b)return;ev.preventDefault();
  var connu=b.collecte!=null,pct=connu&&b.objectif?Math.max(3,Math.min(100,Math.round(b.collecte*100/b.objectif))):0,o=document.createElement('div');o.id='urgap';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Cagnotte : '+b.titre);
  o.innerHTML='<div class="ap"><div class="aph"><span class="apk">Cagnotte solidaire</span><b class="apt">'+esc(b.titre)+'</b><button class="apx" type="button" aria-label="Fermer">✕</button></div><div class="apb">'+(b.description?'<p class="apd">'+esc(b.description)+'</p>':'')+(connu||b.objectif?'<div class="apm">'+(connu?'<b>'+eur(b.collecte)+'</b>':'')+'<span>'+(connu?(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):'Objectif : '+eur(b.objectif))+'</span></div>':'')+(b.objectif?'<div class="apbar"><i style="width:'+pct+'%"></i></div>':'')+(b.dons?'<div class="apn">'+b.dons+' don'+(b.dons>1?'s':'')+' déjà reçu'+(b.dons>1?'s':'')+'</div>':'')+'<a class="apgo" href="'+esc(b.lien)+'">Participer à cette cagnotte</a><p class="apf">Les dons sont reversés au bénéficiaire après déduction des frais de collecte.</p></div></div>';
  var ferme=function(){o.classList.remove('on');document.documentElement.style.overflow='';document.removeEventListener('keydown',touche);setTimeout(function(){o.remove()},240)},touche=function(e){if(e.key==='Escape')ferme()};
  o.addEventListener('click',function(e){if(e.target===o||e.target.closest('.apx'))ferme()});document.addEventListener('keydown',touche);
- var vieux=document.getElementById('urgap');if(vieux)vieux.remove();document.body.appendChild(o);document.documentElement.style.overflow='hidden';requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})})});
-sec.hidden=false}).catch(function(){})})();</script>
+ var vieux=document.getElementById('urgap');if(vieux)vieux.remove();document.body.appendChild(o);document.documentElement.style.overflow='hidden';requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})})})}
+sec.hidden=false}).catch(function(){})}
+charge();setInterval(charge,300000);document.addEventListener('visibilitychange',function(){if(!document.hidden)charge()})})();</script>
 <script>/* apercuscroll : en aperçu jeudi, descend vers la carte des horaires */if(/apercu=jeudi/.test(location.search))addEventListener("load",function(){setTimeout(function(){var c=document.getElementById("paracha");if(c)window.scrollTo(0,Math.max(0,c.getBoundingClientRect().top+scrollY-170))},1200)})</script>
 <script src="/wa-bouton.js?v=2" defer></script>
 <!-- seo:start -->
@@ -811,7 +815,7 @@ sec.hidden=false}).catch(function(){})})();</script>
  load();
 })();
 // ---- date du jour : civile + hébraïque + fête du jour (Hebcal), mise à jour chaque jour
-(function(){const el=document.getElementById('hdate');if(!el)return;const d=new Date();let last;function go(J){const hd=J?new Date(J+'T12:00:00'):d,ymd=hd.getFullYear()+'-'+String(hd.getMonth()+1).padStart(2,'0')+'-'+String(hd.getDate()).padStart(2,'0'),k='hd7'+ymd;
+(function(){const el=document.getElementById('hdate');if(!el)return;let d=new Date(),lastC=d.toDateString();let last;function go(J){d=new Date();const hd=J?new Date(J+'T12:00:00'):d,ymd=hd.getFullYear()+'-'+String(hd.getMonth()+1).padStart(2,'0')+'-'+String(hd.getDate()).padStart(2,'0'),k='hd7'+ymd;
  const civ=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const show=(heb,fete)=>{el.innerHTML='<b>'+heb+'</b>'+civ.charAt(0).toUpperCase()+civ.slice(1)+(fete?'<i>'+fete+'</i>':'');const nd=document.getElementById('ndate');if(nd)nd.innerHTML='<b>'+heb+'</b><small>'+civ.charAt(0).toUpperCase()+civ.slice(1)+'</small>'};
  const ord=n=>n===1?'1<sup>er</sup>':n+'<sup>e</sup>';
@@ -840,7 +844,9 @@ sec.hidden=false}).catch(function(){})})();</script>
    fetch('/calendrier-hebraique.json').then(r=>r.json()).catch(()=>null)
  ]).then(([j,ev,cal])=>{const heb=(cal&&cal[ymd]&&cal[ymd][1])||j.hebrew||'';const f=label(ev.items||[]);show(heb,f);try{sessionStorage.setItem(k,JSON.stringify({h:heb,f}))}catch(e){}}).catch(()=>{el.textContent=civ})}
  (window.jourHeb?window.jourHeb():Promise.resolve(null)).then(J=>{last=J;go(J)});
- setInterval(()=>{if(window.jourHeb)window.jourHeb().then(J=>{if(J!==last){last=J;go(J)}})},60000);
+ /* date en direct : la date civile change à minuit, la date hébraïque à la tombée de la nuit ; vérifié chaque minute et au retour sur la page, sans recharger */
+ const maj=()=>{const c=new Date().toDateString();(window.jourHeb?window.jourHeb():Promise.resolve(last)).then(J=>{if(J!==last||c!==lastC){last=J;lastC=c;go(J)}})};
+ setInterval(maj,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)maj()});addEventListener('pageshow',maj);
 })();
 
 

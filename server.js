@@ -1325,21 +1325,28 @@ function besoinCompte(total, st, versements) {
   const retenue = Math.round(Math.max(0, st.net) * CAGNOTTE_RETENUE / 100), aReverser = Math.max(0, st.net - retenue);
   return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, retenue, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
 }
-// public : les cagnottes mises en avant sur la page d'accueil (ouvertes, choisies dans le CRM, 3 au plus). Jamais le nom du bénéficiaire.
+// public : les cagnottes mises en avant sur la page d'accueil (ouvertes, choisies dans le CRM). Jamais le nom du bénéficiaire.
+// Trois au plus à la fois : s'il y en a davantage, elles alternent toutes les 20 minutes (les trois affichées avancent d'un cran à chaque tranche).
 // Le montant collecté vient du serveur des dons (total des dons reçus par le lien de la cagnotte).
-const accueilCache = { at: 0, v: [] };
+const ACCUEIL_MAX = 3, ACCUEIL_TRANCHE = 20 * 60000;
+const accueilCache = { at: 0, tranche: -1, v: [] };
+function accueilChoix(rows, t) {   // les cagnottes affichées pendant la tranche de 20 minutes qui contient l'instant t
+  if (rows.length <= ACCUEIL_MAX) return rows;
+  const debut = Math.floor(t / ACCUEIL_TRANCHE) % rows.length;
+  return Array.from({ length: ACCUEIL_MAX }, (_, k) => rows[(debut + k) % rows.length]);
+}
 async function besoinsAccueil(req, res) {
-  let v = accueilCache.v;
-  if (pool && Date.now() - accueilCache.at > 60000) {
+  let v = accueilCache.v; const tranche = Math.floor(Date.now() / ACCUEIL_TRANCHE);
+  if (pool && (Date.now() - accueilCache.at > 60000 || tranche !== accueilCache.tranche)) {
     try {
       await ensureBesoins();
-      const rows = (await pool.query('select slug, titre, description, objectif from public.besoins where actif and accueil order by created_at desc limit 3')).rows;
+      const rows = accueilChoix((await pool.query('select slug, titre, description, objectif from public.besoins where actif and accueil order by created_at, slug limit 60')).rows, Date.now());
       v = await Promise.all(rows.map(async b => {
         let collecte = null, dons = 0;
         try { const x = await fetch(DON_URL + '/api/besoin/' + b.slug, { signal: AbortSignal.timeout(6000) }); if (x.ok) { const j = await x.json(); collecte = j.collecte == null ? null : j.collecte; dons = j.dons || 0; } } catch (e) { /* total indisponible : la carte s'affiche sans montant */ }
         return { slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, collecte, dons, lien: DON_URL + '/besoin/' + b.slug };
       }));
-      accueilCache.v = v; accueilCache.at = Date.now();
+      accueilCache.v = v; accueilCache.at = Date.now(); accueilCache.tranche = tranche;
     } catch (e) { console.error('[besoins accueil]', e.message); }
   }
   res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' }); res.end(JSON.stringify({ list: v }));

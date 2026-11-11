@@ -424,12 +424,11 @@ function bsCompte(x) {
     ${x.actif && !solde ? '<p class="bs-cn">Cagnotte encore ouverte : le montant peut encore augmenter.</p>' : ''}
   </div>`;
 }
-// cagnotte urgente : mise en avant sur la page d'accueil du site (3 au plus à la fois)
+// cagnotte urgente : mise en avant sur la page d'accueil du site (3 affichées à la fois ; au-delà, elles alternent toutes les 20 minutes)
 async function besoinAccueil(id, oui) {
   const b = besoinOf(id); if (!b) return;
   const deja = ((S.besoins || {}).list || []).filter(x => x.accueil && x.actif && x.id !== id).length;
-  if (oui && deja >= 3) return toast('Trois cagnottes sont déjà sur l\'accueil : retirez-en une d\'abord.', true);
-  if (oui && !confirm('Afficher « ' + b.titre + ' » sur la page d\'accueil du site ? Elle sera visible par tous les visiteurs, avec son titre, son texte et le montant collecté.')) return;
+  if (oui && !confirm('Afficher « ' + b.titre + ' » sur la page d\'accueil du site ? Elle sera visible par tous les visiteurs, avec son titre, son texte et le montant collecté.' + (deja >= 3 ? '\n\nIl y en a déjà ' + deja + ' sur l\'accueil : le site en montre 3 à la fois et les fait alterner toutes les 20 minutes.' : ''))) return;
   try { await api('POST', '/besoins/' + id + '/accueil', { accueil: !!oui }); await load(); await render(); toast(oui ? 'Cagnotte affichée sur l\'accueil (visible d\'ici une minute)' : 'Cagnotte retirée de l\'accueil'); } catch (e) { toast(e.message, true); }
 }
 function besoinVerse(id) {
