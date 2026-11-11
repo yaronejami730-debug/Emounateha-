@@ -143,9 +143,9 @@ function fill(str, contact, extra = {}) {
   return String(str ?? '').replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => vars[k] ?? '');
 }
 
-function unsubUrl(contact) {
+function unsubUrl(contact, ctx) {   // ?t=chabbat : lien d'un e-mail d'horaires ; ?t=camp : lien d'une campagne
   const base = (db.settings.publicUrl || `http://localhost:${PORT}`).replace(/\/$/, '');
-  return `${base}/u/${contact?.id || 'preview'}`;
+  return `${base}/u/${contact?.id || 'preview'}?t=${ctx && ctx.campaignId === 'chabbat' ? 'chabbat' : 'camp'}`;
 }
 
 // hébreu : chaque suite de lettres hébraïques reçoit lang="he", dir="rtl" et Frank Ruhl Libre
@@ -241,7 +241,7 @@ ${t.extraCss || ''}
     <div style="margin:0 0 14px;text-align:center;">${contactLine}</div>
     <p style="margin:0 0 6px;font-size:12px;color:#6b7280;">${esc(s.orgName)} · Association à but non lucratif${s.address ? ' · ' + esc(s.address) : ''}</p>
     <p style="margin:0;font-size:12px;color:#9ca3af;">Vous recevez cet email car vous êtes en contact avec ${esc(s.orgName)}.<br>
-    <a href="${esc(unsubUrl(c))}" style="color:#9ca3af;">Se désinscrire</a></p>
+    <a href="${esc(unsubUrl(c, ctx))}" style="color:#9ca3af;">Se désinscrire</a></p>
   </td></tr>
  </table></td></tr></table></body></html>`);
 }
@@ -501,7 +501,7 @@ function dueSends(campaign) {
   for (const x of ok) { if (!byContact.has(x.contactId)) byContact.set(x.contactId, []); byContact.get(x.contactId).push(x); }
   const gapMs = (db.settings.minGapHours || 0) * 3600000;
   for (const c of db.contacts) {
-    if (c.status !== 'active') continue;
+    if (!pourCampagnes(c)) continue;
     if (tag && !(c.tags || []).map(t => t.toLowerCase()).includes(tag)) continue;
     const all = byContact.get(c.id) || [];
     const last = all.length ? Math.max(...all.map(d => +new Date(d.at))) : 0;
@@ -606,7 +606,7 @@ async function tick(force = false) {
   ticking = true;
   try {
     let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
-    ensureForfait();
+    ensureForfait(); ensureAccords();
     const s = db.settings;
     const q = await brevoQuota(force); await alerteQuota(q);
     const h = parisHour();
@@ -654,11 +654,21 @@ async function tick(force = false) {
   } finally { ticking = false; }
 }
 
+// RGPD — une adresse ne sert qu'à ce pour quoi elle a été donnée : un inscrit « horaires de Chabbat » qui n'a pas demandé les nouvelles
+// (étiquette « horaires-seuls ») ne reçoit aucune campagne. Celui qui se désinscrit des campagnes garde ses horaires.
+const horairesSeuls = c => (c.tags || []).some(t => String(t).toLowerCase() === 'horaires-seuls');
+const pourCampagnes = c => c.status === 'active' && !horairesSeuls(c);
+function ensureAccords() {   // une seule fois : les inscrits venus uniquement par le formulaire des horaires sortent de l'audience des campagnes
+  const s = db.settings; if (s.accordsHoraires === 1) return;
+  s.accordsHoraires = 1; let n = 0;
+  for (const c of db.contacts) if (/^Inscrit via le site \(horaires de Chabbat/.test(c.notes || '') && !(c.tags || []).some(t => /^(infos|horaires-seuls)$/i.test(t))) { c.tags = [...(c.tags || []), 'horaires-seuls']; n++; }
+  console.log('accords : ' + n + ' inscrit(s) aux seuls horaires, retirés des campagnes'); save();
+}
 function remaining(camp) { // nombre de mails encore à envoyer
   const tag = (camp.audienceTag || '').trim().toLowerCase();
   let n = 0;
   for (const c of db.contacts) {
-    if (c.status !== 'active') continue;
+    if (!pourCampagnes(c)) continue;
     if (tag && !(c.tags || []).map(t => t.toLowerCase()).includes(tag)) continue;
     const got = new Set(relevantSends(camp).filter(x => x.contactId === c.id).map(x => x.templateId));
     n += (camp.steps || []).filter(st => !got.has(st.templateId)).length;
@@ -670,7 +680,7 @@ function pendingCount(camp) {
   const steps = camp.steps || [];
   let p = 0;
   for (const c of db.contacts) {
-    if (c.status !== 'active') continue;
+    if (!pourCampagnes(c)) continue;
     if (tag && !(c.tags || []).map(t => t.toLowerCase()).includes(tag)) continue;
     const got = new Set(relevantSends(camp).filter(x => x.contactId === c.id).map(x => x.templateId));
     if (steps.some(st => !got.has(st.templateId))) p++;
@@ -882,14 +892,19 @@ async function shabbatSubscribe(req, res) {
   const clip = v => String(v || '').trim().replace(/[<>]/g, '').slice(0, 60);
   const firstName = clip(b.firstName), lastName = clip(b.lastName);
   let c = db.contacts.find(x => x.email.toLowerCase() === email);
+  const news = b.news === true || b.news === 'on' || b.news === 1, jour = new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+  const trace = t => { c.notes = ((c.notes || '') + (c.notes ? '\n' : '') + t).slice(-900); };
   if (c) {
+    const revient = c.status === 'unsubscribed';
     c.tags = [...new Set([...(c.tags || []).filter(t => !/^(ville|civ):/.test(t)), 'chabbat', vtag, ...(civ ? [civ] : [])])];
     if (firstName) c.firstName = firstName; if (lastName) c.lastName = lastName;
-    if (c.status === 'unsubscribed') c.status = 'active'; // il s'inscrit lui-même à nouveau
+    if (revient) { c.status = 'active'; if (!news) c.tags = [...new Set([...c.tags.filter(t => t !== 'infos'), 'horaires-seuls'])]; } // il s'inscrit lui-même à nouveau : aux horaires seulement, sauf s'il coche la case
+    trace('Accord horaires de Chabbat : ' + jour + ' (formulaire du site)');
   } else {
-    c = { id: uid(), createdAt: now(), email, firstName, lastName, phone: '', status: 'active', tags: ['chabbat', vtag, ...(civ ? [civ] : [])], notes: 'Inscrit via le site (horaires de Chabbat par email)' };
+    c = { id: uid(), createdAt: now(), email, firstName, lastName, phone: '', status: 'active', tags: ['chabbat', vtag, ...(civ ? [civ] : []), ...(news ? [] : ['horaires-seuls'])], notes: 'Inscrit via le site (horaires de Chabbat par email)\nAccord horaires de Chabbat : ' + jour + ' (formulaire du site)' };
     db.contacts.push(c);
   }
+  if (news) { c.tags = [...new Set([...c.tags.filter(t => t !== 'horaires-seuls'), 'infos'])]; trace('Accord nouvelles et appels aux dons : ' + jour + ' (case cochée, formulaire des horaires)'); }
   save();
   // premier envoi tout de suite (confirme l'adresse et montre le format). Il part AVANT la réponse :
   // sur Vercel, tout ce qui suit la réponse peut être coupé (l'e-mail n'arrivait jamais).
@@ -1336,9 +1351,9 @@ function campaignStats(c) {
   const s = db.sends.filter(x => x.campaignId === c.id);
   // contacts de l'audience exclus car ils ont déjà reçu ce mail dans une autre campagne (nom différent)
   const tag = (c.audienceTag || '').trim().toLowerCase(), rs = relevantSends(c);
-  const excluded = db.contacts.filter(ct => ct.status === 'active' && (!tag || (ct.tags || []).map(t => t.toLowerCase()).includes(tag)))
+  const excluded = db.contacts.filter(ct => pourCampagnes(ct) && (!tag || (ct.tags || []).map(t => t.toLowerCase()).includes(tag)))
     .filter(ct => (c.steps || []).some(st => rs.some(x => x.contactId === ct.id && x.templateId === st.templateId && x.campaignId !== c.id))).length;
-  const audience = db.contacts.filter(ct => ct.status === 'active' && (!tag || (ct.tags || []).map(t => t.toLowerCase()).includes(tag))).length;
+  const audience = db.contacts.filter(ct => pourCampagnes(ct) && (!tag || (ct.tags || []).map(t => t.toLowerCase()).includes(tag))).length;
   const daily = {}; s.filter(x => x.status !== 'error').forEach(x => { const k = dayKey(x.at); daily[k] = (daily[k] || 0) + 1; });
   return {
     audience, daily: Object.entries(daily).sort().map(([day, n]) => ({ day, n })),
@@ -1372,7 +1387,7 @@ function campaignSchedule(c) {
   const heads = [];
   const gapMs = (s.minGapHours || 0) * 3600000;
   for (const ct of db.contacts) {
-    if (ct.status !== 'active') continue;
+    if (!pourCampagnes(ct)) continue;
     if (tag && !(ct.tags || []).map(t => t.toLowerCase()).includes(tag)) continue;
     const all = ok.filter(x => x.contactId === ct.id);
     const got = new Set(all.map(x => x.templateId));
@@ -2011,9 +2026,21 @@ async function handle(req, res) {
     if (url.pathname === '/api/cerfa' || url.pathname.startsWith('/api/cerfa/')) return await cerfaProxy(req, res, url);
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (url.pathname.startsWith('/u/')) {
-      const c = db.contacts.find(x => x.id === url.pathname.slice(3));
-      if (c) { c.status = 'unsubscribed'; save(); }
-      return send(res, 200, `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><body style="font-family:Arial;text-align:center;padding:80px 20px;color:#374151"><h2>Désinscription confirmée</h2><p>Vous ne recevrez plus d'emails de ${esc(db.settings.orgName)}.</p>`, 'text/html; charset=utf-8');
+      const c = db.contacts.find(x => x.id === url.pathname.slice(3)), t = url.searchParams.get('t') || 'tout';
+      const jour = new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }), aTag = x => c && (c.tags || []).some(y => String(y).toLowerCase() === x);
+      let titre = 'Désinscription confirmée', msg = `Vous ne recevrez plus d'e-mails de ${esc(db.settings.orgName)}.`, suite = '';
+      if (c) {
+        const trace = x => { c.notes = ((c.notes || '') + (c.notes ? '\n' : '') + x).slice(-900); };
+        if (t === 'camp' && aTag('chabbat')) {          // il ne veut plus des campagnes, il garde ses horaires
+          c.tags = [...new Set([...(c.tags || []).filter(x => String(x).toLowerCase() !== 'infos'), 'horaires-seuls'])]; trace('Désinscrit des nouvelles et appels aux dons : ' + jour);
+          msg = 'Vous ne recevrez plus nos nouvelles ni nos appels aux dons. Vous continuez de recevoir les horaires de Chabbat chaque semaine.'; suite = 'Ne plus rien recevoir, horaires compris';
+        } else if (t === 'chabbat' && aTag('chabbat') && !horairesSeuls(c)) {   // il ne veut plus des horaires, il reste informé du reste
+          c.tags = (c.tags || []).filter(x => String(x).toLowerCase() !== 'chabbat'); trace('Désinscrit des horaires de Chabbat : ' + jour);
+          msg = 'Vous ne recevrez plus les horaires de Chabbat.'; suite = 'Ne plus rien recevoir du tout';
+        } else { c.status = 'unsubscribed'; trace('Désinscrit de tous les e-mails : ' + jour); }
+        save();
+      }
+      return send(res, 200, `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${titre}</title><body style="font-family:Arial,Helvetica,sans-serif;text-align:center;padding:70px 20px;color:#374151;max-width:520px;margin:0 auto"><h2 style="color:#1f6a72">${titre}</h2><p style="line-height:1.55">${msg}</p>${suite && c ? `<p style="margin-top:26px"><a href="/u/${esc(c.id)}?t=tout" style="display:inline-block;padding:11px 20px;border:1.5px solid #9ca3af;border-radius:99px;color:#374151;text-decoration:none;font-size:14px">${suite}</a></p>` : ''}<p style="margin-top:30px;font-size:13px"><a href="/confidentialite/" style="color:#1f6a72">Politique de confidentialité</a></p></body></html>`, 'text/html; charset=utf-8');
     }
     const isCrm = url.pathname === '/crm' || url.pathname.startsWith('/crm/');
     const base = isCrm ? CRM_DIR : PUBLIC;
