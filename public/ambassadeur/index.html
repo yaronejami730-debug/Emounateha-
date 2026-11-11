@@ -316,7 +316,7 @@ body{overflow-x:hidden}
 .citysel .chev{right:8px}
 @media(max-width:800px){.hero{padding-bottom:84px}.parsec{margin-top:-48px}}
 
-/* barre transparente : date à gauche, menu au centre, Faire un don, בס״ד à droite ; plus de petit logo */
+/* barre transparente : date à gauche, menu au centre, Faire un don, ב״ה à droite ; plus de petit logo */
 .nbrand{display:none!important}
 .sec-nav .wrap{position:relative;min-height:56px}
 .ndate{display:block;margin:0;text-align:left;line-height:1.2;direction:ltr;flex-shrink:0;min-width:150px}
@@ -337,7 +337,7 @@ body{overflow-x:hidden}
   .hero{padding-top:58px}
 }
 
-/* barre : plus large, liens compacts, בס״ד tout à droite */
+/* barre : plus large, liens compacts, ב״ה tout à droite */
 .sec-nav .wrap{max-width:1280px;gap:8px}
 .sec-nav .links{overflow:visible;flex:1;justify-content:center;gap:0;min-width:0}
 .sec-nav .links a{font-size:13.5px;padding:14px 9px}
@@ -346,7 +346,7 @@ body{overflow-x:hidden}
 .ndate{min-width:140px}
 @media(max-width:1100px){.sec-nav .links a{font-size:12.5px;padding:14px 7px}.ndate{min-width:120px}.ndate b{font-size:12px}.ndate small{font-size:10px}}
 
-/* barre : date | liens | בס״ד | ≡ ; plus de bouton Faire un don dans la barre */
+/* barre : date | liens | ב״ה | ≡ ; plus de bouton Faire un don dans la barre */
 .ndate{order:0}.sec-nav .links{order:1}.nbsd{order:2;margin-left:auto}.burger{order:3}
 .sec-nav .links a.ndon{display:none}
 @media(max-width:800px){.nbsd{order:0;margin:0}.ndate{order:1}.burger{order:3}.sec-nav .links{order:4}}
@@ -372,9 +372,11 @@ body{overflow-x:hidden}
 </style>
 <script src="/jour-hebraique.js"></script>
 <script src="/attribution.js" defer></script>
+<link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ecriture.css?v=1">
 </head>
 <body>
-<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="https://www.emounateha.fr/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">בס״ד</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="https://www.emounateha.fr/#mission">Qui sommes-nous</a><a href="https://www.emounateha.fr/#actions">Nos actions</a><a href="https://www.emounateha.fr/#actions" id="navDif">Diffusion de la Torah</a><a href="https://www.emounateha.fr/colis/">Les colis</a><a href="https://www.emounateha.fr/#aider">Comment aider</a><a href="https://www.emounateha.fr/#contact">Contact</a><a href="/ambassadeur/">Devenir ambassadeur</a></div></div></nav>
+<nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="https://www.emounateha.fr/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="https://www.emounateha.fr/#mission">Qui sommes-nous</a><a href="https://www.emounateha.fr/#actions">Nos actions</a><a href="https://www.emounateha.fr/#actions" id="navDif">Diffusion de la Torah</a><a href="https://www.emounateha.fr/colis/">Les colis</a><a href="https://www.emounateha.fr/#aider">Comment aider</a><a href="https://www.emounateha.fr/#contact">Contact</a><a href="/ambassadeur/">Devenir ambassadeur</a></div></div></nav>
 <div class="ab-top"><a class="ab-back" href="https://www.emounateha.fr/"><span>←</span> emounateha.fr</a><a class="ab-back ab-don" href="https://don.emounateha.fr/">Faire un don</a></div>
 <header class="ab-head"><img src="/logo-complet.png?v=2" alt="Émounatéha — אמונתך"><h1>Devenir ambassadeur</h1><p>Relayer la lumière de la Torah et aider à la collecte, là où vous êtes.</p></header>
 <style>
@@ -425,6 +427,11 @@ html,body{background:linear-gradient(180deg,#eef5f5 0,#f8fbfb 320px,#fff 100%)!i
 .miss .ic{font-family:'Bree Serif',serif;font-weight:700}
 .ab-head{padding-bottom:0}
 @media(max-width:820px){.ambform,.ok{order:-1}.ambtxt h2{font-size:22px}.amb{padding-top:16px}}
+@media(max-width:820px){.amb{grid-template-columns:minmax(0,1fr)}}
+.amb>*{min-width:0}.ambform .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.ambform .row>*{min-width:0}
+.ambform input,.ambform textarea{min-width:0;box-sizing:border-box}
+.miss>div>div{min-width:0}.miss small b{overflow-wrap:anywhere}
+@media(max-width:340px){.ambform{padding:20px 14px}.miss>div{padding:12px}}
 </style>
 <section><div class="amb">
   <div class="ambtxt">

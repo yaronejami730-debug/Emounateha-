@@ -1,4 +1,4 @@
-/* Bouton d'appel dans la barre du haut : un téléphone qui bouge, juste à gauche du בס״ד. Appel téléphonique normal (pas WhatsApp). */
+/* Bouton d'appel dans la barre du haut : un téléphone qui bouge, juste à gauche du ב״ה. Appel téléphonique normal (pas WhatsApp). */
 (function () {
   var nav = document.querySelector('.sec-nav'), bsd = nav && nav.querySelector('.nbsd');
   if (!nav || !bsd) return;
@@ -35,14 +35,14 @@
     var n = nav.getBoundingClientRect(), b = bsd.getBoundingClientRect();
     if (!b.width || !b.height || getComputedStyle(bsd).display === 'none') { a.style.display = 'none'; return; }
     a.style.display = '';
-    var t = textRect(bsd), textLeft = t.width ? t.left : b.left;          // bord gauche réel du texte בס״ד
-    var w = a.offsetWidth, h = a.offsetHeight, left = textLeft - w - 10;    // ordinateur : juste à gauche du בס״ד
+    var t = textRect(bsd), textLeft = t.width ? t.left : b.left;          // bord gauche réel du texte ב״ה
+    var w = a.offsetWidth, h = a.offsetHeight, left = textLeft - w - 10;    // ordinateur : juste à gauche du ב״ה
     var dr = dateEl && textRect(dateEl);
-    if (innerWidth <= 800 && dr && dr.width > 20) {                         // téléphone : au milieu entre la date et le בס״ד (seulement quand la date est affichée)
+    if (innerWidth <= 800 && dr && dr.width > 20) {                         // téléphone : au milieu entre la date et le ב״ה (seulement quand la date est affichée)
       var mid = (dr.right + textLeft) / 2 - w / 2;
       left = Math.max(dr.right + 8, Math.min(mid, textLeft - w - 8));
     }
-    var ref = burger && burger.offsetParent ? burger.getBoundingClientRect() : b;  // même axe horizontal que le menu / le בס״ד
+    var ref = burger && burger.offsetParent ? burger.getBoundingClientRect() : b;  // même axe horizontal que le menu / le ב״ה
     a.style.left = Math.round(left - n.left) + 'px';
     a.style.top = Math.round(ref.top + ref.height / 2 - n.top - h / 2) + 'px';
   }

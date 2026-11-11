@@ -21,7 +21,7 @@
     '.lang-pop button:hover{background:#f3f7f7}.lang-pop button.on{background:#1f6a72;color:#fff}.lang-pop button span{font-size:20px}' +
     '.lang-short{display:none}@media(min-width:801px){.lang-long{display:none}.lang-short{display:inline}}';
   document.head.appendChild(st);
-  // jamais traduits : le nom de l'association, l'hébreu, la date hébraïque, בס״ד
+  // jamais traduits : le nom de l'association, l'hébreu, la date hébraïque, ב״ה
   function proteger() {
     document.querySelectorAll('.nbrand,.ndate b,.nbsd,[lang=he],[dir=rtl],.he,.hero h1,.brand').forEach(function (e) { e.classList.add('notranslate'); e.setAttribute('translate', 'no'); });
     var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n, re = /([ÉE]mounat[ée]ha|ÉMOUNATÉHA|EMOUNATEHA|[\u0590-\u05FF][\u0590-\u05FF\u0022\u0027\u05F3\u05F4\s]*)/;

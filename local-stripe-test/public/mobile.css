@@ -131,7 +131,7 @@
   html body .hero,html body .pagehead{padding-bottom:84px}
   html body .hero::after,html body .pagehead::after{height:110px;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 14%,rgba(255,255,255,.14) 30%,rgba(255,255,255,.34) 48%,rgba(255,255,255,.62) 66%,rgba(255,255,255,.86) 84%,#fff 100%);pointer-events:none}
 
-  /* ---------- בס״ד à droite (le bouton menu est à gauche) ---------- */
+  /* ---------- ב״ה à droite (le bouton menu est à gauche) ---------- */
   .sec-nav .nbsd{display:block;position:absolute;right:14px;left:auto;top:50%;transform:translateY(-50%);margin:0;font-size:22px;font-weight:600;line-height:1;z-index:1}
 
   /* ---------- menu ouvert : texte blanc même après défilement (sinon vert sur vert) ---------- */
@@ -153,7 +153,7 @@
   .hero img{width:92px}.slogan{margin-bottom:10px}
 }
 
-/* téléphone : logo un peu plus grand, בס״ד plus petit, date plus grande, bloc horaires plus serré */
+/* téléphone : logo un peu plus grand, ב״ה plus petit, date plus grande, bloc horaires plus serré */
 @media(max-width:800px) and (min-width:361px) and (min-height:701px){
   .hero img{width:176px}
 }
