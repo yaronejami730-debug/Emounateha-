@@ -622,6 +622,18 @@ async function releveCommission() {
     return j;
   } catch (e) { console.error('relevé de commission', e.message); return null; }
 }
+// Virements de Stripe vers la banque : une fois par heure, le serveur des dons regarde s'il y en a un nouveau et prévient l'administrateur par e-mail.
+async function verifierVirements() {
+  const s = db.settings, cle = parisDay(Date.now()) + ' ' + parisHour();
+  if (s.virementsVerif === cle) return null;
+  s.virementsVerif = cle; save();
+  try {
+    const r = await fetch(DON_URL + '/api/admin/virements/verifier', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/virements/verifier') }, body: '{}', signal: AbortSignal.timeout(25000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) console.error('virements refusé', r.status, JSON.stringify(j).slice(0, 160)); else if (j.envoyes || j.miseEnService || (j.erreurs || []).length) console.log('virements', JSON.stringify(j).slice(0, 300));
+    return j;
+  } catch (e) { console.error('virements', e.message); return null; }
+}
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
   ticking = true;
@@ -629,6 +641,7 @@ async function tick(force = false) {
     let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
     ensureForfait(); ensureAccords(); nettoyerContactsTest();
     await releveCommission();
+    await verifierVirements();
     const s = db.settings;
     const q = await brevoQuota(force); await alerteQuota(q);
     const h = parisHour();
