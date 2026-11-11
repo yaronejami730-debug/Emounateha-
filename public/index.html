@@ -263,8 +263,8 @@ body{overflow-x:hidden}
 /* cagnottes mises en avant depuis le CRM (« Mettre sur la page d'accueil ») : rubans dorés, une ligne par cagnotte, posés à cheval sur le bas de l'en-tête,
    au-dessus des tuiles et de la carte des horaires de Chabbat, sans jamais les recouvrir. Un appui ouvre l'aperçu de la cagnotte. */
 .urgsec{position:relative;z-index:6;margin-top:-46px;padding:0}.urgsec[hidden]{display:none}
-.urgl{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;max-width:620px;margin:0 auto}
-.urgc{position:relative;display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 auto;max-width:calc(50% - 4px);padding:5px 10px 5px 5px;border-radius:99px;background:linear-gradient(180deg,#f3e09a,#c9a850);color:#1b2b2d;text-decoration:none;cursor:pointer;box-shadow:0 10px 22px -8px rgba(14,52,58,.5),inset 0 1px 0 rgba(255,255,255,.5);-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.urgl{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:620px;margin:0 auto}
+.urgc{position:relative;display:flex;align-items:center;gap:6px;min-width:0;flex:0 0 auto;max-width:min(78%,300px);padding:5px 10px 5px 5px;border-radius:99px;background:linear-gradient(180deg,#f3e09a,#c9a850);color:#1b2b2d;text-decoration:none;cursor:pointer;box-shadow:0 10px 22px -8px rgba(14,52,58,.5),inset 0 1px 0 rgba(255,255,255,.5);-webkit-tap-highlight-color:transparent;transition:transform .15s}
 .urgc:active{transform:scale(.985)}
 .urgc .uic{display:grid;place-items:center;flex:none;width:21px;height:21px;border-radius:50%;background:#164c52;color:#f6e094}.urgc .uic svg{width:55%;height:55%}
 .urgc .utx{display:flex;align-items:baseline;gap:6px;flex:1;min-width:0}
@@ -291,7 +291,6 @@ body{overflow-x:hidden}
 @media(prefers-reduced-motion:reduce){#urgap,#urgap .ap{transition:none}}
 body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding-top:18px}
 @media(max-width:800px){.urgsec{padding-left:12px;padding-right:12px}body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding:12px 12px 0}body:has(#urgent:not([hidden])) .qa{margin-top:0!important;padding-top:12px}}
-@media(min-width:801px){.urgc{max-width:300px}}
 .parall{display:block;grid-column:1/-1;text-align:center;margin:2px 12px 12px;padding:9px 14px;border-radius:99px;background:#fff7e0;border:1.5px solid #ecd9a0;color:#8a6c1c;font-weight:700;font-size:14px;text-decoration:none}
 .parall:hover{background:#fff0c8}
 .parcard{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:#fff;border:1px solid #e3ecec;border-radius:16px;box-shadow:0 12px 32px rgba(20,60,66,.14);overflow:hidden}
