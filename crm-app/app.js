@@ -364,11 +364,13 @@ async function resetAll() {
 
 // ---------- Actions ----------
 async function runTick() {
+  if (!confirm('Envoyer maintenant le prochain lot de mails ? De vrais e-mails partiront tout de suite.')) return;
   try { const r = await api('POST', '/tick'); toast(r.skipped ? 'Rien : ' + r.skipped : `${r.sent} mail(s) envoyé(s)${r.errors ? ', ' + r.errors + ' erreur(s)' : ''}`, r.errors > 0); await render(); }
   catch (e) { toast(e.message, true); }
 }
 async function del(coll, id) {
-  if (!confirm('Supprimer ?')) return;
+  const quoi = (() => { const x = ((S && S[coll]) || []).find(y => y.id === id); if (!x) return ''; return coll === 'contacts' ? [x.firstName, x.lastName].filter(Boolean).join(' ') || x.email || '' : x.name || x.title || ''; })();   // on nomme ce qu'on supprime : sur téléphone, la ligne n'est pas toujours visible en entier
+  if (!confirm(quoi ? 'Supprimer « ' + quoi + ' » ?' : 'Supprimer ?')) return;
   await api('DELETE', `/${coll}/${id}`);
   if (coll === 'templates') { tplDraft = null; tplId = null; }
   await render();

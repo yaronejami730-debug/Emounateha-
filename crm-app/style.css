@@ -509,3 +509,27 @@ table{border-radius:16px;overflow:hidden}
 }
 @keyframes feuille{from{transform:translateY(28px);opacity:.6}to{transform:none;opacity:1}}
 @media(max-width:900px) and (prefers-reduced-motion:reduce){.modal .box{animation:none}.tabbar a,.tabbar button{transition:none}}
+
+/* ===== téléphone : corrections après contrôle de tous les écrans ===== */
+@media(max-width:900px){
+  /* fenêtres : les tableaux tiennent dans la largeur (plus de colonne « Montant » invisible) */
+  .modal table{display:table;width:100%;min-width:0!important;table-layout:auto}
+  .modal th,.modal td{white-space:normal;padding:8px 6px;font-size:13px;overflow-wrap:anywhere}
+  .modal td[align=right],.modal th[align=right]{white-space:nowrap}
+  /* fenêtres longues : les boutons du bas restent visibles pendant qu'on fait défiler */
+  .modal .box>.row.r:last-child{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));z-index:2;margin:18px -16px calc(-24px - env(safe-area-inset-bottom));padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;box-shadow:0 -8px 16px -10px rgba(14,52,58,.25)}
+  /* compte d'une cagnotte : le montant ne sort plus du cadre */
+  .bs-cl{flex-wrap:wrap}.bs-cl>:last-child{margin-left:auto;flex:none;white-space:nowrap}.bs-cl>:first-child{min-width:0;flex:1 1 auto}
+  .bs-cl.tot b{font-size:17px}
+  /* tableaux de page : la première colonne (le nom) reste visible quand on glisse vers la droite */
+  main td:first-child,main th:first-child{position:sticky;left:0;z-index:1;background:#fff;box-shadow:6px 0 8px -8px rgba(14,52,58,.35)}
+  main thead th:first-child{background:#f7fafa}
+  .btn.sm{min-width:44px;min-height:44px}
+  .tabbar a,.tabbar button{color:#5b6f72}
+  .bs-link a{display:inline-block;padding:10px 0}
+}
+@media(max-width:560px){
+  .bs-top{flex-wrap:wrap;gap:8px}.bs-top>div{flex:1 1 100%;min-width:0}.bs-pills{justify-content:flex-start}
+  .seq{flex-wrap:wrap}.seq select{flex:1 1 100%;min-width:0}
+}
+@media(max-width:400px){.cf-seg{flex-wrap:wrap}.cf-seg button{padding:9px 6px;min-width:0;flex:1 1 40%}}
