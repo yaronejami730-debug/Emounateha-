@@ -59,11 +59,12 @@
     var contact = flot ? null : [].slice.call(links.querySelectorAll('a')).filter(function (a) { return /contact/i.test(a.textContent); })[0];
     var a = document.createElement('a');
     a.href = '#'; a.className = 'lang-btn notranslate'; a.setAttribute('translate', 'no');
-    a.innerHTML = '<span aria-hidden="true">🌐</span> <span class="lang-long">Changer la langue</span><span class="lang-short">Langue</span>';
+    var LIB = { fr: ['Changer la langue', 'Langue'], en: ['Change language', 'Language'], he: ['שינוי שפה', 'שפה'] }[cur] || ['Changer la langue', 'Langue'];   // le bouton est écrit dans la langue affichée (il n'est pas confié à la traduction automatique)
+    a.innerHTML = '<span aria-hidden="true">🌐</span> <span class="lang-long">' + LIB[0] + '</span><span class="lang-short">' + LIB[1] + '</span>';
     if (flot) { a.className += ' lang-fab'; a.setAttribute('aria-label', 'Changer la langue · Language · שפה'); a.innerHTML = '<span aria-hidden="true">🌐</span><span class="lang-code">' + cur.toUpperCase() + '</span>'; document.body.appendChild(a); }
     else links.insertBefore(a, contact || null);
     var box = document.createElement('div');
-    box.className = 'lang-pop notranslate'; box.setAttribute('translate', 'no'); box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Changer la langue');
+    box.className = 'lang-pop notranslate'; box.setAttribute('translate', 'no'); box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', LIB[0]);
     box.innerHTML = '<b>Langue · Language · שפה</b>' + LANGS.map(function (l) {
       return '<button type="button" data-l="' + l[0] + '"' + (l[0] === cur ? ' class="on"' : '') + (l[0] === 'he' ? ' dir="rtl"' : '') + '><span>' + l[2] + '</span>' + l[1] + '</button>';
     }).join('');
