@@ -30,7 +30,8 @@ async function load() {
   load.hol = hol; try { if (hol && hol.length) sessionStorage.hol = JSON.stringify(hol); } catch {}
   S.holidaysAll = load.hol || []; S.holidays = S.holidaysAll.slice(0, 8);
   const { sent, limit } = S.today;
-  $('#quota').innerHTML = `Envois aujourd'hui<br><b>${sent}</b> / ${limit}<div class="bar"><i style="width:${Math.min(100, sent / limit * 100)}%"></i></div>`;
+  { const m = S.month, mois = m ? m.limit - m.left : null;
+    $('#quota').innerHTML = `Mails envoyés aujourd'hui<br><b>${sent}</b>` + (m ? `<div style="margin-top:8px;font-size:12px;line-height:1.35">Ce mois-ci : <b style="font-size:13px">${mois}</b> envoyés, il en reste <b style="font-size:13px">${m.left}</b></div><div class="bar"><i style="width:${Math.min(100, Math.max(0, mois / m.limit * 100))}%"></i></div>` : ''); }
 }
 const fmt = d => new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 const statusPill = s => ({ active: '<span class="pill ok">Actif</span>', unsubscribed: '<span class="pill warn">Désinscrit</span>', bounced: '<span class="pill bad">Rebond</span>', converted: '<span class="pill blue">Donateur</span>' }[s] || s);
@@ -129,7 +130,7 @@ const views = {
       <button class="btn pri" onclick="runTick()">Envoyer maintenant le prochain lot</button></div>
     <div class="grid g4">
       <div class="card stat"><small>Contacts actifs</small><b>${active}</b><em>${S.contacts.length} au total</em></div>
-      <div class="card stat"><small>Envoyés aujourd'hui${S.today.pausedUntil && new Date(S.today.pausedUntil) > new Date() ? ' · <b style="display:inline;font-size:12px;color:var(--warn)">limite atteinte, reprise demain</b>' : ''}</small><b>${S.today.sent}</b>${S.month ? (() => { const m = S.month, j = Math.max(0, Math.round((new Date(m.end + 'T12:00:00') - new Date(new Date().toLocaleDateString('sv-SE') + 'T12:00:00')) / 864e5)), bas = m.left <= 500; return `<div class="pbar"><i style="width:${Math.min(100, Math.max(0, (m.limit - m.left) / m.limit * 100))}%${bas ? ';background:var(--warn)' : ''}"></i></div><em style="display:block;margin-top:6px${bas ? ';color:var(--warn);font-weight:700' : ''}">Forfait du mois : reste ${m.left} sur ${m.limit}</em><em style="display:block">Remise à zéro le ${new Date(m.end + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} (${j === 0 ? "aujourd'hui" : j === 1 ? 'demain' : 'dans ' + j + ' jours'})</em>`; })() : `<div class="pbar"><i style="width:${pct}%"></i></div>`}</div>
+      <div class="card stat"><small>Envoyés aujourd'hui${S.today.pausedUntil && new Date(S.today.pausedUntil) > new Date() ? ' · <b style="display:inline;font-size:12px;color:var(--warn)">envois en pause</b>' : ''}</small><b>${S.today.sent}</b>${S.month ? (() => { const m = S.month, j = Math.max(0, Math.round((new Date(m.end + 'T12:00:00') - new Date(new Date().toLocaleDateString('sv-SE') + 'T12:00:00')) / 864e5)), bas = m.left <= 500; return `<div class="pbar"><i style="width:${Math.min(100, Math.max(0, (m.limit - m.left) / m.limit * 100))}%${bas ? ';background:var(--warn)' : ''}"></i></div><em style="display:block;margin-top:6px${bas ? ';color:var(--warn);font-weight:700' : ''}">Forfait du mois : reste ${m.left} sur ${m.limit}</em><em style="display:block">Remise à zéro le ${new Date(m.end + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} (${j === 0 ? "aujourd'hui" : j === 1 ? 'demain' : 'dans ' + j + ' jours'})</em>`; })() : `<div class="pbar"><i style="width:${pct}%"></i></div>`}</div>
       <div class="card stat"><small>Campagnes en cours</small><b>${running}</b><em>${queueTxt}</em><em style="display:block;margin-top:6px;color:var(--teal);font-weight:600">${nextTxt}</em></div>
       <div class="card stat"><small>Emails envoyés (total)</small><b>${totalSent}</b><em>${S.settings.hasKey ? 'Brevo connecté' : '⚠ Mode simulation (pas de clé Brevo)'}</em></div>
     </div>
@@ -320,7 +321,7 @@ const views = {
         <div class="hint">Brevo → SMTP &amp; API → Clés API. Stockée en local dans data/db.json.</div>
         <label>Nom expéditeur</label><input id="s_senderName" value="${esc(s.senderName)}">
         <label>Email expéditeur (validé dans Brevo)</label><input id="s_senderEmail" value="${esc(s.senderEmail)}" placeholder="contact@emounateha.org">
-        <div class="row"><div class="grow"><label>Forfait / mois</label><input id="s_monthlyLimit" type="number" value="${s.monthlyLimit || 5000}"></div><div class="grow"><label>Limite / jour</label><input id="s_dailyLimit" type="number" value="${s.dailyLimit}"></div>
+        <div class="row"><div class="grow"><label>Forfait / mois</label><input id="s_monthlyLimit" type="number" value="${s.monthlyLimit || 5000}"></div>
         <div class="grow"><label>Mails / minute</label><input id="s_perMinute" type="number" value="${s.perMinute}"></div></div>
         <div class="row"><div class="grow"><label>Envoi dès (h)</label><input id="s_hourFrom" type="number" value="${s.hourFrom}"></div>
         <div class="grow"><label>Jusqu'à (h)</label><input id="s_hourTo" type="number" value="${s.hourTo}"></div></div>
@@ -556,7 +557,7 @@ async function doTest() {
 
 async function saveSettings() {
   const g = k => $('#s_' + k).value;
-  const body = {}; ['senderName', 'senderEmail', 'monthlyLimit', 'dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'orgName', 'logoUrl', 'address', 'publicUrl', 'phone', 'social', 'donateUrl', 'minGapHours'].forEach(k => body[k] = g(k));
+  const body = {}; ['senderName', 'senderEmail', 'monthlyLimit', 'perMinute', 'hourFrom', 'hourTo', 'orgName', 'logoUrl', 'address', 'publicUrl', 'phone', 'social', 'donateUrl', 'minGapHours'].forEach(k => body[k] = g(k));
   if (g('key')) body.brevoApiKey = g('key');
   await api('POST', '/settings', body); toast('Réglages enregistrés'); await render();
 }
