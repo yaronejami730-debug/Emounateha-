@@ -1173,9 +1173,11 @@ async function tanyaYomi(jour) {
   return v;
 }
 const lendemain = jour => new Date(new Date(jour + 'T12:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
-async function chabadTexte(type, jour, jeton) {
+// lang : 'fr' (défaut) ou 'en'. En anglais, le texte vient tel quel de la source anglaise (pas une retraduction du français).
+async function chabadTexte(type, jour, jeton, lang) {
+  lang = lang === 'en' ? 'en' : 'fr'; const VQ = (lang === 'en' ? 'version=english' : 'version=french') + '&version=hebrew';
   jour = await jourEtude(jour);
-  const hit = texteCache.get(type + jour);
+  const hit = texteCache.get(type + jour + lang);
   if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.v;
   const e = await chabadEtude(jour), it = e[type];
   if (!it) throw new Error('rien aujourd\'hui');
@@ -1184,12 +1186,12 @@ async function chabadTexte(type, jour, jeton) {
     const m = it.desc.match(/\(([^)\d]+?)\s+(\d+):(\d+)(?:-(?:(\d+):)?(\d+))?\)/); if (!m) throw new Error('portion illisible');
     const bk = LIVRES[noAcc(m[1]).replace(/[^a-z]/g, '')]; if (!bk) throw new Error('livre inconnu');
     const c1 = +m[2], v1 = +m[3], c2 = m[4] ? +m[4] : c1, v2 = m[5] ? +m[5] : v1;
-    const x = await sefaria(`${bk} ${c1}:${v1}-${c2 === c1 ? '' : c2 + ':'}${v2}`, 'version=french&version=hebrew');
+    const x = await sefaria(`${bk} ${c1}:${v1}-${c2 === c1 ? '' : c2 + ':'}${v2}`, VQ);
     v = { title: 'Houmach', ref: it.desc.replace(/\s+with Rashi$/i, ''), trLang: x.trLang, sections: sections(x.he, x.tr, c1, v1, 'Chapitre') };
   } else if (type === 'tehilim') {
     const nums = (it.desc.match(/\d+/g) || []).map(Number); if (!nums.length) throw new Error('portion illisible');
     const a = Math.min(...nums), b = Math.max(...nums);
-    const x = await sefaria(`Psalms ${a}${b > a ? '-' + b : ''}`, 'version=french&version=hebrew');
+    const x = await sefaria(`Psalms ${a}${b > a ? '-' + b : ''}`, VQ);
     v = { title: 'Téhilim', ref: b > a ? `Chapitres ${a} à ${b}` : `Chapitre ${a}`, trLang: x.trLang, sections: sections(x.he, x.tr, a, 1, 'Psaume') };
     // Roch 'Hodech et 'Hol Hamoèd (jours sans Ta'hanoun où l'on est devant un écran) : le psaume 20 n'est pas dit dans la prière ; on le dit avec les Téhilim, avant ceux du jour.
     // Les jours de Yom Tov ne sont pas visés : personne n'est sur le site ces jours-là.
@@ -1197,7 +1199,7 @@ async function chabadTexte(type, jour, jeton) {
     const jh = +(hd.find(x => x.type === 'day') || {}).value, mh = String((hd.find(x => x.type === 'month') || {}).value || '');
     const occasion = (jh === 1 || jh === 30) ? 'ראש חודש' : ((/^Nisan/i.test(mh) && jh >= 16 && jh <= 20) || (/^Tishr/i.test(mh) && jh >= 16 && jh <= 21)) ? 'חול המועד' : '';
     if (occasion && !(a <= 20 && b >= 20)) {
-      try { const p = await sefaria('Psalms 20', 'version=french&version=hebrew'), sc = sections(p.he, p.tr, 20, 1, 'Psaume')[0];
+      try { const p = await sefaria('Psalms 20', VQ), sc = sections(p.he, p.tr, 20, 1, 'Psaume')[0];
         if (sc) { sc.noteHe = occasion; v.sections.unshift(sc); v.ref = 'Psaume 20, puis ' + v.ref.charAt(0).toLowerCase() + v.ref.slice(1); v.occasion = occasion; } }
       catch (e) { console.error('[tehilim] psaume 20', e.message); }
     }
@@ -1214,7 +1216,8 @@ async function chabadTexte(type, jour, jeton) {
     const x = await sefaria(`Tanya, ${part[0]} ${a}${b > a ? '-' + b : ''}`, 'version=primary&version=english');
     const ou = (it.desc.match(/\b(d[ée]but|milieu|fin|beginning|middle|end)\b/i) || [])[1], pos = ou ? ' (' + ({ beginning: 'début', middle: 'milieu', end: 'fin' }[ou.toLowerCase()] || ou.toLowerCase()) + ')' : '';
     v = { title: 'Tanya', ref: part[1] + (b > a ? `, chapitres ${a} à ${b}` : `, chapitre ${a}`) + (deb ? pos : ''), trLang: 'en', sections: sections(x.he, x.tr, a, 1, 'Chapitre').map(sc => ({ head: sc.head, items: sc.items.map(i => ({ n: 0, he: i.he, tr: i.tr })) })) };
-    try {   // anglais -> français (une seule fois par chapitre, gardé en base)
+    if (lang === 'en') v.trNote = 'English translation: Kehot Publication Society (Lessons in Tanya).';
+    else try {   // anglais -> français (une seule fois par chapitre, gardé en base)
       const tous = v.sections.flatMap(sc => sc.items), fr = await tanyaFrancais('tanya:' + part[0] + ':' + a + '-' + b, tous, jeton);
       tous.forEach((it2, k) => { it2.tr = fr[k] || it2.tr; });
       v.trLang = 'fr'; v.trNote = tanyaFichier('tanya:' + part[0] + ':' + a + '-' + b) ? "Traduction française d'après l'original hébreu." : "Traduction française automatique d'après l'original hébreu (aidée de la version anglaise de Kehot, CC BY-NC).";
@@ -1228,7 +1231,8 @@ async function chabadTexte(type, jour, jeton) {
     }
   }
   if (!v.sections.length) throw new Error('texte vide');
-  v.jour = jour; if (!(type === 'tanya' && v.trLang !== 'fr')) texteCache.set(type + jour, { at: Date.now(), v }); if (texteCache.size > 30) texteCache.delete(texteCache.keys().next().value);
+  if (lang === 'en' && type !== 'tanya' && v.trLang === 'en' && !v.trNote) v.trNote = 'English translation: Sefaria.';
+  v.jour = jour; v.lang = lang; if (!(type === 'tanya' && lang !== 'en' && v.trLang !== 'fr')) texteCache.set(type + jour + lang, { at: Date.now(), v }); if (texteCache.size > 30) texteCache.delete(texteCache.keys().next().value);
   return v;
 }
 
@@ -1990,7 +1994,7 @@ async function handle(req, res) {
     if (url.pathname === '/api/etude-texte' && req.method === 'GET') { // public : texte du jour (Houmach, Téhilim, Tanya)
       const ty = url.searchParams.get('type');
       if (!['houmach', 'tehilim', 'tanya'].includes(ty)) return send(res, 400, { error: 'type inconnu' });
-      try { const v = await chabadTexte(ty, url.searchParams.get('date'), process.env.VERCEL_OIDC_TOKEN || req.headers['x-vercel-oidc-token'] || process.env.AI_GATEWAY_API_KEY); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': (ty === 'tanya' && v.trLang !== 'fr') ? 'no-store' : ty === 'tanya' ? 'public, max-age=900' : url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
+      try { const v = await chabadTexte(ty, url.searchParams.get('date'), process.env.VERCEL_OIDC_TOKEN || req.headers['x-vercel-oidc-token'] || process.env.AI_GATEWAY_API_KEY, url.searchParams.get('lang')); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': (ty === 'tanya' && v.lang !== 'en' && v.trLang !== 'fr') ? 'no-store' : ty === 'tanya' ? 'public, max-age=900' : url.searchParams.get('date') ? 'public, max-age=21600' : 'public, max-age=600' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Texte indisponible' }); }
     }
     if (url.pathname === '/api/jour-hebraique' && req.method === 'GET') { // public : jour hébraïque en cours (change à Tset Hakokhavim)
