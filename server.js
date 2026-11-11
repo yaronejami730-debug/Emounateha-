@@ -646,7 +646,7 @@ async function envoisUniques() {
     catch (e) { console.error('envoi unique', marque, e.message); }
   };
   await faire('rattrapageCommission', '/api/admin/commission/envoyer', { du: '2025-11-10', au: '2026-11-08' }, j => j.envoye === true);
-  await faire('exempleVirement2', '/api/admin/virements/verifier', { exemple: true }, j => j.exemple === true && j.envoye === true);   // 2e version : trois virements simulés, avec CSV et PDF
+  await faire('exempleVirement3', '/api/admin/virements/verifier', { exemple: true, version: 3 }, j => j.exemple === true && j.envoye === true && j.nombre === 3);   // trois virements simulés, avec CSV et PDF ; « nombre » n'existe que dans la version détaillée du serveur des dons
 }
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
