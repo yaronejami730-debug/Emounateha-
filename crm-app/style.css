@@ -274,6 +274,11 @@ table{border-radius:16px;overflow:hidden}
 .bs-bar{height:9px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}.bs-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#e4cd8a);min-width:5px}
 .bs-link{margin-top:12px;font-size:13px;word-break:break-all}
 .bs-act{margin-top:12px;flex-wrap:wrap;gap:8px}
+.bs-cpt{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(196,162,74,.06);font-size:14px}
+.bs-cl{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:4px 0;color:var(--mut)}.bs-cl span:last-child,.bs-cl b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.bs-cl.tot{margin-top:4px;padding-top:9px;border-top:1px solid var(--line);color:var(--ink);font-weight:600}.bs-cl.tot b{font-size:18px}
+.bs-cl.du{color:var(--ink);font-weight:600}.bs-cl.du b{color:#b45309}.bs-cl.du.ok b{color:#15803d}
+.bs-cn{margin:8px 0 0;font-size:12.5px;color:var(--mut);line-height:1.4}
 .bs-url{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:#f6f9f9;overflow:hidden}
 .bs-url span{padding:0 0 0 12px;color:var(--mut);font-size:14px;white-space:nowrap}.bs-url b{padding:11px 12px 11px 0;font-size:14px}
 .bs-url input{border:0!important;background:transparent!important;padding-left:0!important;min-width:0;flex:1;box-shadow:none!important}

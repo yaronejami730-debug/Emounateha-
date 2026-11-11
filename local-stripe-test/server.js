@@ -566,6 +566,7 @@ app.get('/api/admin/mail', async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 require('./commission').monter(app, { stripe, adminOk, mailer, load, save });   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
+require('./cagnottes').monter(app, { stripe, adminOk });   // mini-cagnottes : net réellement encaissé par cagnotte (lecture seule), pour la somme à reverser affichée dans le CRM
 app.get('/api/admin/recus', (req, res) => {
   if (!adminOk(req, res)) return;
   const d = load();

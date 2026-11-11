@@ -1266,8 +1266,18 @@ const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
     id text primary key, slug text not null unique, titre text not null,
     beneficiaire text not null default '', description text not null default '', objectif integer,
     actif boolean not null default true, created_at timestamptz not null default now());
+  alter table public.besoins add column if not exists versements jsonb not null default '[]'::jsonb;
   alter table public.besoins enable row level security;`).catch(e => { besoinsReady = null; throw e; }));
 const besoinSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+// Compte d'une cagnotte : ce qui est dû au bénéficiaire. total = dons d'après les reçus ; st = chiffres Stripe (brut, frais, remboursements, net).
+// À reverser = net Stripe (dons − frais bancaires réels − remboursements) − retenue éventuelle (CAGNOTTE_RETENUE, en %, 0 par défaut). Jamais d'estimation des frais.
+const CAGNOTTE_RETENUE = Math.max(0, Math.min(100, Number(process.env.CAGNOTTE_RETENUE || 0)));
+function besoinCompte(total, st, versements) {
+  const vs = (Array.isArray(versements) ? versements : []).filter(v => v && Number.isFinite(v.montant)), verse = vs.reduce((t, v) => t + v.montant, 0);
+  if (!st || !st.dons) return { versements: vs, verse, compte: null };
+  const retenue = Math.round(Math.max(0, st.net) * CAGNOTTE_RETENUE / 100), aReverser = Math.max(0, st.net - retenue);
+  return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, retenue, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
+}
 // public : ce que la page de don affiche (jamais le nom du bénéficiaire, qui reste dans le CRM)
 async function besoinPublic(req, res, url) {
   const slug = String(url.searchParams.get('slug') || '');
@@ -1649,11 +1659,28 @@ async function api(req, res, url) {
     const propre = b => ({ titre: String(b.titre || '').trim().slice(0, 70), beneficiaire: String(b.beneficiaire || '').trim().slice(0, 120), description: String(b.description || '').trim().slice(0, 600),
       objectif: (() => { const n = Math.round(Number(String(b.objectif == null ? '' : b.objectif).replace(',', '.')) * 100); return Number.isFinite(n) && n >= 100 && n <= 100000000 ? n : null; })() });
     if (m === 'GET') {
-      const r = await pool.query('select id, slug, titre, beneficiaire, description, objectif, actif, created_at from public.besoins order by actif desc, created_at desc');
+      const r = await pool.query('select id, slug, titre, beneficiaire, description, objectif, actif, created_at, versements from public.besoins order by actif desc, created_at desc');
       let recus = [], erreur = '';
       try { const x = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus'), signal: AbortSignal.timeout(15000) }); const j = await x.json(); if (!x.ok) throw new Error(j.error || x.status); recus = j.recus || []; } catch (e) { erreur = 'Dons indisponibles : ' + e.message; }
       const par = {}; for (const x of recus) if (x.besoin) { const p = par[x.besoin] = par[x.besoin] || { dons: 0, total: 0, dernier: null, liste: [] }; p.dons++; p.total += x.montant || 0; if (!p.dernier || x.dateDon > p.dernier) p.dernier = x.dateDon; p.liste.push({ nom: x.nom, montant: x.montant, dateDon: x.dateDon, numero: x.numero }); }
-      return send(res, 200, { list: r.rows.map(a => ({ ...a, ...(par[a.slug] || { dons: 0, total: 0, dernier: null, liste: [] }) })), erreur });
+      // somme à reverser : net réellement encaissé d'après Stripe (frais réels), moins les versements déjà faits au bénéficiaire
+      let stripe = {}, erreurFrais = '';
+      const slugs = r.rows.filter(a => par[a.slug]).map(a => a.slug);
+      if (slugs.length) try { const x = await fetch(DON_URL + '/api/admin/cagnottes?slugs=' + slugs.join(','), { headers: cerfaSig('GET', '/api/admin/cagnottes'), signal: AbortSignal.timeout(25000) }); const j = await x.json(); if (!x.ok) throw new Error(j.error || x.status); stripe = j.par || {}; } catch (e) { erreurFrais = 'Frais bancaires indisponibles : ' + e.message; }
+      return send(res, 200, { list: r.rows.map(a => ({ ...a, ...(par[a.slug] || { dons: 0, total: 0, dernier: null, liste: [] }), ...besoinCompte((par[a.slug] || {}).total || 0, stripe[a.slug], a.versements) })), erreur, erreurFrais });
+    }
+    if (m === 'POST' && parts[1] && parts[2] === 'versements') {   // la trésorière note un virement fait au bénéficiaire (le serveur ne déplace aucun argent)
+      const montant = Math.round(Number(String(body.montant == null ? '' : body.montant).replace(/\s/g, '').replace(',', '.')) * 100);
+      if (!Number.isFinite(montant) || montant < 1 || montant > 100000000) return send(res, 400, { error: 'Montant invalide' });
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(body.date || '')) ? body.date : jourParis();
+      const v = { id: uid(), montant, date, note: String(body.note || '').trim().slice(0, 140), at: new Date().toISOString() };
+      const u = await pool.query('update public.besoins set versements = versements || $1::jsonb where id = $2', [JSON.stringify([v]), parts[1]]);
+      if (!u.rowCount) return send(res, 404, { error: 'Besoin introuvable' });
+      return send(res, 200, { ok: true, versement: v });
+    }
+    if (m === 'DELETE' && parts[1] && parts[2] === 'versements' && parts[3]) {   // erreur de saisie : retirer un versement noté
+      await pool.query("update public.besoins set versements = coalesce((select jsonb_agg(v) from jsonb_array_elements(versements) v where v->>'id' <> $1), '[]'::jsonb) where id = $2", [parts[3], parts[1]]);
+      return send(res, 200, { ok: true });
     }
     if (m === 'POST' && !parts[1]) {
       const v = propre(body); if (!v.titre) return send(res, 400, { error: 'Indiquez le besoin (ex. Loyer en retard)' });

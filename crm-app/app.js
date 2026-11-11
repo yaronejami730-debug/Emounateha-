@@ -265,6 +265,7 @@ const views = {
     return `<div class="head"><div><h1>Besoins</h1><p class="sub">Mini-cagnottes : un besoin précis, une personne, un lien. Chaque don fait par ce lien est compté ici et marqué dans Stripe.</p></div>
       <div class="row"><button class="btn pri" onclick="besoinModal()">+ Nouveau besoin</button></div></div>
     ${B.erreur ? `<div class="card" style="border-color:#f3c9c9;color:#9b1c1c;margin-bottom:16px">${esc(B.erreur)}</div>` : ''}
+    ${B.erreurFrais ? `<div class="card" style="border-color:#f5d48a;color:#7a5a10;margin-bottom:16px">${esc(B.erreurFrais)} La somme à reverser s'affichera dès que Stripe répondra.</div>` : ''}
     <div class="grid g4" style="margin-bottom:16px">
       <div class="card stat"><small>Besoins ouverts</small><b>${ouverts}</b></div>
       <div class="card stat"><small>Besoins au total</small><b>${list.length}</b></div>
@@ -278,10 +279,12 @@ const views = {
         ${x.description ? `<p class="bs-d">${esc(x.description)}</p>` : ''}
         <div class="bs-amt"><strong>${eur(x.total)}</strong><span>${x.objectif ? 'collectés sur ' + eur(x.objectif) + ' (' + pct + ' %)' : 'collectés · pas d\'objectif'} · ${x.dons || 0} don${x.dons > 1 ? 's' : ''}${x.dernier ? ' · dernier le ' + new Date(x.dernier).toLocaleDateString('fr-FR') : ''}</span></div>
         ${x.objectif ? `<div class="bs-bar"><i style="width:${pct}%"></i></div>` : ''}
+        ${bsCompte(x)}
         <div class="bs-link"><a href="${lien(x)}" target="_blank" rel="noopener">don.emounateha.fr/besoin/${esc(x.slug)}</a></div>
         <div class="row bs-act"><button class="btn sm pri" onclick="navigator.clipboard.writeText('${lien(x)}');toast('Lien copié')">Copier le lien</button>
           <button class="btn sm" onclick="besoinModal('${x.id}')">Modifier</button>
           ${x.dons ? `<button class="btn sm" onclick="besoinDons('${x.id}')">Voir les dons</button>` : ''}
+          ${x.dons || (x.versements || []).length ? `<button class="btn sm" onclick="besoinVerse('${x.id}')">Noter un versement</button>` : ''}
           <button class="btn sm" onclick="besoinActif('${x.id}',${x.actif ? 'false' : 'true'})">${x.actif ? 'Clôturer' : 'Rouvrir'}</button>
           ${x.dons ? '' : `<button class="btn sm bad" onclick="besoinDel('${x.id}')">Supprimer</button>`}</div>
       </div>`; }).join('')}</div>` : '<div class="card empty"><big>♥</big>Aucun besoin pour l\'instant. Créez-en un : un retard de loyer, une armoire, des repas…</div>'}`;
@@ -400,6 +403,47 @@ async function doImport() {
 }
 
 // ---- Besoins (mini-cagnottes)
+const bsEur = c => ((c || 0) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+// compte de la cagnotte : ce que l'association doit au bénéficiaire (collecté − frais bancaires réels), ce qui est déjà versé, ce qui reste dû
+function bsCompte(x) {
+  const c = x.compte, verse = x.verse || 0;
+  if (!x.dons && !verse) return '';
+  if (!c) return `<div class="bs-cpt"><p class="bs-cn">Somme à reverser : calcul indisponible pour l'instant (frais bancaires non lus).${verse ? ' Déjà versé : <b>' + bsEur(verse) + '</b>.' : ''}</p></div>`;
+  const solde = verse > 0 && c.reste <= 0, L = [['Collecté', bsEur(c.brut)], ['− Frais bancaires', '− ' + bsEur(c.frais)]];
+  if (c.rembourse) L.push(['− Dons remboursés', '− ' + bsEur(c.rembourse)]);
+  if (c.retenue) L.push(['− Frais de collecte', '− ' + bsEur(c.retenue)]);
+  return `<div class="bs-cpt">
+    ${L.map(l => `<div class="bs-cl"><span>${l[0]}</span><span>${l[1]}</span></div>`).join('')}
+    <div class="bs-cl tot"><span>À reverser${x.beneficiaire ? ' à ' + esc(x.beneficiaire) : ''}</span><b>${bsEur(c.aReverser)}</b></div>
+    <div class="bs-cl"><span>Déjà versé${(x.versements || []).length ? ' (' + x.versements.length + ' versement' + (x.versements.length > 1 ? 's' : '') + ')' : ''}</span><span>${bsEur(verse)}</span></div>
+    <div class="bs-cl du${solde ? ' ok' : ''}"><span>${c.reste < 0 ? 'Versé en trop' : 'Reste dû'}</span><b>${bsEur(Math.abs(c.reste))}${solde && c.reste === 0 ? ' · soldé' : ''}</b></div>
+    ${c.enCours ? '<p class="bs-cn">Un don récent n\'est pas encore compté par la banque : le chiffre se met à jour sous quelques minutes.</p>' : ''}
+    ${c.litiges ? `<p class="bs-cn">${c.litiges} paiement${c.litiges > 1 ? 's' : ''} contesté${c.litiges > 1 ? 's' : ''} par un donateur : attendez l'issue avant de tout reverser.</p>` : ''}
+    ${x.actif && !solde ? '<p class="bs-cn">Cagnotte encore ouverte : le montant peut encore augmenter.</p>' : ''}
+  </div>`;
+}
+function besoinVerse(id) {
+  const b = besoinOf(id); if (!b) return; const c = b.compte, vs = [...(b.versements || [])].sort((x, y) => String(y.date).localeCompare(String(x.date)));
+  const reste = c && c.reste > 0 ? (c.reste / 100).toFixed(2).replace('.', ',') : '';
+  modal(`<h2>Versement pour « ${esc(b.titre)} »</h2>
+    <p class="hint">Faites d'abord le virement depuis la banque de l'association, puis notez-le ici. Le CRM ne déplace aucun argent : il tient seulement le compte.</p>
+    ${c ? `<p class="hint">À reverser : <b>${bsEur(c.aReverser)}</b> · déjà versé : <b>${bsEur(b.verse)}</b> · reste dû : <b>${bsEur(Math.max(0, c.reste))}</b></p>` : ''}
+    <div class="grid g2"><div><label>Montant versé (€)</label><input id="v_m" inputmode="decimal" value="${reste}" placeholder="ex. 980,00"></div>
+      <div><label>Date du virement</label><input id="v_d" type="date" value="${new Date().toLocaleDateString('sv-SE')}"></div></div>
+    <label>Note <span class="opt">facultatif</span></label><input id="v_n" maxlength="140" placeholder="ex. virement, chèque n° 1234">
+    ${vs.length ? `<h3 style="margin:18px 0 6px;font-size:15px">Versements notés</h3><table style="width:100%;font-size:14px"><tbody>${vs.map(v => `<tr><td>${new Date(v.date + 'T12:00:00').toLocaleDateString('fr-FR')}</td><td>${esc(v.note || '')}</td><td align="right"><b>${bsEur(v.montant)}</b></td><td align="right"><button class="btn sm bad" title="Retirer ce versement (erreur de saisie)" onclick="besoinVerseDel('${id}','${v.id}')">✕</button></td></tr>`).join('')}</tbody></table>` : ''}
+    <div class="row r" style="margin-top:22px"><button class="btn" onclick="closeModal()">Fermer</button><button class="btn pri" id="v_go" onclick="besoinVerseSave('${id}')">Noter le versement</button></div>`);
+}
+async function besoinVerseSave(id) {
+  const montant = $('#v_m').value.trim(); if (!(parseFloat(montant.replace(/\s/g, '').replace(',', '.')) > 0)) return toast('Indiquez le montant versé', true);
+  const b = besoinOf(id), c = b && b.compte, cents = Math.round(parseFloat(montant.replace(/\s/g, '').replace(',', '.')) * 100);
+  if (c && cents > Math.max(0, c.reste) && !confirm('Ce montant dépasse le reste dû (' + bsEur(Math.max(0, c.reste)) + '). Le noter quand même ?')) return;
+  $('#v_go').disabled = true;
+  try { await api('POST', '/besoins/' + id + '/versements', { montant, date: $('#v_d').value, note: $('#v_n').value.trim() }); closeModal(); await load(); await render(); toast('Versement noté'); }
+  catch (e) { $('#v_go').disabled = false; toast(e.message, true); }
+}
+async function besoinVerseDel(id, vid) { if (!confirm('Retirer ce versement du compte ? (à faire seulement en cas d\'erreur de saisie)')) return;
+  try { await api('DELETE', '/besoins/' + id + '/versements/' + vid); await load(); await render(); besoinVerse(id); toast('Versement retiré'); } catch (e) { toast(e.message, true); } }
 const besoinOf = id => ((S.besoins || {}).list || []).find(x => x.id === id);
 const bsSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
 function besoinModal(id) {
