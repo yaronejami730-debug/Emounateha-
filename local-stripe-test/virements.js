@@ -23,7 +23,7 @@ function contenu(mouvements) {
   return { dons, brut, frais, rembourse, autres, net: brut - frais + rembourse + autres };
 }
 
-function mailVirement(p, c, { echec = false, test = false } = {}) {
+function mailVirement(p, c, { echec = false, test = false, exemple = false } = {}) {
   const b = p.destination && typeof p.destination === 'object' ? p.destination : null;
   const banque = b ? [b.bank_name, b.last4 ? '···· ' + b.last4 : ''].filter(Boolean).join(' ') : '';
   const L = [];
@@ -38,8 +38,8 @@ function mailVirement(p, c, { echec = false, test = false } = {}) {
     if (c.autres) D.push(['Autres mouvements', (c.autres < 0 ? '− ' : '+ ') + eur(Math.abs(c.autres))]);
     if (c.net !== p.amount) D.push(['Écart avec le montant viré', eur(p.amount - c.net) + ' (solde reporté ou mouvement hors dons)']);
   }
-  const subject = (test ? '[TEST] ' : '') + (echec ? 'Virement Stripe REFUSÉ : ' + eur(p.amount) : 'Virement Stripe vers la banque : ' + eur(p.amount) + ', arrivée ' + new Date(p.arrival_date * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }));
-  const intro = echec ? "Stripe n'a pas pu verser cette somme sur le compte bancaire de l'association. L'argent reste sur le compte Stripe ; vérifiez le RIB dans Stripe." : "Stripe vient de lancer un virement vers le compte bancaire de l'association.";
+  const subject = (exemple ? '[EXEMPLE] ' : test ? '[TEST] ' : '') + (echec ? 'Virement Stripe REFUSÉ : ' + eur(p.amount) : 'Virement Stripe vers la banque : ' + eur(p.amount) + ', arrivée ' + new Date(p.arrival_date * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }));
+  const intro = exemple ? "CECI EST UN EXEMPLE : aucun virement réel n'a eu lieu, les montants ci-dessous sont inventés. Vous recevrez un e-mail comme celui-ci à chaque virement de Stripe vers le compte bancaire de l'association." : echec ? "Stripe n'a pas pu verser cette somme sur le compte bancaire de l'association. L'argent reste sur le compte Stripe ; vérifiez le RIB dans Stripe." : "Stripe vient de lancer un virement vers le compte bancaire de l'association.";
   const text = intro + '\n\n' + L.concat(D).map(x => x[0] + ' : ' + x[1]).join('\n') + '\n\nRéférence Stripe : ' + p.id + (test ? '\nCompte Stripe de TEST : ce ne sont pas de vrais dons.' : '');
   const tab = R => '<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse">' + R.map((x, i) => `<tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;${i === 0 ? 'font-weight:bold;' : ''}">${esc(x[0])}</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;${i === 0 ? 'font-weight:bold;font-size:17px;color:' + (echec ? '#b91c1c' : '#1f6a72') + ';' : ''}">${esc(x[1])}</td></tr>`).join('') + '</table>';
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:560px"><h2 style="color:${echec ? '#b91c1c' : '#1f6a72'};margin:0 0 6px">${echec ? 'Virement refusé' : 'Virement vers la banque'}</h2><p style="margin:0 0 14px;color:#4b5563">${esc(intro)}</p>${tab(L)}${D.length ? '<p style="margin:18px 0 4px;font-weight:bold">Ce que contient ce virement</p>' + tab(D).replace(/font-weight:bold;font-size:17px;color:#1f6a72;/, '').replace('font-weight:bold;', '') : ''}<p style="margin:14px 0 0;font-size:12px;color:#6b7280">Référence Stripe : ${esc(p.id)}. Montants lus dans Stripe, sans estimation.${test ? ' <b>Compte Stripe de TEST.</b>' : ''}</p></div>`;
@@ -51,6 +51,11 @@ function monter(app, { stripe, adminOk, mailer, load, save }) {
     if (!adminOk(req, res)) return;
     if (!stripe) return res.status(503).json({ error: 'Stripe non configuré' });
     try {
+      if (req.body && req.body.exemple) {   // e-mail d'exemple, pour montrer à l'administrateur ce qu'il recevra : montants inventés, rien n'est lu ni noté
+        const n = Math.floor(Date.now() / 1000), m = mailVirement({ id: 'exemple', amount: 98000, currency: 'eur', status: 'in_transit', created: n, arrival_date: n + 3 * 86400, destination: null }, { dons: 12, brut: 100000, frais: 2000, rembourse: 0, autres: 0, net: 98000 }, { exemple: true });
+        const env = await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text });
+        return res.json({ ok: true, exemple: true, envoye: !!(env && env.sent) });
+      }
       const test = !/^sk_live_/.test(process.env.STRIPE_SECRET_KEY || ''), d = load(), etat = d.virements || null;
       const liste = (await stripe.payouts.list({ limit: 30, expand: ['data.destination'] })).data || [];
       if (!etat) {   // mise en service : on part de maintenant, sans e-mail pour le passé

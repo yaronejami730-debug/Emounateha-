@@ -635,6 +635,19 @@ async function verifierVirements() {
     return j;
   } catch (e) { s.virementsVerif = ''; save(); console.error('virements', e.message); return null; }
 }
+// Envois uniques demandés par Yarone le 11 nov. 2026 (un marqueur par envoi, jamais dans les réglages par défaut) :
+//  - relevé de commission de rattrapage : dons reçus avant la mise en place du relevé hebdomadaire (le 1er relevé hebdomadaire couvre la semaine du 9 novembre) ;
+//  - e-mail d'exemple « virement Stripe » à l'administrateur.
+async function envoisUniques() {
+  const s = db.settings, faire = async (marque, chemin, corps, bon) => {
+    if (s[marque]) return;
+    try { const r = await fetch(DON_URL + chemin, { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', chemin) }, body: JSON.stringify(corps), signal: AbortSignal.timeout(40000) }); const j = await r.json().catch(() => ({}));
+      if (r.ok && bon(j)) { s[marque] = new Date().toISOString(); save(); console.log('envoi unique', marque, JSON.stringify(j).slice(0, 300)); } else console.error('envoi unique', marque, r.status, JSON.stringify(j).slice(0, 200)); }
+    catch (e) { console.error('envoi unique', marque, e.message); }
+  };
+  await faire('rattrapageCommission', '/api/admin/commission/envoyer', { du: '2025-11-10', au: '2026-11-08' }, j => j.envoye === true);
+  await faire('exempleVirement', '/api/admin/virements/verifier', { exemple: true }, j => j.exemple === true && j.envoye === true);
+}
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
   ticking = true;
@@ -643,6 +656,7 @@ async function tick(force = false) {
     ensureForfait(); ensureAccords(); nettoyerContactsTest();
     await releveCommission();
     await verifierVirements();
+    await envoisUniques();
     const s = db.settings;
     const q = await brevoQuota(force); await alerteQuota(q);
     const h = parisHour();

@@ -62,8 +62,8 @@ async function mouvementsStripe(stripe, du, au) {   // bornes incluses, jours de
 // Relevé de la semaine écoulée, en texte, en HTML et en CSV (pièce jointe). Aucune donnée de donateur : dates, libellés Stripe, montants.
 const eur = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const jourLong = j => new Date(j + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-function releveMail(p, r, live) {
-  const titre = `Semaine du ${jourLong(p.du)} au ${jourLong(p.au)}`, tx = String(r.taux).replace('.', ',');
+function releveMail(p, r, live, rattrapage) {
+  const titre = rattrapage ? `Rattrapage : période du ${jourLong(p.du)} au ${jourLong(p.au)}` : `Semaine du ${jourLong(p.du)} au ${jourLong(p.au)}`, tx = String(r.taux).replace('.', ',');
   const L = [['Dons encaissés (' + r.nbDons + ')', eur(r.brut)], ['− Frais Stripe', '− ' + eur(r.frais)]];
   if (r.rembourse) L.push(['− Remboursements', '− ' + eur(-r.rembourse)]);
   if (r.litiges) L.push([r.litiges < 0 ? '− Litiges' : '+ Litiges regagnés', (r.litiges < 0 ? '− ' : '+ ') + eur(Math.abs(r.litiges))]);
@@ -90,12 +90,15 @@ function monter(app, { stripe, adminOk, mailer, load, save }) {
       const to = String(process.env.COMMISSION_EMAIL || '').trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) return res.json({ ok: true, envoye: false, raison: 'COMMISSION_EMAIL non renseigné' });
       if (!stripe) return res.status(503).json({ error: 'Stripe non configuré' });
-      const p = semainePrecedente(semaine(parisJour(Date.now()))), d = load();
-      if (d.commission && d.commission.dernierReleve === p.du && !req.body.forcer) return res.json({ ok: true, envoye: false, raison: 'déjà envoyé pour la semaine du ' + p.du });
-      const live = /^sk_live_/.test(process.env.STRIPE_SECRET_KEY || ''), r = calculer(await mouvementsStripe(stripe, p.du, p.au)), m = releveMail(p, r, live);
+      // période au choix (rattrapage des dons reçus avant la mise en place du relevé hebdomadaire) : { du, au } ; sinon la semaine écoulée
+      const b = req.body || {}, bon = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')), rattrapage = bon(b.du) && bon(b.au) && b.du <= b.au;
+      if (rattrapage && (Date.parse(b.au) - Date.parse(b.du)) / 86400000 > 370) return res.status(400).json({ error: 'Période trop longue (un an au plus)' });
+      const p = rattrapage ? { du: b.du, au: b.au } : semainePrecedente(semaine(parisJour(Date.now()))), d = load();
+      if (!rattrapage && d.commission && d.commission.dernierReleve === p.du && !b.forcer) return res.json({ ok: true, envoye: false, raison: 'déjà envoyé pour la semaine du ' + p.du });
+      const live = /^sk_live_/.test(process.env.STRIPE_SECRET_KEY || ''), r = calculer(await mouvementsStripe(stripe, p.du, p.au)), m = releveMail(p, r, live, rattrapage);
       const env = await mailer.send({ to, toName: 'Prestataire technique', subject: m.subject, html: m.html, text: m.text, attachments: [{ filename: m.fichier, content: Buffer.from(m.csv, 'utf8'), contentType: 'text/csv; charset=utf-8' }] });
-      const d2 = load(); d2.commission = { ...(d2.commission || {}), dernierReleve: p.du, envoyeLe: new Date().toISOString() }; save(d2);
-      res.json({ ok: true, envoye: true, periode: p, commission: r.commission, net: r.net, controle: r.controle, mail: env && (env.sent !== undefined ? env.sent : true) });
+      const d2 = load(); d2.commission = rattrapage ? { ...(d2.commission || {}), rattrapage: { du: p.du, au: p.au, envoyeLe: new Date().toISOString(), net: r.net, commission: r.commission } } : { ...(d2.commission || {}), dernierReleve: p.du, envoyeLe: new Date().toISOString() }; save(d2);
+      res.json({ ok: true, envoye: true, rattrapage, periode: p, nbDons: r.nbDons, commission: r.commission, net: r.net, controle: r.controle, mail: env && (env.sent !== undefined ? env.sent : true) });
     } catch (e) { console.error('commission/envoyer', e.message); res.status(502).json({ error: e.message }); }
   });
 
