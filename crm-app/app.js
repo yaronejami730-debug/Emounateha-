@@ -257,8 +257,6 @@ const views = {
     <div class="grid g4" style="margin-top:16px">${(S.diffusion || []).map(d => `<div class="card" style="padding:12px;cursor:pointer" onclick="editDiffusion('${d.id}')" title="Cliquer pour ajouter ou changer le lien vidéo">${d.has_image===false?`<div style="height:220px;border-radius:10px;background:#111 url(https://i.ytimg.com/vi/${(String(d.youtube||'').match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})/)||[])[1]||''}/hqdefault.jpg) center/auto 100%"></div>`:`<img src="/diffusion/${d.id}.jpg" style="width:100%;height:220px;object-fit:cover;object-position:top;border-radius:10px;display:block">`}<div class="row" style="margin-top:10px"><div class="grow"><b>${new Date(d.day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</b><div class="hint" style="margin:0">${esc(d.name || '')} ${d.youtube ? '▶ YouTube ' : ''}${d.day > today ? '· <span class="pill blue">programmée</span>' : ''}</div></div><button class="btn sm bad" onclick="event.stopPropagation();delDiffusion('${d.id}')">✕</button></div></div>`).join('') || '<div class="card empty" style="grid-column:1/-1"><big>☀</big>Aucune diffusion. Ajoutez la première image.</div>'}</div>`;
   },
 
-  commission: () => `<div class="head"><div><h1>Commission du prestataire technique</h1><p class="sub">Calculée chaque semaine, du lundi au dimanche, sur ce que l'association a réellement encaissé par Stripe</p></div></div>
-    <div id="comBody"><div class="card">Lecture des mouvements Stripe…</div></div>`,
   besoins: () => {
     const B = S.besoins || {}, list = B.list || [];
     const eur = c => ((c || 0) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
@@ -646,7 +644,6 @@ async function render(skipLoad) {
   if (route === 'campaigns') loadAttribution();
   if (route === 'sms') smsInit();
   if (route === 'cerfa') cerfaInit();
-  if (route === 'commission') commissionInit();
   if (route === 'trafic') traficInit();
 }
 function renderKeepFocus() {
@@ -661,7 +658,7 @@ let liveSig = '', liveBusy = false;
 const userBusy = () => { const a = document.activeElement; return !!(a && a.closest('#main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || !$('#modal').classList.contains('hidden') || !!document.querySelector('#cerfaNew form, #cerfaNew input'); };
 async function liveTick() {
   if (document.hidden || liveBusy) return; const route = (location.hash.replace(/^#\/?/, '') || '');
-  if (/^(templates|settings|sms|trafic|commission)/.test(route) || /^campaigns\//.test(route)) return;
+  if (/^(templates|settings|sms|trafic)/.test(route) || /^campaigns\//.test(route)) return;
   liveBusy = true;
   try {
     if (route === 'cerfa') {
@@ -1076,46 +1073,6 @@ function mailEtat(m, bv) {
   return { c: 'blue', t: 'Parti', d: 'accepté par Brevo' };
 }
 const cfHeure = d => d ? new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-// ---------- Commission : relevé hebdomadaire (mode à blanc : calcul seulement) ----------
-let COM = { du: '', au: '' };
-const comJour = j => new Date(j + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-const comPer = p => 'du ' + comJour(p.du) + ' au ' + comJour(p.au) + ' ' + p.au.slice(0, 4);
-async function commissionInit(du, au) {
-  const b = $('#comBody'); if (!b) return;
-  if (du) COM = { du, au }; else if (du === null) COM = { du: '', au: '' };
-  b.style.opacity = '.55';
-  let d; try { d = await api('GET', '/cerfa/commission' + (COM.du ? '?du=' + COM.du + '&au=' + COM.au : '')); }
-  catch (e) { b.style.opacity = ''; b.innerHTML = '<div class="card"><p class="hint">Impossible de lire les mouvements Stripe : ' + esc(e.message) + '</p><button class="btn" onclick="commissionInit()">Réessayer</button></div>'; return; }
-  b.style.opacity = '';
-  const pill = (c2, t) => `<span class="pill ${c2}">${esc(t)}</span>`, G = { don: ['ok', 'Don'], remboursement: ['warn', 'Remboursement'], litige: ['bad', 'Litige'] };
-  const autres = Object.keys(d.inconnus || {});
-  b.innerHTML = `
-    <div class="com-note"><b>Mode à blanc.</b> Cette page calcule et affiche seulement. Aucune facture n'est créée, aucun prélèvement n'est fait.${d.live ? '' : ' <b>Compte Stripe de test</b> : ces chiffres ne sont pas de vrais dons.'}</div>
-    <div class="com-per"><b>Semaine ${esc(comPer(d.periode))}</b>${d.enCours ? pill('blue', 'en cours') : pill('', 'terminée')}${COM.du ? '<button class="btn sm" onclick="commissionInit(null)">Revenir à la semaine en cours</button>' : ''}</div>
-    <div class="cfd-kpis">
-      <div class="card stat"><small>Dons encaissés</small><b>${eurC(d.brut)}</b><em>${d.nbDons} don${d.nbDons > 1 ? 's' : ''}</em></div>
-      <div class="card stat"><small>Frais Stripe, remboursements, litiges</small><b>${eurC(d.frais - d.rembourse - d.litiges)}</b><em>${eurC(d.frais)} de frais${d.rembourse ? ' · ' + eurC(-d.rembourse) + ' remboursés' : ''}${d.litiges ? ' · ' + eurC(-d.litiges) + ' en litige' : ''}</em></div>
-      <div class="card stat"><small>Net encaissé par l'association</small><b>${eurC(d.net)}</b><em>base du calcul</em></div>
-      <div class="card stat com-tot"><small>Commission · ${String(d.taux).replace('.', ',')} % du net</small><b>${eurC(d.commission)}</b><em>reste à l'association : ${eurC(d.resteAssociation)}</em></div>
-    </div>
-    <div class="card com-calc"><b>Le calcul</b>
-      <div class="com-l"><span>Dons encaissés</span><span>${eurC(d.brut)}</span></div>
-      <div class="com-l"><span>− Frais Stripe</span><span>− ${eurC(d.frais)}</span></div>
-      ${d.rembourse ? `<div class="com-l"><span>− Remboursements</span><span>− ${eurC(-d.rembourse)}</span></div>` : ''}
-      ${d.litiges ? `<div class="com-l"><span>${d.litiges < 0 ? '− Litiges' : '+ Litiges regagnés'}</span><span>${d.litiges < 0 ? '− ' : '+ '}${eurC(Math.abs(d.litiges))}</span></div>` : ''}
-      <div class="com-l tot"><span>= Net</span><span>${eurC(d.net)}</span></div>
-      <div class="com-l tot or"><span>× ${String(d.taux).replace('.', ',')} % = Commission</span><span>${eurC(d.commission)}</span></div>
-      <p class="hint" style="margin:10px 0 0">${d.controle ? '✓ Contrôle : la somme des lignes ci-dessous redonne exactement le net, au centime.' : '<b style="color:var(--warn)">⚠ Contrôle en échec : la somme des lignes ne redonne pas le net. Ne rien facturer sur cette base.</b>'} Frais et net sont ceux que Stripe a réellement appliqués, pas une estimation. Les dons par chèque, virement ou espèces ne passent pas par Stripe et ne sont pas comptés.</p>
-      ${d.net < 0 ? '<p class="hint" style="margin:6px 0 0">Semaine négative (plus de remboursements que de dons) : commission de 0 €. Le report sur la semaine suivante reste à décider.</p>' : ''}
-      ${autres.length ? '<p class="hint" style="margin:6px 0 0;color:var(--warn)"><b>À regarder :</b> mouvements non reconnus et donc non comptés — ' + esc(autres.map(k => k + ' (' + d.inconnus[k] + ')').join(', ')) + '.</p>' : ''}
-    </div>
-    <div class="card" style="margin-top:14px"><b>Détail de la semaine</b><div class="hint" style="margin:2px 0 8px">${d.nbLignes} mouvement(s), dans l'ordre. Chaque ligne se retrouve dans le tableau de bord Stripe de l'association, rubrique Soldes.</div>
-      ${d.lignes.length ? `<div style="overflow-x:auto"><table class="tbl com-tbl"><thead><tr><th>Date</th><th>Mouvement</th><th>Libellé</th><th class="r">Montant</th><th class="r">Frais</th><th class="r">Net</th></tr></thead><tbody>${d.lignes.map(l => `<tr><td data-l="Date">${esc(new Date(l.at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }))}</td><td data-l="Mouvement">${pill(G[l.genre][0], G[l.genre][1])}</td><td data-l="Libellé">${esc(l.description || '—')}</td><td class="r" data-l="Montant">${eurC(l.brut)}</td><td class="r" data-l="Frais">${l.frais ? '− ' + eurC(l.frais) : '—'}</td><td class="r" data-l="Net"><b>${eurC(l.net)}</b></td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">Aucun don encaissé par Stripe sur cette semaine.</p>'}
-    </div>
-    <div class="card" style="margin-top:14px"><b>Semaines précédentes</b>
-      ${(d.precedentes || []).length ? `<div style="overflow-x:auto"><table class="tbl com-tbl"><thead><tr><th>Semaine</th><th class="r">Dons</th><th class="r">Encaissé</th><th class="r">Net</th><th class="r">Commission</th><th></th></tr></thead><tbody>${d.precedentes.map(p => `<tr><td data-l="Semaine">${esc(comPer(p))}</td><td class="r" data-l="Dons">${p.nbDons}</td><td class="r" data-l="Encaissé">${eurC(p.brut)}</td><td class="r" data-l="Net">${eurC(p.net)}</td><td class="r" data-l="Commission"><b>${eurC(p.commission)}</b></td><td class="r"><button class="btn sm" onclick="commissionInit('${p.du}','${p.au}')">Voir le détail</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">Rien à afficher.</p>'}
-    </div>`;
-}
 // ---------- Reçus fiscaux : un donateur, tous ses reçus ----------
 const cfNorm = t => String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const cfTel = t => String(t || '').replace(/\D/g, '').replace(/^(33|0033)/, '0');
