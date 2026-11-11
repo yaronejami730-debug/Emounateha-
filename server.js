@@ -534,7 +534,7 @@ async function sendOne(campaign, { contact, stepIndex, step }) {
     if (!t) throw new Error('Template introuvable');
     const r = await brevoSend({ to: contact.email, toName: contact.firstName, subject: fill(t.subject, contact), html: renderEmail(t, contact, { campaignId: campaign.id, templateId: step.templateId, sendId: rec.id }) });
     rec.status = r.simulated ? 'simulated' : 'sent'; rec.messageId = r.messageId;
-  } catch (e) { rec.status = 'error'; rec.error = e.message; if (e.quota) { rec.quota = true; db.settings.pausedUntil = nextMidnight(); } }
+  } catch (e) { rec.status = 'error'; rec.error = e.message; console.error('envoi refusé', e.message, e.quota ? '(pause jusqu\'à demain)' : ''); if (e.quota) { rec.quota = true; db.settings.pausedUntil = nextMidnight(); } }
   db.sends.push(rec); save();
   return rec;
 }
@@ -827,7 +827,7 @@ async function sendChabbat(contact, key, mode, cache) {
   try {
     const r = await brevoSend({ to: contact.email, toName: contact.firstName, subject: fill(t.subject, contact), html: renderEmail(t, contact, { campaignId: 'chabbat', templateId: key, sendId: rec.id }) });
     rec.status = r.simulated ? 'simulated' : 'sent'; rec.messageId = r.messageId;
-  } catch (e) { rec.status = 'error'; rec.error = e.message; if (e.quota) { rec.quota = true; db.settings.pausedUntil = nextMidnight(); } }
+  } catch (e) { rec.status = 'error'; rec.error = e.message; console.error('envoi refusé', e.message, e.quota ? '(pause jusqu\'à demain)' : ''); if (e.quota) { rec.quota = true; db.settings.pausedUntil = nextMidnight(); } }
   db.sends.push(rec); save(); return rec;
 }
 
@@ -1850,7 +1850,7 @@ async function handle(req, res) {
       const key = envVar('CRON_SECRET');
       const got = (req.headers.authorization || '').replace(/^Bearer /, '') || url.searchParams.get('key');
       if (!key || got !== key) return send(res, 401, { error: 'non autorisé' });
-      return send(res, 200, await tick());
+      { const r = await tick(); console.log('envois', JSON.stringify(r).slice(0, 300), 'pause', db.settings.pausedUntil || '-'); return send(res, 200, r); }
     }
     // webhook AlloDons (test) : journalise l'événement reçu ; route publique
     if (url.pathname === '/webhooks/allodons' && req.method === 'POST') {
