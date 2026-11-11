@@ -102,14 +102,20 @@ const views = {
   trafic: () => `<div class="head"><div><h1>Trafic du site</h1><p class="sub">Visiteurs uniques, page par page, et qui est sur le site en ce moment</p></div>
       <div class="cf-seg" id="tfSeg">${[[1, "Aujourd'hui"], [7, '7 jours'], [30, '30 jours'], [90, '90 jours']].map(([n, l]) => `<button type="button" data-j="${n}" class="${TF.jours === n ? 'on' : ''}" onclick="traficJours(${n})">${l}</button>`).join('')}</div></div>
     <div id="tfBody"><div class="card">Chargement…</div></div>`,
-  cerfa: () => `<div class="head"><div><h1>Reçus fiscaux (CERFA)</h1><p class="sub">Reçus faits automatiquement par don.emounateha.fr, et reçus manuels (virement, chèque, espèces)</p></div>
+  cerfa: () => `<div class="head"><div><h1>Reçus fiscaux (CERFA)</h1><p class="sub">Chaque donateur avec tous ses reçus : dons en ligne sur don.emounateha.fr et reçus manuels (virement, chèque, espèces)</p></div>
       <button class="btn pri" onclick="cerfaForm()">＋ Nouveau reçu manuel</button></div>
     <div id="cerfaNew"></div>
-    <div class="card"><div class="row" style="align-items:center"><b class="grow">Tous les reçus</b>
-      <select id="cfFiltre" onchange="cerfaList()" style="width:auto"><option value="">Tous</option><option value="en ligne">En ligne</option><option value="manuel">Manuels</option></select>
-      <input id="cfQ" placeholder="Rechercher un nom, un n°…" oninput="cerfaList()" style="width:220px">
-      <button class="btn" id="cfTests" onclick="cerfaSupprTests()" style="display:none" title="Retire uniquement les reçus numérotés TEST-… (aucun don réel)">Supprimer les reçus de test</button></div>
-      <div id="cerfaTab" style="margin-top:10px">Chargement…</div></div>`,
+    <div class="cfd-kpis" id="cfKpis"></div>
+    <div class="card cfd-bar">
+      <label class="cfd-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.500-3.500"/></svg>
+        <input id="cfQ" type="search" autocomplete="off" placeholder="Nom, prénom, téléphone, e-mail, code postal, adresse, n° de reçu…" oninput="cerfaList()"><button type="button" class="cfd-x" id="cfX" onclick="$('#cfQ').value='';cerfaList();$('#cfQ').focus()" hidden aria-label="Effacer la recherche">✕</button></label>
+      <div class="cfd-tools">
+        <div class="cf-seg" id="cfVue">${[['don', 'Par donateur'], ['recus', 'Tous les reçus']].map(([k, l]) => `<button type="button" class="${(CF.vue || 'don') === k ? 'on' : ''}" onclick="cerfaVue('${k}')">${l}</button>`).join('')}</div>
+        <select id="cfFiltre" onchange="cerfaList()" style="width:auto"><option value="">Toutes les origines</option><option value="en ligne">En ligne</option><option value="manuel">Manuels</option></select>
+        <select id="cfEtat" onchange="cerfaList()" style="width:auto"><option value="">Tous les e-mails</option><option value="ok">Ouvert ou délivré</option><option value="blue">Parti</option><option value="bad">Problème</option><option value="non">Non envoyé</option></select>
+        <button class="btn" id="cfTests" onclick="cerfaSupprTests()" style="display:none" title="Retire uniquement les reçus numérotés TEST-… (aucun don réel)">Supprimer les reçus de test</button>
+      </div></div>
+    <div id="cerfaTab">Chargement…</div>`,
   '': () => {
     const running = S.campaigns.filter(c => c.status === 'running').length;
     const totalSent = S.campaigns.reduce((a, c) => a + c.stats.sent, 0);
@@ -1018,7 +1024,7 @@ views.sms = () => `
 
 
 // ================= CERFA : liste + reçus manuels =================
-let CF = { recus: [], modes: ['Virement bancaire', 'Chèque', 'Espèces'], affs: [] };
+let CF = { recus: [], modes: ['Virement bancaire', 'Chèque', 'Espèces'], affs: [], vue: 'don', ouverts: {} };
 const eurC = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 async function cerfaSupprTests() {
   const tests = CF.recus.filter(r => /^TEST-/i.test(r.numero || ''));
@@ -1043,11 +1049,58 @@ function mailEtat(m, bv) {
   return { c: 'blue', t: 'Parti', d: 'accepté par Brevo' };
 }
 const cfHeure = d => d ? new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+// ---------- Reçus fiscaux : un donateur, tous ses reçus ----------
+const cfNorm = t => String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const cfTel = t => String(t || '').replace(/\D/g, '').replace(/^(33|0033)/, '0');
+const cfTelFr = t => { const d = cfTel(t); return /^0\d{9}$/.test(d) ? d.replace(/(\d\d)(?=\d)/g, '$1 ') : String(t || ''); };
+// tout ce sur quoi on peut chercher, pour un reçu
+function cfTexte(r) {
+  const tel = cfTel(r.tel), num = String(r.numero || '');
+  return cfNorm([r.nom, r.prenom, r.nomFamille, r.email, r.tel, tel, tel.replace(/^0/, '33'), r.adresse, r.cp, r.ville, r.siren, num, num.replace(/\D/g, ''), r.mode, r.affectation, r.besoin, r.ambassadeur, r.source, r.montant != null ? (r.montant / 100).toFixed(2).replace('.', ',') : '', r.montant != null ? String(Math.round(r.montant / 100)) : '', new Date(r.dateDon).toLocaleDateString('fr-FR'), new Date(r.dateDon).getFullYear()].join(' | '));
+}
+function cfCherche(r, mots) { if (!mots.length) return true; const t = r._t || (r._t = cfTexte(r)), ch = t.replace(/[^0-9|]/g, ''); return mots.every(m => t.includes(m) || (/^\d[\d .-]*\d$/.test(m) && ch.includes(m.replace(/\D/g, '')))); }
+const cfCle = r => r.email ? 'm:' + cfNorm(r.email).trim() : 'n:' + cfNorm(r.nom).replace(/\s+/g, ' ').trim() + '|' + (r.cp || cfNorm(r.adresse).slice(0, 24));
+const cfInit = n => { const p = String(n || '?').trim().split(/\s+/).filter(Boolean); return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase(); };
+const cfIco = { mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.500"/><path d="m3.500 7 8.500 6 8.500-6"/></svg>', tel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.500" width="10" height="19" rx="2.500"/><path d="M11 18h2"/></svg>', lieu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.200-7-11.200A7 7 0 0 1 19 9.800C19 14.800 12 21 12 21z"/><circle cx="12" cy="10" r="2.500"/></svg>' };
+function cerfaVue(k) { CF.vue = k; document.querySelectorAll('#cfVue button').forEach((b, i) => b.classList.toggle('on', ['don', 'recus'][i] === k)); cerfaList(); }
+function cerfaOuvre(k) { CF.ouverts = CF.ouverts || {}; CF.ouverts[k] = !CF.ouverts[k]; const el = document.querySelector('.cfd[data-k="' + CSS.escape(k) + '"]'); if (el) el.classList.toggle('open', !!CF.ouverts[k]); }
 function cerfaList() {
-  const f = ($('#cfFiltre') || {}).value || '', q = (($('#cfQ') || {}).value || '').toLowerCase();
-  const l = CF.recus.filter(r => (!f || r.source === f) && (!q || (r.nom + ' ' + r.numero + ' ' + (r.email || '')).toLowerCase().includes(q)));
+  const f = ($('#cfFiltre') || {}).value || '', et = ($('#cfEtat') || {}).value || '', brut = (($('#cfQ') || {}).value || '').trim(), mots = cfNorm(brut).split(/\s+/).filter(Boolean);
+  const x = $('#cfX'); if (x) x.hidden = !brut;
+  const etatOk = r => { if (!et) return true; const e = mailEtat(r.mail, r.brevo); return et === 'non' ? !r.mail : e.c === et; };
+  const l = CF.recus.filter(r => (!f || r.source === f) && etatOk(r) && cfCherche(r, mots));
+  // chiffres du haut : toujours sur l'ensemble des reçus
+  const tous = CF.recus, cles = new Set(tous.map(cfCle)), an = new Date().getFullYear(), totAn = tous.filter(r => new Date(r.dateDon).getFullYear() === an).reduce((t, r) => t + (r.montant || 0), 0);
+  const k = $('#cfKpis'); if (k) k.innerHTML = [['Donateurs', cles.size, ''], ['Reçus fiscaux', tous.length, tous.filter(r => r.source === 'manuel').length + ' manuel(s)'], ['Total des dons', eurC(tous.reduce((t, r) => t + (r.montant || 0), 0)), 'dont ' + eurC(totAn) + ' en ' + an], ['E-mails à surveiller', tous.filter(r => !r.mail || mailEtat(r.mail, r.brevo).c === 'bad').length, 'non envoyés ou en échec']].map(([a, b, c2]) => `<div class="card stat"><small>${a}</small><b>${b}</b><em>${c2}</em></div>`).join('');
+  if ((CF.vue || 'don') === 'recus') return cerfaTable(l);
+  // regroupement par donateur
+  const g = new Map();
+  for (const r of l) { const c2 = cfCle(r); if (!g.has(c2)) g.set(c2, []); g.get(c2).push(r); }
+  const don = [...g.entries()].map(([cle, rs]) => { rs.sort((a, b) => String(b.creeLe || b.dateDon).localeCompare(String(a.creeLe || a.dateDon))); const d = rs[0], coord = rs.find(r => r.adresse) || d;
+    return { cle, rs, nom: d.nom, type: d.type, email: (rs.find(r => r.email) || {}).email || '', tel: (rs.find(r => r.tel) || {}).tel || '', adresse: coord.adresse || '', total: rs.reduce((t, r) => t + (r.montant || 0), 0), dernier: d.dateDon, mensuel: rs.some(r => r.mensuel), pb: rs.filter(r => !r.mail || mailEtat(r.mail, r.brevo).c === 'bad').length, tout: (g0 => g0)(CF.recus.filter(r => cfCle(r) === cle).length) }; })
+    .sort((a, b) => String(b.rs[0].creeLe || b.dernier).localeCompare(String(a.rs[0].creeLe || a.dernier)));
+  const pill = (c2, t) => `<span class="pill ${c2}">${esc(t)}</span>`, O = CF.ouverts || {}, forcer = mots.length > 0 && don.length <= 6;
+  $('#cerfaTab').innerHTML = !don.length ? `<div class="card cfd-vide"><b>Aucun donateur ne correspond${brut ? ' à « ' + esc(brut) + ' »' : ''}.</b><p class="hint">La recherche porte sur le nom, le prénom, le téléphone, l'e-mail, le code postal, l'adresse, la ville, le numéro de reçu, le montant et la date.</p></div>`
+    : `<div class="hint cfd-count">${don.length} donateur(s) · ${l.length} reçu(s) · ${eurC(l.reduce((t, r) => t + (r.montant || 0), 0))}${brut || f || et ? ' · résultat filtré' : ''}</div>` + don.map(d => {
+      const pro = d.type === 'entreprise';
+      return `<article class="cfd${O[d.cle] || forcer ? ' open' : ''}" data-k="${esc(d.cle)}">
+        <button type="button" class="cfd-h" onclick="cerfaOuvre(this.parentNode.dataset.k)" aria-label="Voir les reçus de ${esc(d.nom)}">
+          <span class="cfd-av${pro ? ' pro' : ''}">${esc(cfInit(d.nom))}</span>
+          <span class="cfd-id"><b>${esc(d.nom)}</b><span class="cfd-tags">${pill(pro ? 'blue' : '', pro ? 'Professionnel' : 'Particulier')}${d.mensuel ? pill('ok', 'Don mensuel') : ''}${d.rs.some(r => r.source === 'manuel') ? pill('warn', 'Reçu manuel') : ''}${d.pb ? pill('bad', d.pb + ' e-mail' + (d.pb > 1 ? 's' : '') + ' à revoir') : ''}</span>
+            <span class="cfd-co">${d.email ? `<span>${cfIco.mail}${esc(d.email)}</span>` : ''}${d.tel ? `<span>${cfIco.tel}${esc(cfTelFr(d.tel))}</span>` : ''}${d.adresse ? `<span>${cfIco.lieu}${esc(d.adresse)}</span>` : ''}</span></span>
+          <span class="cfd-nb"><b>${eurC(d.total)}</b><small>${d.rs.length} reçu${d.rs.length > 1 ? 's' : ''}${d.tout > d.rs.length ? ' sur ' + d.tout : ''} · dernier don le ${esc(new Date(d.dernier).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }))}</small></span>
+          <span class="cfd-ch" aria-hidden="true">▾</span>
+        </button>
+        <div class="cfd-rs">${d.rs.map(r => { const e = mailEtat(r.mail, r.brevo), cree = r.creeLe || (r.source === 'en ligne' ? r.dateDon : null);
+          return `<div class="cfd-r"><div class="cfd-r1"><b class="cfd-num">${esc(r.numero)}</b><span class="cfd-mt">${eurC(r.montant)}</span></div>
+            <div class="cfd-r2"><span>Don du ${esc(new Date(r.dateDon).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}</span><span>${esc(String(r.mode || '').split(' — ')[0])}</span>${r.affectation ? `<span>${esc(r.affectation)}</span>` : ''}${cree ? `<span class="hint">reçu créé le ${esc(cfHeure(cree))}</span>` : ''}</div>
+            <div class="cfd-tags">${pill(r.source === 'manuel' ? 'warn' : 'ok', r.source === 'manuel' ? 'Manuel' : 'En ligne')}<span class="pill ${e.c}" title="${esc(e.d)}">${r.mail ? 'E-mail : ' : ''}${esc(e.t)}</span>${r.mensuel ? pill('ok', 'Mensuel') : ''}${r.besoin ? pill('blue', 'Cagnotte') : ''}${r.ambassadeur ? pill('blue', 'Ambassadeur') : ''}${r.remplace ? pill('', 'Remplace ' + r.remplace) : ''}${r.mail && r.mail.at ? `<span class="hint">${esc(cfHeure(r.mail.at))}${r.envois > 1 ? ' · ' + r.envois + ' envois' : ''}</span>` : ''}</div>
+            <div class="cfd-act"><a class="btn sm" href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">PDF</a><button class="btn sm" onclick="cerfaMail('${esc(r.ref)}')">Voir le mail</button><button class="btn sm${r.mail && r.mail.sent ? '' : ' pri'}" onclick="cerfaEnvoyer('${esc(r.ref)}')">${r.mail && r.mail.sent ? 'Renvoyer' : 'Envoyer'}</button></div></div>`; }).join('')}</div>
+      </article>`; }).join('') + (CF.brevoOk === false ? '<p class="hint" style="margin-top:8px">Brevo ne répond pas pour l\'instant : « Parti » peut cacher un mail déjà délivré.</p>' : '');
+}
+function cerfaTable(l) {
   const tot = l.reduce((t, r) => t + (r.montant || 0), 0);
-  $('#cerfaTab').innerHTML = !l.length ? '<p class="hint">Aucun reçu pour le moment.</p>' : `<div class="hint" style="margin-bottom:8px">${l.length} reçu(s) · total ${eurC(tot)} · du plus récent au plus ancien, dans l'ordre où ils ont été créés</div>
+  $('#cerfaTab').innerHTML = !l.length ? '<div class="card"><p class="hint">Aucun reçu ne correspond.</p></div>' : `<div class="card"><div class="hint" style="margin-bottom:8px">${l.length} reçu(s) · total ${eurC(tot)} · du plus récent au plus ancien, dans l'ordre où ils ont été créés</div>
     <div style="overflow-x:auto"><table class="tbl cf-tbl"><thead><tr><th>N°</th><th>Créé le</th><th>Donateur</th><th>Montant</th><th>Mode</th><th>Origine</th><th>E-mail du reçu</th><th></th></tr></thead><tbody>
     ${l.map(r => { const e = mailEtat(r.mail, r.brevo), cree = r.creeLe || (r.source === 'en ligne' ? r.dateDon : null), jd = new Date(r.dateDon).toLocaleDateString('fr-FR');
       return `<tr><td><b>${esc(r.numero)}</b></td>
@@ -1058,7 +1111,7 @@ function cerfaList() {
       <td class="cf-act"><a class="btn sm" href="/api/cerfa/pdf?f=${encodeURIComponent(r.file)}" target="_blank" rel="noopener">PDF</a>
         <button class="btn sm" onclick="cerfaMail('${esc(r.ref)}')">Voir le mail</button>
         <button class="btn sm${r.mail && r.mail.sent ? '' : ' pri'}" onclick="cerfaEnvoyer('${esc(r.ref)}')">${r.mail && r.mail.sent ? 'Renvoyer' : 'Envoyer'}</button></td></tr>`; }).join('')}</tbody></table></div>
-    ${CF.brevoOk === false ? '<p class="hint" style="margin-top:8px">Brevo ne répond pas pour l\'instant : « Parti » peut cacher un mail déjà délivré.</p>' : ''}`;
+    ${CF.brevoOk === false ? '<p class="hint" style="margin-top:8px">Brevo ne répond pas pour l\'instant : « Parti » peut cacher un mail déjà délivré.</p>' : ''}</div>`;
 }
 // envoyer (ou renvoyer) le reçu par e-mail, à l'adresse du donateur ou à une autre
 function cerfaEnvoyer(ref) {

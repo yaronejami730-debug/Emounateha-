@@ -393,3 +393,42 @@ table{border-radius:16px;overflow:hidden}
 }
 
 .cf-d{display:block}
+
+/* ---------- Reçus fiscaux : fiche par donateur ---------- */
+.cfd-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.cfd-bar{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.cfd-search{position:relative;display:flex;align-items:center;margin:0}
+.cfd-search svg{position:absolute;left:14px;width:19px;height:19px;color:var(--mut);pointer-events:none}
+.cfd-search input{width:100%;padding:13px 42px 13px 44px;border-radius:14px;font-size:15.5px;border:1.5px solid #d8e3e4;background:#fbfdfd}
+.cfd-search input:focus{border-color:var(--brand);background:#fff;outline:0;box-shadow:0 0 0 4px rgba(31,106,114,.12)}
+.cfd-search input::-webkit-search-cancel-button{display:none}
+.cfd-x{position:absolute;right:10px;width:28px;height:28px;border:0;border-radius:50%;background:#e8eef0;color:#475569;cursor:pointer;font-size:12px}
+.cfd-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.cfd-tools .cf-seg{margin:0}
+.cfd-count{margin:2px 4px 10px}
+.cfd{background:#fff;border:1px solid #e4ecee;border-radius:16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(16,40,45,.04);overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.cfd:hover,.cfd.open{border-color:#c9dcdf;box-shadow:0 8px 22px -14px rgba(16,60,66,.45)}
+.cfd-h{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border:0;background:none;font:inherit;text-align:left;cursor:pointer;color:inherit}
+.cfd-av{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;letter-spacing:.02em;color:#fff;background:linear-gradient(140deg,#2a8690,#1f6a72)}
+.cfd-av.pro{background:linear-gradient(140deg,#d2ab49,#a8842a)}
+.cfd-id{flex:1;min-width:0;display:block}.cfd-id>b{display:block;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.cfd-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:5px}
+.cfd-co{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12.5px;color:var(--mut)}
+.cfd-co span{display:inline-flex;align-items:center;gap:5px;min-width:0;overflow-wrap:anywhere}.cfd-co svg{width:13px;height:13px;flex:none;color:#9aa9ad}
+.cfd-nb{flex:none;text-align:right}.cfd-nb b{display:block;font-size:17px;color:var(--brand)}.cfd-nb small{display:block;font-size:12px;color:var(--mut);margin-top:2px}
+.cfd-ch{flex:none;color:#9aa9ad;transition:transform .2s}.cfd.open .cfd-ch{transform:rotate(180deg)}
+.cfd-rs{display:none;border-top:1px solid #edf2f3;background:#f8fbfb;padding:10px 12px}.cfd.open .cfd-rs{display:block}
+.cfd-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;background:#fff;border:1px solid #e7eef0;border-radius:12px;padding:11px 13px}
+.cfd-r+.cfd-r{margin-top:8px}
+.cfd-r1{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.cfd-num{font-size:14.5px;letter-spacing:.01em}.cfd-mt{font-weight:700;color:var(--brand);font-size:15px}
+.cfd-r2{grid-column:1;display:flex;flex-wrap:wrap;gap:3px 12px;font-size:13px;color:#475569}.cfd-r2 .hint{margin:0}
+.cfd-r .cfd-tags{grid-column:1;margin-top:0}.cfd-r .cfd-tags .hint{margin:0}
+.cfd-act{grid-column:2;grid-row:1/4;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.cfd-vide{text-align:center;padding:28px 18px}
+@media(max-width:900px){.cfd-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+@media(max-width:700px){
+  .cfd-h{flex-wrap:wrap;gap:10px 12px;padding:12px}.cfd-av{width:40px;height:40px;font-size:13.5px}
+  .cfd-id{flex:1 1 calc(100% - 96px)}.cfd-nb{flex:1 1 100%;text-align:left;order:3;padding-left:52px;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}.cfd-nb small{margin:0}
+  .cfd-ch{order:2}.cfd-co{flex-direction:column;gap:3px}
+  .cfd-r{grid-template-columns:minmax(0,1fr)}.cfd-act{grid-column:1;grid-row:auto;justify-content:flex-start}.cfd-act .btn{flex:1 1 auto;text-align:center}
+  .cfd-tools select{flex:1 1 140px}.cfd-search input{font-size:16px}
+}
