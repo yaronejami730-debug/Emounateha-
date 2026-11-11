@@ -2,7 +2,8 @@
 (function(){
 var END=new Date('2026-12-07T23:59:59+01:00').getTime(),FIRST=new Date('2026-12-04T17:00:00+01:00').getTime();
 if(Date.now()>END)return;
-var d=Math.ceil((FIRST-Date.now())/86400000);
+/* nombre de jours de calendrier (heure de Paris) jusqu'au 4 décembre : le même calcul que la page des colis et la page de don */
+var AUJ=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Paris'}),d=Math.round((Date.parse('2026-12-04T12:00:00Z')-Date.parse(AUJ+'T12:00:00Z'))/86400000);if(d<=0&&Date.now()>FIRST)d=-1;
 var cnt=d>1?'dans <b>'+d+' jours</b>':d===1?'<b>demain soir</b>':d===0?'<b>ce soir</b>':'<b>c’est Hanouka</b>';
 var HANOUKA_DON='https://don.emounateha.fr/?aff=hanouka'; /* don Hanouka : don.emounateha.fr, Hanouka choisi d'office */
 var LINK=HANOUKA_DON;
