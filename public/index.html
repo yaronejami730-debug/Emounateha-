@@ -260,127 +260,18 @@ body{overflow-x:hidden}
 
 /* paracha de la semaine + horaires de Chabbat (Hebcal) */
 .parsec{padding:0;margin-top:-26px;position:relative;z-index:5}
-/* cagnottes mises en avant depuis le CRM — ESSAI : trois présentations au choix (?cag=a, b ou c), une seule sera gardée */
-.urgsec{position:relative;z-index:6;padding:0}.urgsec[hidden]{display:none}
-.urgc{position:relative;text-decoration:none;-webkit-tap-highlight-color:transparent;min-width:0}
-.urgc .uic{display:grid;place-items:center;flex:none}.urgc .uic svg{width:55%;height:55%}
-.urgc .ut{display:block;font-weight:800;overflow:hidden;text-overflow:ellipsis}
-.urgc .uk{display:block;font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#a8842a;line-height:1.2;margin-bottom:2px}
-.urgc .utx{min-width:0;display:block}
-.urgc .um b{font-weight:800;white-space:nowrap}.urgc .um small{font-size:.86em;white-space:nowrap}
-.urgc .ubar{display:block;overflow:hidden}.urgc .ubar i{display:block;height:100%;background:linear-gradient(90deg,#c4a24a,#f0d98a);border-radius:99px}
-/* A — bandeaux clairs, fins, à cheval sur le bas de l'en-tête */
-.urgsec[data-s=a],.urgsec[data-s=b]{margin-top:-66px}
-.urgsec[data-s=a] .urgl,.urgsec[data-s=b] .urgl{display:flex;flex-direction:column;gap:8px;max-width:560px;margin:0 auto}
-.urgsec[data-s=a] .urgc,.urgsec[data-s=b] .urgc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 12px 13px 12px;border-radius:18px;overflow:hidden;transition:transform .15s}
-.urgsec[data-s=a] .urgc:active,.urgsec[data-s=b] .urgc:active{transform:scale(.985)}
-.urgsec[data-s=a] .urgc{background:rgba(255,255,255,.97);border:1px solid var(--gold-l);box-shadow:0 10px 24px -8px rgba(14,52,58,.35)}
-.urgsec[data-s=a] .uic,.urgsec[data-s=b] .uic{width:40px;height:40px;border-radius:50%}
-.urgsec[data-s=a] .uic{background:linear-gradient(160deg,#267a83,#164c52);color:#f6e094}
-.urgsec[data-s=a] .ut,.urgsec[data-s=b] .ut{font-size:14px;line-height:1.2;white-space:nowrap}
-.urgsec[data-s=a] .ut{color:var(--teal-d)}
-.urgsec[data-s=a] .um,.urgsec[data-s=b] .um{display:block;margin-top:2px;font-size:12px;line-height:1.2}
-.urgsec[data-s=a] .um{color:var(--mut)}.urgsec[data-s=a] .um b{color:var(--teal)}
-.urgsec[data-s=a] .ugo,.urgsec[data-s=b] .ugo{display:block;padding:8px 13px;border-radius:99px;font-size:12.5px;font-weight:800;white-space:nowrap}
-.urgsec[data-s=a] .ugo{background:linear-gradient(180deg,#e4cd8a,#c4a24a);color:#1b2b2d}
-.urgsec[data-s=a] .ubar,.urgsec[data-s=b] .ubar{position:absolute;left:0;right:0;bottom:0;height:4px}
-.urgsec[data-s=a] .ubar{background:#eef3f3}
-/* B — bandeaux bleu canard, texte or */
-.urgsec[data-s=b] .urgc{background:linear-gradient(120deg,rgba(31,106,114,.62),rgba(14,52,58,.86)),url(/header.jpg) center/cover #164c52;border:1px solid rgba(246,224,148,.6);box-shadow:0 10px 24px -8px rgba(14,52,58,.55)}
-.urgsec[data-s=b] .uic{background:rgba(255,255,255,.12);color:#f6e094;box-shadow:inset 0 0 0 1px rgba(246,224,148,.45)}
-.urgsec[data-s=b] .ut{color:#fff}.urgsec[data-s=b] .um{color:#cfe6e3}.urgsec[data-s=b] .um b{color:#f6e094}
-.urgsec[data-s=b] .ugo{background:linear-gradient(180deg,#f0d98a,#c4a24a);color:#1b2b2d}.urgsec[data-s=b] .uk{color:#e9c766}
-.urgsec[data-s=b] .ubar{background:rgba(255,255,255,.14)}
-/* C — tuiles, comme « Colis de Chabbat » et « Diffusion de la Torah », dans la zone blanche */
-.urgsec[data-s=c]{padding-top:16px}
-.urgsec[data-s=c] .urgl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;max-width:760px;margin:0 auto}
-.urgsec[data-s=c] .urgc{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:84px;padding:12px 14px;background:#fff;border:1px solid var(--gold-l);border-radius:16px;box-shadow:0 4px 14px rgba(20,60,66,.08)}
-.urgsec[data-s=c] .uic{width:34px;height:34px;border-radius:50%;background:linear-gradient(160deg,#267a83,#164c52);color:#f6e094;margin-bottom:2px}
-.urgsec[data-s=c] .ut{font-size:14.5px;line-height:1.2;color:var(--teal);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.urgsec[data-s=c] .um{font-size:12px;color:var(--mut)}.urgsec[data-s=c] .um b{color:var(--teal-d);font-size:14px}
-.urgsec[data-s=c] .ubar{width:100%;height:5px;border-radius:99px;background:#e6eeee;margin-top:4px}
-.urgsec[data-s=c] .ugo{display:block;align-self:stretch;text-align:center;margin-top:6px;padding:7px 10px;border-radius:99px;font-size:12.5px;font-weight:800;background:linear-gradient(180deg,#e4cd8a,#c4a24a);color:#1b2b2d}.urgsec[data-s=c] .utx{width:100%}
-.urgh{display:none}
-/* D — rubans dorés, une ligne */
-.urgsec[data-s=d]{margin-top:-58px}
-.urgsec[data-s=d] .urgl{display:flex;flex-direction:column;gap:7px;max-width:560px;margin:0 auto}
-.urgsec[data-s=d] .urgc{display:flex;align-items:center;gap:9px;padding:9px 14px 9px 9px;border-radius:99px;background:linear-gradient(180deg,#f3e09a,#c9a850);color:#1b2b2d;box-shadow:0 10px 22px -8px rgba(14,52,58,.5),inset 0 1px 0 rgba(255,255,255,.5)}
-.urgsec[data-s=d] .uk,.urgsec[data-s=d] .ubar{display:none}
-.urgsec[data-s=d] .uic{width:28px;height:28px;border-radius:50%;background:#164c52;color:#f6e094}
-.urgsec[data-s=d] .utx{display:flex;align-items:baseline;gap:8px;flex:1}
-.urgsec[data-s=d] .ut{font-size:13.5px;white-space:nowrap;color:#1b2b2d;flex:0 1 auto}
-.urgsec[data-s=d] .um{font-size:12px;white-space:nowrap;color:#4a3c12;flex:none}.urgsec[data-s=d] .um b{color:#1b2b2d}
-.urgsec[data-s=d] .ugo{font-size:0}.urgsec[data-s=d] .ugo::after{content:"›";font-size:20px;font-weight:800;line-height:1}
-/* E — une seule carte blanche, les cagnottes en lignes */
-.urgsec[data-s=e],.urgsec[data-s=j]{margin-top:-64px}
-.urgsec[data-s=e] .urgl,.urgsec[data-s=j] .urgl{display:block;max-width:600px;margin:0 auto;border-radius:16px;overflow:hidden}
-.urgsec[data-s=e] .urgl{background:#fff;border:1px solid #e3ecec;box-shadow:0 12px 32px rgba(20,60,66,.18)}
-.urgsec[data-s=e] .urgh,.urgsec[data-s=j] .urgh,.urgsec[data-s=h] .urgh{display:block;padding:9px 14px;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;text-align:left}
-.urgsec[data-s=e] .urgh{color:#a8842a;background:linear-gradient(135deg,#e9f4f4,#fff)}
-.urgsec[data-s=e] .urgc,.urgsec[data-s=j] .urgc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 14px 13px}
-.urgsec[data-s=e] .urgc{border-top:1px solid #eef3f3}
-.urgsec[data-s=e] .uk,.urgsec[data-s=j] .uk{display:none}
-.urgsec[data-s=e] .uic,.urgsec[data-s=j] .uic{width:36px;height:36px;border-radius:50%}
-.urgsec[data-s=e] .uic{background:linear-gradient(160deg,#267a83,#164c52);color:#f6e094}
-.urgsec[data-s=e] .ut,.urgsec[data-s=j] .ut{font-size:14px;line-height:1.2;white-space:nowrap}.urgsec[data-s=e] .ut{color:var(--teal-d)}
-.urgsec[data-s=e] .um,.urgsec[data-s=j] .um{display:block;margin-top:2px;font-size:12px}.urgsec[data-s=e] .um{color:var(--mut)}.urgsec[data-s=e] .um b{color:var(--teal)}
-.urgsec[data-s=e] .ugo,.urgsec[data-s=j] .ugo{padding:7px 12px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap;background:linear-gradient(180deg,#e4cd8a,#c4a24a);color:#1b2b2d}
-.urgsec[data-s=e] .ubar,.urgsec[data-s=j] .ubar{position:absolute;left:14px;right:14px;bottom:5px;height:3px;border-radius:99px}.urgsec[data-s=e] .ubar{background:#eef3f3}
-/* F — cartes à faire défiler, bleu canard */
-.urgsec[data-s=f]{margin-top:-74px;padding-left:0!important;padding-right:0!important}
-.urgsec[data-s=f] .wrap{padding:0;max-width:none}
-.urgsec[data-s=f] .urgl{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 14px 14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.urgsec[data-s=f] .urgl::-webkit-scrollbar{display:none}
-.urgsec[data-s=f] .urgc{flex:0 0 74%;max-width:300px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px 16px;border-radius:18px;color:#fff;background:linear-gradient(140deg,rgba(38,122,131,.6),rgba(14,52,58,.86)),url(/header.jpg) center/cover #164c52;border:1px solid rgba(246,224,148,.55);box-shadow:0 12px 26px -8px rgba(14,52,58,.55)}
-.urgsec[data-s=f] .uic{display:none}.urgsec[data-s=f] .utx{width:100%}
-.urgsec[data-s=f] .uk{color:#e9c766}.urgsec[data-s=f] .ut{font-size:15.5px;line-height:1.2;color:#fff;white-space:nowrap}
-.urgsec[data-s=f] .um{display:block;margin-top:6px;font-size:12px;color:#cfe6e3}.urgsec[data-s=f] .um b{font-size:21px;color:#f6e094}
-.urgsec[data-s=f] .ubar{order:2;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.18);margin-top:8px}
-.urgsec[data-s=f] .ugo{order:3;margin-top:10px;padding:8px 16px;border-radius:99px;font-size:13px;font-weight:800;background:linear-gradient(180deg,#f0d98a,#c4a24a);color:#1b2b2d}
-/* G — cartes blanches à liseré doré */
-.urgsec[data-s=g]{margin-top:-60px}
-.urgsec[data-s=g] .urgl{display:flex;flex-direction:column;gap:8px;max-width:560px;margin:0 auto}
-.urgsec[data-s=g] .urgc{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px 10px 16px;border-radius:12px;background:#fff;border-left:5px solid #c4a24a;box-shadow:0 10px 24px -8px rgba(14,52,58,.35)}
-.urgsec[data-s=g] .uic,.urgsec[data-s=g] .ubar{display:none}
-.urgsec[data-s=g] .ut{font-size:14.5px;line-height:1.2;color:var(--teal-d);white-space:nowrap}
-.urgsec[data-s=g] .um{display:block;margin-top:2px;font-size:12px;color:var(--mut)}.urgsec[data-s=g] .um b{color:var(--teal);font-size:14px}
-.urgsec[data-s=g] .ugo{font-size:0;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(160deg,#267a83,#164c52);color:#f6e094}.urgsec[data-s=g] .ugo::after{content:"→";font-size:16px;font-weight:800}
-/* H — jauges : titre, montant, grande barre */
-.urgsec[data-s=h]{margin-top:-60px}
-.urgsec[data-s=h] .urgl{display:block;max-width:560px;margin:0 auto;padding:4px 14px 12px;border-radius:16px;background:#fff;border:1px solid #e3ecec;box-shadow:0 12px 32px rgba(20,60,66,.18)}
-.urgsec[data-s=h] .urgh{padding:9px 0 2px;color:#a8842a}
-.urgsec[data-s=h] .urgc{display:block;padding:8px 0 4px}
-.urgsec[data-s=h] .uic,.urgsec[data-s=h] .uk,.urgsec[data-s=h] .ugo{display:none}
-.urgsec[data-s=h] .utx{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.urgsec[data-s=h] .ut{font-size:14px;color:var(--teal-d);white-space:nowrap;flex:0 1 auto}
-.urgsec[data-s=h] .um{font-size:11.5px;color:var(--mut);white-space:nowrap;flex:none}.urgsec[data-s=h] .um b{color:var(--teal);font-size:13.5px}
-.urgsec[data-s=h] .ubar{height:9px;border-radius:99px;background:#e6eeee;margin-top:6px}
-/* I — étiquettes */
-.urgsec[data-s=i]{margin-top:-52px}
-.urgsec[data-s=i] .urgl{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
-.urgsec[data-s=i] .urgc{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:7px 14px 7px 7px;border-radius:99px;background:#fff;border:1.5px solid var(--gold-l);box-shadow:0 8px 18px -6px rgba(14,52,58,.35)}
-.urgsec[data-s=i] .uk,.urgsec[data-s=i] .ugo,.urgsec[data-s=i] .ubar,.urgsec[data-s=i] .um small{display:none}
-.urgsec[data-s=i] .uic{width:26px;height:26px;border-radius:50%;background:linear-gradient(160deg,#267a83,#164c52);color:#f6e094}
-.urgsec[data-s=i] .utx{display:flex;align-items:baseline;gap:7px}
-.urgsec[data-s=i] .ut{font-size:13px;color:var(--teal-d);white-space:nowrap;max-width:190px}
-.urgsec[data-s=i] .um b{font-size:12.5px;color:#a8842a}
-/* J — bannière sombre, dans l'esprit de la bannière de fête */
-.urgsec[data-s=j] .urgl{background:linear-gradient(135deg,#0c1d28,#143640);border:1px solid rgba(196,162,74,.55);box-shadow:0 14px 30px -8px rgba(8,24,30,.6)}
-.urgsec[data-s=j] .urgh{color:#e9c766;border-bottom:1px solid rgba(255,255,255,.08)}
-.urgsec[data-s=j] .urgc+.urgc{border-top:1px solid rgba(255,255,255,.08)}
-.urgsec[data-s=j] .uic{background:none;color:#f6e094;box-shadow:inset 0 0 0 1.5px rgba(246,224,148,.6)}
-.urgsec[data-s=j] .ut{color:#fff}.urgsec[data-s=j] .um{color:#b9cfd2}.urgsec[data-s=j] .um b{color:#f6e094}
-.urgsec[data-s=j] .ubar{background:rgba(255,255,255,.12)}
-/* K — petits ronds ; un appui ouvre l'aperçu de la cagnotte */
-.urgsec[data-s=k]{margin-top:-52px}
-.urgsec[data-s=k] .urgl{display:flex;justify-content:center;align-items:flex-start;gap:14px}
-.urgsec[data-s=k] .urgc{display:flex;flex-direction:column;align-items:center;gap:6px;width:86px;flex:0 1 86px;cursor:pointer}
-.urgsec[data-s=k] .uic{width:68px;height:68px;border-radius:50%;color:#f6e094;background:radial-gradient(closest-side,#1f6a72 calc(100% - 8px),#fff calc(100% - 7px) calc(100% - 4.5px),transparent calc(100% - 4px)),conic-gradient(#e2bf5c calc(var(--p,100)*1%),#dfe9e9 0);box-shadow:0 10px 22px -6px rgba(14,52,58,.5);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
-.urgsec[data-s=k] .urgc:active .uic{transform:scale(.93)}
-.urgsec[data-s=k] .uic svg{width:40%;height:40%}
-.urgsec[data-s=k] .uk,.urgsec[data-s=k] .um,.urgsec[data-s=k] .ugo,.urgsec[data-s=k] .ubar{display:none}
-.urgsec[data-s=k] .ut{font-size:11.5px;line-height:1.25;color:var(--teal-d);text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-/* aperçu d'une cagnotte (ouvert depuis un rond) */
+/* cagnottes mises en avant depuis le CRM (« Mettre sur la page d'accueil ») : rubans dorés, une ligne par cagnotte, posés à cheval sur le bas de l'en-tête,
+   au-dessus des tuiles et de la carte des horaires de Chabbat, sans jamais les recouvrir. Un appui ouvre l'aperçu de la cagnotte. */
+.urgsec{position:relative;z-index:6;margin-top:-58px;padding:0}.urgsec[hidden]{display:none}
+.urgl{display:flex;flex-direction:column;gap:7px;max-width:560px;margin:0 auto}
+.urgc{position:relative;display:flex;align-items:center;gap:9px;min-width:0;padding:9px 14px 9px 9px;border-radius:99px;background:linear-gradient(180deg,#f3e09a,#c9a850);color:#1b2b2d;text-decoration:none;cursor:pointer;box-shadow:0 10px 22px -8px rgba(14,52,58,.5),inset 0 1px 0 rgba(255,255,255,.5);-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.urgc:active{transform:scale(.985)}
+.urgc .uic{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:#164c52;color:#f6e094}.urgc .uic svg{width:55%;height:55%}
+.urgc .utx{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0}
+.urgc .ut{display:block;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1b2b2d;flex:0 1 auto}
+.urgc .um{font-size:12px;white-space:nowrap;color:#4a3c12;flex:none}.urgc .um b{font-weight:800;color:#1b2b2d}.urgc .um small{font-size:.86em}
+.urgc .ugo{flex:none;font-size:20px;font-weight:800;line-height:1}
+/* aperçu d'une cagnotte : fiche qui monte du bas de l'écran quand on appuie sur un ruban */
 #urgap{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,36,41,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;transition:opacity .22s}
 #urgap.on{opacity:1}
 #urgap .ap{position:relative;width:100%;max-width:460px;max-height:86dvh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:0 0 calc(18px + env(safe-area-inset-bottom));box-shadow:0 -14px 40px rgba(0,0,0,.3);transform:translateY(30px);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
@@ -399,7 +290,8 @@ body{overflow-x:hidden}
 @media(min-width:801px){#urgap{align-items:center}#urgap .ap{border-radius:22px;padding-bottom:20px}}
 @media(prefers-reduced-motion:reduce){#urgap,#urgap .ap{transition:none}}
 body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding-top:18px}
-@media(max-width:800px){.urgsec{padding-left:12px;padding-right:12px}.urgsec[data-s=c] .urgl{grid-template-columns:1fr 1fr}body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding:12px 12px 0}body:has(#urgent:not([hidden])) .qa{margin-top:0!important;padding-top:12px}body:has(#urgent[data-s=c]:not([hidden])) .qa{padding-top:10px}}
+@media(max-width:800px){.urgsec{padding-left:12px;padding-right:12px}body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding:12px 12px 0}body:has(#urgent:not([hidden])) .qa{margin-top:0!important;padding-top:12px}}
+@media(max-width:340px){.urgc .um small{display:none}}
 .parall{display:block;grid-column:1/-1;text-align:center;margin:2px 12px 12px;padding:9px 14px;border-radius:99px;background:#fff7e0;border:1.5px solid #ecd9a0;color:#8a6c1c;font-weight:700;font-size:14px;text-decoration:none}
 .parall:hover{background:#fff0c8}
 .parcard{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:#fff;border:1px solid #e3ecec;border-radius:16px;box-shadow:0 12px 32px rgba(20,60,66,.14);overflow:hidden}
@@ -714,13 +606,12 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 (function(){var esc=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})},eur=function(c){return(c/100).toLocaleString('fr-FR',{maximumFractionDigits:2})+'\u00a0€'};
 var pret=new Promise(function(ok){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ok);else ok()});   /* la réponse peut arriver avant que la page soit entièrement lue */
 Promise.all([fetch('/api/besoins-accueil').then(function(r){return r.ok?r.json():null}),pret]).then(function(a){var j=a[0],l=j&&j.list||[],sec=document.getElementById('urgent'),box=document.getElementById('urgl');if(!l.length||!sec||!box)return;
-sec.dataset.s=(location.search.match(/[?&]cag=([a-k])/)||[])[1]||'k';   /* par défaut : petits ronds, un appui ouvre l'aperçu */
 var coeur='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 7.500 2.700c0 5.600-7.500 10.200-7.500 10.200Z"/></svg>';
-box.innerHTML='<div class="urgh">Cagnottes solidaires</div>'+l.map(function(b){var connu=b.collecte!=null,pct=connu&&b.objectif?Math.max(3,Math.min(100,Math.round(b.collecte*100/b.objectif))):(connu?100:0);
-var m=connu?'<b>'+eur(b.collecte)+'</b> <small>'+(b.objectif?'sur '+eur(b.objectif):'collectés')+'</small>':(b.objectif?'<small>Objectif </small><b>'+eur(b.objectif)+'</b>':'<small>Je participe</small>');
-return '<a class="urgc" href="'+esc(b.lien)+'" data-i="'+l.indexOf(b)+'" style="--p:'+pct+'" aria-label="Cagnotte : '+esc(b.titre)+'"><span class="uic">'+coeur+'</span><span class="utx"><span class="uk">Cagnotte solidaire</span><b class="ut">'+esc(b.titre)+'</b><span class="um">'+m+'</span></span><span class="ugo">Participer</span><span class="ubar"><i style="width:'+pct+'%"></i></span></a>'}).join('');
-/* présentation en ronds : un appui ouvre l'aperçu (titre, texte, montant, bouton Participer) au lieu de quitter la page */
-if(sec.dataset.s==='k')box.addEventListener('click',function(ev){var a=ev.target.closest('.urgc');if(!a)return;var b=l[+a.dataset.i];if(!b)return;ev.preventDefault();
+box.innerHTML=l.map(function(b,n){var connu=b.collecte!=null;
+var m=connu?'<b>'+eur(b.collecte)+'</b> <small>'+(b.objectif?'sur '+eur(b.objectif):'collectés')+'</small>':(b.objectif?'<small>Objectif </small><b>'+eur(b.objectif)+'</b>':'');
+return '<a class="urgc" href="'+esc(b.lien)+'" data-i="'+n+'" aria-label="Cagnotte : '+esc(b.titre)+'"><span class="uic">'+coeur+'</span><span class="utx"><b class="ut">'+esc(b.titre)+'</b>'+(m?'<span class="um">'+m+'</span>':'')+'</span><span class="ugo" aria-hidden="true">›</span></a>'}).join('');
+/* un appui ouvre l'aperçu (titre, texte, montant, bouton Participer) au lieu de quitter la page ; sans JavaScript, le lien mène à la page de la cagnotte */
+box.addEventListener('click',function(ev){var a=ev.target.closest('.urgc');if(!a||ev.metaKey||ev.ctrlKey)return;var b=l[+a.dataset.i];if(!b)return;ev.preventDefault();
  var connu=b.collecte!=null,pct=connu&&b.objectif?Math.max(3,Math.min(100,Math.round(b.collecte*100/b.objectif))):0,o=document.createElement('div');o.id='urgap';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Cagnotte : '+b.titre);
  o.innerHTML='<div class="ap"><div class="aph"><span class="apk">Cagnotte solidaire</span><b class="apt">'+esc(b.titre)+'</b><button class="apx" type="button" aria-label="Fermer">✕</button></div><div class="apb">'+(b.description?'<p class="apd">'+esc(b.description)+'</p>':'')+(connu||b.objectif?'<div class="apm">'+(connu?'<b>'+eur(b.collecte)+'</b>':'')+'<span>'+(connu?(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):'Objectif : '+eur(b.objectif))+'</span></div>':'')+(b.objectif?'<div class="apbar"><i style="width:'+pct+'%"></i></div>':'')+(b.dons?'<div class="apn">'+b.dons+' don'+(b.dons>1?'s':'')+' déjà reçu'+(b.dons>1?'s':'')+'</div>':'')+'<a class="apgo" href="'+esc(b.lien)+'">Participer à cette cagnotte</a><p class="apf">Les dons sont reversés au bénéficiaire après déduction des frais de collecte.</p></div></div>';
  var ferme=function(){o.classList.remove('on');document.documentElement.style.overflow='';document.removeEventListener('keydown',touche);setTimeout(function(){o.remove()},240)},touche=function(e){if(e.key==='Escape')ferme()};

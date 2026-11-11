@@ -441,7 +441,7 @@ body{overflow-x:hidden}
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/#contact">Contact</a></div></div></nav>
-<header class="pagehead"><div class="wrap"><h1>Diffusion de la Torah</h1><p>Chaque jour : le Machia'h Now et la vidéo de Tanya.</p></div></header>
+<header class="pagehead"><div class="wrap"><h1>Diffusion de la Torah</h1><p>Chaque jour : Hayom Yom, Sefer Hamitsvot, Gueoula et Machia'h, et la vidéo de Tanya.</p></div></header>
 <style>
 .pagehead{background:#1f6a72 url(/header.jpg) center/cover;color:#fff;text-align:center;padding:76px 0 34px;position:relative}
 html body .pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:90px;pointer-events:none;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.22) 30%,rgba(255,255,255,.6) 65%,rgba(255,255,255,.9) 100%)}
@@ -694,7 +694,7 @@ html body .pagehead{padding-bottom:70px}
   <div id="p-jour">
   <div class="today" id="today"><div class="empty">Chargement de la diffusion du jour…</div></div>
   <div class="arch">
-    <div class="chan"><div class="av" aria-hidden="true"></div><div><h3>Diffusion de la Torah</h3><p>Chaque jour : le Machia'h Now et la vidéo de Tanya.</p></div></div>
+    <div class="chan"><div class="av" aria-hidden="true"></div><div><h3>Diffusion de la Torah</h3><p>Chaque jour : Hayom Yom, Sefer Hamitsvot, Gueoula et Machia'h, et la vidéo de Tanya.</p></div></div>
     <h2>Les archives</h2>
     <div class="sub">Tous les Machia'h Now et toutes les vidéos de Tanya, jour par jour.</div>
     <div class="tools">
@@ -811,7 +811,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     if(window.fillDateHebrew) fillDateHebrew(d.day);
     setTimeout(drawHayomCanvases,0);
     el.innerHTML='<div class="dkick">Diffusion du jour</div><h2>'+esc(d.name||"Machia'h Now")+'</h2><div class="when">'+esc(dj(d.day))+'<span class="dhe" id="dhe"></span><span class="dph" id="dph"></span></div>'+
-      '<div class="tbody'+(d.youtube?'':' solo')+'"><div><div class="dlab"><svg class="dico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#f5c400" stroke="#c99a00" stroke-width="1"/><rect x="8" y="11" width="8" height="7" rx="1" fill="#fff"/></svg> Hayom Yom du jour</div><div class="dprev" onclick="openLb(\''+src+'\',\''+esc(dj(d.day))+'\')"><img src="'+src+'" alt=""><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
+      '<div class="tbody'+(d.youtube?'':' solo')+'"><div><div class="dlab"><svg class="dico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#f5c400" stroke="#c99a00" stroke-width="1"/><rect x="8" y="11" width="8" height="7" rx="1" fill="#fff"/></svg> Hayom Yom · Sefer Hamitsvot · Gueoula et Machia’h</div><div class="dprev" onclick="openLb(\''+src+'\',\''+esc(dj(d.day))+'\')"><img src="'+src+'" alt=""><div class="dfade"></div><button class="dopen" type="button">Lire en grand</button></div></div>'+
       (id?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><button class="yt ytplay" type="button" onclick="openVm(\''+id+'\',\''+esc(dj(d.day))+'\')" aria-label="Lire la vidéo en grand"><img src="/yt/'+id+'/maxresdefault.jpg" alt="" loading="lazy" decoding="async" onload="if(this.naturalWidth<200)this.src=\'/yt/'+id+'/hqdefault.jpg\'" onerror="this.onerror=null;this.src=\'/yt/'+id+'/hqdefault.jpg\'"><span class="ytp" aria-hidden="true"></span></button></div>':(d.youtube?'<div><div class="dlab">▶ Vidéo de Tanya du jour</div><a class="ytlink" href="'+esc(d.youtube)+'" target="_blank" rel="noopener">Voir sur YouTube</a></div>':''))+'</div>';}
   function renderArch(){const el=document.getElementById('archives');if(!el)return;let out='';let n=0;
     for(const m of months){if(mois&&m.key!==mois)continue;let cards='';
