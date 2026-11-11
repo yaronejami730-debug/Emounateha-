@@ -649,6 +649,11 @@ html body .pagehead{padding-bottom:70px}
 .etxt{text-align:left;margin-top:10px}
 .etxt .eport{text-align:center}
 .elang{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0 4px}
+.enav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 14px}
+.enav button{border:1.5px solid #e4cd8a;background:#fffaf0;color:#7a5a10;padding:8px 14px;border-radius:99px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;min-height:38px}
+.enav button.auj{background:var(--teal);border-color:var(--teal);color:#fff}
+.enav button:disabled{opacity:.38;cursor:default}
+.etude .edate .eret{color:#a8842a;font-weight:700}
 .elang button{border:1.5px solid #cfe0e1;background:#fff;color:var(--teal);padding:6px 14px;border-radius:99px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .elang button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
 .eb{padding:14px 16px;border-radius:12px;margin:10px 0}
@@ -823,7 +828,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
 
 // ---- sous-onglets : étude du jour (flux RSS Chabad)
 (function(){
-  var tabs=document.querySelectorAll('.stab'),pj=document.getElementById('p-jour'),pe=document.getElementById('p-etude'),data=null,texts={},cur='jour';
+  var tabs=document.querySelectorAll('.stab'),pj=document.getElementById('p-jour'),pe=document.getElementById('p-etude'),data=null,texts={},cur='jour',dec=0,RETOUR=3;
   var esc=function(s){return String(s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
   /* langue choisie par le visiteur : en français, hébreu + français ; en anglais, hébreu + anglais (texte anglais d'origine, pas une retraduction) ; en hébreu, l'hébreu seul */
   var LG=(document.cookie.match(/(?:^|;\s*)em_lang=(fr|en|he)/)||[])[1]||'fr';
@@ -840,12 +845,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
     if(!data){pe.innerHTML='<div class="empty">Chargement…</div>';return}
     var it=data[cur],t=T[cur];
     if(!it){pe.innerHTML='<div class="empty">Indisponible pour le moment.</div>';return}
-    var d=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    var h='<div class="dkick'+NTT+'">'+t[1]+'</div><h2 class="etit'+NTT+'">'+t[0]+'</h2><div class="edate">'+esc(d)+'</div><div class="etxt" id="etxt"><div class="empty">Chargement du texte…</div></div>';
+    /* rattrapage : on peut revenir jusqu'à 3 jours en arrière (dec = nombre de jours en arrière) */
+    var d=new Date(Date.now()-dec*86400000).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    var nav='<div class="enav" role="group" aria-label="Changer de jour"><button type="button" data-d="'+(dec+1)+'"'+(dec>=RETOUR?' disabled':'')+'>‹ Jour précédent</button>'+(dec>0?'<button type="button" class="auj" data-d="0">Aujourd’hui</button>':'')+'<button type="button" data-d="'+(dec-1)+'"'+(dec<=0?' disabled':'')+'>Jour suivant ›</button></div>';
+    var h='<div class="dkick'+NTT+'">'+t[1]+'</div><h2 class="etit'+NTT+'">'+t[0]+'</h2><div class="edate">'+esc(d)+(dec>0?' <span class="eret">· il y a '+dec+' jour'+(dec>1?'s':'')+'</span>':'')+'</div>'+nav+'<div class="etxt" id="etxt"><div class="empty">Chargement du texte…</div></div>';
     pe.innerHTML=h;
-    var tp=cur;
-    (texts[tp]?Promise.resolve(texts[tp]):window.jourHeb().then(function(J){return fetch('/api/etude-texte?v=6&type='+tp+(J?'&date='+J:'')+(LG==='en'?'&lang=en':''))}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){texts[tp]=j;return j})).then(function(j){
-      if(cur!==tp)return;var el=document.getElementById('etxt');if(!el)return;
+    pe.querySelectorAll('.enav button').forEach(function(b){b.addEventListener('click',function(){var n=+b.dataset.d;if(n<0||n>RETOUR)return;dec=n;draw()})});
+    var tp=cur,dj=dec,cle=tp+'|'+dj;
+    var jourDe=function(J){if(!J)J=new Date().toLocaleDateString('sv-SE');if(!dj)return J;var x=new Date(J+'T12:00:00Z');x.setUTCDate(x.getUTCDate()-dj);return x.toISOString().slice(0,10)};
+    (texts[cle]?Promise.resolve(texts[cle]):window.jourHeb().then(function(J){return fetch('/api/etude-texte?v=6&type='+tp+'&date='+jourDe(J)+(LG==='en'?'&lang=en':''))}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){texts[cle]=j;return j})).then(function(j){
+      if(cur!==tp||dec!==dj)return;var el=document.getElementById('etxt');if(!el)return;
       var NT=(j.trLang===LG)?' notranslate" translate="no':'';   /* texte déjà dans la langue du visiteur : on ne le fait pas retraduire */
       var o='<p class="eport">'+esc(j.ref)+'</p>'+(LG==='he'?'':'<div class="elang" role="group"><button type="button" class="on" data-l="both">Hébreu + '+(j.trLang==='fr'?'français':'anglais')+'</button><button type="button" data-l="he">Hébreu</button><button type="button" data-l="tr">'+(j.trLang==='fr'?'Français':'Anglais')+'</button></div>');
       j.sections.forEach(function(sc){

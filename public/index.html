@@ -371,6 +371,33 @@ body{overflow-x:hidden}
 .urgsec[data-s=j] .uic{background:none;color:#f6e094;box-shadow:inset 0 0 0 1.5px rgba(246,224,148,.6)}
 .urgsec[data-s=j] .ut{color:#fff}.urgsec[data-s=j] .um{color:#b9cfd2}.urgsec[data-s=j] .um b{color:#f6e094}
 .urgsec[data-s=j] .ubar{background:rgba(255,255,255,.12)}
+/* K — petits ronds ; un appui ouvre l'aperçu de la cagnotte */
+.urgsec[data-s=k]{margin-top:-52px}
+.urgsec[data-s=k] .urgl{display:flex;justify-content:center;align-items:flex-start;gap:14px}
+.urgsec[data-s=k] .urgc{display:flex;flex-direction:column;align-items:center;gap:6px;width:86px;flex:0 1 86px;cursor:pointer}
+.urgsec[data-s=k] .uic{width:68px;height:68px;border-radius:50%;color:#f6e094;background:radial-gradient(closest-side,#1f6a72 calc(100% - 8px),#fff calc(100% - 7px) calc(100% - 4.5px),transparent calc(100% - 4px)),conic-gradient(#e2bf5c calc(var(--p,100)*1%),#dfe9e9 0);box-shadow:0 10px 22px -6px rgba(14,52,58,.5);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.urgsec[data-s=k] .urgc:active .uic{transform:scale(.93)}
+.urgsec[data-s=k] .uic svg{width:40%;height:40%}
+.urgsec[data-s=k] .uk,.urgsec[data-s=k] .um,.urgsec[data-s=k] .ugo,.urgsec[data-s=k] .ubar{display:none}
+.urgsec[data-s=k] .ut{font-size:11.5px;line-height:1.25;color:var(--teal-d);text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+/* aperçu d'une cagnotte (ouvert depuis un rond) */
+#urgap{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,36,41,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;transition:opacity .22s}
+#urgap.on{opacity:1}
+#urgap .ap{position:relative;width:100%;max-width:460px;max-height:86dvh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:0 0 calc(18px + env(safe-area-inset-bottom));box-shadow:0 -14px 40px rgba(0,0,0,.3);transform:translateY(30px);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+#urgap.on .ap{transform:none}
+#urgap .aph{padding:20px 20px 16px;color:#fff;background:linear-gradient(140deg,rgba(38,122,131,.55),rgba(14,52,58,.82)),url(/header.jpg) center/cover #164c52;border-bottom:3px solid #c4a24a}
+#urgap .apk{display:block;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#f6e094;margin-bottom:5px}
+#urgap .apt{display:block;font-weight:800;font-size:20px;line-height:1.2;padding-right:40px}
+#urgap .apx{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:18px;line-height:1;cursor:pointer}
+#urgap .apb{padding:16px 20px 0}
+#urgap .apd{margin:0 0 14px;font-size:15px;line-height:1.5;color:var(--mut);white-space:pre-line}
+#urgap .apm{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}#urgap .apm b{font-weight:800;font-size:28px;line-height:1;color:var(--teal-d)}#urgap .apm span{font-size:13.5px;color:var(--mut)}
+#urgap .apbar{height:10px;border-radius:99px;background:#e6eeee;overflow:hidden;margin:10px 0 6px}#urgap .apbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c4a24a,#f0d98a)}
+#urgap .apn{font-size:12.5px;color:var(--mut)}
+#urgap .apgo{display:block;margin:16px 0 0;padding:14px 18px;border-radius:99px;text-align:center;text-decoration:none;font-weight:800;font-size:16px;color:#1b2b2d;background:linear-gradient(180deg,#f0d98a,#c4a24a);box-shadow:0 8px 18px -6px rgba(196,162,74,.7)}
+#urgap .apf{margin:10px 0 0;font-size:11px;line-height:1.35;color:#7b8d90;text-align:center}
+@media(min-width:801px){#urgap{align-items:center}#urgap .ap{border-radius:22px;padding-bottom:20px}}
+@media(prefers-reduced-motion:reduce){#urgap,#urgap .ap{transition:none}}
 body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding-top:18px}
 @media(max-width:800px){.urgsec{padding-left:12px;padding-right:12px}.urgsec[data-s=c] .urgl{grid-template-columns:1fr 1fr}body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding:12px 12px 0}body:has(#urgent:not([hidden])) .qa{margin-top:0!important;padding-top:12px}body:has(#urgent[data-s=c]:not([hidden])) .qa{padding-top:10px}}
 .parall{display:block;grid-column:1/-1;text-align:center;margin:2px 12px 12px;padding:9px 14px;border-radius:99px;background:#fff7e0;border:1.5px solid #ecd9a0;color:#8a6c1c;font-weight:700;font-size:14px;text-decoration:none}
@@ -687,11 +714,18 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 (function(){var esc=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})},eur=function(c){return(c/100).toLocaleString('fr-FR',{maximumFractionDigits:2})+'\u00a0€'};
 var pret=new Promise(function(ok){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ok);else ok()});   /* la réponse peut arriver avant que la page soit entièrement lue */
 Promise.all([fetch('/api/besoins-accueil').then(function(r){return r.ok?r.json():null}),pret]).then(function(a){var j=a[0],l=j&&j.list||[],sec=document.getElementById('urgent'),box=document.getElementById('urgl');if(!l.length||!sec||!box)return;
-sec.dataset.s=(location.search.match(/[?&]cag=([a-j])/)||[])[1]||'a';
+sec.dataset.s=(location.search.match(/[?&]cag=([a-k])/)||[])[1]||'k';   /* par défaut : petits ronds, un appui ouvre l'aperçu */
 var coeur='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 7.500 2.700c0 5.600-7.500 10.200-7.500 10.200Z"/></svg>';
 box.innerHTML='<div class="urgh">Cagnottes solidaires</div>'+l.map(function(b){var connu=b.collecte!=null,pct=connu&&b.objectif?Math.max(3,Math.min(100,Math.round(b.collecte*100/b.objectif))):(connu?100:0);
 var m=connu?'<b>'+eur(b.collecte)+'</b> <small>'+(b.objectif?'sur '+eur(b.objectif):'collectés')+'</small>':(b.objectif?'<small>Objectif </small><b>'+eur(b.objectif)+'</b>':'<small>Je participe</small>');
-return '<a class="urgc" href="'+esc(b.lien)+'" aria-label="Cagnotte : '+esc(b.titre)+'"><span class="uic">'+coeur+'</span><span class="utx"><span class="uk">Cagnotte solidaire</span><b class="ut">'+esc(b.titre)+'</b><span class="um">'+m+'</span></span><span class="ugo">Participer</span><span class="ubar"><i style="width:'+pct+'%"></i></span></a>'}).join('');
+return '<a class="urgc" href="'+esc(b.lien)+'" data-i="'+l.indexOf(b)+'" style="--p:'+pct+'" aria-label="Cagnotte : '+esc(b.titre)+'"><span class="uic">'+coeur+'</span><span class="utx"><span class="uk">Cagnotte solidaire</span><b class="ut">'+esc(b.titre)+'</b><span class="um">'+m+'</span></span><span class="ugo">Participer</span><span class="ubar"><i style="width:'+pct+'%"></i></span></a>'}).join('');
+/* présentation en ronds : un appui ouvre l'aperçu (titre, texte, montant, bouton Participer) au lieu de quitter la page */
+if(sec.dataset.s==='k')box.addEventListener('click',function(ev){var a=ev.target.closest('.urgc');if(!a)return;var b=l[+a.dataset.i];if(!b)return;ev.preventDefault();
+ var connu=b.collecte!=null,pct=connu&&b.objectif?Math.max(3,Math.min(100,Math.round(b.collecte*100/b.objectif))):0,o=document.createElement('div');o.id='urgap';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Cagnotte : '+b.titre);
+ o.innerHTML='<div class="ap"><div class="aph"><span class="apk">Cagnotte solidaire</span><b class="apt">'+esc(b.titre)+'</b><button class="apx" type="button" aria-label="Fermer">✕</button></div><div class="apb">'+(b.description?'<p class="apd">'+esc(b.description)+'</p>':'')+(connu||b.objectif?'<div class="apm">'+(connu?'<b>'+eur(b.collecte)+'</b>':'')+'<span>'+(connu?(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):'Objectif : '+eur(b.objectif))+'</span></div>':'')+(b.objectif?'<div class="apbar"><i style="width:'+pct+'%"></i></div>':'')+(b.dons?'<div class="apn">'+b.dons+' don'+(b.dons>1?'s':'')+' déjà reçu'+(b.dons>1?'s':'')+'</div>':'')+'<a class="apgo" href="'+esc(b.lien)+'">Participer à cette cagnotte</a><p class="apf">Les dons sont reversés au bénéficiaire après déduction des frais de collecte.</p></div></div>';
+ var ferme=function(){o.classList.remove('on');document.documentElement.style.overflow='';document.removeEventListener('keydown',touche);setTimeout(function(){o.remove()},240)},touche=function(e){if(e.key==='Escape')ferme()};
+ o.addEventListener('click',function(e){if(e.target===o||e.target.closest('.apx'))ferme()});document.addEventListener('keydown',touche);
+ var vieux=document.getElementById('urgap');if(vieux)vieux.remove();document.body.appendChild(o);document.documentElement.style.overflow='hidden';requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})})});
 sec.hidden=false}).catch(function(){})})();</script>
 <script>/* apercuscroll : en aperçu jeudi, descend vers la carte des horaires */if(/apercu=jeudi/.test(location.search))addEventListener("load",function(){setTimeout(function(){var c=document.getElementById("paracha");if(c)window.scrollTo(0,Math.max(0,c.getBoundingClientRect().top+scrollY-170))},1200)})</script>
 <script src="/wa-bouton.js?v=2" defer></script>
