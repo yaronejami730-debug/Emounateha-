@@ -30,7 +30,7 @@ function defaultDb() {
   return {
     settings: {
       brevoApiKey: '', senderName: 'Emounateha', senderEmail: '',
-      dailyLimit: 300, perMinute: 5, hourFrom: 8, hourTo: 21,
+      dailyLimit: 5000, monthlyLimit: 5000, forfaitMensuel: true, alertEmail: 'emounateha770@gmail.com', perMinute: 5, hourFrom: 8, hourTo: 21,
       publicUrl: '', logoUrl: '/logo.png', orgName: 'Émounatéha',
       address: '', donateUrl: 'https://don.emounateha.fr/',
       phone: '06 69 67 07 70', social: 'emounateha_', minGapHours: 24,
@@ -540,17 +540,78 @@ async function sendOne(campaign, { contact, stepIndex, step }) {
 }
 
 let ticking = false;
+// ---------- Forfait mensuel Brevo : crédits restants, date de remise à zéro, alerte à l'administrateur ----------
+const ALERTE_SEUILS = [500, 100];
+let brevoPlanCache = { at: 0, v: null };
+function ensureForfait() {   // passage du gratuit (300/jour) au forfait mensuel : une seule fois
+  const s = db.settings;
+  if (s.forfaitMensuel) return;
+  s.forfaitMensuel = true; s.monthlyLimit = 5000; s.alertEmail = s.alertEmail || 'emounateha770@gmail.com';
+  if (!(s.dailyLimit > 300)) s.dailyLimit = 5000;   // plus de plafond journalier : seul le forfait du mois compte
+  s.pausedUntil = null; save();
+}
+function quotaLocal() {      // repli si Brevo ne répond pas : mois civil, d'après les envois enregistrés
+  const now = new Date(), mois = parisDay(now).slice(0, 7), lim = db.settings.monthlyLimit || 5000;
+  const used = db.sends.filter(x => x.status !== 'error' && parisDay(x.at).slice(0, 7) === mois).length;
+  const [y, m] = mois.split('-').map(Number), fin = new Date(Date.UTC(m === 12 ? y + 1 : y, m === 12 ? 0 : m, 1));
+  return { left: Math.max(0, lim - used), limit: lim, end: fin.toISOString().slice(0, 10), source: 'local' };
+}
+function planDepuisCompte(j, lim) {   // réponse de GET /v3/account → { left, limit, end }
+  const plans = (j && j.plan) || [];
+  const p = plans.find(x => x && x.creditsType === 'sendLimit' && /subscription|payasyougo|monthly/i.test(String(x.type || ''))) || plans.find(x => x && x.creditsType === 'sendLimit' && !/free|sms/i.test(String(x.type || '')));
+  if (!p || !(Number(p.credits) >= 0)) return null;
+  let end = p.endDate ? String(p.endDate).slice(0, 10) : null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(end || '')) end = null;
+  return { left: Math.floor(Number(p.credits)), limit: lim, end, source: 'brevo' };
+}
+async function brevoQuota(force) {
+  const s = db.settings, loc = quotaLocal();
+  if (!s.brevoApiKey) return loc;
+  if (!force && Date.now() - brevoPlanCache.at < 600000 && brevoPlanCache.v) return brevoPlanCache.v;
+  let v = null;
+  try {
+    const r = await fetch('https://api.brevo.com/v3/account', { headers: { 'api-key': s.brevoApiKey, accept: 'application/json' } });
+    if (r.ok) v = planDepuisCompte(await r.json(), loc.limit);
+  } catch {}
+  if (v && !v.end) v.end = loc.end;
+  v = v || loc; brevoPlanCache = { at: Date.now(), v };
+  console.log('forfait mails', JSON.stringify(v));
+  return v;
+}
+function joursAvant(end) { return Math.max(0, Math.round((new Date(end + 'T12:00:00Z') - new Date(parisDay(Date.now()) + 'T12:00:00Z')) / 86400000)); }
+const dateLongue = d => new Date(d + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+function alerteQuotaMail(q) {
+  const j = joursAvant(q.end), quand = j === 0 ? "aujourd'hui" : j === 1 ? 'demain' : 'dans ' + j + ' jours';
+  const subject = `Attention : il ne reste que ${q.left} e-mails sur le forfait (remise à zéro ${quand})`;
+  const body = `Bonjour,\n\nIl ne reste que ${q.left} e-mails sur les ${q.limit} du forfait mensuel.\n\nRemise à zéro complète : ${dateLongue(q.end)}, soit ${quand}.\n\nD'ici là, chaque campagne, chaque e-mail d'horaires de Chabbat et chaque e-mail automatique du site est décompté de ce reste. Une fois à zéro, plus aucun e-mail ne part jusqu'à la remise à zéro.\n\nPour ne pas être bloqué : repoussez les campagnes non urgentes après le ${dateLongue(q.end)}, ou augmentez le forfait chez Brevo.`;
+  return { subject, html: renderEmail({ subject, preheader: `Remise à zéro le ${dateLongue(q.end)}`, title: `Plus que ${q.left} e-mails ce mois-ci`, color: '#1f6a72', accent: '#c4a24a', body, buttonText: 'Ouvrir le CRM', buttonUrl: 'https://www.emounateha.fr/crm' }, { firstName: 'Administrateur', lastName: '', email: db.settings.alertEmail, id: 'alerte-quota' }) };
+}
+async function alerteQuota(q) {   // un seul e-mail par seuil et par période de forfait
+  const s = db.settings, to = s.alertEmail || 'emounateha770@gmail.com';
+  if (!q || !s.brevoApiKey || q.left <= 0) return null;
+  const seuil = [...ALERTE_SEUILS].sort((a, b) => a - b).find(x => q.left <= x);
+  if (!seuil) return null;
+  const cle = q.end + ':' + seuil, deja = s.quotaAlerte || '';
+  if (deja === cle || (deja.startsWith(q.end + ':') && Number(deja.split(':')[1]) <= seuil)) return null;
+  const m = alerteQuotaMail(q);
+  try { await brevoSend({ to, toName: s.orgName, subject: m.subject, html: m.html }); s.quotaAlerte = cle; save(); return cle; }
+  catch (e) { console.error('alerte forfait', e.message); return null; }
+}
+
 async function tick(force = false) {
   if (ticking) return { skipped: 'busy' };
   ticking = true;
   try {
     let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
+    ensureForfait();
     const s = db.settings;
+    const q = await brevoQuota(force); await alerteQuota(q);
     const h = parisHour();
     if (!force && (h < s.hourFrom || h >= s.hourTo)) return { skipped: 'hors plage horaire' };
+    if (q.left <= 0) return { skipped: 'forfait mensuel épuisé, reprise le ' + q.end };
     if (s.pausedUntil && Date.now() < +new Date(s.pausedUntil)) return { skipped: 'limite Brevo atteinte, reprise demain' };
     await brevoToday(force);
-    let budget = Math.min(s.dailyLimit - usedToday(), force ? 50 : s.perMinute);
+    let budget = Math.min(s.dailyLimit - usedToday(), force ? 50 : s.perMinute, q.left);
     await brevoToday(force);
     if (s.dailyLimit - usedToday() <= 0) { s.pausedUntil = nextMidnight(); save(); return { skipped: 'limite du jour atteinte, reprise demain' }; }
     let n = 0, errors = 0;
@@ -1258,7 +1319,9 @@ function campaignPlan(c) {
   // pourquoi la campagne n'envoie pas en ce moment (affiché dans le CRM)
   const hh = n => String(n).padStart(2, '0') + ' h', dem = 'Reprise demain à ' + hh(s.hourFrom) + '.';
   let raison = '';
-  if (bloque) raison = `La limite de ${s.dailyLimit} mails par jour est atteinte, tous envois confondus. ${dem}`;
+  const qm = brevoPlanCache.v || quotaLocal();
+  if (qm.left <= 0) raison = `Le forfait de ${qm.limit} mails du mois est épuisé. Reprise le ${dateLongue(qm.end)}.`;
+  else if (bloque) raison = `La limite de ${s.dailyLimit} mails par jour est atteinte, tous envois confondus. ${dem}`;
   else if (!inWindow) raison = `Hors des heures d'envoi (${hh(s.hourFrom)} – ${hh(s.hourTo)}). ` + (nowMin < fromMin ? `Reprise à ${hh(s.hourFrom)}.` : dem);
   else if (dayLeft === 0) raison = `La part d'aujourd'hui est envoyée : ${dayQuota} mails par jour pour finir le ${new Date(c.endDate + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}. ${dem}`;
   else if (etale && capNow === 0) raison = `Envoi étalé sur la journée : environ ${String(perHour).replace('.', ',')} mails par heure.`;
@@ -1406,10 +1469,13 @@ async function api(req, res, url) {
   const body = ['POST', 'PUT'].includes(m) ? await readBody(req) : {};
 
   if (parts[0] === 'state' && m === 'GET') {
+    ensureForfait();
     await Promise.race([brevoToday(), new Promise(r => setTimeout(r, 2500))]); // vrai total du jour chez Brevo (horaires, dons, codes, campagnes)
+    await Promise.race([brevoQuota(), new Promise(r => setTimeout(r, 2500))]); // forfait du mois : reste et date de remise à zéro
     return send(res, 200, {
       settings: publicSettings(), contacts: db.contacts, templates: db.templates,
       campaigns: db.campaigns.map(c => ({ ...c, stats: campaignStats(c), plan: campaignPlan(c) })),
+      month: (brevoPlanCache.v || quotaLocal()),
       today: { sent: usedToday(), limit: db.settings.dailyLimit, pausedUntil: db.settings.pausedUntil || null, queue: db.campaigns.filter(c => c.status === 'running').reduce((a, c) => a + remaining(c), 0) },
       sends: db.sends.slice(-60).reverse()
     });
@@ -1431,8 +1497,8 @@ async function api(req, res, url) {
     return send(res, 200, { ok: true, n });
   }
   if (parts[0] === 'settings' && m === 'POST') {
-    const allowed = ['senderName', 'senderEmail', 'dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'publicUrl', 'logoUrl', 'orgName', 'address', 'donateUrl', 'phone', 'social', 'minGapHours', 'assetsUrl', 'replyTo', 'instagramUrl', 'facebookUrl', 'tiktokUrl', 'youtubeUrl'];
-    for (const k of allowed) if (k in body) db.settings[k] = ['dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'minGapHours'].includes(k) ? Number(body[k]) : String(body[k]).trim();
+    const allowed = ['monthlyLimit', 'alertEmail', 'senderName', 'senderEmail', 'dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'publicUrl', 'logoUrl', 'orgName', 'address', 'donateUrl', 'phone', 'social', 'minGapHours', 'assetsUrl', 'replyTo', 'instagramUrl', 'facebookUrl', 'tiktokUrl', 'youtubeUrl'];
+    for (const k of allowed) if (k in body) db.settings[k] = ['monthlyLimit', 'dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'minGapHours'].includes(k) ? Number(body[k]) : String(body[k]).trim();
     if (body.brevoApiKey) db.settings.brevoApiKey = String(body.brevoApiKey).trim();
     if (body.clearKey) db.settings.brevoApiKey = '';
     save(); return send(res, 200, publicSettings());
@@ -2069,4 +2135,5 @@ module.exports.chabadZmanim = chabadZmanim;
 module.exports.campaignPlan = (id) => { const c = db.campaigns.find(x => x.id === id); return c ? { plan: campaignPlan(c), stats: campaignStats(c) } : null; };
 module.exports.sendChabbatTest = async (to, cityId, mode) => { const city = cityById(cityId); const dow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' })).getDay(); const wk = await hebcalWeek(city, 8, (4 - dow + 7) % 7); /* un test se lit comme le mail du jeudi, même envoyé un autre jour */ const c = { id: 'test', firstName: 'Yarone', lastName: 'Jami', email: to, tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); const r = await brevoSend({ to, subject: '[TEST] ' + t.subject, html: renderEmail(t, c) }); return { subject: t.subject, result: r.simulated ? 'simulé (pas de clé Brevo)' : 'envoyé' }; };
 module.exports.chabbatHtml = async (cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'preview', firstName: 'Yarone', lastName: 'Jami', email: 'exemple@email.com', tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); return { subject: t.subject, html: renderEmail(t, c) }; };
+module.exports.forfait = { planDepuisCompte, joursAvant, dateLongue, alerteQuotaMail: (...a) => alerteQuotaMail(...a), alerteQuota: (...a) => alerteQuota(...a), quotaLocal: () => quotaLocal(), ensureForfait: () => ensureForfait(), seuils: ALERTE_SEUILS };
 module.exports.previewAll = { renderEmail: (...a) => renderEmail(...a), sendReset: (...a) => sendReset(...a), sendInvite: (...a) => sendInvite(...a), getDb: () => db, cities: () => CITIES.map(c => c[0]) };

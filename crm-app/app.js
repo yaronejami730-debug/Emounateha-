@@ -123,7 +123,7 @@ const views = {
       <button class="btn pri" onclick="runTick()">Envoyer maintenant le prochain lot</button></div>
     <div class="grid g4">
       <div class="card stat"><small>Contacts actifs</small><b>${active}</b><em>${S.contacts.length} au total</em></div>
-      <div class="card stat"><small>Envoyés aujourd'hui${S.today.pausedUntil && new Date(S.today.pausedUntil) > new Date() ? ' · <b style="display:inline;font-size:12px;color:var(--warn)">limite atteinte, reprise demain</b>' : ''}</small><b>${S.today.sent}<span style="font-size:16px;color:var(--mut)"> / ${S.today.limit}</span></b><div class="pbar"><i style="width:${pct}%"></i></div></div>
+      <div class="card stat"><small>Envoyés aujourd'hui${S.today.pausedUntil && new Date(S.today.pausedUntil) > new Date() ? ' · <b style="display:inline;font-size:12px;color:var(--warn)">limite atteinte, reprise demain</b>' : ''}</small><b>${S.today.sent}</b>${S.month ? (() => { const m = S.month, j = Math.max(0, Math.round((new Date(m.end + 'T12:00:00') - new Date(new Date().toLocaleDateString('sv-SE') + 'T12:00:00')) / 864e5)), bas = m.left <= 500; return `<div class="pbar"><i style="width:${Math.min(100, Math.max(0, (m.limit - m.left) / m.limit * 100))}%${bas ? ';background:var(--warn)' : ''}"></i></div><em style="display:block;margin-top:6px${bas ? ';color:var(--warn);font-weight:700' : ''}">Forfait du mois : reste ${m.left} sur ${m.limit}</em><em style="display:block">Remise à zéro le ${new Date(m.end + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} (${j === 0 ? "aujourd'hui" : j === 1 ? 'demain' : 'dans ' + j + ' jours'})</em>`; })() : `<div class="pbar"><i style="width:${pct}%"></i></div>`}</div>
       <div class="card stat"><small>Campagnes en cours</small><b>${running}</b><em>${queueTxt}</em><em style="display:block;margin-top:6px;color:var(--teal);font-weight:600">${nextTxt}</em></div>
       <div class="card stat"><small>Emails envoyés (total)</small><b>${totalSent}</b><em>${S.settings.hasKey ? 'Brevo connecté' : '⚠ Mode simulation (pas de clé Brevo)'}</em></div>
     </div>
@@ -150,7 +150,7 @@ const views = {
   historique: () => `<div class="head"><div><h1>Historique</h1><p class="sub">Les 200 derniers envois, avec leur campagne (lecture seule)</p></div><button class="btn" onclick="render(true)">↻ Actualiser</button></div>
     <div id="hist"><div class="card empty">Chargement…</div></div>`,
   campaigns: () => `
-    <div class="head"><div><h1>Campagnes</h1><p class="sub">Séquences de mails envoyées au fil de l'eau (max ${S.today.limit}/jour) · <b style="color:${S.settings.hasKey ? 'var(--ok)' : 'var(--warn)'}">${S.settings.hasKey ? '● Brevo connecté' : '⚠ Mode simulation (Brevo non connecté)'}</b></p></div>
+    <div class="head"><div><h1>Campagnes</h1><p class="sub">Séquences de mails envoyées au fil de l'eau${S.month ? ` (forfait : reste ${S.month.left} mails ce mois-ci)` : ''} · <b style="color:${S.settings.hasKey ? 'var(--ok)' : 'var(--warn)'}">${S.settings.hasKey ? '● Brevo connecté' : '⚠ Mode simulation (Brevo non connecté)'}</b></p></div>
       <button class="btn pri" onclick="campModal()">+ Nouvelle campagne</button></div>
     ${S.campaigns.length ? `<div class="cp-list">${S.campaigns.map(c => {
       const st = c.stats || {}, p = c.plan, sent = st.sent || 0, steps = (c.steps || []).length, aud = Math.max(st.audience || 0, sent), pct = aud ? Math.min(100, Math.round(sent * 100 / aud)) : 0;
@@ -314,7 +314,7 @@ const views = {
         <div class="hint">Brevo → SMTP &amp; API → Clés API. Stockée en local dans data/db.json.</div>
         <label>Nom expéditeur</label><input id="s_senderName" value="${esc(s.senderName)}">
         <label>Email expéditeur (validé dans Brevo)</label><input id="s_senderEmail" value="${esc(s.senderEmail)}" placeholder="contact@emounateha.org">
-        <div class="row"><div class="grow"><label>Limite / jour</label><input id="s_dailyLimit" type="number" value="${s.dailyLimit}"></div>
+        <div class="row"><div class="grow"><label>Forfait / mois</label><input id="s_monthlyLimit" type="number" value="${s.monthlyLimit || 5000}"></div><div class="grow"><label>Limite / jour</label><input id="s_dailyLimit" type="number" value="${s.dailyLimit}"></div>
         <div class="grow"><label>Mails / minute</label><input id="s_perMinute" type="number" value="${s.perMinute}"></div></div>
         <div class="row"><div class="grow"><label>Envoi dès (h)</label><input id="s_hourFrom" type="number" value="${s.hourFrom}"></div>
         <div class="grow"><label>Jusqu'à (h)</label><input id="s_hourTo" type="number" value="${s.hourTo}"></div></div>
@@ -470,8 +470,9 @@ function campWhen() {
   const per = document.querySelector('input[name=k_when]:checked').value === 'per';
   $('#k_per').hidden = !per;
   $('#k_go').textContent = per ? 'Programmer la campagne' : 'Envoyer maintenant';
-  $('#k_whint').textContent = per ? `Répartition automatique sur la période (max ${S.today.limit}/jour). Après la date de fin, la campagne s'arrête.`
-    : `Envoi réel via Brevo, dans la limite de ${S.today.limit} mails par jour et des heures d'envoi réglées.`;
+  const fm = S.month ? ` Forfait du mois : il reste ${S.month.left} mails sur ${S.month.limit}, remise à zéro le ${new Date(S.month.end + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.` : '';
+  $('#k_whint').textContent = (per ? `Répartition automatique sur la période. Après la date de fin, la campagne s'arrête.`
+    : `Envoi réel via Brevo, aux heures d'envoi réglées.`) + fm;
 }
 function drawSteps() {
   $('#k_steps').innerHTML = campSteps.map((s, i) => `<div class="seq"><span class="n">${i + 1}</span>
@@ -549,7 +550,7 @@ async function doTest() {
 
 async function saveSettings() {
   const g = k => $('#s_' + k).value;
-  const body = {}; ['senderName', 'senderEmail', 'dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'orgName', 'logoUrl', 'address', 'publicUrl', 'phone', 'social', 'donateUrl', 'minGapHours'].forEach(k => body[k] = g(k));
+  const body = {}; ['senderName', 'senderEmail', 'monthlyLimit', 'dailyLimit', 'perMinute', 'hourFrom', 'hourTo', 'orgName', 'logoUrl', 'address', 'publicUrl', 'phone', 'social', 'donateUrl', 'minGapHours'].forEach(k => body[k] = g(k));
   if (g('key')) body.brevoApiKey = g('key');
   await api('POST', '/settings', body); toast('Réglages enregistrés'); await render();
 }
