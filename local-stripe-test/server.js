@@ -260,8 +260,9 @@ app.use((req, res, next) => {
 // --- en-têtes de sécurité (navigateur) ---
 const STRIPE_H = 'https://*.stripe.com https://*.stripe.network https://*.stripecdn.com https://*.hcaptcha.com https://hcaptcha.com';
 const GT_H = 'https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com';   // traduction de la page (anglais, hébreu), chargée seulement si le visiteur choisit une langue
-const CSP = ["default-src 'self'", `script-src 'self' 'unsafe-inline' ${STRIPE_H} https://pay.google.com ${GT_H}`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${GT_H}`, "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: https:", `connect-src 'self' ${STRIPE_H} https://fonts.googleapis.com https://data.geopf.fr https://www.hebcal.com https://pay.google.com https://www.emounateha.fr ${GT_H}`, `frame-src 'self' ${STRIPE_H} https://pay.google.com ${GT_H}`,
+const CL_H = 'https://www.clarity.ms https://*.clarity.ms';   // Microsoft Clarity (observation de l'usage), chargé seulement après accord du visiteur
+const CSP = ["default-src 'self'", `script-src 'self' 'unsafe-inline' ${STRIPE_H} https://pay.google.com ${GT_H} ${CL_H}`, `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${GT_H}`, "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: https:", `connect-src 'self' ${STRIPE_H} https://fonts.googleapis.com https://data.geopf.fr https://www.hebcal.com https://pay.google.com https://www.emounateha.fr ${GT_H} ${CL_H}`, `frame-src 'self' ${STRIPE_H} https://pay.google.com ${GT_H}`,
   "media-src 'self' https:", "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'self' https://www.emounateha.fr https://emounateha.fr" + (process.env.VERCEL ? '' : ' http://127.0.0.1:* http://localhost:*')].join('; ');   // la page de don peut s'ouvrir dans la petite fenêtre de la page Torah, et nulle part ailleurs
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', CSP); res.setHeader('X-Content-Type-Options', 'nosniff');   // (anti-clickjacking : frame-ancestors ci-dessus, plus strict que X-Frame-Options)
