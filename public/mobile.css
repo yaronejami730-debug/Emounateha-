@@ -139,6 +139,8 @@
 
   /* ---------- menu déroulant : cibles tactiles confortables ---------- */
   .sec-nav .links a{min-height:50px;display:flex;align-items:center;font-size:17px}
+  /* menu plus haut que l'écran (téléphone court, paysage) : il défile, le dernier bouton reste atteignable */
+  html body .sec-nav .links{max-height:calc(100vh - 52px);max-height:calc(100dvh - 52px);overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:max(14px,env(safe-area-inset-bottom))}
 
 
   /* ---------- formulaires : 16 px minimum, sinon iOS zoome ---------- */

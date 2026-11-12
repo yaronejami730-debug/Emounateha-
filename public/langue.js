@@ -54,6 +54,12 @@
   function init() {
     var links = document.querySelector('.sec-nav .links') || document.querySelector('#navLinks');
     if (document.querySelector('.lang-btn')) return;
+    // menu du téléphone : jamais plus haut que la place restante sous la barre (écran court, paysage), il défile à l'intérieur
+    (function () {
+      var l = document.getElementById('navLinks'), bg = document.getElementById('burger'); if (!l || !bg) return;
+      var cale = function () { if (innerWidth > 800 || getComputedStyle(l).display === 'none') { l.style.maxHeight = ''; return; } l.style.maxHeight = Math.max(160, innerHeight - l.getBoundingClientRect().top) + 'px'; };
+      bg.addEventListener('click', function () { setTimeout(cale, 0); setTimeout(cale, 250); }); addEventListener('resize', cale); addEventListener('scroll', cale, { passive: true });
+    })();
     var nav = document.querySelector('.sec-nav'), navVu = nav && getComputedStyle(nav).display !== 'none' && nav.getBoundingClientRect().height > 0;
     var flot = !links || !navVu;   // page sans menu visible (don, espace donateur, carte de visite) : bouton rond flottant, en bas à gauche
     var contact = flot ? null : [].slice.call(links.querySelectorAll('a')).filter(function (a) { return /contact/i.test(a.textContent); })[0];
@@ -73,6 +79,9 @@
     if (flot) {   // au-dessus d'une barre fixée en bas de l'écran (page de don : « Continuer »), jamais dessus
       var cale = function () { var bar = document.querySelector('.dn-actions'), h = 0; if (bar) { var r = bar.getBoundingClientRect(); if (r.height && getComputedStyle(bar).position === 'fixed' && getComputedStyle(bar).display !== 'none') h = Math.max(0, innerHeight - r.top); } a.style.bottom = h ? (h + 10) + 'px' : ''; box.style.bottom = h ? (h + 60) + 'px' : ''; };
       cale(); addEventListener('resize', cale); setInterval(cale, 800);
+      // tout en bas de la page, le bouton s'efface : il ne recouvre plus les liens du pied de page (il revient dès qu'on remonte)
+      var bas = function () { var fin = (document.documentElement.scrollHeight - innerHeight) - (window.pageYOffset || 0) < 70 && document.documentElement.scrollHeight > innerHeight + 140; if (!box.hidden) fin = false; a.style.opacity = fin ? '0' : ''; a.style.pointerEvents = fin ? 'none' : ''; };
+      a.style.transition = 'opacity .2s'; bas(); addEventListener('scroll', bas, { passive: true }); addEventListener('resize', bas);
     }
     box.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var l = b.dataset.l; if (l === cur) { box.hidden = true; return; } ecrireLangue(l); location.reload(); });
     a.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); box.hidden = !box.hidden; });

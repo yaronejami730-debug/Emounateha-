@@ -408,7 +408,7 @@ body{overflow-x:hidden}
 .ytp{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(196,162,74,.95);box-shadow:0 6px 20px rgba(0,0,0,.4)}
 .ytp::after{content:"";position:absolute;left:25px;top:19px;border-style:solid;border-width:13px 0 13px 22px;border-color:transparent transparent transparent #1b2b2d}
 </style>
-<link rel="stylesheet" href="/mobile.css?v=4">
+<link rel="stylesheet" href="/mobile.css?v=5">
 <link rel="stylesheet" href="/fade.css?v=3">
 <link rel="stylesheet" href="/typo.css?v=74">
 <script src="/typo.js?v=5" defer></script>
@@ -579,6 +579,8 @@ html body .pagehead{padding-bottom:70px}
 .it .th:not(.v) img{object-fit:contain;object-position:center;background:#f5f8f8}
 .grid4{align-items:start}
 .it .cap{height:auto;min-height:62px}
+/* archives : la date s'écrit en entier, sur deux lignes s'il le faut */
+#archives .it .cap b{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
 
 /* lecteur : vidéo + formulaire de don côte à côte */
 #vm .vmwrap{display:flex;gap:22px;justify-content:center;align-items:flex-start;max-width:1100px;margin:0 auto}
@@ -894,7 +896,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVm()});
 n.addEventListener('click',function(e){if(e.target.closest('.burger,.links,a,button'))return;
 if(location.pathname==='/'||location.pathname==='/index.html')window.scrollTo({top:0,behavior:'smooth'});else location.href='/'})})();</script>
 <script src="/roch-hodech.js?v=1" defer></script>
-<script src="/langue.js?v=8" defer></script>
+<script src="/langue.js?v=9" defer></script>
 <script src="/vu.js?v=2" defer></script>
 </body>
 </html>
