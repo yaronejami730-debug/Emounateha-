@@ -605,8 +605,8 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script src="/apercu-video.js?v=2" defer></script>
 <script src="/geoloc.js?v=1" defer></script>
 <script src="/hanouka-annonce.js?v=43" defer></script>
-<script src="/bandeau-actus.js?v=11" defer></script>
-<script src="/ecrire-rabbi.js?v=33" defer></script>
+<script src="/bandeau-actus.js?v=13" defer></script>
+<script src="/ecrire-rabbi.js?v=34" defer></script>
 <script src="/partager.js?v=1" defer></script>
 <script>/* cagnottes urgentes : choisies dans le CRM (« Mettre sur la page d'accueil »). Rien ne s'affiche s'il n'y en a pas. */
 (function(){var esc=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})},eur=function(c){return(c/100).toLocaleString('fr-FR',{maximumFractionDigits:2})+'\u00a0€'};
@@ -665,13 +665,17 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
 #paracha .pk svg,#paracha .pk .plab,#paracha .pc .plab,#parinday,#paroutday,#parnote,#paracha .parall,#paracha #geowarn{display:none!important}
 #paracha .pk>div{display:flex!important;flex-direction:row!important;align-items:baseline;gap:8px;min-width:0}
 #paracha #parname{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:15px;line-height:1.25;color:var(--teal);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#paracha #parname::before{content:"Chabbat ";font-weight:700}
-#paracha #parheb{display:inline!important;font-family:'Frank Ruhl Libre','EmouHe','David',serif;font-weight:700;font-size:17px;line-height:1.2;color:#8a6c1c;margin:0;white-space:nowrap}
+#paracha #parname::before{content:"Chabbat ";font-weight:800;color:#c4a24a}
+/* placé juste sous la banderole d'actualités, avant les cagnottes */
+#paracha.parsec{margin:-108px 0 0!important;padding:0 14px 20px!important;position:relative;z-index:6}
+@media(max-width:800px){#paracha.parsec{margin-top:-76px!important}}
+#paracha:not([hidden])+#urgent{margin-top:0!important;padding-bottom:6px}
+#paracha #parheb{display:inline!important;font-family:'Frank Ruhl Libre','EmouHe','David',serif;font-weight:700;font-size:17px;line-height:1.2;color:var(--teal);margin:0;white-space:nowrap}
 #paracha #parheb:empty{display:none!important}
 #paracha .pt .plab{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--mut);white-space:nowrap}
 #paracha .pt b{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:15px;line-height:1.2;margin:0;color:var(--teal);white-space:nowrap}
 #paracha .citysel{margin:0;padding:0 18px 0 6px;border:0;background:none;border-radius:99px}
-#paracha .citysel select{font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:13px;line-height:1.2;color:#8a6c1c;padding-right:0;width:auto;max-width:150px;field-sizing:content;text-overflow:ellipsis}
+#paracha .citysel select{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:14px;line-height:1.2;color:#c4a24a;text-align:center;text-align-last:center;padding-right:0;width:auto;max-width:150px;field-sizing:content;text-overflow:ellipsis}
 #paracha .citysel .chev{right:4px;font-size:11px}
 @media(max-width:640px){
   #paracha .parcard{display:flex!important;flex-wrap:wrap!important;justify-content:center;align-items:center;row-gap:2px;width:100%;max-width:100%;min-height:0;padding:6px 12px;border-radius:22px!important}
@@ -687,14 +691,80 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
   #paracha .citysel select{font-size:11.5px;max-width:110px}
   #paracha .citysel .chev{right:2px;font-size:9px}
 }
-@media(max-width:360px){
-  #paracha .parcard{padding:6px 8px}
-  #paracha .parcard>div{padding:0 6px!important}
-  #paracha .pt .plab{font-size:9.5px}
-  #paracha .pt b{font-size:12px}
-  #paracha .citysel select{max-width:76px;font-size:10.5px}
+
+/* flèche de l'en-tête : montre qu'il y a les raccourcis à droite (un appui ou un glissement) */
+.hero .hnx{animation:hnxGo 1.8s ease-in-out infinite}
+.hero.moved .hnx{display:none}
+@keyframes hnxGo{0%,100%{transform:translateX(0)}50%{transform:translateX(-5px)}}
+@media(prefers-reduced-motion:reduce){.hero .hnx{animation:none}}
+/* ville : même écriture qu'avant, simplement soulignée en pointillé avec une petite flèche dorée = « on peut changer » */
+#paracha .citysel select{text-decoration:underline dotted #c4a24a;text-underline-offset:3px;cursor:pointer}
+#paracha .citysel .chev{color:#c4a24a!important;font-size:13px!important}
+@media(max-width:640px){#paracha .citysel{padding-right:15px!important}#paracha .citysel .chev{font-size:11px!important;right:1px!important}}
+
+/* PETITS TÉLÉPHONES (moins de 390 px) : copie conforme de l'iPhone, tout est réduit en proportion de la largeur de l'écran
+   (--k = largeur / 390). Rien ne passe à la ligne autrement que sur l'iPhone. */
+@media(max-width:389px){
+  :root{--k:calc(100vw / 390)}
+  .hero .logo-complet{width:calc(136 * var(--k))!important}
+  .hero .slogan{font-size:calc(12.5 * var(--k))!important;white-space:nowrap}
+  .hero .quote{font-size:calc(15 * var(--k))!important;letter-spacing:calc(.6 * var(--k))!important;line-height:1.5}
+  html body #hnband{flex-wrap:nowrap!important;gap:calc(8 * var(--k))!important;padding:calc(7 * var(--k)) calc(10 * var(--k))!important}
+  html body #hnband .t{font-size:calc(11.5 * var(--k))!important;letter-spacing:.07em!important}
+  html body #hnband .c{font-size:calc(12 * var(--k))!important}
+  html body #hnband u{font-size:calc(11.5 * var(--k))!important;padding:calc(6 * var(--k)) calc(11 * var(--k))!important}
+  html body #hnband .m{width:calc(22 * var(--k))!important;height:calc(22 * var(--k))!important}
+  #paracha.parsec{padding-left:calc(14 * var(--k))!important;padding-right:calc(14 * var(--k))!important}
+  #paracha .parcard{padding:calc(6 * var(--k)) calc(12 * var(--k))!important;border-radius:calc(22 * var(--k))!important}
+  #paracha .parcard>div{padding:0 calc(9 * var(--k))!important;gap:calc(4 * var(--k))!important;min-height:calc(18 * var(--k))}
+  #paracha .parcard>div:first-child{padding:0!important}
+  #paracha #parname{font-size:calc(14 * var(--k))!important}
+  #paracha #parheb{font-size:calc(16 * var(--k))!important}
+  #paracha .pk>div{gap:calc(8 * var(--k))!important}
+  #paracha .pt b{font-size:calc(13 * var(--k))!important}
+  #paracha .pt .plab{font-size:calc(10.5 * var(--k))!important;display:inline!important}
+  #paracha .citysel{padding:0 calc(15 * var(--k)) 0 calc(2 * var(--k))!important}
+  #paracha .citysel select{font-size:calc(11.5 * var(--k))!important;max-width:calc(110 * var(--k))!important}
+  #paracha .citysel .chev{font-size:calc(11 * var(--k))!important}
+  .urgc .ut,#urgent .urgc .ut{font-size:calc(14 * var(--k) + 2px)!important}
+  html body #hnband{justify-content:center!important;overflow:hidden}
 }
-@media(max-width:300px){#paracha .pt .plab{display:none}#paracha #parname{font-size:12.5px}#paracha #parheb{font-size:14px}}
+/* flèche de l'en-tête, téléphone : à côté du logo rond, avec le mot « Raccourcis » */
+@media(max-width:800px){
+  .hero .hnx{width:auto!important;height:34px!important;padding:0 10px 0 12px!important;right:8px!important;gap:4px;font-size:min(12.5px,3.2vw)!important}
+  .hero .hnx span{display:inline!important}
+  .hero .hnx i{font-size:20px}
+}
+@media(max-width:389px){
+  .hero .hnx{height:calc(34 * var(--k))!important;padding:0 calc(9 * var(--k)) 0 calc(11 * var(--k))!important;right:calc(6 * var(--k))!important;font-size:calc(11.5 * var(--k))!important;border-width:1px!important}
+  .hero .hnx i{font-size:calc(19 * var(--k))!important;margin-top:calc(-2 * var(--k))}
+}
+
+/* jamais de défilement gauche-droite de la page (iPhone compris) */
+html,body{overflow-x:clip;max-width:100%}
+@supports not (overflow-x:clip){html{overflow-x:hidden}}
+.hero{overflow:hidden;max-width:100vw}
+/* ville : le nom est un simple texte (largeur exacte partout, Safari compris) ; la liste déroulante, invisible, est posée dessus */
+#paracha .citysel{position:relative;display:inline-flex!important;align-items:center;white-space:nowrap}
+#paracha .citysel .cityname{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:14px;line-height:1.2;color:#c4a24a;text-decoration:underline dotted #c4a24a;text-underline-offset:3px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+#paracha .citysel select{position:absolute!important;inset:-6px -4px!important;width:calc(100% + 8px)!important;max-width:none!important;height:calc(100% + 12px);opacity:0;font-size:16px!important;cursor:pointer;padding:0!important}
+/* téléphone : grille fixe, 2 lignes garanties — nom en haut ; entrée | sortie | ville en dessous, sur une seule ligne */
+@media(max-width:640px){
+  #paracha .parcard{display:grid!important;grid-template-columns:auto auto auto!important;grid-template-rows:auto auto;justify-content:center;align-items:center;row-gap:2px;column-gap:0}
+  #paracha .parcard>.pk{grid-column:1/-1!important;grid-row:1!important;justify-content:center;flex:none!important}
+  #paracha .parcard>.pt:nth-child(2){grid-column:1!important;grid-row:2!important}
+  #paracha .parcard>.pt:nth-child(3){grid-column:2!important;grid-row:2!important}
+  #paracha .parcard>.pc{grid-column:3!important;grid-row:2!important}
+  #paracha .parcard>div{white-space:nowrap}
+  #paracha .citysel .cityname{font-size:11.5px;max-width:110px}
+}
+@media(max-width:389px){#paracha .citysel .cityname{font-size:calc(11.5 * var(--k))!important;max-width:calc(100 * var(--k))!important}}
+/* flèche de l'en-tête : petit rond doré avec une flèche, sans texte, à côté du logo */
+.hero .hnx{width:34px!important;height:34px!important;padding:0!important;justify-content:center;right:12px!important;border-radius:50%!important;background:linear-gradient(180deg,#f0d98a,#c4a24a)!important;border:1px solid rgba(255,255,255,.7)!important;box-shadow:0 6px 16px rgba(8,30,34,.35)!important}
+.hero .hnx span{display:none!important}
+.hero .hnx i{color:#1b2b2d!important;font-size:22px!important;margin:-3px 0 0 2px!important}
+@media(min-width:801px){.hero .hnx{width:40px!important;height:40px!important;right:22px!important}}
+@media(max-width:389px){.hero .hnx{width:calc(34 * var(--k))!important;height:calc(34 * var(--k))!important;right:calc(12 * var(--k))!important}.hero .hnx i{font-size:calc(22 * var(--k))!important}}
 </style>
 </head>
 <body>
@@ -715,8 +785,16 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
     <nav class="orb" id="orb" aria-label="Raccourcis vers les pages du site"><span class="orbray" aria-hidden="true"></span><span class="orbring" aria-hidden="true"></span><a class="orbc" href="https://don.emounateha.fr/?aff=besoin" title="Faire un don — là où le besoin est le plus grand"><img src="/logo.png?v=2" alt="Faire un don à Émounatéha — là où le besoin est le plus grand" width="230" height="230" loading="lazy"></a><a class="ob" href="/colis/" aria-label="Colis de Chabbat et de fêtes" data-t="Colis de Chabbat et de fêtes" data-ap="/apercus/mini/colis.jpg?v=1" data-a="Colis de Chabbat et de fêtes" data-b="Livré aux familles" data-c="Livré aux familles"><span class="obi"><img src="/tuiles/colis.png?v=4" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/torah/" aria-label="Diffusion de la Torah" data-t="Diffusion de la Torah" data-ap="/apercus/mini/torah.jpg?v=1" data-a="Diffusion de la Torah" data-b="Tanya · Houmach · Téhilim" data-c="Vidéo chaque jour"><span class="obi"><img src="/tuiles/torah.png?v=4" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/horaires/" aria-label="Horaires de Chabbat" data-t="Horaires de Chabbat" data-ap="/apercus/mini/horaires.jpg?v=1" data-a="Horaires de Chabbat" data-b="Allumage · Havdala · Zmanim" data-c="Allumage · Havdala"><span class="obi"><img src="/tuiles/horaires.png?v=4" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/news/" aria-label="Actualités" data-t="Actualités" data-ap="/apercus/mini/actualites.jpg?v=1" data-a="Actualités" data-b="Le monde Habad, chaque jour" data-c="Chaque jour"><span class="obi"><img src="/tuiles/actualites.png?v=1" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/un-toit-sur-la-tete/" aria-label="Un toit sur la tête" data-t="Un toit sur la tête" data-ap="/apercus/mini/un-toit-sur-la-tete.jpg?v=1" data-a="Un toit sur la tête" data-b="Hébergement d'urgence" data-c="Hébergement d'urgence"><span class="obi"><img src="/tuiles/act-toit.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/vetements-et-soins/" aria-label="Vêtements et soins" data-t="Vêtements et soins" data-ap="/apercus/mini/vetements-et-soins.jpg?v=1" data-a="Vêtements &amp; soins" data-b="Pour les plus démunis" data-c="Pour les plus démunis"><span class="obi"><img src="/tuiles/act-vetements.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/reinsertion-sociale/" aria-label="Réinsertion sociale" data-t="Réinsertion sociale" data-ap="/apercus/mini/reinsertion-sociale.jpg?v=1" data-a="Réinsertion sociale" data-b="Démarches · Vers l'emploi" data-c="Vers l'emploi"><span class="obi"><img src="/tuiles/act-reinsertion.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/soutien-moral-et-financier/" aria-label="Soutien moral et financier" data-t="Soutien moral et financier" data-ap="/apercus/mini/soutien-moral-et-financier.jpg?v=1" data-a="Soutien moral &amp; financier" data-b="Écoute · Aide concrète" data-c="Écoute · Aide"><span class="obi"><img src="/tuiles/act-soutien.png?v=3" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="https://don.emounateha.fr/" aria-label="Faire un don" data-t="Faire un don" data-ap="/apercus/mini/don.jpg?v=1" data-a="Faire un don" data-b="Mensuel ou ponctuel · Reçu fiscal" data-c="Reçu fiscal"><span class="obi"><img src="/tuiles/step-don.png" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/ecrire-au-rabbi/" aria-label="Écrire au Rabbi" data-t="Écrire au Rabbi" data-ap="/apercus/mini/ecrire-au-rabbi.jpg?v=5" data-a="Écrire au Rabbi" data-b="Votre lettre au Rabbi" data-c="Votre lettre au Rabbi"><span class="obi ph"><img src="/tuiles/rabbi.jpg?v=9" alt="" width="64" height="64" loading="lazy"></span></a><a class="ob" href="/ambassadeur/" aria-label="Devenir ambassadeur ou ambassadrice" data-t="Ambassadeur · Ambassadrice" data-ap="/apercus/mini/ambassadeur.jpg?v=3" data-a="Ambassadeur · Ambassadrice" data-b="Collecter pour les familles" data-c="Votre collecte"><span class="obi big"><img src="/tuiles/ambassadeur.png?v=2" alt="" width="64" height="64" loading="lazy"></span></a><a class="fly" id="fly" href="#" aria-hidden="true" tabindex="-1"><img alt="" width="560" height="700"><span><b></b><i>Ouvrir ›</i></span></a></nav>
   </div>
   <button class="hgo hpv" type="button" aria-label="Revenir"><i aria-hidden="true">‹</i></button>
+  <button class="hgo hnx" type="button" aria-label="Voir les raccourcis"><span>Raccourcis</span><i aria-hidden="true">›</i></button>
 </header>
 
+<section class="parsec" id="paracha" hidden><div class="wrap"><div class="parcard" id="parcard">
+  <div class="pk"><svg class="torah" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#c4a24a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><rect x="45" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><path d="M14.5 12V7M14.5 52v5M49.5 12V7M49.5 52v5"/><path d="M19 16h26v32H19z" fill="#fff"/><path d="M25 24h14M25 30h14M25 36h10" stroke="#1f6a72"/></g><circle cx="14.5" cy="6" r="2.6" fill="#e4cd8a"/><circle cx="49.5" cy="6" r="2.6" fill="#e4cd8a"/></svg><div><span class="plab">Paracha de la semaine</span><b id="parname">…</b><small id="parheb" dir="rtl"></small></div></div>
+  <div class="pt"><span class="plab">Entrée</span><b id="parin">…</b><small id="parinday"></small></div>
+  <div class="pt"><span class="plab">Sortie</span><b id="parout">…</b><small id="paroutday"></small></div>
+  <div class="pc"><span class="plab">Votre ville</span><label class="citysel" title="Cliquez pour changer de ville"><span class="cityname" id="parcityname" aria-hidden="true"></span><select id="parcity" aria-label="Choisir votre ville"></select><span class="chev">▾</span></label><small id="parnote"></small></div>
+  <a class="parall" href="/horaires/">Voir tous les horaires de votre ville <span aria-hidden="true">→</span></a>
+</div></div></section>
 <section class="urgsec" id="urgent" hidden aria-label="Cagnottes en cours"><div class="wrap"><div class="urgl" id="urgl"></div></div></section>
 <section class="qa" aria-label="Accès rapides"><div class="wrap">
   <a href="/colis/"><img class="qi" src="/tuiles/colis.png?v=4" alt="" width="40" height="40" loading="eager"><span>Colis de Chabbat<small>et de fêtes, aux familles</small></span></a>
@@ -724,13 +802,7 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
   <a href="/horaires/"><img class="qi" src="/tuiles/horaires.png?v=4" alt="" width="40" height="40" loading="eager"><span>Horaires<small>Chabbat, 54 villes</small></span></a>
   <a href="https://wa.me/33669670770" target="_blank" rel="noopener"><img class="qi" src="/tuiles/ecrire.png?v=4" alt="" width="40" height="40" loading="eager"><span>Nous écrire<small>Sur WhatsApp</small></span></a>
 </div></section>
-<section class="parsec" id="paracha" hidden><div class="wrap"><div class="parcard" id="parcard">
-  <div class="pk"><svg class="torah" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#c4a24a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><rect x="45" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><path d="M14.5 12V7M14.5 52v5M49.5 12V7M49.5 52v5"/><path d="M19 16h26v32H19z" fill="#fff"/><path d="M25 24h14M25 30h14M25 36h10" stroke="#1f6a72"/></g><circle cx="14.5" cy="6" r="2.6" fill="#e4cd8a"/><circle cx="49.5" cy="6" r="2.6" fill="#e4cd8a"/></svg><div><span class="plab">Paracha de la semaine</span><b id="parname">…</b><small id="parheb" dir="rtl"></small></div></div>
-  <div class="pt"><span class="plab">Entrée</span><b id="parin">…</b><small id="parinday"></small></div>
-  <div class="pt"><span class="plab">Sortie</span><b id="parout">…</b><small id="paroutday"></small></div>
-  <div class="pc"><span class="plab">Votre ville</span><label class="citysel" title="Cliquez pour changer de ville"><select id="parcity" aria-label="Choisir votre ville"></select><span class="chev">▾</span></label><small id="parnote"></small></div>
-  <a class="parall" href="/horaires/">Voir tous les horaires de votre ville <span aria-hidden="true">→</span></a>
-</div></div></section>
+
 <section class="parole" id="parole" aria-label="Parole du Rabbi"><div class="wrap"><h2>Parole du Rabbi</h2><div class="gline"></div><blockquote class="rebbe"><div class="rtxt">« Rien n'est jamais perdu. On peut toujours réparer. Celui qui est impur ou éloigné, même s'il est responsable d'un tel état de fait, même s'il l'a voulu, peut, malgré tout, réparer. »<cite><span>Rabbi de Loubavitch</span><span class="mflag" role="img" aria-label="Drapeau Machia'h"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></cite></div></blockquote></div></section>
 <div class="parmailwrap"><a class="parmail" href="#chabbat-mail" id="parmail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>Recevoir les horaires de Chabbat par e-mail<span aria-hidden="true">›</span></a></div>
 
@@ -985,7 +1057,7 @@ function closeLb(){const lb=document.getElementById('lb');if(lb){lb.classList.re
   {let d=null;t.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button)return;d={x:e.clientX,s:t.scrollLeft,m:false}});
    let sup=0;t.addEventListener('dragstart',e=>e.preventDefault());t.addEventListener('click',e=>{if(Date.now()<sup){e.preventDefault();e.stopPropagation()}},true);
    addEventListener('pointermove',e=>{if(!d)return;const dx=e.clientX-d.x;if(!d.m&&Math.abs(dx)<8)return;d.m=true;if(cur)hide();t.style.scrollSnapType='none';t.scrollLeft=d.s-dx});
-   addEventListener('pointerup',()=>{if(!d)return;const m=d.m,w=t.clientWidth,s0=d.s;d=null;if(!m)return;sup=Date.now()+350;t.style.scrollSnapType='';t.scrollTo({left:t.scrollLeft>w*(s0>w/2?.75:.25)?w:0,behavior:'smooth'})})}h.querySelector('.hpv').onclick=()=>t.scrollTo({left:0,behavior:'smooth'});
+   addEventListener('pointerup',()=>{if(!d)return;const m=d.m,w=t.clientWidth,s0=d.s;d=null;if(!m)return;sup=Date.now()+350;t.style.scrollSnapType='';t.scrollTo({left:t.scrollLeft>w*(s0>w/2?.75:.25)?w:0,behavior:'smooth'})})}h.querySelector('.hpv').onclick=()=>t.scrollTo({left:0,behavior:'smooth'});{const cs=document.getElementById('parcity'),cn=document.getElementById('parcityname');if(cs&&cn){const u=()=>{const o=cs.options[cs.selectedIndex];cn.textContent=o?o.textContent:''};cs.addEventListener('change',u);new MutationObserver(u).observe(cs,{childList:true});u();setTimeout(u,600);setTimeout(u,2500)}}{const nx=h.querySelector('.hnx');if(nx){nx.onclick=()=>t.scrollTo({left:t.scrollWidth,behavior:'smooth'});const lg=h.querySelector('.logo-complet'),pos=()=>{if(!lg||!lg.offsetWidth)return;const a=lg.getBoundingClientRect(),b=h.getBoundingClientRect();nx.style.top=Math.round(a.top-b.top+a.width/2-nx.offsetHeight/2)+'px'};pos();addEventListener('resize',pos);addEventListener('load',pos);if(lg&&!lg.complete)lg.addEventListener('load',pos);setTimeout(pos,1200)}}
   t.addEventListener('scroll',st,{passive:true});document.addEventListener('visibilitychange',run);
   new ResizeObserver(()=>{lay();st()}).observe(o);lay();st()})();
 // ---- carrousel : Nos actions + diffusion du jour

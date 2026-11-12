@@ -85,7 +85,7 @@ if(document.readyState!=='loading')mount();else document.addEventListener('DOMCo
 function place(){
   var w=document.querySelector('.parmailwrap'),c=document.getElementById('paracha'),p=document.querySelector('.parole');
   if(!w||!c||!p)return;
-  if(!c.hidden){if(w.previousElementSibling!==c)c.parentNode.insertBefore(w,c.nextSibling)}
+  if(!c.hidden){var q=document.querySelector('section.qa')||c;if(w.previousElementSibling!==q)q.parentNode.insertBefore(w,q.nextSibling)}   /* le bandeau Chabbat est remonté sous la banderole : le bouton reste sous les tuiles */
   else{if(w.previousElementSibling!==p)p.parentNode.insertBefore(w,p.nextSibling)}
   /* banderole Hanouka : dans l'en-tête en temps normal, sous le bouton e-mail pendant les horaires de Chabbat */
   var b=document.getElementById('hnbanner'),q=document.querySelector('.hero .quote');

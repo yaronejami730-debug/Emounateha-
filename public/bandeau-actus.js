@@ -1,6 +1,6 @@
 /* Accueil : l'emplacement de la banderole Hanouka (#hnbanner) alterne avec les actualités (hassidout.org, via /api/news).
    Emplacement de diffusion : toutes les 90 secondes, l'actualité suivante (même format que la banderole) ; toutes les actualités y passent,
-   et la banderole de fête (Hanouka) n'apparaît qu'une fois par tour complet, 90 secondes.
+   toutes les deux actualités, la banderole de fête (Hanouka) revient, 90 secondes aussi.
    Le changement se fait tout seul, sans recharger la page. Un appui ouvre la page de toutes les actualités (/news/).
    Sans banderole Hanouka (hors saison), seules les actualités tournent. Sans actualités, rien ne change. */
 (function () {
@@ -11,18 +11,18 @@
   function css() {
     var st = document.createElement('style');
     st.textContent =
-      '#nwbanner{display:flex;order:9;width:min(100%,760px);aspect-ratio:1046/300;margin:18px auto 0;border-radius:22px;overflow:hidden;position:relative;z-index:2;text-decoration:none;color:#fff;background:linear-gradient(120deg,rgba(14,62,68,.25),rgba(10,46,52,.55)),url(/header.jpg) left center/cover #1f6a72;box-shadow:0 12px 30px rgba(8,20,28,.4),0 0 0 1.5px rgba(240,217,138,.7);-webkit-tap-highlight-color:transparent;transition:transform .2s;text-align:left}' +
+      /* exactement le même cadre que la banderole Hanouka (#hnbanner, image 1046×262) ; textes proportionnels à la largeur (unités cqw) : tient sur tous les téléphones */
+      '#nwbanner{display:flex;order:9;width:min(100%,760px);aspect-ratio:1046/262;margin:18px auto 0;border-radius:22px;overflow:hidden;position:relative;z-index:2;container-type:inline-size;text-decoration:none;color:#fff;background:linear-gradient(120deg,rgba(14,62,68,.25),rgba(10,46,52,.55)),url(/header.jpg) left center/cover #1f6a72;box-shadow:0 10px 28px rgba(8,20,28,.35),0 0 0 1px rgba(243,213,140,.35);-webkit-tap-highlight-color:transparent;transition:transform .2s;text-align:left}' +
       '#nwbanner[hidden]{display:none}#nwbanner:active{transform:scale(.985)}' +
-      '#nwbanner .nwt{position:relative;z-index:2;flex:0 0 57%;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:12px 18px 12px 22px;min-width:0;overflow:hidden;background:transparent;text-shadow:0 1px 6px rgba(8,30,34,.35)}' +
-      '#nwbanner .nwk{font:800 15px/1.3 Inter,system-ui,sans-serif!important;letter-spacing:.14em!important;text-transform:uppercase;color:#f0d98a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-      '#nwbanner .nwh{font-family:Georgia,"Times New Roman",serif!important;font-variant:normal!important;text-transform:none!important;letter-spacing:0!important;font-weight:400;font-size:clamp(17px,3vw,25px);line-height:1.2;color:#fff;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}' +
-      '#nwbanner .nwl{font:700 13px/1 Inter,system-ui,sans-serif!important;letter-spacing:0!important;text-transform:none!important;color:#f0d98a}' +
-      '#nwbanner .nwi{position:absolute;right:0;top:0;bottom:0;width:43%;background:#1f6a72 url(/header.jpg) center/cover}' +
+      '#nwbanner .nwt{position:relative;z-index:2;flex:0 0 60%;display:flex;flex-direction:column;justify-content:center;gap:clamp(2px,.9cqw,7px);padding:2.4cqw 2.4cqw 2.4cqw 3.6cqw;min-width:0;overflow:hidden;background:transparent;text-shadow:0 1px 6px rgba(8,30,34,.35)}' +
+      '#nwbanner .nwk{font:800 clamp(8.5px,2.9cqw,15px)/1.3 Inter,system-ui,sans-serif!important;letter-spacing:.12em!important;text-transform:uppercase;color:#f0d98a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '#nwbanner .nwh{font-family:Georgia,"Times New Roman",serif!important;font-variant:normal!important;text-transform:none!important;letter-spacing:0!important;font-weight:400;font-size:clamp(11px,3.75cqw,26px);line-height:1.18;color:#fff;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}' +
+      '#nwbanner .nwl{font:700 clamp(8.5px,2.75cqw,13px)/1.2 Inter,system-ui,sans-serif!important;letter-spacing:0!important;text-transform:none!important;color:#f0d98a;white-space:nowrap}' +
+      '#nwbanner .nwi{position:absolute;right:0;top:0;bottom:0;width:40%;background:#1f6a72 url(/header.jpg) center/cover}' +
       '#nwbanner .nwi img{width:100%;height:100%;object-fit:cover;display:block}' +
       '#nwbanner .nwi::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(22,82,89,.95) 0%,rgba(22,82,89,.45) 18%,rgba(22,82,89,0) 40%)}#nwbanner .nwi img{position:relative}' +
       '#nwbanner,#hnbanner{animation:nwIn .5s ease}@keyframes nwIn{from{opacity:0}to{opacity:1}}' +
       '@media(max-width:800px){#nwbanner{width:calc(100% - 4px);margin-top:16px;border-radius:18px}}' +
-      '@media(max-width:420px){#nwbanner{aspect-ratio:1046/380}#nwbanner .nwt{padding:9px 10px 9px 14px;gap:5px;flex-basis:62%}#nwbanner .nwi{width:38%}#nwbanner .nwk{font-size:12.5px!important;letter-spacing:.12em!important}#nwbanner .nwh{font-size:16px;line-height:1.2;-webkit-line-clamp:3}#nwbanner .nwl{font-size:11.5px!important}}' +
       '@media(prefers-reduced-motion:reduce){#nwbanner,#hnbanner{animation:none}}';
     document.head.appendChild(st);
   }
@@ -37,11 +37,16 @@
   }
   function tour() {
     if (!liste.length || !monter()) return;
-    // Une seule file de diffusion : chaque élément reste 4 minutes. La banderole de fête (Hanouka…) n'est qu'un passage dans la file ;
-    // le reste du temps, ce sont les actualités, l'une après l'autre.
-    var hn = document.getElementById('hnbanner'), slot = Math.floor(Date.now() / PAS), n = liste.length + (hn ? 1 : 0), i = slot % n, a;
-    if (hn && i === n - 1) { if (!el.hidden) { el.hidden = true; hn.style.display = ''; } return; }
-    a = liste[i];
+    // Une seule file de diffusion, 90 s par élément : actualité, actualité, banderole Hanouka, actualité, actualité, Hanouka…
+    // (sans banderole de fête : les actualités l'une après l'autre). Même calcul pour tous : chacun voit la même chose au même moment.
+    var hn = document.getElementById('hnbanner'), slot = Math.floor(Date.now() / PAS), a;
+    // toujours au même emplacement que la banderole Hanouka (elle n'est pas au même endroit sur ordinateur et sur téléphone) : la page ne saute pas
+    if (hn && el.previousElementSibling !== hn) hn.parentNode.insertBefore(el, hn.nextSibling);
+    if (hn) {
+      var pos = slot % 3;
+      if (pos === 2) { if (!el.hidden) { el.hidden = true; hn.style.display = ''; } return; }
+      a = liste[(Math.floor(slot / 3) * 2 + pos) % liste.length];
+    } else a = liste[slot % liste.length];
     var href = '/news/', cle = slugDe(a.lien);
     if (el.hidden || el.getAttribute('data-a') !== cle) {
       el.href = href; el.setAttribute('data-a', cle); el.setAttribute('aria-label', 'Actualité : ' + a.titre);
@@ -58,7 +63,7 @@
   }
   function go() {
     charger();
-    setInterval(tour, 30000);                       // bascule à l'heure, sans recharger
+    setInterval(tour, 5000);                       // bascule à l'heure, sans recharger
     setInterval(charger, 30 * 60 * 1000);           // nouvelles actualités toutes les 30 min
     document.addEventListener('visibilitychange', function () { if (!document.hidden) tour(); });
   }
