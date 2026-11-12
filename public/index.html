@@ -743,7 +743,9 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
 /* jamais de défilement gauche-droite de la page (iPhone compris) */
 html,body{overflow-x:clip;max-width:100%}
 @supports not (overflow-x:clip){html{overflow-x:hidden}}
-.hero{overflow:hidden;max-width:100vw}
+.hero{overflow-x:clip;overflow-y:visible;max-width:100vw}
+.hero::after{bottom:-2px!important}   /* le fondu blanc déborde de 2 px sous l'en-tête : plus de trait vert d'un pixel selon l'écran */
+   /* pas overflow:hidden : il laissait un trait d'un pixel en bas de l'en-tête sur Safari */
 /* ville : le nom est un simple texte (largeur exacte partout, Safari compris) ; la liste déroulante, invisible, est posée dessus */
 #paracha .citysel{position:relative;display:inline-flex!important;align-items:center;white-space:nowrap}
 #paracha .citysel .cityname{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:14px;line-height:1.2;color:#c4a24a;text-decoration:underline dotted #c4a24a;text-underline-offset:3px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
