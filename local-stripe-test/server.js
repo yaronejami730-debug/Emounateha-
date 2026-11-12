@@ -649,7 +649,7 @@ function besoinFiche(b) {   // ce que la page affiche : la fiche + le total des 
   let collecte = 0, dons = 0; const liste = [];
   for (const r of Object.values(load().receipts || {})) if (r.besoin === b.slug) { collecte += r.montant || 0; dons++; liste.push({ nom: r.besoinNom ? String(r.nom || '').slice(0, 60) : 'Anonyme', montant: r.montant || 0, date: r.dateDon }); }
   liste.sort((x, y) => String(y.date).localeCompare(String(x.date)));   // anonyme par défaut ; le nom n'apparaît que si le donateur a coché « Afficher mon nom »
-  return { slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons, donateurs: liste.slice(0, 40).map(x => ({ nom: x.nom, montant: x.montant })) };
+  return { slug: b.slug, titre: b.titre, beneficiaire: String(b.beneficiaire || '').slice(0, 120), description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons, donateurs: liste.slice(0, 40).map(x => ({ nom: x.nom, montant: x.montant })) };
 }
 app.get('/api/besoin/:slug', async (req, res) => {
   const b = await besoinInfo(String(req.params.slug)); if (!b) return res.status(404).json({ error: 'Cagnotte introuvable' });
@@ -667,7 +667,7 @@ app.get('/besoin/:slug', async (req, res, next) => {
     .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + ' — Cagnotte Émounatéha$2')
     .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q((b.description || 'Participez à cette cagnotte : chaque don compte.').slice(0, 180)) + '$2');
   // la fiche est écrite dans la page : la cagnotte s'affiche tout de suite, sans passer par l'écran de don général (fête en cours, choix d'action…)
-  html = html.replace('<body', '<body data-besoin' + (b.actif ? '' : '-off') + '="' + q(JSON.stringify({ slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte: null, dons: 0 })) + '"');   // le total collecté est demandé ensuite par la page (/api/besoin/<slug>) : cette adresse-ci ne lit pas les reçus   // clôturée : simple message, puis don normal
+  html = html.replace('<body', '<body data-besoin' + (b.actif ? '' : '-off') + '="' + q(JSON.stringify({ slug: b.slug, titre: b.titre, beneficiaire: String(b.beneficiaire || '').slice(0, 120), description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte: null, dons: 0 })) + '"');   // le total collecté est demandé ensuite par la page (/api/besoin/<slug>) : cette adresse-ci ne lit pas les reçus   // clôturée : simple message, puis don normal
   res.setHeader('Cache-Control', 'no-store'); res.type('html').send(html);
 });
 // une adresse par action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale, /l-aide-a-la-scolarite… (la page présélectionne l'action)

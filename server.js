@@ -1364,6 +1364,7 @@ const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
     actif boolean not null default true, created_at timestamptz not null default now());
   alter table public.besoins add column if not exists versements jsonb not null default '[]'::jsonb;
   alter table public.besoins add column if not exists accueil boolean not null default false;
+  alter table public.besoins add column if not exists nom_public boolean not null default false;
   alter table public.besoins enable row level security;`).catch(e => { besoinsReady = null; throw e; }));
 const besoinSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
 // Compte d'une cagnotte : ce qui est dû au bénéficiaire. total = dons d'après les reçus ; st = chiffres Stripe (brut, frais, remboursements, net).
@@ -1375,7 +1376,7 @@ function besoinCompte(total, st, versements) {
   const retenue = Math.round(Math.max(0, st.net) * CAGNOTTE_RETENUE / 100), aReverser = Math.max(0, st.net - retenue);
   return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, retenue, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
 }
-// public : les cagnottes mises en avant sur la page d'accueil (ouvertes, choisies dans le CRM). Jamais le nom du bénéficiaire.
+// public : les cagnottes mises en avant sur la page d'accueil (ouvertes, choisies dans le CRM). Le nom du bénéficiaire n'en sort que s'il a été saisi pour être affiché (nom_public).
 // Trois au plus à la fois : s'il y en a davantage, elles alternent toutes les 20 minutes (les trois affichées avancent d'un cran à chaque tranche).
 // Le montant collecté vient du serveur des dons (total des dons reçus par le lien de la cagnotte).
 const ACCUEIL_MAX = 3, ACCUEIL_TRANCHE = 20 * 60000;
@@ -1390,23 +1391,23 @@ async function besoinsAccueil(req, res) {
   if (pool && (Date.now() - accueilCache.at > 60000 || tranche !== accueilCache.tranche)) {
     try {
       await ensureBesoins();
-      const rows = accueilChoix((await pool.query('select slug, titre, description, objectif from public.besoins where actif and accueil order by created_at, slug limit 60')).rows, Date.now());
+      const rows = accueilChoix((await pool.query("select slug, titre, description, objectif, case when nom_public then beneficiaire else '' end as beneficiaire from public.besoins where actif and accueil order by created_at, slug limit 60")).rows, Date.now());
       v = await Promise.all(rows.map(async b => {
         let collecte = null, dons = 0;
         try { const x = await fetch(DON_URL + '/api/besoin/' + b.slug, { signal: AbortSignal.timeout(6000) }); if (x.ok) { const j = await x.json(); collecte = j.collecte == null ? null : j.collecte; dons = j.dons || 0; } } catch (e) { /* total indisponible : la carte s'affiche sans montant */ }
-        return { slug: b.slug, titre: b.titre, description: b.description || '', objectif: b.objectif || null, collecte, dons, lien: DON_URL + '/besoin/' + b.slug };
+        return { slug: b.slug, titre: b.titre, beneficiaire: b.beneficiaire || '', description: b.description || '', objectif: b.objectif || null, collecte, dons, lien: DON_URL + '/besoin/' + b.slug };
       }));
       accueilCache.v = v; accueilCache.at = Date.now(); accueilCache.tranche = tranche;
     } catch (e) { console.error('[besoins accueil]', e.message); }
   }
   res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' }); res.end(JSON.stringify({ list: v }));
 }
-// public : ce que la page de don affiche (jamais le nom du bénéficiaire, qui reste dans le CRM)
+// public : ce que la page de don affiche (le nom du bénéficiaire seulement s'il a été saisi pour être affiché)
 async function besoinPublic(req, res, url) {
   const slug = String(url.searchParams.get('slug') || '');
   if (!pool || !/^[a-z0-9-]{1,40}$/.test(slug)) return send(res, 404, { error: 'introuvable' });
   await ensureBesoins();
-  const b = (await pool.query('select slug, titre, description, objectif, actif from public.besoins where slug = $1', [slug])).rows[0];
+  const b = (await pool.query("select slug, titre, description, objectif, actif, case when nom_public then beneficiaire else '' end as beneficiaire from public.besoins where slug = $1", [slug])).rows[0];
   if (!b) return send(res, 404, { error: 'introuvable' });
   res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=20' }); res.end(JSON.stringify(b));
 }
@@ -1782,7 +1783,7 @@ async function api(req, res, url) {
     const propre = b => ({ titre: String(b.titre || '').trim().slice(0, 70), beneficiaire: String(b.beneficiaire || '').trim().slice(0, 120), description: String(b.description || '').trim().slice(0, 600),
       objectif: (() => { const n = Math.round(Number(String(b.objectif == null ? '' : b.objectif).replace(',', '.')) * 100); return Number.isFinite(n) && n >= 100 && n <= 100000000 ? n : null; })() });
     if (m === 'GET') {
-      const r = await pool.query('select id, slug, titre, beneficiaire, description, objectif, actif, accueil, created_at, versements from public.besoins order by actif desc, created_at desc');
+      const r = await pool.query('select id, slug, titre, beneficiaire, nom_public, description, objectif, actif, accueil, created_at, versements from public.besoins order by actif desc, created_at desc');
       let recus = [], erreur = '';
       try { const x = await fetch(DON_URL + '/api/admin/recus', { headers: cerfaSig('GET', '/api/admin/recus'), signal: AbortSignal.timeout(15000) }); const j = await x.json(); if (!x.ok) throw new Error(j.error || x.status); recus = j.recus || []; } catch (e) { erreur = 'Dons indisponibles : ' + e.message; }
       const par = {}; for (const x of recus) if (x.besoin) { const p = par[x.besoin] = par[x.besoin] || { dons: 0, total: 0, dernier: null, liste: [] }; p.dons++; p.total += x.montant || 0; if (!p.dernier || x.dateDon > p.dernier) p.dernier = x.dateDon; p.liste.push({ nom: x.nom, montant: x.montant, dateDon: x.dateDon, numero: x.numero }); }
@@ -1816,12 +1817,12 @@ async function api(req, res, url) {
       const pris = new Set((await pool.query("select slug from public.besoins where slug = $1 or slug like $1 || '-%'", [base])).rows.map(r => r.slug));
       if (body.slug && pris.has(base)) return send(res, 400, { error: 'Cette adresse est déjà prise par un autre besoin' });
       let slug = base; for (let n = 2; pris.has(slug); n++) slug = base.slice(0, 36) + '-' + n;
-      const id = uid(); await pool.query('insert into public.besoins (id, slug, titre, beneficiaire, description, objectif) values ($1,$2,$3,$4,$5,$6)', [id, slug, v.titre, v.beneficiaire, v.description, v.objectif]);
+      const id = uid(); await pool.query('insert into public.besoins (id, slug, titre, beneficiaire, description, objectif, nom_public) values ($1,$2,$3,$4,$5,$6,true)', [id, slug, v.titre, v.beneficiaire, v.description, v.objectif]);   // le nom saisi dans « Pour qui » est affiché sur la cagnotte (laisser vide pour rester anonyme)
       return send(res, 200, { id, slug, lien: DON_URL + '/besoin/' + slug });
     }
     if (m === 'PUT' && parts[1]) {   // l'adresse (slug) ne change jamais : les liens déjà partagés et les dons déjà reçus y restent attachés
       const v = propre(body); if (!v.titre) return send(res, 400, { error: 'Indiquez le besoin' });
-      await pool.query('update public.besoins set titre = $1, beneficiaire = $2, description = $3, objectif = $4, actif = $5, accueil = coalesce($7, accueil) where id = $6', [v.titre, v.beneficiaire, v.description, v.objectif, body.actif !== false, parts[1], typeof body.accueil === 'boolean' ? body.accueil : null]);   // « accueil » absent de la demande : inchangé
+      await pool.query('update public.besoins set titre = $1, beneficiaire = $2, description = $3, objectif = $4, actif = $5, accueil = coalesce($7, accueil), nom_public = coalesce($8, nom_public) where id = $6', [v.titre, v.beneficiaire, v.description, v.objectif, body.actif !== false, parts[1], typeof body.accueil === 'boolean' ? body.accueil : null, body.nomPublic === true ? true : null]);   // nomPublic : envoyé par le formulaire du CRM, qui prévient que le nom est affiché ; les cagnottes créées avant gardent leur nom privé tant qu'elles ne sont pas réenregistrées   // « accueil » absent de la demande : inchangé
       accueilCache.at = 0;
       return send(res, 200, { ok: true });
     }

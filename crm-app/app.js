@@ -275,7 +275,7 @@ const views = {
     </div>
     ${list.length ? `<div class="bs-list">${list.map(x => { const pct = x.objectif ? Math.min(100, Math.round((x.total || 0) * 100 / x.objectif)) : 0;
       return `<div class="card bs-it${x.actif ? '' : ' off'}">
-        <div class="bs-top"><div><b class="bs-t">${esc(x.titre)}</b><div class="hint" style="margin:2px 0 0">${x.beneficiaire ? 'Pour : <b>' + esc(x.beneficiaire) + '</b> · ' : ''}créé le ${fmt(x.created_at)}</div></div>
+        <div class="bs-top"><div><b class="bs-t">${esc(x.titre)}</b><div class="hint" style="margin:2px 0 0">${x.beneficiaire ? 'Pour : <b>' + esc(x.beneficiaire) + '</b> ' + (x.nom_public ? '<span title="Ce nom est affiché sur la cagnotte">(affiché)</span>' : '<span title="Cagnotte créée avant : le nom reste privé tant que vous ne réenregistrez pas la fiche">(privé)</span>') + ' · ' : ''}créé le ${fmt(x.created_at)}</div></div>
           <span class="bs-pills">${x.accueil && x.actif ? '<span class="pill warn" title="Cette cagnotte est affichée sur la page d\'accueil du site">★ Sur l\'accueil</span>' : ''}<span class="pill ${x.actif ? 'ok' : ''}">${x.actif ? 'Ouvert' : 'Clôturé'}</span></span></div>
         ${x.description ? `<p class="bs-d">${esc(x.description)}</p>` : ''}
         <div class="bs-amt"><strong>${eur(x.total)}</strong><span>${x.objectif ? 'collectés sur ' + eur(x.objectif) + ' (' + pct + ' %)' : 'collectés · pas d\'objectif'} · ${x.dons || 0} don${x.dons > 1 ? 's' : ''}${x.dernier ? ' · dernier le ' + new Date(x.dernier).toLocaleDateString('fr-FR') : ''}</span></div>
@@ -461,7 +461,8 @@ function besoinModal(id) {
   const b = besoinOf(id) || { titre: '', beneficiaire: '', description: '', objectif: null, slug: '', actif: true };
   modal(`<h2>${id ? 'Modifier le' : 'Nouveau'} besoin</h2>
     <label>Le besoin</label><input id="b_titre" maxlength="70" value="${esc(b.titre)}" placeholder="ex. Loyer en retard, Une armoire, Repas de Chabbat" ${id ? '' : 'oninput="bsLien()"'}>
-    <label>Pour qui <span class="opt">visible seulement ici, dans le CRM</span></label><input id="b_ben" maxlength="120" value="${esc(b.beneficiaire)}" placeholder="Prénom et nom de la personne ou de la famille">
+    <label>Pour qui <span class="opt">facultatif</span></label><input id="b_ben" maxlength="120" value="${esc(b.beneficiaire)}" placeholder="Prénom et nom, ou laissez vide">
+    <div class="hint" style="color:#b45309"><b>Ce nom est affiché sur la cagnotte</b> (page de don et accueil du site), visible par tout le monde. Laissez vide pour une cagnotte anonyme. N'écrivez un nom qu'avec l'accord de la personne.</div>
     <label>Objectif en euros <span class="opt">facultatif</span></label><input id="b_obj" inputmode="decimal" value="${b.objectif ? String(b.objectif / 100).replace('.', ',') : ''}" placeholder="ex. 850">
     <label>Texte affiché sur la page de don <span class="opt">facultatif</span></label><textarea id="b_desc" rows="3" maxlength="600" placeholder="Quelques mots pour expliquer le besoin aux donateurs.">${esc(b.description)}</textarea>
     <label>Adresse du lien</label>
@@ -471,7 +472,7 @@ function besoinModal(id) {
 }
 function bsLien() { const s = $('#b_slug'); if (s && !s.dataset.main) s.value = bsSlug($('#b_titre').value); }
 async function besoinSave(id) {
-  const body = { titre: $('#b_titre').value.trim(), beneficiaire: $('#b_ben').value.trim(), description: $('#b_desc').value.trim(), objectif: $('#b_obj').value.trim() };
+  const body = { titre: $('#b_titre').value.trim(), beneficiaire: $('#b_ben').value.trim(), description: $('#b_desc').value.trim(), objectif: $('#b_obj').value.trim(), nomPublic: true };
   if (!body.titre) return toast('Indiquez le besoin', true);
   if (body.objectif && !(Number(body.objectif.replace(',', '.')) >= 1)) return toast("L'objectif doit être un montant en euros", true);
   if (id) body.actif = besoinOf(id).actif; else body.slug = $('#b_slug').value.trim();
