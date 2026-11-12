@@ -265,17 +265,16 @@ body{overflow-x:hidden}
 .urgsec{position:relative;z-index:6;margin-top:-62px;padding:0;text-align:center}.urgsec[hidden]{display:none}
 .urgh{display:inline-block;margin:0 0 8px;padding:4px 14px;border-radius:99px;background:#164c52;color:#f6e094;font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;box-shadow:0 4px 12px rgba(14,52,58,.35),inset 0 0 0 1px rgba(246,224,148,.45)}
 .urgl{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:620px;margin:0 auto}
-.urgc{position:relative;display:flex;align-items:center;gap:10px;min-width:0;width:min(86%,340px);box-sizing:border-box;padding:8px 14px 8px 8px;border-radius:99px;overflow:hidden;text-align:left;text-decoration:none;cursor:pointer;color:#1b2b2d;background:linear-gradient(180deg,#f8e9ad 0%,#e7cc78 46%,#c9a850 100%);border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 22px -8px rgba(14,52,58,.55),0 0 0 1px rgba(170,134,44,.55),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -6px 10px -6px rgba(120,90,20,.45);-webkit-tap-highlight-color:transparent;transition:transform .15s}
-.urgc:active{transform:scale(.985)}
-/* reflet qui traverse le ruban */
-.urgc::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:34%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.75) 50%,rgba(255,255,255,0));transform:skewX(-18deg);animation:urgBrille 3.6s ease-in-out infinite;pointer-events:none}
-.urgc:nth-child(3)::after{animation-delay:.5s}.urgc:nth-child(4)::after{animation-delay:1s}
-@keyframes urgBrille{0%,55%{left:-40%}85%,100%{left:120%}}
-.urgc .uic{position:relative;display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(160deg,#267a83,#123f45);color:#f6e094;box-shadow:inset 0 0 0 1px rgba(246,224,148,.5)}.urgc .uic svg{width:52%;height:52%}
-.urgc .utx{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex:1;min-width:0}
-.urgc .ut{display:block;font-weight:800;font-size:13.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1b2b2d;flex:0 1 auto}
-.urgc .um{font-size:12.5px;white-space:nowrap;color:#4a3c12;flex:none}.urgc .um b{font-weight:800;color:#123f45}.urgc .um small{display:none}
-.urgc .ugo{position:relative;flex:none;font-size:18px;font-weight:800;line-height:1;color:#123f45}
+/* une cagnotte = un bouton doré, comme « Faire un don » : seulement son nom */
+.urgl{flex-direction:row!important;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;max-width:980px!important}
+.urgc{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 1 auto;max-width:min(100%,320px);min-height:50px;box-sizing:border-box;padding:11px 26px;border-radius:99px;overflow:hidden;text-align:center;text-decoration:none;cursor:pointer;color:#1b2b2d;background:linear-gradient(180deg,#f0d98a 0%,#e2c46c 45%,#c4a24a 100%);border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 22px -8px rgba(14,52,58,.55),inset 0 1px 0 rgba(255,255,255,.55);-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.urgc:active{transform:scale(.97)}
+.urgc .ut,#urgent .urgc .ut{position:relative;display:block;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif!important;font-variant:normal!important;text-transform:none!important;letter-spacing:0!important;font-weight:700;font-size:16px;line-height:1.25;color:#1b2b2d}
+@media(max-width:600px){.urgl{flex-wrap:wrap;gap:8px}.urgc{flex:1 1 140px;max-width:calc(50% - 4px);min-height:52px;padding:9px 12px}.urgc:only-child{max-width:100%;flex:0 1 auto;padding:10px 24px}.urgc .ut,#urgent .urgc .ut{font-size:14px;line-height:1.2}}
+/* reflet qui traverse le bouton */
+.urgc::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.75) 50%,rgba(255,255,255,0));transform:skewX(-18deg);animation:urgBrille 3.6s ease-in-out infinite;pointer-events:none}
+.urgc:nth-child(2)::after{animation-delay:.5s}.urgc:nth-child(3)::after{animation-delay:1s}
+@keyframes urgBrille{0%,55%{left:-60%}85%,100%{left:130%}}
 @media(prefers-reduced-motion:reduce){.urgc::after{animation:none;display:none}}
 /* aperçu d'une cagnotte : fiche qui monte du bas de l'écran quand on appuie sur un ruban */
 #urgap{position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,36,41,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;transition:opacity .22s}
@@ -606,6 +605,7 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script src="/apercu-video.js?v=2" defer></script>
 <script src="/geoloc.js?v=1" defer></script>
 <script src="/hanouka-annonce.js?v=43" defer></script>
+<script src="/bandeau-actus.js?v=9" defer></script>
 <script src="/ecrire-rabbi.js?v=33" defer></script>
 <script src="/partager.js?v=1" defer></script>
 <script>/* cagnottes urgentes : choisies dans le CRM (« Mettre sur la page d'accueil »). Rien ne s'affiche s'il n'y en a pas. */
@@ -617,8 +617,8 @@ function charge(){Promise.all([fetch('/api/besoins-accueil').then(function(r){re
 var sig=JSON.stringify(l);if(sig===signature)return;signature=sig;box._l=l;if(!l.length){sec.hidden=true;box.innerHTML='';return}
 var coeur='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 7.500 2.700c0 5.600-7.500 10.200-7.500 10.200Z"/></svg>';
 box.innerHTML=l.map(function(b,n){var connu=b.collecte!=null;
-var m=connu?'<b>'+eur(b.collecte)+'</b> <small>'+(b.objectif?'sur '+eur(b.objectif):'collectés')+'</small>':(b.objectif?'<small>Objectif </small><b>'+eur(b.objectif)+'</b>':'');
-return '<a class="urgc" href="'+esc(b.lien)+'" data-i="'+n+'" aria-label="Cagnotte : '+esc(b.titre)+'"><span class="uic">'+coeur+'</span><span class="utx"><b class="ut">'+esc(b.titre)+'</b>'+(m?'<span class="um">'+m+'</span>':'')+'</span><span class="ugo" aria-hidden="true">›</span></a>'}).join('');
+var m=connu?'<b>'+eur(b.collecte)+'</b> '+(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):(b.objectif?'Objectif <b>'+eur(b.objectif)+'</b>':'');
+return '<a class="urgc" href="'+esc(b.lien)+'" data-i="'+n+'" aria-label="Cagnotte : '+esc(b.titre)+'"><b class="ut">'+esc(b.titre)+'</b></a>'}).join('');
 /* un appui ouvre l'aperçu (titre, texte, montant, bouton Participer) au lieu de quitter la page ; sans JavaScript, le lien mène à la page de la cagnotte */
 if(!box._pret){box._pret=1;box.addEventListener('click',function(ev){var a=ev.target.closest('.urgc');if(!a||ev.metaKey||ev.ctrlKey)return;var b=(box._l||[])[+a.dataset.i];if(!b)return;ev.preventDefault();
  var connu=b.collecte!=null,pct=connu&&b.objectif?Math.max(3,Math.min(100,Math.round(b.collecte*100/b.objectif))):0,o=document.createElement('div');o.id='urgap';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Cagnotte : '+b.titre);
@@ -676,7 +676,7 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
   <button class="hgo hpv" type="button" aria-label="Revenir"><i aria-hidden="true">‹</i></button>
 </header>
 
-<section class="urgsec" id="urgent" hidden aria-label="Cagnottes en cours"><div class="wrap"><span class="urgh">Cagnottes</span><div class="urgl" id="urgl"></div></div></section>
+<section class="urgsec" id="urgent" hidden aria-label="Cagnottes en cours"><div class="wrap"><div class="urgl" id="urgl"></div></div></section>
 <section class="qa" aria-label="Accès rapides"><div class="wrap">
   <a href="/colis/"><img class="qi" src="/tuiles/colis.png?v=4" alt="" width="40" height="40" loading="eager"><span>Colis de Chabbat<small>et de fêtes, aux familles</small></span></a>
   <a href="/torah/"><img class="qi" src="/tuiles/torah.png?v=4" alt="" width="40" height="40" loading="eager"><span>Diffusion de la Torah<small>Vidéo et cours chaque jour</small></span></a>
@@ -776,16 +776,25 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
  let cur=(()=>{try{return localStorage.getItem('parcity')}catch(e){return null}})();if(!villes.some(v=>String(v[1])===cur))cur='2988507';sel.value=cur;
  const f=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
  const sec=document.getElementById('paracha');
- const visible=d=>{ // du jeudi 21h (Paris) jusqu'à la fin du Chabbat (havdala)
+ let tzJeu=null,lastD=null;   // jeudi : Tset Hakokhavim de la ville choisie (même calcul que fr.chabad.org)
+ const visible=d=>{ // du jeudi soir, à Tset Hakokhavim, jusqu'à la fin du Chabbat (havdala)
    if(/[?&]apercu=jeudi/.test(location.search))return true; // aperçu : montre la carte comme un jeudi soir
    const now=new Date();const p=new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',weekday:'short',hour:'numeric',hour12:false}).formatToParts(now);
    const wd=(p.find(x=>x.type==='weekday')||{}).value||'',h=+((p.find(x=>x.type==='hour')||{}).value||0);
-   const jeudiSoir=/^jeu/.test(wd)&&h>=21, ven=/^ven/.test(wd), sam=/^sam/.test(wd);
+   const jeudiSoir=/^jeu/.test(wd)&&(tzJeu?now>=tzJeu:h>=21), ven=/^ven/.test(wd), sam=/^sam/.test(wd);
    if(jeudiSoir||ven)return true;
    if(sam)return d.hav?now<new Date(d.hav):h<20;
    return false;};
- const fill=d=>{f('parname',d.p);f('parheb',d.ph||'');f('parin',d.ci);f('parinday',d.cid);f('parout',d.ho);f('paroutday',d.hod);f('parnote',d.note||'');if(sec)sec.hidden=!visible(d)};
- function load(){const v=villes.find(x=>String(x[1])===sel.value)||villes[0];const k='par'+v[1]+new Date().toDateString();
+ const fill=d=>{lastD=d;f('parname',d.p);f('parheb',d.ph||'');f('parin',d.ci);f('parinday',d.cid);f('parout',d.ho);f('paroutday',d.hod);f('parnote',d.note||'');if(sec)sec.hidden=!visible(d)};
+ /* le jeudi : heure de Tset Hakokhavim (« dusk » Hebcal = Tset de fr.chabad.org) pour faire apparaître le bloc à la tombée de la nuit */
+ function tsetJeudi(v){tzJeu=null;const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'}).formatToParts(new Date()),g=t=>(p.find(x=>x.type===t)||{}).value;
+   if(g('weekday')!=='Thu')return;const day=g('year')+'-'+g('month')+'-'+g('day'),k='tzj'+v[1]+day;
+   const prend=iso=>{const t=new Date(iso);if(!isNaN(t)){tzJeu=t;if(sec&&lastD)sec.hidden=!visible(lastD)}};
+   try{const c=sessionStorage.getItem(k);if(c){prend(c);return}}catch(e){}
+   fetch('/hebcal/zmanim?cfg=json&geonameid='+v[1]+'&date='+day).then(r=>r.json()).then(z=>{const t=z&&z.times&&(z.times.dusk||z.times.tzeit7083deg);if(t){prend(t);try{sessionStorage.setItem(k,t)}catch(e){}}}).catch(()=>{});
+ }
+ setInterval(()=>{if(sec&&lastD)sec.hidden=!visible(lastD)},30000);   // apparaît/disparaît tout seul, sans recharger la page
+ function load(){const v=villes.find(x=>String(x[1])===sel.value)||villes[0];const k='par'+v[1]+new Date().toDateString();tsetJeudi(v);
    try{const s=sessionStorage.getItem(k);if(s){fill(JSON.parse(s));return}}catch(e){}
    ['parin','parout'].forEach(id=>f(id,'…'));
    /* parachat : serveur (Hebcal, mise en cache), même pour toutes les villes ; sert aussi si l'appel par ville échoue */

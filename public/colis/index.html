@@ -523,6 +523,12 @@ body{overflow-x:hidden}
 /* liste du colis : le point doré collé à son texte */
 #colis .colis li{display:flex;align-items:flex-start;gap:8px;padding-left:0;text-align:left}
 #colis .colis li::before{position:static;flex:none;width:8px;height:8px;margin-top:.52em}
+/* liste du colis : encadré net, colonnes qui s'enchaînent (plus de trou quand un article tient sur deux lignes) */
+#colis .colis ul{display:block;columns:2;column-gap:22px;background:#fff;border:1px solid #e3ecec;border-radius:16px;padding:16px 18px 6px;margin:16px 0 20px;box-shadow:0 4px 16px rgba(20,60,66,.05)}
+#colis .colis li{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 10px;line-height:1.35;align-items:baseline}
+#colis .colis li::before{margin-top:0;align-self:center;transform:translateY(-1px)}
+@media(min-width:1000px){#colis .colis ul{columns:3}}
+@media(max-width:360px){#colis .colis ul{columns:1;padding:14px 16px 4px}}
 
 /* cases plus petites et plus discrètes ; sans délai affiché, le contenu est centré */
 .ctabs{max-width:760px;gap:8px}

@@ -2108,6 +2108,14 @@ async function handle(req, res) {
         res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=900' }); return res.end(JSON.stringify(v)); }
       catch (e) { return send(res, 502, { error: 'Horaires indisponibles' }); }
     }
+    if (url.pathname === '/api/news/article' && req.method === 'GET') { // public : article complet de hassidout.org (avec leur accord), HTML nettoyé
+      try { const v = await require('./news').article(url.searchParams.get('slug')); res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, e.code === 400 || e.code === 404 ? e.code : 502, { error: e.code === 404 ? 'Article introuvable' : 'Article indisponible pour le moment' }); }
+    }
+    if (url.pathname === '/api/news' && req.method === 'GET') { // public : actualités (flux RSS de hassidout.org, extraits + liens vers l'article d'origine)
+      try { const v = await require('./news').actualites(); res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300, s-maxage=900, stale-while-revalidate=3600' }); return res.end(JSON.stringify(v)); }
+      catch (e) { return send(res, 502, { error: 'Actualités indisponibles pour le moment' }); }
+    }
     if (url.pathname === '/api/besoins-accueil' && req.method === 'GET') return await besoinsAccueil(req, res);   // public : cagnottes mises en avant sur l'accueil
     if (url.pathname === '/api/besoin' && req.method === 'GET') return await besoinPublic(req, res, url);   // public : une mini-cagnotte (titre, texte, objectif)
     if (url.pathname === '/api/position') {   // ville par défaut des horaires : position approximative donnée par notre hébergeur, jamais enregistrée, aucun service tiers
