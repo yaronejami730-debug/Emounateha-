@@ -605,7 +605,7 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script src="/apercu-video.js?v=2" defer></script>
 <script src="/geoloc.js?v=1" defer></script>
 <script src="/hanouka-annonce.js?v=43" defer></script>
-<script src="/bandeau-actus.js?v=9" defer></script>
+<script src="/bandeau-actus.js?v=11" defer></script>
 <script src="/ecrire-rabbi.js?v=33" defer></script>
 <script src="/partager.js?v=1" defer></script>
 <script>/* cagnottes urgentes : choisies dans le CRM (« Mettre sur la page d'accueil »). Rien ne s'affiche s'il n'y en a pas. */
@@ -655,6 +655,33 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
 <script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/ecriture.css?v=14">
+<style id="chabbat-ligne">
+/* Chabbat : une seule ligne fine (hauteur d'un bouton) — paracha · entrée · sortie · ville. Ordinateur et téléphone. */
+#paracha .parcard{display:flex!important;align-items:center;flex-wrap:nowrap;gap:0;height:46px;max-width:760px;margin:0 auto;padding:0 8px 0 18px;border-radius:99px!important;border:1px solid #ecd9a0!important;background:#fff;box-shadow:0 8px 22px rgba(20,60,66,.14)!important;overflow:hidden}
+#paracha .parcard>div{display:flex!important;flex-direction:row!important;align-items:center;gap:6px;padding:0 12px!important;border:0!important;border-left:1px solid #ecd9a0!important;background:none!important;min-width:0;height:22px}
+#paracha .parcard{justify-content:center;width:fit-content;max-width:min(100%,760px)}
+#paracha .parcard>div:first-child{border-left:0!important;padding-left:0!important;flex:0 1 auto;justify-content:flex-start;text-align:left}
+#paracha .parcard>div.pt,#paracha .parcard>div.pc{flex:0 0 auto}
+#paracha .pk svg,#paracha .pk .plab,#paracha .pc .plab,#parheb,#parinday,#paroutday,#parnote,#paracha .parall,#paracha #geowarn{display:none!important}
+#paracha .pk>div{flex-direction:row!important;min-width:0}
+#paracha #parname{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:15px;line-height:1;color:var(--teal);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#paracha .pt .plab{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--mut)}
+#paracha .pt b{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:15px;line-height:1;margin:0;color:var(--teal);white-space:nowrap}
+#paracha .citysel{margin:0;padding:0 18px 0 6px;border:0;background:none;border-radius:99px}
+#paracha .citysel select{font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:13px;line-height:1;color:#8a6c1c;padding-right:0;width:auto;max-width:150px;field-sizing:content;text-overflow:ellipsis}
+#paracha .citysel .chev{right:4px;font-size:11px}
+@media(max-width:600px){
+  #paracha .parcard{height:42px;padding:0 4px 0 12px;width:auto}
+  #paracha .parcard>div{padding:0 6px!important;gap:3px}
+  #paracha .parcard>div:first-child{flex:1 1 auto;min-width:56px}
+  #paracha #parname,#paracha .pt b{font-size:12.5px}
+  #paracha .pt .plab{font-size:9.5px}
+  #paracha .citysel{padding:0 12px 0 2px}
+  #paracha .citysel select{font-size:11px;max-width:62px}
+  #paracha .citysel .chev{right:2px;font-size:9px}
+}
+@media(max-width:350px){#paracha .pt .plab{display:none}}
+</style>
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="#mission">Qui sommes-nous</a><a href="#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="#contact">Contact</a></div></div></nav>
@@ -685,8 +712,8 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
 </div></section>
 <section class="parsec" id="paracha" hidden><div class="wrap"><div class="parcard" id="parcard">
   <div class="pk"><svg class="torah" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#c4a24a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><rect x="45" y="12" width="9" height="40" rx="4.5" fill="#c4a24a"/><path d="M14.5 12V7M14.5 52v5M49.5 12V7M49.5 52v5"/><path d="M19 16h26v32H19z" fill="#fff"/><path d="M25 24h14M25 30h14M25 36h10" stroke="#1f6a72"/></g><circle cx="14.5" cy="6" r="2.6" fill="#e4cd8a"/><circle cx="49.5" cy="6" r="2.6" fill="#e4cd8a"/></svg><div><span class="plab">Paracha de la semaine</span><b id="parname">…</b><small id="parheb" dir="rtl"></small></div></div>
-  <div class="pt"><span class="plab">Entrée du Chabbat</span><b id="parin">…</b><small id="parinday"></small></div>
-  <div class="pt"><span class="plab">Sortie du Chabbat</span><b id="parout">…</b><small id="paroutday"></small></div>
+  <div class="pt"><span class="plab">Entrée</span><b id="parin">…</b><small id="parinday"></small></div>
+  <div class="pt"><span class="plab">Sortie</span><b id="parout">…</b><small id="paroutday"></small></div>
   <div class="pc"><span class="plab">Votre ville</span><label class="citysel" title="Cliquez pour changer de ville"><select id="parcity" aria-label="Choisir votre ville"></select><span class="chev">▾</span></label><small id="parnote"></small></div>
   <a class="parall" href="/horaires/">Voir tous les horaires de votre ville <span aria-hidden="true">→</span></a>
 </div></div></section>
