@@ -533,3 +533,23 @@ table{border-radius:16px;overflow:hidden}
   .seq{flex-wrap:wrap}.seq select{flex:1 1 100%;min-width:0}
 }
 @media(max-width:400px){.cf-seg{flex-wrap:wrap}.cf-seg button{padding:9px 6px;min-width:0;flex:1 1 40%}}
+
+/* ---------- téléphone : contacts, ambassadeurs, utilisateurs en fiches (plus de tableau à faire défiler de côté) ---------- */
+@media(max-width:700px){
+  main table.tc{display:block;overflow:visible;white-space:normal;min-width:0!important;border-radius:0}
+  main table.tc thead{display:none}
+  main table.tc tbody{display:block}
+  main table.tc tr{display:block;padding:12px 14px;border-bottom:1px solid var(--line)}
+  main table.tc tr:last-child{border-bottom:0}
+  main table.tc td{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:4px 0;border:0;white-space:normal;text-align:right;overflow-wrap:anywhere;min-width:0}
+  main table.tc td[data-l]::before{content:attr(data-l);flex:none;color:var(--mut);font-size:12.5px;text-align:left}
+  main table.tc td:empty{display:none}
+  main table.tc td.tc-t{display:block;text-align:left;font-size:16px;padding-bottom:6px}
+  main table.tc td.tc-a{justify-content:flex-end;gap:8px;padding-top:10px}
+  main table.tc td.tc-a .btn{min-height:40px;padding-left:16px;padding-right:16px}
+  main table.tc td select{max-width:60%}
+  main table.tc td .btn{white-space:nowrap;flex:none}
+  main table.tc td[data-l="Tags"]{flex-wrap:wrap;justify-content:flex-end;gap:6px}main table.tc td[data-l="Tags"]::before{margin-right:auto}main table.tc td .tag{white-space:nowrap}
+  main table.tc td:first-child,main table.tc th:first-child{position:static!important;box-shadow:none!important;background:none!important;left:auto}
+  main table.tc td .hint{text-align:inherit}
+}

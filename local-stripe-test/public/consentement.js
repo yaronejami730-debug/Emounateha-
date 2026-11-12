@@ -1,9 +1,10 @@
-/* Consentement (RGPD / CNIL). Deux choses sont soumises à accord sur ce site, demandées ensemble dans un seul bandeau :
-   1) le souvenir, pendant 30 jours, de l'e-mail qui a amené le visiteur (cookie em_attr) ;
-   2) l'observation de l'usage du site avec Microsoft Clarity (parcours, clics, défilement ; cookies _clck, _clsk).
-   Rien n'est déposé ni chargé avant un « Accepter ». Le choix est gardé 6 mois (cookie em_ok, strictement nécessaire), commun à www et à don :
-   0 = refusé, 2 = accepté. L'ancienne valeur 1 (accord donné avant Clarity, pour le seul point 1) ne vaut pas accord pour Clarity : la question est reposée.
-   window.emConsent : etat() → 'oui' | 'non' | '' ; mesure() → idem pour Clarity ; demander(fn) → affiche le bandeau si aucun choix, appelle fn(true/false) ; ouvrir() → rouvre le bandeau. */
+/* Consentement (RGPD / CNIL).
+   Microsoft Clarity (observation de l'usage du site : pages vues, clics, défilement) est chargé SANS cookie pour tout visiteur, sans bandeau ;
+   il n'est pas chargé du tout pour qui a cliqué « Refuser » (bouton « Modifier mon choix » de la page Confidentialité).
+   Le bandeau n'apparaît que pour un visiteur venu d'un de nos e-mails : s'il accepte, le site retient 30 jours quel e-mail l'a amené (cookie em_attr)
+   et Clarity peut alors déposer ses cookies (_clck, _clsk). Le choix est gardé 6 mois (cookie em_ok, strictement nécessaire), commun à www et à don :
+   0 = refusé, 2 = accepté (1 = ancien accord, pour le seul souvenir de l'e-mail : pas de cookie Clarity).
+   window.emConsent : etat() → 'oui' | 'non' | '' ; mesure() → idem pour les cookies Clarity ; demander(fn) ; ouvrir() → rouvre le bandeau. */
 (function () {
   if (window.emConsent) return;
   var DOM = /(^|\.)emounateha\.fr$/.test(location.hostname) ? '; Domain=.emounateha.fr' : '', SEC = location.protocol === 'https:' ? '; Secure' : '';
@@ -11,11 +12,12 @@
   function brut() { var m = document.cookie.match(/(?:^|; )em_ok=([012])/); return m ? m[1] : ''; }
   function etat() { var v = brut(); return v ? (v === '0' ? 'non' : 'oui') : ''; }
   function mesure() { var v = brut(); return v === '2' ? 'oui' : v === '0' ? 'non' : ''; }
-  // Microsoft Clarity : chargé seulement après accord, et seulement sur le vrai site (jamais en local ni en aperçu)
+  // Microsoft Clarity : seulement sur le vrai site (jamais en local ni en aperçu) ; cookies seulement après un « Accepter »
   function clarity() {
-    if (window.__emClarity || (!DOM && !window.__emTest)) return; window.__emClarity = true;
-    (function (c, l, a, r, i, t, y) { c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); }; t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i; y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y); })(window, document, 'clarity', 'script', CLARITY);
-    try { window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' }); } catch (e) {}
+    if (!DOM && !window.__emTest) return;
+    if (!window.__emClarity) { window.__emClarity = true;
+      (function (c, l, a, r, i, t, y) { c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); }; t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i; y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y); })(window, document, 'clarity', 'script', CLARITY); }
+    try { window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: mesure() === 'oui' ? 'granted' : 'denied' }); } catch (e) {}
   }
   function clarityStop() {
     try { if (window.clarity) { window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' }); window.clarity('stop'); } } catch (e) {}
@@ -48,8 +50,6 @@
     demander: function (fn) { var e = etat(); if (e) { fn(e === 'oui'); return; } attente.push(fn); quandPret(bandeau); },
     ouvrir: function (fn) { if (fn) attente.push(fn); quandPret(bandeau); }
   };
-  // (sur la page de don, la question n'est pas posée d'office par-dessus le bouton de paiement : l'accord donné sur le site y vaut aussi)
-  // à l'arrivée : accord déjà donné → Clarity ; aucun choix (ou accord d'avant Clarity) → on pose la question, sans gêner le premier affichage
-  if (mesure() === 'oui') clarity();
-  else if (mesure() === '' && window.top === window && !/^don\./.test(location.hostname) && !/HeadlessChrome|bot|crawl|spider|Lighthouse/i.test(navigator.userAgent || '') || window.__emTest && mesure() === '') quandPret(function () { setTimeout(bandeau, 1500); });
+  // à l'arrivée : Clarity pour tous sauf refus (sans cookie tant qu'il n'y a pas eu d'accord) ; aucun bandeau d'office
+  if (mesure() !== 'non') clarity();
 })();
