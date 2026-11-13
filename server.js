@@ -665,6 +665,7 @@ async function encaisserCommission() {
     else if (j.facture || j.attente || (j.reessais || []).length || (j.ecartes || []).length) console.log('commission', JSON.stringify({ mode: j.mode, total: j.total, facture: j.facture, attente: j.attente, reessais: j.reessais, ecartes: j.ecartes, reste: j.reste }).slice(0, 500));
     else if (j.mode === 'simulation') console.log('commission (simulation, rien encaissé)', JSON.stringify({ total: j.total, net: j.net, virements: (j.virements || []).length, premier: ((j.virements || [])[0] || {}).arrivee, dons: (j.virements || []).reduce((a, l) => a + l.nbDons, 0), rembourse: (j.virements || []).reduce((a, l) => a + l.rembourse, 0), litiges: (j.virements || []).reduce((a, l) => a + l.litiges, 0), ecartes: j.ecartes, carte: j.carte, reste: j.reste, rien: j.rien }).slice(0, 900));
     else console.log('commission (mode réel) : rien à encaisser', JSON.stringify({ mode: j.mode, carte: j.carte, rien: j.rien }).slice(0, 300));   // trace de chaque passage, même quand il n'y a rien
+    if (j.mesVirements) console.log('commission, virements du prestataire', JSON.stringify(j.mesVirements).slice(0, 800));
     return j;
   } catch (e) { console.error('commission', e.message); return null; }
 }
