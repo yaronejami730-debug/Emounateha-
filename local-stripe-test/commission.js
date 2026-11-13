@@ -227,7 +227,14 @@ async function virer({ stripe2, simuler, maintenant = Date.now(), actif = proces
   const out = { ok: true, mode: simuler ? 'simulation' : 'reel', reserve: RESERVE, cle: /^sk_/.test(k) ? 'complète' : /^rk_/.test(k) ? 'restreinte' : 'inconnue', droits: {} };
   for (const [nom, essai] of [['solde', () => stripe2.balance.retrieve()], ['virements (lecture)', () => stripe2.payouts.list({ limit: 1 })], ['factures', () => stripe2.invoices.list({ limit: 1 })]]) { try { await essai(); out.droits[nom] = 'oui'; } catch (e) { out.droits[nom] = 'non : ' + String(e.message).slice(0, 90); } }
   if (Object.values(out.droits).some(x => x !== 'oui')) return { ...out, ok: false, error: 'La clé n\'a pas tous les droits de lecture nécessaires : rien n\'est fait.' };
-  try { const a = await stripe2.accounts.retrieve(); const i = a && a.settings && a.settings.payouts && a.settings.payouts.schedule && a.settings.payouts.schedule.interval; out.calendrier = i || 'inconnu'; } catch (e) { out.calendrier = 'inconnu'; }
+  // calendrier des virements du compte : par la fiche du compte, sinon par les « réglages du solde » (droit Balance Settings / Payout Settings d'une clé restreinte)
+  out.calendrier = 'inconnu'; const pourquoi = [];
+  try { const a = await stripe2.accounts.retrieve(); const i = a && a.settings && a.settings.payouts && a.settings.payouts.schedule && a.settings.payouts.schedule.interval; if (i) out.calendrier = i; } catch (e) { pourquoi.push('compte : ' + String(e.message).slice(0, 110)); }
+  if (out.calendrier === 'inconnu' && typeof stripe2.rawRequest === 'function') {
+    try { const b = await stripe2.rawRequest('GET', '/v1/balance_settings', {}, { apiVersion: '2025-08-27.basil' }); const sc = b && ((b.payments && b.payments.payouts && b.payments.payouts.schedule) || (b.payouts && b.payouts.schedule)); if (sc && sc.interval) out.calendrier = sc.interval; else pourquoi.push('réglages du solde : réponse sans calendrier (' + Object.keys(b || {}).slice(0, 8).join(',') + ')'); }
+    catch (e) { pourquoi.push('réglages du solde : ' + String(e.message).slice(0, 110)); }
+  }
+  if (out.calendrier === 'inconnu') out.calendrierPourquoi = pourquoi;
   if (out.calendrier !== 'manual' && out.calendrier !== 'inconnu') return { ...out, ok: !!simuler, error: 'Les virements de ce compte Stripe sont automatiques (' + out.calendrier + ') : il faut les régler sur « manuel », sinon aucune réserve n\'est possible. Rien n\'est fait.' };
   // factures de commission payées, avec ce que Stripe a réellement crédité (frais déduits) et la date de disponibilité des fonds
   const F = [];
