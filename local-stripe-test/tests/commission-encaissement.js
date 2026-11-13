@@ -1,5 +1,5 @@
 // Encaissement de la commission par carte, virement par virement : essais avec deux FAUX comptes Stripe (aucun appel réseau, aucun paiement).
-process.env.STRIPE_SECRET_KEY = 'sk_test_faux'; process.env.STRIPE_COMMISSION_KEY = 'sk_test_faux2'; delete process.env.COMMISSION_DEPUIS;
+process.env.STRIPE_SECRET_KEY = 'sk_test_faux'; process.env.STRIPE_COMMISSION_KEY = 'sk_test_faux2'; process.env.COMMISSION_ENCAISSER = 'oui'; delete process.env.COMMISSION_DEPUIS;
 const C = require('../commission.js'); let pass = 0, fail = 0; const ok = (c, m, x) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  ECHEC', m, c ? '' : JSON.stringify(x === undefined ? null : x).slice(0, 400)); };
 const J = j => Math.floor(Date.parse(j + 'T00:00:00Z') / 1000), H = (j, h) => Date.parse(j + 'T' + h + ':00+01:00');
 const gen = a => (async function* () { for (const x of a) yield x; })();
@@ -12,9 +12,10 @@ function monde() {
   const total = f => W.postes.filter(p => p.invoice === f.id).reduce((a, p) => a + p.amount, 0) + (f.taxe || 0);
   W.moi = {
     customers: { retrieve: async id => ({ id, invoice_settings: { default_payment_method: W.carte ? { card: { brand: 'visa', last4: '4242', exp_month: 3, exp_year: 2029 } } : null } }) },
+    paymentMethods: { list: async () => ({ data: (W.autres || []).map((x, i) => ({ id: 'pm_' + i, card: { brand: 'mastercard', last4: x, exp_month: 1, exp_year: 2030 } })) }) },
     invoices: {
       list: () => gen(W.factures.filter(f => !f.supprimee).map(f => ({ ...f }))),
-      create: async (p, o) => { W.appels.push('create'); if (W.idem[o.idempotencyKey]) return { ...W.idem[o.idempotencyKey] }; const f = { id: 'in_' + (W.factures.length + 1), status: 'draft', metadata: p.metadata, created: Math.floor(W.maintenant / 1000), description: p.description, taxe: W.taxe || 0 }; W.factures.push(f); W.idem[o.idempotencyKey] = f; return { ...f }; },
+      create: async (p, o) => { W.appels.push('create'); W.pmFacture = p.default_payment_method; if (W.idem[o.idempotencyKey]) return { ...W.idem[o.idempotencyKey] }; const f = { id: 'in_' + (W.factures.length + 1), status: 'draft', metadata: p.metadata, created: Math.floor(W.maintenant / 1000), description: p.description, taxe: W.taxe || 0 }; W.factures.push(f); W.idem[o.idempotencyKey] = f; return { ...f }; },
       retrieve: async id => { const f = W.factures.find(x => x.id === id); return { ...f, total: total(f) }; },
       finalizeInvoice: async id => { const f = W.factures.find(x => x.id === id); f.status = 'open'; f.number = 'F-000' + id.slice(3); f.total = f.amount_due = total(f); f.hosted_invoice_url = 'https://facture.exemple/' + id; return { ...f }; },
       pay: async id => { W.appels.push('pay ' + id); const f = W.factures.find(x => x.id === id); if (W.refuse) throw new Error('Votre carte a été refusée.'); f.status = 'paid'; f.amount_paid = f.total; return { ...f }; },
@@ -60,6 +61,12 @@ function monde() {
   m = C.mailEncaissement(r, true); ok(/encaissée/.test(m.subject) && /nouvel essai/.test(m.text) && m.csv && /po_2/.test(m.csv), 'e-mail de confirmation avec le détail en pièce jointe', m.subject);
   // ── pas de carte enregistrée : rien
   W = monde(); W.carte = false; W.virement('po_1', '2026-11-02', [don(10000, 175)]); r = await W.run(H('2026-11-13', '09:00')); ok(r.ok === false && /carte/.test(r.error) && !W.factures.length, 'aucune carte par défaut : refus net, rien créé', r);
+  W.autres = ['1111', '2222']; r = await W.run(H('2026-11-13', '09:00')); ok(r.ok === false && /Plusieurs cartes/.test(r.error) && !W.factures.length, 'plusieurs cartes et aucune par défaut : on ne choisit pas, rien créé', r);
+  r = await W.run(H('2026-11-13', '09:00'), { simuler: true }); ok(r.total === 688 && r.carte.ok === false && r.carte.cartesEnregistrees === 2 && !W.factures.length, 'sans carte, la simulation donne quand même le montant', r);
+  W.autres = ['1111']; r = await W.run(H('2026-11-13', '09:00')); ok(r.facture && r.facture.paye && r.carte.fin === '1111' && r.carte.parDefaut === false && W.pmFacture === 'pm_0', 'une seule carte enregistrée, pas marquée par défaut : c\'est elle qui paie', r);
+  // ── second verrou : sans COMMISSION_ENCAISSER=oui, simulation même avec la clé
+  W = monde(); W.virement('po_1', '2026-11-02', [don(10000, 175)]); W.maintenant = H('2026-11-13', '09:00'); r = await C.encaisser({ stripe: W.asso, stripe2: W.moi, maintenant: W.maintenant, actif: false }); ok(r.mode === 'simulation' && r.total === 688 && r.carte.fin === '4242' && !W.factures.length && !W.appels.length, 'clé présente mais interrupteur éteint : simulation, rien créé', r);
+  delete process.env.COMMISSION_ENCAISSER; r = await W.run(H('2026-11-13', '09:00')); ok(r.mode === 'simulation' && !W.factures.length, 'interrupteur absent : simulation', r); process.env.COMMISSION_ENCAISSER = 'oui';
   // ── panne en cours de création : brouillon supprimé, repris proprement plus tard, une seule fois
   W = monde(); W.virement('po_1', '2026-11-02', [don(10000, 175)]); W.panne = true; let err = null; try { await W.run(H('2026-11-13', '09:00')); } catch (e) { err = e; }
   ok(err && W.factures.every(f => f.supprimee) && W.encaisse() === 0, 'panne Stripe pendant la création : brouillon supprimé, rien encaissé');

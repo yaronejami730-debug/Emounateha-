@@ -661,9 +661,9 @@ async function encaisserCommission() {
     const r = await fetch(DON_URL + '/api/admin/commission/encaisser', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/commission/encaisser') }, body: '{}', signal: AbortSignal.timeout(50000) });
     const j = await r.json().catch(() => ({}));
     if (r.ok && !j.reste) { s.commissionEncaisse = auj; save(); }
-    if (!r.ok) console.error('commission non encaissée', r.status, JSON.stringify(j).slice(0, 300));
+    if (!r.ok) console.error('commission non encaissée', r.status, JSON.stringify({ mode: j.mode, carte: j.carte, error: j.error }).slice(0, 400));
     else if (j.facture || j.attente || (j.reessais || []).length || (j.ecartes || []).length) console.log('commission', JSON.stringify({ mode: j.mode, total: j.total, facture: j.facture, attente: j.attente, reessais: j.reessais, ecartes: j.ecartes, reste: j.reste }).slice(0, 500));
-    else if (j.mode === 'simulation') console.log('commission (simulation, rien encaissé)', JSON.stringify({ total: j.total, net: j.net, virements: (j.virements || []).length, ecartes: (j.ecartes || []).length, reste: j.reste, rien: j.rien }));
+    else if (j.mode === 'simulation') console.log('commission (simulation, rien encaissé)', JSON.stringify({ total: j.total, net: j.net, virements: (j.virements || []).length, premier: ((j.virements || [])[0] || {}).arrivee, dons: (j.virements || []).reduce((a, l) => a + l.nbDons, 0), rembourse: (j.virements || []).reduce((a, l) => a + l.rembourse, 0), litiges: (j.virements || []).reduce((a, l) => a + l.litiges, 0), ecartes: j.ecartes, carte: j.carte, reste: j.reste, rien: j.rien }).slice(0, 900));
     return j;
   } catch (e) { console.error('commission', e.message); return null; }
 }

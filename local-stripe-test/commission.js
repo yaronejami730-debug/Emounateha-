@@ -88,7 +88,7 @@ function releveMail(p, r, live, rattrapage) {
 // soit arrivé à la banque de l'association : on part des virements de Stripe vers sa banque, et on n'encaisse qu'à partir du LENDEMAIN du jour d'arrivée.
 // Base d'un virement = les dons qu'il regroupe − frais Stripe − remboursements − litiges (les mouvements que Stripe rattache à ce virement).
 // Rien n'est mémorisé ici : ce qui a déjà été facturé se lit sur les factures du compte du prestataire (aucun risque de compter deux fois si un fichier se perd).
-// Sans la clé STRIPE_COMMISSION_KEY : simulation seulement, rien n'est créé ni encaissé.
+// Deux verrous : la clé STRIPE_COMMISSION_KEY ET COMMISSION_ENCAISSER=oui. S'il en manque un : simulation seulement, rien n'est créé ni encaissé.
 const DELAI_JOURS = Math.max(1, Number(process.env.COMMISSION_DELAI_JOURS || 1));
 const MINIMUM = 50;          // en dessous de 0,50 € Stripe refuse un paiement : on attend les virements suivants
 const LOT = 60;              // virements traités par passage (le reste au passage suivant)
@@ -113,17 +113,23 @@ function dejaPris(factures) {
 }
 function metaVirements(ids) { const m = {}; let i = 0, cur = ''; for (const id of ids) { if ((cur + ',' + id).length > 480) { m['v' + i++] = cur; cur = id; } else cur = cur ? cur + ',' + id : id; } if (cur) m['v' + i] = cur; return m; }
 
-async function encaisser({ stripe, stripe2, simuler, maintenant = Date.now() }) {
+async function encaisser({ stripe, stripe2, simuler, maintenant = Date.now(), actif = process.env.COMMISSION_ENCAISSER === 'oui' }) {
+  if (!actif) simuler = true;
   const out = { ok: true, mode: stripe2 && !simuler ? 'reel' : 'simulation', taux: TAUX, client: CLIENT };
+  let pmSeule = null;
   if (stripe2 && estLive(process.env.STRIPE_SECRET_KEY) !== estLive(process.env.STRIPE_COMMISSION_KEY)) return { ok: false, error: 'Les deux clés Stripe ne sont pas du même mode (test / réel) : rien n\'est fait.' };
   let factures = [];
   if (stripe2) {
     // la carte : celle par défaut du client « association » sur le compte du prestataire
     const c = await stripe2.customers.retrieve(CLIENT, { expand: ['invoice_settings.default_payment_method', 'default_source'] });
     if (!c || c.deleted) return { ok: false, error: 'Client ' + CLIENT + ' introuvable sur le compte Stripe du prestataire.' };
-    const pm = c.invoice_settings && c.invoice_settings.default_payment_method, src = c.default_source, carte = pm && pm.card ? pm.card : src && src.object === 'card' ? src : null;
-    out.carte = carte ? { ok: true, marque: carte.brand, fin: carte.last4, expire: String(carte.exp_month).padStart(2, '0') + '/' + carte.exp_year } : { ok: false };
-    if (!carte) return { ...out, ok: false, error: 'Aucune carte par défaut enregistrée pour ce client : rien n\'est fait.' };
+    const pm = c.invoice_settings && c.invoice_settings.default_payment_method, src = c.default_source; let carte = pm && pm.card ? pm.card : src && src.object === 'card' ? src : null, nbCartes = carte ? 1 : 0;
+    if (!carte) {   // pas de carte « par défaut » : si le client n'a qu'UNE carte enregistrée, c'est elle ; s'il en a plusieurs, on ne choisit pas à sa place
+      const L = (await stripe2.paymentMethods.list({ customer: CLIENT, type: 'card', limit: 5 })).data || []; nbCartes = L.length;
+      if (L.length === 1) { carte = L[0].card; pmSeule = L[0].id; }
+    }
+    out.carte = carte ? { ok: true, marque: carte.brand, fin: carte.last4, expire: String(carte.exp_month).padStart(2, '0') + '/' + carte.exp_year, parDefaut: !pmSeule } : { ok: false, cartesEnregistrees: nbCartes };
+    if (!carte && !simuler) return { ...out, ok: false, error: nbCartes ? 'Plusieurs cartes enregistrées et aucune par défaut : rien n\'est fait.' : 'Aucune carte enregistrée pour ce client : rien n\'est fait.' };
     for await (const f of stripe2.invoices.list({ customer: CLIENT, limit: 100 })) { if (f.metadata && f.metadata.commission === '1') factures.push(f); if (factures.length > 5000) break; }
     if (!simuler) {
       // brouillon resté d'un passage interrompu : supprimé, ses virements seront repris proprement
@@ -155,7 +161,7 @@ async function encaisser({ stripe, stripe2, simuler, maintenant = Date.now() }) 
   // facture sur le compte du prestataire, payée tout de suite par la carte enregistrée
   const ids = lignes.map(l => l.id), cle = 'commission-' + require('crypto').createHash('sha256').update(CLIENT + '|' + ids.join(',') + '|' + Math.floor(maintenant / 3600000)).digest('hex').slice(0, 32), tx = String(TAUX).replace('.', ',');   // clé : deux passages simultanés tombent sur la même facture ; un nouvel essai une heure plus tard repart de zéro
   const periode = lignes.length === 1 ? 'virement arrivé le ' + jourFr(lignes[0].arrivee) : lignes.length + ' virements arrivés du ' + jourFr(lignes[0].arrivee) + ' au ' + jourFr(lignes[lignes.length - 1].arrivee);
-  let inv = await stripe2.invoices.create({ customer: CLIENT, collection_method: 'charge_automatically', auto_advance: false, pending_invoice_items_behavior: 'exclude', currency: 'eur', description: `Commission de ${tx} % sur les dons nets reçus — ${periode}`, metadata: { commission: '1', lot: cle, ...metaVirements(ids) } }, { idempotencyKey: cle });
+  let inv = await stripe2.invoices.create({ customer: CLIENT, collection_method: 'charge_automatically', auto_advance: false, pending_invoice_items_behavior: 'exclude', currency: 'eur', ...(pmSeule ? { default_payment_method: pmSeule } : {}), description: `Commission de ${tx} % sur les dons nets reçus — ${periode}`, metadata: { commission: '1', lot: cle, ...metaVirements(ids) } }, { idempotencyKey: cle });
   try {
     const postes = lignes.length <= 12 ? lignes.map(l => ({ amount: l.commission, description: `Virement arrivé le ${jourFr(l.arrivee)} — net des dons ${eur(l.net)} × ${tx} %`, k: l.id })) : [{ amount: total, description: `${periode} — net des dons ${eur(net)} × ${tx} %`, k: 'tout' }];
     for (const x of postes) await stripe2.invoiceItems.create({ customer: CLIENT, invoice: inv.id, amount: x.amount, currency: 'eur', description: x.description }, { idempotencyKey: cle + '-' + x.k });
