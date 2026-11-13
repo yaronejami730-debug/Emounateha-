@@ -85,20 +85,21 @@ function releveMail(p, r, live, rattrapage) {
 
 // ───────── Encaissement par carte, virement par virement ─────────
 // La commission est réglée par carte bancaire (celle que l'association a enregistrée sur le compte Stripe du prestataire), JAMAIS avant que l'argent
-// soit arrivé à la banque de l'association : on part des virements de Stripe vers sa banque, et on n'encaisse qu'à partir du LENDEMAIN du jour d'arrivée.
+// soit arrivé à la banque de l'association : on part des virements de Stripe vers sa banque, et on n'encaisse qu'à partir de 17 h (Paris) LE JOUR D'ARRIVÉE.
+// Stripe ne donne que le jour d'arrivée, pas l'heure : les banques créditent en général le matin ; à 17 h l'argent est là, et le plus tôt possible après.
 // Base d'un virement = les dons qu'il regroupe − frais Stripe − remboursements − litiges (les mouvements que Stripe rattache à ce virement).
 // Rien n'est mémorisé ici : ce qui a déjà été facturé se lit sur les factures du compte du prestataire (aucun risque de compter deux fois si un fichier se perd).
 // Deux verrous : la clé STRIPE_COMMISSION_KEY ET COMMISSION_ENCAISSER=oui. S'il en manque un : simulation seulement, rien n'est créé ni encaissé.
-const DELAI_JOURS = Math.max(1, Number(process.env.COMMISSION_DELAI_JOURS || 1));
+const HEURE = Math.max(0, Math.min(23, Number(process.env.COMMISSION_HEURE || 17)));   // heure de Paris, le jour d'arrivée du virement
 const MINIMUM = 50;          // en dessous de 0,50 € Stripe refuse un paiement : on attend les virements suivants
 const LOT = 60;              // virements traités par passage (le reste au passage suivant)
 const DEPUIS = /^\d{4}-\d{2}-\d{2}$/.test(process.env.COMMISSION_DEPUIS || '') ? Math.floor(Date.parse(process.env.COMMISSION_DEPUIS + 'T00:00:00Z') / 1000) : 0;   // par défaut : depuis le tout premier virement
 const jourFr = t => new Date(t * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 const estLive = k => /^(sk|rk)_live_/.test(String(k || ''));
 
-// un virement est « échu » quand Stripe le dit payé et que son jour d'arrivée en banque est passé depuis DELAI_JOURS (arrival_date = minuit UTC du jour d'arrivée)
-function echu(p, maintenant, delai = DELAI_JOURS) {
-  return !!p && p.status === 'paid' && String(p.currency || 'eur').toLowerCase() === 'eur' && Number(p.arrival_date) > 0 && (p.arrival_date + delai * 86400) * 1000 <= maintenant && p.arrival_date >= DEPUIS;
+// un virement est « échu » quand Stripe le dit payé et qu'il est au moins HEURE h (Paris) le jour de son arrivée en banque (arrival_date = minuit UTC du jour d'arrivée)
+function echu(p, maintenant, heure = HEURE) {
+  return !!p && p.status === 'paid' && String(p.currency || 'eur').toLowerCase() === 'eur' && Number(p.arrival_date) > 0 && minuitParis(new Date(p.arrival_date * 1000).toISOString().slice(0, 10)) + heure * 3600000 <= maintenant && p.arrival_date >= DEPUIS;
 }
 // commission d'un virement : peut être négative (virement de régularisation : remboursements) — elle vient alors en déduction des autres
 function ligneVirement(p, mouvements, taux = TAUX) {

@@ -30,10 +30,12 @@ function monde() {
 (async () => {
   // ── l'exemple : virement qui arrive le 16 → rien le 16, encaissement le 17 au matin
   let W = monde(); W.virement('po_A', '2026-11-16', [don(10000, 175)]);
-  let r = await W.run(H('2026-11-16', '09:00')); ok(r.rien && !W.factures.length, 'virement qui arrive le 16 : rien n\'est encaissé le 16 à 9 h', r);
-  r = await W.run(H('2026-11-16', '23:00')); ok(r.rien && !W.factures.length, '… ni le 16 à 23 h');
-  r = await W.run(H('2026-11-17', '09:00'));
-  ok(r.facture && r.facture.paye && r.facture.montant === 688 && r.total === 688 && r.net === 9825, 'le 17 à 9 h : don de 100 €, net 98,25 €, commission 6,88 € payée par carte', r);
+  let r = await W.run(H('2026-11-15', '18:00')); ok(r.rien && !W.factures.length, 'virement qui arrive le 16 : rien la veille à 18 h', r);
+  r = await W.run(H('2026-11-16', '09:00')); ok(r.rien && !W.factures.length, '… rien le 16 à 9 h');
+  r = await W.run(H('2026-11-16', '16:59')); ok(r.rien && !W.factures.length, '… rien le 16 à 16 h 59');
+  r = await W.run(H('2026-11-16', '17:00'));
+  ok(r.facture && r.facture.paye && r.facture.montant === 688 && r.total === 688 && r.net === 9825, 'le 16 à 17 h : don de 100 €, net 98,25 €, commission 6,88 € payée par carte', r);
+  { const p = { status: 'paid', currency: 'eur', arrival_date: J('2026-07-06') }; ok(!C.echu(p, Date.parse('2026-07-06T14:59:00Z')) && C.echu(p, Date.parse('2026-07-06T15:00:00Z')), 'heure d\'été : 17 h de Paris = 15 h UTC'); }
   ok(W.postes.length === 1 && /16\/11\/2026/.test(W.postes[0].description) && /98,25 €/.test(W.postes[0].description) && /7 %/.test(W.postes[0].description), 'ligne de facture : date d\'arrivée, net, taux', W.postes);
   r = await W.run(H('2026-11-18', '09:00')); ok(r.rien && W.factures.length === 1 && W.encaisse() === 688, 'le lendemain : rien de plus (pas de double encaissement)', r);
   for (let i = 0; i < 5; i++) await W.run(H('2026-11-19', '09:00') + i * 3600000); ok(W.factures.length === 1 && W.encaisse() === 688, '5 passages de plus : toujours une seule facture');
@@ -46,7 +48,7 @@ function monde() {
   const att = Math.round(14922 * 0.07) + Math.round(98475 * 0.07) + Math.round(2536 * 0.07);
   ok(r.facture && r.facture.paye && r.total === att && r.virements.length === 3 && W.postes.length === 3, 'rattrapage : 3 virements passés sur une facture (' + att / 100 + ' €), celui du 20 attend', r);
   ok(JSON.stringify([...C.dejaPris(W.factures)].sort()) === JSON.stringify(['po_1', 'po_2', 'po_3']), 'la facture garde la liste des virements qu\'elle couvre');
-  r = await W.run(H('2026-11-21', '09:00')); ok(r.facture && r.virements.length === 1 && r.virements[0].id === 'po_futur' && r.total === Math.round(887000 * 0.07), 'le 21 : seul le virement du 20 est facturé', r);
+  r = await W.run(H('2026-11-20', '17:05')); ok(r.facture && r.virements.length === 1 && r.virements[0].id === 'po_futur' && r.total === Math.round(887000 * 0.07), 'le 20 à 17 h 05 : seul le virement du 20 est facturé', r);
   // ── simulation et absence de clé : rien n'est créé
   W = monde(); W.virement('po_1', '2026-11-02', [don(10000, 175)]);
   r = await W.run(H('2026-11-13', '09:00'), { simuler: true }); ok(r.mode === 'simulation' && r.total === 688 && r.carte.fin === '4242' && !W.factures.length && !W.appels.length, 'simulation : montant et carte affichés, rien créé', r);
