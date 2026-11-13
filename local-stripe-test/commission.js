@@ -200,16 +200,19 @@ function mailEncaissement(r, live) {
 // Sur le compte Stripe du prestataire, pour chaque facture de commission payée par l'association, dès que Stripe rend les fonds disponibles :
 //   • RÉSERVE % du montant encaissé (le brut, avant frais Stripe) reste sur le solde Stripe : c'est la part mise de côté pour l'URSSAF ;
 //   • le reste (encaissé − frais Stripe − réserve) est viré à la banque du prestataire.
-// Le 30 du mois (ou le dernier jour si le mois est plus court), la réserve accumulée est virée à part, avec le libellé « URSSAF mm/aaaa ».
+// Le DERNIER JOUR du mois (30, 31, 28 ou 29), la réserve accumulée est virée à part, avec le libellé « URSSAF mm/aaaa ».
+// Passage manqué ce jour-là : rattrapé les trois premiers jours du mois suivant, pour les seules commissions du mois écoulé, sous le libellé du mois écoulé.
 // Seules les factures de commission sont concernées : tout autre argent présent sur le compte n'est jamais touché.
 // Il faut que les virements du compte soient réglés sur « manuel » (sinon Stripe vire tout, tout seul, et aucune réserve n'est possible).
 // Rien n'est mémorisé ici : chaque virement garde la liste des factures qu'il couvre. Verrou : COMMISSION_VIREMENTS=oui, sinon simulation.
 const RESERVE = Math.max(0, Math.min(90, Number(process.env.COMMISSION_RESERVE || 30)));
 const MIN_VIREMENT = 100;   // pas de virement de moins de 1 €
 const moisParis = t => parisJour(t).slice(0, 7);
-function jourUrssaf(maintenant) {   // vrai à partir du 30 (ou du dernier jour d'un mois plus court), heure de Paris
-  const j = parisJour(maintenant), jour = Number(j.slice(8)), dernier = new Date(Date.UTC(Number(j.slice(0, 4)), Number(j.slice(5, 7)), 0)).getUTCDate();
-  return jour >= Math.min(30, dernier);
+function jourUrssaf(maintenant) {   // mois à solder : le mois en cours si c'est son dernier jour (Paris) ; le mois écoulé les 1er, 2 et 3 (rattrapage) ; sinon null
+  const j = parisJour(maintenant), a = Number(j.slice(0, 4)), m = Number(j.slice(5, 7)), jour = Number(j.slice(8)), dernier = new Date(Date.UTC(a, m, 0)).getUTCDate();
+  if (jour === dernier) return { mois: j.slice(0, 7), avant: Infinity };
+  if (jour <= 3) return { mois: new Date(Date.UTC(a, m - 2, 15)).toISOString().slice(0, 7), avant: Math.floor(minuitParis(j.slice(0, 8) + '01') / 1000) };   // seulement les commissions payées avant le 1er
+  return null;
 }
 const metaListe = (ids, prefixe) => Object.fromEntries(Object.entries(metaVirements(ids)).map(([k, v]) => [prefixe + k.slice(1), v]));
 function couvert(virements, genre) {   // factures déjà couvertes par un virement de ce genre (un virement refusé ou annulé ne compte pas)
@@ -230,7 +233,7 @@ async function virer({ stripe2, simuler, maintenant = Date.now(), actif = proces
     const ch = f.charge && typeof f.charge === 'object' ? f.charge : null, bt = ch && ch.balance_transaction && typeof ch.balance_transaction === 'object' ? ch.balance_transaction : null;
     if (!ch || !bt || String(bt.currency).toLowerCase() !== 'eur') continue;   // payée hors carte, ou devise étrangère : pas gérée ici
     const brut = bt.amount, net = bt.net, part = Math.round(brut * RESERVE / 100);
-    F.push({ id: f.id, numero: f.number, brut, frais: bt.fee, net, reserve: part, reste: net - part, dispo: bt.status === 'available', rembourse: ch.amount_refunded > 0 || ch.disputed === true });
+    F.push({ id: f.id, numero: f.number, brut, frais: bt.fee, net, reserve: part, reste: net - part, dispo: bt.status === 'available', paye: (f.status_transitions && f.status_transitions.paid_at) || f.created || 0, rembourse: ch.amount_refunded > 0 || ch.disputed === true });
     if (F.length > 5000) break;
   }
   const V = []; for await (const p of stripe2.payouts.list({ limit: 100 })) { if (p.metadata && p.metadata.commission) V.push(p); if (V.length > 5000) break; }
@@ -251,11 +254,11 @@ async function virer({ stripe2, simuler, maintenant = Date.now(), actif = proces
       if (montant > dispo) out.partNette.attente = 'solde disponible insuffisant (' + dispo + ' c) : au prochain passage';
       else if (!simuler) out.partNette.virement = await creer('reste', lot, montant, 'COMMISSION EMOUNATEHA', `Commission Émounatéha — part nette (${RESERVE} % gardés pour l'URSSAF)`);
     } }
-  // 2. la réserve URSSAF : une fois par mois, à partir du 30
-  { const mois = moisParis(maintenant), fait = V.some(p => p.metadata.commission === 'urssaf' && p.metadata.mois === mois && p.status !== 'failed' && p.status !== 'canceled');
-    const lot = bon.filter(f => !dejaUrssaf.has(f.id)).slice(0, 300), montant = lot.reduce((a, f) => a + f.reserve, 0);
-    out.urssaf = { enReserve: F.filter(f => !f.rembourse && !dejaUrssaf.has(f.id)).reduce((a, f) => a + f.reserve, 0), factures: lot.length, encaisse: lot.reduce((a, f) => a + f.brut, 0), montant, mois, jour: jourUrssaf(maintenant), dejaFait: fait };
-    if (jourUrssaf(maintenant) && !fait && lot.length && montant >= MIN_VIREMENT) {
+  // 2. la réserve URSSAF : une fois par mois, le dernier jour du mois
+  { const ju = jourUrssaf(maintenant), mois = ju ? ju.mois : moisParis(maintenant), fait = V.some(p => p.metadata.commission === 'urssaf' && p.metadata.mois === mois && p.status !== 'failed' && p.status !== 'canceled');
+    const lot = bon.filter(f => !dejaUrssaf.has(f.id) && (!ju || f.paye < ju.avant)).slice(0, 300), montant = lot.reduce((a, f) => a + f.reserve, 0);
+    out.urssaf = { enReserve: F.filter(f => !f.rembourse && !dejaUrssaf.has(f.id)).reduce((a, f) => a + f.reserve, 0), factures: lot.length, encaisse: lot.reduce((a, f) => a + f.brut, 0), montant, mois, jour: !!ju, dejaFait: fait };
+    if (ju && !fait && lot.length && montant >= MIN_VIREMENT) {
       if (montant > dispo) out.urssaf.attente = 'solde disponible insuffisant (' + dispo + ' c) : au prochain passage';
       else if (!simuler) out.urssaf.virement = await creer('urssaf', lot, montant, 'URSSAF ' + mois.slice(5) + '/' + mois.slice(0, 4), `Réserve URSSAF ${mois.slice(5)}/${mois.slice(0, 4)} — ${RESERVE} % de ${eur(out.urssaf.encaisse)} de commissions encaissées`, { mois });
     } }
