@@ -2200,7 +2200,7 @@ async function handle(req, res) {
     if (/^\/diffusion\/[a-f0-9]+\.jpg$/.test(url.pathname) && pool) { // public : l'image
       const r = await pool.query('select data from public.diffusion where id = $1', [url.pathname.slice(11, -4)]);
       if (!r.rows.length) return send(res, 404, 'Not found', 'text/plain');
-      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=3600' });
+      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400, s-maxage=604800' });   // image liée à son identifiant, jamais modifiée : gardée 7 jours par le CDN (sinon ~700 Ko relus en base Supabase toutes les heures)
       return res.end(r.rows[0].data);
     }
     if (url.pathname === '/holidays.json') return await api(req, res, new URL('/api/holidays?all=1', 'http://x')); // public : fêtes à venir pour le site
