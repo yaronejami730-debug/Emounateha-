@@ -14,7 +14,7 @@ module.exports = function createStore({ DATA, RECUS }) {
   let ready = null;
   const ensure = () => ready || (ready = pool.query('create table if not exists don_kv (key text primary key, value bytea not null, updated_at timestamptz not null default now())').catch(e => { ready = null; throw e; }));
   // routes qui n'ont pas besoin des données (aucune connexion ouverte)
-  const SANS = /^\/api\/(config|siret|vu)\b/;
+  const SANS = /^\/api\/(config|siret|vu|admin\/commission\/encaisser)\b/;   // l'encaissement de la commission ne lit ni n'écrit le fichier des dons : pas de verrou pendant ses appels à Stripe
   const same = (a, b) => a && b && Buffer.compare(a, b) === 0;
   // Copie gardée en mémoire avec son empreinte : data.json n'est retéléchargé que si l'empreinte en base a changé
   // (avant : téléchargé en entier à chaque requête, d'où une grosse consommation de bande passante Supabase).

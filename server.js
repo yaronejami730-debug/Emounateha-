@@ -651,6 +651,22 @@ async function releveCommission() {
     return j;
   } catch (e) { console.error('relevé de commission', e.message); return null; }
 }
+// Commission : une fois par jour à partir de 9 h (Paris), le serveur des dons encaisse par carte la commission des virements arrivés en banque la veille ou avant (jamais avant l'arrivée de l'argent).
+// Sans la clé Stripe du prestataire côté serveur des dons, c'est une simple simulation : rien n'est créé. Raté ou incomplet : nouvel essai à l'heure suivante.
+async function encaisserCommission() {
+  const s = db.settings, auj = parisDay(Date.now()), h = parisHour();
+  if (h < 9 || s.commissionEncaisse === auj || s.commissionEncaisse === auj + ' ' + h) return null;
+  s.commissionEncaisse = auj + ' ' + h; save();   // noté avant l'appel : une autre instance ne lance pas le même passage
+  try {
+    const r = await fetch(DON_URL + '/api/admin/commission/encaisser', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/commission/encaisser') }, body: '{}', signal: AbortSignal.timeout(50000) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && !j.reste) { s.commissionEncaisse = auj; save(); }
+    if (!r.ok) console.error('commission non encaissée', r.status, JSON.stringify(j).slice(0, 300));
+    else if (j.facture || j.attente || (j.reessais || []).length || (j.ecartes || []).length) console.log('commission', JSON.stringify({ mode: j.mode, total: j.total, facture: j.facture, attente: j.attente, reessais: j.reessais, ecartes: j.ecartes, reste: j.reste }).slice(0, 500));
+    else if (j.mode === 'simulation') console.log('commission (simulation, rien encaissé)', JSON.stringify({ total: j.total, net: j.net, virements: (j.virements || []).length, ecartes: (j.ecartes || []).length, reste: j.reste, rien: j.rien }));
+    return j;
+  } catch (e) { console.error('commission', e.message); return null; }
+}
 // Virements de Stripe vers la banque : une fois par heure, le serveur des dons regarde s'il y en a un nouveau et prévient l'administrateur par e-mail.
 async function verifierVirements() {
   const s = db.settings, cle = parisDay(Date.now()) + ' ' + parisHour();
@@ -684,6 +700,7 @@ async function tick(force = false) {
     let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
     ensureForfait(); ensureAccords(); nettoyerContactsTest();
     await releveCommission();
+    await encaisserCommission();
     await verifierVirements();
     await verifierEchecs();
     const s = db.settings;
