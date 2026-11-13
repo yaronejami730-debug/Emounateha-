@@ -655,8 +655,8 @@ async function releveCommission() {
 // Sans la clé Stripe du prestataire côté serveur des dons, c'est une simple simulation : rien n'est créé. Raté ou incomplet : nouvel essai à l'heure suivante.
 async function encaisserCommission() {
   const s = db.settings, auj = parisDay(Date.now()), h = parisHour();
-  if (h < 9 || s.commissionEncaisse === auj || s.commissionEncaisse === auj + ' ' + h) return null;
-  s.commissionEncaisse = auj + ' ' + h; save();   // noté avant l'appel : une autre instance ne lance pas le même passage
+  if (h < 9 || s.commissionEncaisse === auj || s.commissionEncaisse === auj + ' ' + h + 'h') return null;
+  s.commissionEncaisse = auj + ' ' + h + 'h'; save();   // noté avant l'appel : une autre instance ne lance pas le même passage
   try {
     const r = await fetch(DON_URL + '/api/admin/commission/encaisser', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/commission/encaisser') }, body: '{}', signal: AbortSignal.timeout(50000) });
     const j = await r.json().catch(() => ({}));
