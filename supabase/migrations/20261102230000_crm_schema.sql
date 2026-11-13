@@ -124,3 +124,18 @@ alter table public.ambassadors enable row level security;
 alter table public.ambassadors add column if not exists slug text;
 alter table public.ambassadors add column if not exists cp text not null default '';
 create unique index if not exists ambassadors_slug_uidx on public.ambassadors (slug);
+
+-- Numéro de version des données du CRM : augmenté à chaque écriture (d'où qu'elle vienne) par un déclencheur.
+-- Le serveur ne relit toute la base que si ce numéro a changé (au lieu de tout relire à chaque requête : bande passante Supabase).
+create table if not exists public.crm_version (id int primary key default 1 check (id = 1), v bigint not null default 0);
+insert into public.crm_version (id, v) values (1, 0) on conflict (id) do nothing;
+alter table public.crm_version enable row level security;
+create or replace function public.crm_bump() returns trigger language plpgsql set search_path = '' as $$
+begin update public.crm_version set v = v + 1 where id = 1; return null; end $$;
+do $$ declare t text; begin
+  foreach t in array array['settings', 'templates', 'contacts', 'campaigns', 'sends'] loop
+    if not exists (select 1 from pg_catalog.pg_trigger where tgname = 'crm_bump_' || t and tgrelid = ('public.' || t)::regclass) then
+      execute format('create trigger %I after insert or update or delete or truncate on public.%I for each statement execute function public.crm_bump()', 'crm_bump_' || t, t);
+    end if;
+  end loop;
+end $$;

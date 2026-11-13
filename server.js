@@ -83,12 +83,17 @@ async function loadDb() {
       }
       loadDb.migrated = true;
     }
+    // numéro de version lu AVANT les tables : si quelqu'un écrit pendant le chargement, le numéro aura changé et on rechargera
+    let ver = null;
+    try { const r = await pool.query('select v from public.crm_version where id = 1'); ver = r.rows[0] ? String(r.rows[0].v) : null; } catch (e) { ver = null; }
+    dbVersion = null;
     const [st, ...rows] = await Promise.all([
       pool.query('select data from public.settings where id = 1'),
       ...Object.keys(TABLES).map(t => pool.query(`select * from public.${t}` + (t === 'sends' ? ' order by at' : ' order by created_at')))
     ]);
     if (st.rows.length || rows[0].rows.length || rows[1].rows.length) {
       loaded = { settings: st.rows[0]?.data || {} };
+      lastSettings = JSON.stringify(loaded.settings); dbVersion = ver;
       Object.keys(TABLES).forEach((t, i) => {
         loaded[t] = rows[i].rows.map(x => fromRow(t, x));
         lastSnap[t] = new Map(loaded[t].map(o => [o.id, JSON.stringify(o)]));
@@ -104,7 +109,20 @@ async function loadDb() {
   if (!SERVERLESS) await persist();
 }
 let loadedAt = 0, dirty = false;
-async function ensureDb() { if (!db || (SERVERLESS && Date.now() - loadedAt > 4000)) await loadDb(); }
+// Sur Vercel, la base n'est PAS relue en entier à chaque requête (c'était toute la bande passante Supabase) :
+// on lit un numéro de version (public.crm_version, augmenté par un déclencheur à chaque écriture, d'où qu'elle vienne) et on ne recharge que s'il a changé.
+let dbVersion = null, lastSettings = null;
+async function ensureDb() {
+  if (!db) return loadDb();
+  if (!SERVERLESS || Date.now() - loadedAt <= 4000) return;
+  if (pool && dbVersion !== null) {
+    try {
+      const r = await pool.query('select v from public.crm_version where id = 1');
+      if (r.rows[0] && String(r.rows[0].v) === dbVersion) { loadedAt = Date.now(); return; }
+    } catch (e) { /* table absente ou base injoignable : rechargement complet, comme avant */ }
+  }
+  await loadDb();
+}
 async function flush() { if (dirty) { dirty = false; await persist(); loadedAt = Date.now(); } }
 let persisting = Promise.resolve();
 function persist() {
@@ -112,7 +130,8 @@ function persist() {
   if (!SERVERLESS) { fs.writeFileSync(DB_FILE + '.tmp', snap); fs.renameSync(DB_FILE + '.tmp', DB_FILE); } // copie locale de secours
   if (!pool) return Promise.resolve();
   persisting = persisting.then(async () => {
-    await pool.query("insert into public.settings (id, data) values (1, $1::jsonb) on conflict (id) do update set data = excluded.data, updated_at = now()", [JSON.stringify(db.settings)]);
+    const sj = JSON.stringify(db.settings);
+    if (sj !== lastSettings) { await pool.query("insert into public.settings (id, data) values (1, $1::jsonb) on conflict (id) do update set data = excluded.data, updated_at = now()", [sj]); lastSettings = sj; }
     for (const [t, map] of Object.entries(TABLES)) {
       const prev = lastSnap[t] || (lastSnap[t] = new Map());
       const cols = Object.values(map), seen = new Set();
@@ -525,7 +544,7 @@ async function sendOne(campaign, { contact, stepIndex, step }) {
   if (pool) {
     try {
       const dup = await pool.query("select 1 from public.sends where campaign_id = $1 and contact_id = $2 and template_id = $3 and status <> 'error' limit 1", [campaign.id, contact.id, step.templateId]);
-      if (dup.rows.length) { loadedAt = 0; return { status: 'skipped' }; }
+      if (dup.rows.length) { loadedAt = 0; dbVersion = null; return { status: 'skipped' }; }
     } catch (e) { console.error('garde doublon', e.message); }
   }
   const t = db.templates.find(x => x.id === step.templateId);
