@@ -223,7 +223,10 @@ function couvert(virements, genre) {   // factures déjà couvertes par un virem
 async function virer({ stripe2, simuler, maintenant = Date.now(), actif = process.env.COMMISSION_VIREMENTS === 'oui' }) {
   if (!stripe2) return { ok: true, mode: 'simulation', rien: 'clé du prestataire absente' };
   if (!actif) simuler = true;
-  const out = { ok: true, mode: simuler ? 'simulation' : 'reel', reserve: RESERVE };
+  const k = String(process.env.STRIPE_COMMISSION_KEY || '');   // seul le TYPE de la clé est indiqué (jamais la clé) : complète = tous les droits ; restreinte = selon ses réglages
+  const out = { ok: true, mode: simuler ? 'simulation' : 'reel', reserve: RESERVE, cle: /^sk_/.test(k) ? 'complète' : /^rk_/.test(k) ? 'restreinte' : 'inconnue', droits: {} };
+  for (const [nom, essai] of [['solde', () => stripe2.balance.retrieve()], ['virements (lecture)', () => stripe2.payouts.list({ limit: 1 })], ['factures', () => stripe2.invoices.list({ limit: 1 })]]) { try { await essai(); out.droits[nom] = 'oui'; } catch (e) { out.droits[nom] = 'non : ' + String(e.message).slice(0, 90); } }
+  if (Object.values(out.droits).some(x => x !== 'oui')) return { ...out, ok: false, error: 'La clé n\'a pas tous les droits de lecture nécessaires : rien n\'est fait.' };
   try { const a = await stripe2.accounts.retrieve(); const i = a && a.settings && a.settings.payouts && a.settings.payouts.schedule && a.settings.payouts.schedule.interval; out.calendrier = i || 'inconnu'; } catch (e) { out.calendrier = 'inconnu'; }
   if (out.calendrier !== 'manual' && out.calendrier !== 'inconnu') return { ...out, ok: !!simuler, error: 'Les virements de ce compte Stripe sont automatiques (' + out.calendrier + ') : il faut les régler sur « manuel », sinon aucune réserve n\'est possible. Rien n\'est fait.' };
   // factures de commission payées, avec ce que Stripe a réellement crédité (frais déduits) et la date de disponibilité des fonds
