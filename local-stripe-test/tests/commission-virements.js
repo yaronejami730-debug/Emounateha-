@@ -15,9 +15,11 @@ function monde(interval = 'manual') {
   let W = monde(); W.facture(10000, 175, T('2026-11-17', '17:00'));
   let v = await W.run(T('2026-11-18', '09:00')); ok(v.partNette.virement.montant === 6825 && W.solde === 3000 && !v.urssaf.virement, '100 € de commission, 1,75 € de frais : 68,25 € virés, 30 € restent sur Stripe', v);
   W.facture(20000, 300, T('2026-11-24', '17:00')); v = await W.run(T('2026-11-25', '09:00')); ok(v.partNette.virement.montant === 13700 && W.solde === 9000, 'deuxième commission de 200 € : 137 € virés, réserve à 90 €', [v.partNette, W.solde]);
+  W.solde += 50000; v = await W.run(T('2026-11-26', '09:00')); ok(v.partNette.virement.montant === 50000 && W.solde === 9000, 'autre argent reçu sur le compte (500 €) : viré en entier au passage suivant, la réserve ne bouge pas', [v.partNette, W.solde]);
+  v = await W.run(T('2026-11-26', '17:00')); ok(!v.partNette.virement && W.solde === 9000, 'passage suivant sans rien de nouveau : aucun virement');
   v = await W.run(T('2026-11-29', '17:00')); ok(!v.urssaf.virement && W.solde === 9000, 'le 29 : la réserve ne bouge pas');
   v = await W.run(T('2026-11-30', '09:00')); ok(v.urssaf.virement.montant === 9000 && v.urssaf.virement.libelle === 'URSSAF 11/2026' && v.urssaf.encaisse === 30000 && W.solde === 0, 'le 30 novembre : 90 € virés, libellé « URSSAF 11/2026 », pour 300 € encaissés', v.urssaf);
-  v = await W.run(T('2026-11-30', '17:00')); ok(!v.urssaf.virement && !v.partNette.virement && W.P.length === 3, 'second passage du 30 : rien');
+  v = await W.run(T('2026-11-30', '17:00')); ok(!v.urssaf.virement && !v.partNette.virement && W.P.length === 4, 'second passage du 30 : rien');
   W.facture(5000, 100, T('2026-12-10', '17:00')); v = await W.run(T('2026-12-30', '17:00')); ok(!v.urssaf.virement && W.solde === 1500, 'décembre a 31 jours : rien le 30', v.urssaf);
   v = await W.run(T('2026-12-31', '09:00')); ok(v.urssaf.virement.montant === 1500 && v.urssaf.virement.libelle === 'URSSAF 12/2026', 'le 31 décembre : 15 € virés, libellé « URSSAF 12/2026 »', v.urssaf);
   // dernier jour manqué : rattrapage le 1er, sans prendre les commissions du nouveau mois
@@ -29,7 +31,10 @@ function monde(interval = 'manual') {
   W = monde(); W.facture(10000, 175, T('2026-11-17', '17:00')); await W.run(T('2026-11-18', '09:00')); W.P[0].status = 'failed'; W.solde += 6825; v = await W.run(T('2026-11-19', '09:00')); ok(v.partNette.virement && v.partNette.virement.montant === 6825 && W.solde === 3000, 'virement refusé par votre banque : refait au passage suivant, une seule fois');
   W = monde(); W.facture(10000, 175, T('2026-11-17', '17:00')); v = await W.run(T('2026-11-30', '09:00'), false); ok(v.mode === 'simulation' && v.partNette.montant === 6825 && v.urssaf.montant === 3000 && !W.P.length && W.solde === 9825, 'interrupteur éteint : montants annoncés, rien viré', v);
   W = monde('daily'); W.facture(10000, 175, T('2026-11-17', '17:00')); v = await W.run(T('2026-11-30', '09:00')); ok(v.ok === false && /manuel/.test(v.error) && !W.P.length, 'compte en virements automatiques : refus, rien viré', v);
-  W = monde(); W.facture(10000, 175, T('2026-11-17', '17:00'), { charge: { amount_refunded: 10000 } }); v = await W.run(T('2026-11-30', '09:00')); ok(!W.P.length && v.ecartes.length === 1, 'commission remboursée à l\'association : rien viré, signalée', v);
-  W = monde(); W.facture(10000, 175, T('2026-11-17', '17:00')); W.solde = 5000; v = await W.run(T('2026-11-18', '09:00')); ok(!W.P.length && /insuffisant/.test(v.partNette.attente), 'solde Stripe insuffisant : rien, nouvel essai plus tard', v.partNette);
+  W = monde(); W.facture(10000, 175, T('2026-11-17', '17:00'), { charge: { amount_refunded: 10000 } }); W.solde = 0; v = await W.run(T('2026-11-30', '09:00')); ok(!W.P.length && v.ecartes.length === 1 && v.urssaf.montant === 0, 'commission remboursée à l\'association : pas de réserve dessus, signalée', v);
+  W = monde(); W.facture(10000, 175, T('2026-11-17', '17:00')); W.solde = 2000; v = await W.run(T('2026-11-18', '09:00')); ok(!W.P.length && v.partNette.montant === 0, 'solde inférieur à la réserve : rien ne part, la réserve n\'est jamais entamée', v.partNette);
+  v = await W.run(T('2026-11-30', '09:00')); ok(!W.P.length && /insuffisant/.test(v.urssaf.attente), '… et le virement URSSAF attend que le solde suffise', v.urssaf);
+  W = monde(); W.solde = 12345; v = await W.run(T('2026-11-18', '09:00')); ok(v.partNette.virement.montant === 12345 && W.solde === 0 && !v.urssaf.virement, 'aucune commission, seulement de l\'autre argent : viré en entier, comme le faisait Stripe');
+  W = monde(); W.solde = 60; v = await W.run(T('2026-11-18', '09:00')); ok(!W.P.length, 'moins de 1 € disponible : pas de virement');
   console.log(pass + ' ok, ' + fail + ' échec');
 })().catch(e => console.error('ERREUR', e));

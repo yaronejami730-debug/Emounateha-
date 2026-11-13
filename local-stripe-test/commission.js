@@ -199,10 +199,9 @@ function mailEncaissement(r, live) {
 // ───────── Côté prestataire : virements vers sa banque, avec une réserve pour l'URSSAF ─────────
 // Sur le compte Stripe du prestataire, pour chaque facture de commission payée par l'association, dès que Stripe rend les fonds disponibles :
 //   • RÉSERVE % du montant encaissé (le brut, avant frais Stripe) reste sur le solde Stripe : c'est la part mise de côté pour l'URSSAF ;
-//   • le reste (encaissé − frais Stripe − réserve) est viré à la banque du prestataire.
+//   • tout le reste du solde disponible du compte (commissions nettes ET tout autre argent reçu sur ce compte) est viré à la banque du prestataire, à chaque passage.
 // Le DERNIER JOUR du mois (30, 31, 28 ou 29), la réserve accumulée est virée à part, avec le libellé « URSSAF mm/aaaa ».
 // Passage manqué ce jour-là : rattrapé les trois premiers jours du mois suivant, pour les seules commissions du mois écoulé, sous le libellé du mois écoulé.
-// Seules les factures de commission sont concernées : tout autre argent présent sur le compte n'est jamais touché.
 // Il faut que les virements du compte soient réglés sur « manuel » (sinon Stripe vire tout, tout seul, et aucune réserve n'est possible).
 // Rien n'est mémorisé ici : chaque virement garde la liste des factures qu'il couvre. Verrou : COMMISSION_VIREMENTS=oui, sinon simulation.
 const RESERVE = Math.max(0, Math.min(90, Number(process.env.COMMISSION_RESERVE || 30)));
@@ -247,8 +246,8 @@ async function virer({ stripe2, simuler, maintenant = Date.now(), actif = proces
     if (F.length > 5000) break;
   }
   const V = []; for await (const p of stripe2.payouts.list({ limit: 100 })) { if (p.metadata && p.metadata.commission) V.push(p); if (V.length > 5000) break; }
-  const dejaReste = couvert(V, 'reste'), dejaUrssaf = couvert(V, 'urssaf');
-  out.ecartes = F.filter(f => f.rembourse && !(dejaReste.has(f.id) && dejaUrssaf.has(f.id))).map(f => ({ facture: f.numero || f.id, raison: 'commission remboursée ou contestée : à traiter à la main' }));
+  const dejaUrssaf = couvert(V, 'urssaf');
+  out.ecartes = F.filter(f => f.rembourse && !dejaUrssaf.has(f.id)).map(f => ({ facture: f.numero || f.id, raison: 'commission remboursée ou contestée : à traiter à la main' }));
   const bon = F.filter(f => f.dispo && !f.rembourse);
   out.enAttente = F.filter(f => !f.dispo && !f.rembourse).length;   // fonds pas encore rendus disponibles par Stripe
   let dispo = 0; { const b = await stripe2.balance.retrieve(); dispo = ((b.available || []).find(x => x.currency === 'eur') || { amount: 0 }).amount; } out.soldeDisponible = dispo;
@@ -257,12 +256,14 @@ async function virer({ stripe2, simuler, maintenant = Date.now(), actif = proces
     const p = await stripe2.payouts.create({ amount: montant, currency: 'eur', description, statement_descriptor: libelle, metadata: { commission: genre, ...extra, ...metaListe(ids, 'f') } }, { idempotencyKey: cle });
     dispo -= montant; return { id: p.id, montant, libelle, arrivee: p.arrival_date, etat: p.status, factures: lot.length };
   };
-  // 1. la part nette : encaissé − frais Stripe − réserve
-  { const lot = bon.filter(f => !dejaReste.has(f.id)).slice(0, 300), montant = lot.reduce((a, f) => a + f.reste, 0);
-    out.partNette = { factures: lot.length, encaisse: lot.reduce((a, f) => a + f.brut, 0), frais: lot.reduce((a, f) => a + f.frais, 0), reserve: lot.reduce((a, f) => a + f.reserve, 0), montant };
-    if (lot.length && montant >= MIN_VIREMENT) {
-      if (montant > dispo) out.partNette.attente = 'solde disponible insuffisant (' + dispo + ' c) : au prochain passage';
-      else if (!simuler) out.partNette.virement = await creer('reste', lot, montant, 'COMMISSION EMOUNATEHA', `Commission Émounatéha — part nette (${RESERVE} % gardés pour l'URSSAF)`);
+  // 1. tout le solde disponible du compte part à la banque du prestataire, SAUF la réserve URSSAF des commissions déjà disponibles
+  //    (le compte est en virements manuels : c'est ce passage qui remplace le virement automatique de Stripe, y compris pour l'argent qui ne vient pas des commissions)
+  { const garder = bon.filter(f => !dejaUrssaf.has(f.id)).reduce((a, f) => a + f.reserve, 0), montant = dispo - garder;
+    out.partNette = { soldeDisponible: dispo, reserveGardee: garder, montant: Math.max(0, montant) };
+    if (montant >= MIN_VIREMENT && !simuler) {
+      const cle = 'virement-tout-' + require('crypto').createHash('sha256').update(montant + '|' + garder + '|' + Math.floor(maintenant / 3600000)).digest('hex').slice(0, 32);
+      const p = await stripe2.payouts.create({ amount: montant, currency: 'eur', description: `Virement du solde (${eur(garder)} gardés en réserve pour l'URSSAF)`, metadata: { commission: 'tout', reserve: String(garder) } }, { idempotencyKey: cle });
+      dispo -= montant; out.partNette.virement = { id: p.id, montant, arrivee: p.arrival_date, etat: p.status };
     } }
   // 2. la réserve URSSAF : une fois par mois, le dernier jour du mois
   { const ju = jourUrssaf(maintenant), mois = ju ? ju.mois : moisParis(maintenant), fait = V.some(p => p.metadata.commission === 'urssaf' && p.metadata.mois === mois && p.status !== 'failed' && p.status !== 'canceled');
@@ -276,7 +277,7 @@ async function virer({ stripe2, simuler, maintenant = Date.now(), actif = proces
 }
 function mailVirements(v, live) {
   const L = [], pn = v.partNette || {}, u = v.urssaf || {};
-  if (pn.virement) L.push(`Virement de ${eur(pn.virement.montant)} vers votre banque (libellé « ${pn.virement.libelle} », arrivée prévue le ${jourFr(pn.virement.arrivee)}).`, `  Détail : ${eur(pn.encaisse)} encaissés − ${eur(pn.frais)} de frais Stripe − ${eur(pn.reserve)} gardés pour l'URSSAF (${v.reserve} %).`);
+  if (pn.virement) L.push(`Virement du solde : ${eur(pn.virement.montant)} vers votre banque (arrivée prévue le ${jourFr(pn.virement.arrivee)}), ${eur(pn.reserveGardee)} gardés en réserve.`);
   if (u.virement) L.push(`Virement URSSAF de ${eur(u.virement.montant)} vers votre banque (libellé « ${u.virement.libelle} », arrivée prévue le ${jourFr(u.virement.arrivee)}).`, `  C'est la réserve de ${v.reserve} % sur ${eur(u.encaisse)} de commissions encaissées (${u.factures} facture(s)). Chiffre d'affaires correspondant à déclarer : ${eur(u.encaisse)}.`);
   for (const e of v.ecartes || []) L.push(`⚠ Facture ${e.facture} : ${e.raison}.`);
   const titre = u.virement ? `URSSAF : ${eur(u.virement.montant)} virés sur votre compte` : `Commission : ${eur((pn.virement || {}).montant || 0)} virés sur votre compte`, subject = (live ? '' : '[TEST] ') + titre;
@@ -299,7 +300,7 @@ function monter(app, { stripe, adminOk, mailer, load, save, stripe2 = process.en
       try {
         const v = await virer({ stripe2, simuler: !!(req.body && req.body.simuler) }); r.mesVirements = v;
         const to = String(process.env.COMMISSION_EMAIL || '').trim();
-        if (v.mode === 'reel' && ((v.partNette || {}).virement || (v.urssaf || {}).virement) && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) { const m = mailVirements(v, estLive(process.env.STRIPE_COMMISSION_KEY)); try { await mailer.send({ to, toName: 'Prestataire technique', subject: m.subject, html: m.html, text: m.text }); } catch (e) { console.error('commission/virements e-mail', e.message); } }
+        if (v.mode === 'reel' && (v.urssaf || {}).virement && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) { const m = mailVirements(v, estLive(process.env.STRIPE_COMMISSION_KEY)); try { await mailer.send({ to, toName: 'Prestataire technique', subject: m.subject, html: m.html, text: m.text }); } catch (e) { console.error('commission/virements e-mail', e.message); } }
       } catch (e) { r.mesVirements = { ok: false, error: e.message }; console.error('commission/virements', e.message); }
       res.setHeader('Cache-Control', 'no-store'); res.status(r.ok === false ? 409 : 200).json(r);
     } catch (e) { console.error('commission/encaisser', e.message); res.status(502).json({ error: e.message }); }
