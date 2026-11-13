@@ -141,7 +141,8 @@ function monter(app, { stripe, adminOk, mailer, load, save }) {
           catch (e) { erreurs.push(sid + ' (e-mail d\'arrêt) : ' + e.message); }
         } catch (e) { erreurs.push(sid + ' (arrêt) : ' + e.message); }
       }
-      const d2 = load(); d2.echecs = tronque ? { ...(avant || {}), ...etat } : etat; save(d2);   // on ne garde que les échéances encore impayées : une échéance réglée ou annulée sort de la liste
+      const d2 = load(), nouv = tronque ? { ...(avant || {}), ...etat } : etat;
+      if (JSON.stringify(d2.echecs || null) !== JSON.stringify(nouv)) { d2.echecs = nouv; save(d2); }   // enregistré seulement si quelque chose a changé   // on ne garde que les échéances encore impayées : une échéance réglée ou annulée sort de la liste
       if (erreurs.length) console.error('echecs', erreurs.join(' | '));
       if (arretes.length) console.log('echecs : dons mensuels arrêtés', JSON.stringify(arretes));
       res.json({ ok: true, miseEnService: !avant, enEchec: Object.keys(etat).length, envois: envois.length, arretes, detail: envois, erreurs });

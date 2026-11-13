@@ -139,3 +139,6 @@ do $$ declare t text; begin
     end if;
   end loop;
 end $$;
+
+-- Recherche de doublon avant chaque envoi (campagne + contact + modèle)
+create index if not exists sends_dedupe_idx on public.sends (campaign_id, contact_id, template_id);

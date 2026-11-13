@@ -14,7 +14,7 @@
       } catch (e) {}
     };
     envoi(false);
-    setInterval(function () { if (document.visibilityState === 'visible') envoi(true); }, 30000);   // « en direct » : signe de vie toutes les 30 s tant que la page est affichée
+    setInterval(function () { if (document.visibilityState === 'visible') envoi(true); }, 60000);   // « en direct » : signe de vie toutes les 60 s tant que la page est affichée
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') envoi(true); });
   } catch (e) {}
 })();

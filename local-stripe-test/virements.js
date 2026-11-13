@@ -167,7 +167,8 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon }) {
         } catch (e) { erreurs.push(p.id + ' : ' + e.message); }   // pas noté comme vu : nouvel essai à la prochaine vérification
       }
       const garde = Object.fromEntries(Object.entries(vus).slice(-400));
-      const d3 = load(); d3.virements = { ...(d3.virements || etat), vus: garde, verifieLe: new Date().toISOString() }; save(d3);
+      // enregistré seulement si la liste des virements vus a changé (sinon tout le fichier était réécrit en base chaque heure pour rien)
+      const d3 = load(); if (JSON.stringify((d3.virements || {}).vus || null) !== JSON.stringify(garde)) { d3.virements = { ...(d3.virements || etat), vus: garde, verifieLe: new Date().toISOString() }; save(d3); }
       if (erreurs.length) console.error('virements', erreurs.join(' | '));
       res.json({ ok: true, envoyes: envoyes.length, detail: envoyes, erreurs });
     } catch (e) { console.error('virements', e.message); res.status(502).json({ error: 'Lecture Stripe impossible : ' + e.message }); }

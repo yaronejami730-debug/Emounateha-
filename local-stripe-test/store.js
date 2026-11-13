@@ -23,10 +23,13 @@ module.exports = function createStore({ DATA, RECUS }) {
   return async (req, res, next) => {
     const p = req.path;
     if (!(p === '/webhook' || p.startsWith('/api/') || p.startsWith('/recus/') || p.startsWith('/u/')) || SANS.test(p)) return next();
+    // « suis-je connecté ? » demandé à chaque ouverture de la page de don : sans cookie de session, la réponse est « non » sans lire les données
+    if (p === '/api/me' && req.method === 'GET' && !/(?:^|;\s*)don_sid=[a-f0-9]{64}(?:;|$)/.test(String(req.headers.cookie || ''))) return next();
     let c, t0 = Date.now() - 1000, base = null, done = false, pending = null;
     try {
       await ensure(); c = await pool.connect();
       await c.query('begin'); await c.query("set local lock_timeout = '25s'"); await c.query('select pg_advisory_xact_lock($1)', [LOCK]);
+      t0 = Date.now() - 1000;   // à partir d'ici seulement : un reçu créé par la requête précédente (pendant l'attente du verrou) n'est pas renvoyé une 2e fois
       const hr = await c.query("select md5(value) as h from don_kv where key = 'data.json'");
       if (!hr.rows[0]) { cache = null; try { fs.unlinkSync(DATA); } catch (e) {} }
       else {
@@ -37,7 +40,14 @@ module.exports = function createStore({ DATA, RECUS }) {
         base = cache.buf; fs.writeFileSync(DATA, base, { mode: 0o600 });
       }
       const m = p.match(/^\/recus\/([^/?]+)$/) || (p === '/api/admin/pdf' && req.query && req.query.f ? [0, encodeURIComponent(String(req.query.f))] : null);
-      if (m) { const f = path.basename(decodeURIComponent(m[1])), rr = await c.query('select value from don_kv where key = $1', ['recus/' + f]); if (rr.rows[0]) fs.writeFileSync(path.join(RECUS, f), rr.rows[0].value, { mode: 0o600 }); }
+      if (m) {   // reçu demandé : téléchargé seulement si la copie locale manque ou diffère (un PDF pèse ~1 Mo), et jamais renvoyé en base tel quel
+        const f = path.basename(decodeURIComponent(m[1])), fp = path.join(RECUS, f), hh = await c.query('select md5(value) as h from don_kv where key = $1', ['recus/' + f]);
+        if (hh.rows[0]) {
+          let local = null; try { local = md5(fs.readFileSync(fp)); } catch (e) {}
+          if (local !== hh.rows[0].h) { const rr = await c.query('select value from don_kv where key = $1', ['recus/' + f]); if (rr.rows[0]) fs.writeFileSync(fp, rr.rows[0].value, { mode: 0o600 }); }
+          try { const vieux = new Date(946684800000); fs.utimesSync(fp, vieux, vieux); } catch (e) {}   // date ancienne : la boucle d'enregistrement ne le renvoie pas (sauf si la requête le modifie)
+        }
+      }
     } catch (e) {
       console.error('[store] lecture impossible', e.message); try { if (c) { await c.query('rollback'); c.release(); } } catch (x) {}
       return res.status(503).json({ error: 'Stockage indisponible, réessayez dans un instant.' });
@@ -47,8 +57,10 @@ module.exports = function createStore({ DATA, RECUS }) {
       try {
         if (ok) {
           if (fs.existsSync(DATA)) { const now = fs.readFileSync(DATA); if (!same(now, base)) { await c.query("insert into don_kv (key, value) values ('data.json', $1) on conflict (key) do update set value = excluded.value, updated_at = now()", [now]); pending = now; } }
-          for (const f of fs.existsSync(RECUS) ? fs.readdirSync(RECUS) : []) { const fp = path.join(RECUS, f); if (fs.statSync(fp).mtimeMs >= t0) await c.query('insert into don_kv (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value, updated_at = now()', ['recus/' + f, fs.readFileSync(fp)]); }
+          const envoyes = [];
+          for (const f of fs.existsSync(RECUS) ? fs.readdirSync(RECUS) : []) { const fp = path.join(RECUS, f); if (fs.statSync(fp).mtimeMs >= t0) { await c.query('insert into don_kv (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value, updated_at = now()', ['recus/' + f, fs.readFileSync(fp)]); envoyes.push(fp); } }
           await c.query('commit');
+          for (const fp of envoyes) { try { const vieux = new Date(946684800000); fs.utimesSync(fp, vieux, vieux); } catch (e) {} }   // enregistré : plus jamais renvoyé, sauf s'il est modifié
           if (pending) cache = { h: md5(pending), buf: pending };   // seulement une fois l'écriture validée
         } else await c.query('rollback');
       } catch (e) { console.error('[store] écriture impossible', e.message); try { await c.query('rollback'); } catch (x) {} }

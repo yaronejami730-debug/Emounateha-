@@ -105,6 +105,8 @@ async function loadDb() {
   }
   if (!loaded) { try { loaded = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch { loaded = defaultDb(); } }
   db = { ...defaultDb(), ...loaded, settings: { ...defaultDb().settings, ...(loaded.settings || {}) } };
+  // empreinte des réglages tels qu'ils sont en mémoire (jsonb rend les clés dans un autre ordre : sans cela, chaque enregistrement réécrivait les réglages et changeait le numéro de version)
+  if (lastSettings !== null) lastSettings = JSON.stringify(db.settings);
   loadedAt = Date.now();
   if (!SERVERLESS) await persist();
 }
@@ -130,8 +132,9 @@ function persist() {
   if (!SERVERLESS) { fs.writeFileSync(DB_FILE + '.tmp', snap); fs.renameSync(DB_FILE + '.tmp', DB_FILE); } // copie locale de secours
   if (!pool) return Promise.resolve();
   persisting = persisting.then(async () => {
+    let ecrits = 0; const v0 = dbVersion;
     const sj = JSON.stringify(db.settings);
-    if (sj !== lastSettings) { await pool.query("insert into public.settings (id, data) values (1, $1::jsonb) on conflict (id) do update set data = excluded.data, updated_at = now()", [sj]); lastSettings = sj; }
+    if (sj !== lastSettings) { ecrits += 2; await pool.query("insert into public.settings (id, data) values (1, $1::jsonb) on conflict (id) do update set data = excluded.data, updated_at = now()", [sj]); lastSettings = sj; }
     for (const [t, map] of Object.entries(TABLES)) {
       const prev = lastSnap[t] || (lastSnap[t] = new Map());
       const cols = Object.values(map), seen = new Set();
@@ -140,10 +143,16 @@ function persist() {
         const js = JSON.stringify(o);
         if (prev.get(o.id) === js) continue;
         const ph = cols.map((c, i) => JSONCOLS.has(c) ? `$${i + 2}::jsonb` : `$${i + 2}`).join(',');
+        ecrits += 2;   // « insert … on conflict do update » déclenche deux fois le compteur (insertion + mise à jour), toujours
         await pool.query(`insert into public.${t} (id, ${cols.join(',')}) values ($1, ${ph}) on conflict (id) do update set ${cols.map(c => `${c} = excluded.${c}`).join(',')}`, [o.id, ...toRow(t, o)]);
         prev.set(o.id, js);
       }
-      for (const id of [...prev.keys()]) if (!seen.has(id)) { await pool.query(`delete from public.${t} where id = $1`, [id]); prev.delete(id); }
+      for (const id of [...prev.keys()]) if (!seen.has(id)) { ecrits++; await pool.query(`delete from public.${t} where id = $1`, [id]); prev.delete(id); }
+    }
+    // Nos propres écritures ont augmenté le numéro de version d'exactement « ecrits » (un déclencheur par instruction).
+    // Si c'est bien le cas, personne d'autre n'a écrit entre-temps : la mémoire est à jour, inutile de tout recharger. Sinon, rechargement à la prochaine requête.
+    if (ecrits && v0 !== null && dbVersion === v0) {
+      try { const r = await pool.query('select v from public.crm_version where id = 1'); dbVersion = r.rows[0] && BigInt(r.rows[0].v) === BigInt(v0) + BigInt(ecrits) ? String(r.rows[0].v) : null; } catch (e) { dbVersion = null; }
     }
   }).catch(e => console.error('Supabase save error:', e.message));
   return persisting;
@@ -1373,7 +1382,7 @@ const ensureVisits = () => visitsReady || (visitsReady = pool.query(`
     primary key (day, visitor, site, path));
   create index if not exists visits_last_idx on public.visits (last_at);
   alter table public.visits enable row level security;
-  delete from public.visits where day < current_date - 400;`).catch(e => { visitsReady = null; throw e; }));
+  delete from public.visits where day < current_date - 120;`).catch(e => { visitsReady = null; throw e; }));
 // ---- Besoins : mini-cagnottes. Chaque besoin a son adresse don.emounateha.fr/besoin/<slug> ; les dons faits par cette adresse lui sont attribués.
 let besoinsReady = null;
 const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
@@ -1419,7 +1428,7 @@ async function besoinsAccueil(req, res) {
       accueilCache.v = v; accueilCache.at = Date.now(); accueilCache.tranche = tranche;
     } catch (e) { console.error('[besoins accueil]', e.message); }
   }
-  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' }); res.end(JSON.stringify({ list: v }));
+  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300' }); res.end(JSON.stringify({ list: v }));
 }
 // public : ce que la page de don affiche (le nom du bénéficiaire seulement s'il a été saisi pour être affiché)
 async function besoinPublic(req, res, url) {
@@ -1466,13 +1475,13 @@ async function trafic(req, res, url) {
   const auj = jourParis(), hier = jourParis(new Date(Date.now() - 86400000)), depuis = jourParis(new Date(Date.now() - (jours - 1) * 86400000)), depuisG = jourParis(new Date(Date.now() - (Math.max(jours, 14) - 1) * 86400000));
   const [live, parJour, pages, sources, appareils] = await Promise.all([
     // en direct : chaque personne n'est montrée que sur SA page la plus récente (sinon, juste après un changement de page, elle apparaîtrait sur deux pages)
-    pool.query("select site, path, count(*)::int as n from (select distinct on (visitor) visitor, site, path from public.visits where last_at > now() - interval '75 seconds' order by visitor, last_at desc) t group by 1, 2 order by n desc, path limit 40"),
+    pool.query("select site, path, count(*)::int as n from (select distinct on (visitor) visitor, site, path from public.visits where last_at > now() - interval '130 seconds' order by visitor, last_at desc) t group by 1, 2 order by n desc, path limit 40"),
     pool.query('select day::text as day, count(distinct visitor)::int as u, sum(hits)::int as v from public.visits where day >= $1 group by day order by day', [depuisG]),
     pool.query('select site, path, count(*)::int as u, sum(hits)::int as v from public.visits where day >= $1 group by 1, 2 order by u desc, v desc limit 60', [depuis]),
     pool.query("select ref, count(*)::int as u from (select day, visitor, (array_agg(ref order by first_at))[1] as ref from public.visits where day >= $1 group by day, visitor) t group by ref order by u desc limit 12", [depuis]),
     pool.query('select device, count(*)::int as u from (select distinct day, visitor, device from public.visits where day >= $1) t group by device order by u desc', [depuis])
   ]);
-  const enDirect = await pool.query("select count(distinct visitor)::int as n from public.visits where last_at > now() - interval '75 seconds'");
+  const enDirect = await pool.query("select count(distinct visitor)::int as n from public.visits where last_at > now() - interval '130 seconds'");
   const map = Object.fromEntries(parJour.rows.map(r => [r.day, r])), serie = [];
   for (let i = Math.max(jours, 14) - 1; i >= 0; i--) { const d = jourParis(new Date(Date.now() - i * 86400000)); serie.push({ day: d, u: (map[d] || {}).u || 0, v: (map[d] || {}).v || 0 }); }
   const dansPeriode = serie.filter(x => x.day >= depuis);
@@ -2185,7 +2194,7 @@ async function handle(req, res) {
       const r = await pool.query('select id, day::text as day, name, youtube, (data is not null) as has_image from public.diffusion where day <= $1 order by day desc, created_at desc limit 400', [today]);
       const months = [];
       for (const x of r.rows) { const k = x.day.slice(0, 7); let m = months.find(y => y.key === k); if (!m) { m = { key: k, items: [] }; months.push(m); } m.items.push(x); }
-      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' }); return res.end(JSON.stringify({ months }));
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=900' }); return res.end(JSON.stringify({ months }));
     }
     if (url.pathname === '/diffusion.json') { // public : dernier document + dernière vidéo (indépendants : tant que la nouvelle vidéo n'est pas là, on garde la précédente)
       if (!pool) return send(res, 200, []);
@@ -2195,7 +2204,7 @@ async function handle(req, res) {
       const vid = (await pool.query(q + "youtube <> '' order by day desc, created_at desc limit 1", [today])).rows[0];
       if (!doc && !vid) return send(res, 200, []);
       const item = { id: (doc || vid).id, day: (doc || vid).day, name: (doc || vid).name, youtube: vid ? vid.youtube : '', has_image: !!doc };
-      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify([item]));
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=120' }); return res.end(JSON.stringify([item]));   // gardé 1 min par le CDN : la page le redemande chaque minute
     }
     if (/^\/diffusion\/[a-f0-9]+\.jpg$/.test(url.pathname) && pool) { // public : l'image
       const r = await pool.query('select data from public.diffusion where id = $1', [url.pathname.slice(11, -4)]);
