@@ -670,6 +670,8 @@ charge();setInterval(charge,300000);document.addEventListener('visibilitychange'
 #paracha.parsec{margin:-108px 0 0!important;padding:0 14px 20px!important;position:relative;z-index:6}
 @media(max-width:800px){#paracha.parsec{margin-top:-76px!important}}
 #paracha:not([hidden])+#urgent{margin-top:0!important;padding-bottom:6px}
+/* hors Chabbat (bandeau des horaires masqué) : le bas de l'en-tête ne garde que 40px sous la banderole d'actualités ; à -62px le bouton des cagnottes montait dessus. À -22px il reste 18px sous la banderole. */
+#paracha[hidden]+#urgent{margin-top:-22px!important}
 #paracha #parheb{display:inline!important;font-family:'Frank Ruhl Libre','EmouHe','David',serif;font-weight:700;font-size:17px;line-height:1.2;color:var(--teal);margin:0;white-space:nowrap}
 #paracha #parheb:empty{display:none!important}
 #paracha .pt .plab{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--mut);white-space:nowrap}
