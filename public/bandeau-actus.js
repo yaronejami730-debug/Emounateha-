@@ -1,10 +1,10 @@
 /* Accueil : l'emplacement de la banderole Hanouka (#hnbanner) alterne avec les actualités (hassidout.org, via /api/news).
-   Emplacement de diffusion : toutes les 90 secondes, l'actualité suivante (même format que la banderole) ; toutes les actualités y passent,
-   toutes les deux actualités, la banderole de fête (Hanouka) revient, 90 secondes aussi.
+   Emplacement de diffusion : chaque actualité reste 1 min 20 (même format que la banderole) ; toutes les actualités y passent,
+   toutes les deux actualités, la banderole de fête (Hanouka) revient et reste 3 min 50.
    Le changement se fait tout seul, sans recharger la page. Un appui ouvre la page de toutes les actualités (/news/).
    Sans banderole Hanouka (hors saison), seules les actualités tournent. Sans actualités, rien ne change. */
 (function () {
-  var PAS = 90 * 1000, liste = [], el = null, monte = false;
+  var ACTU = 80 * 1000, FETE = 230 * 1000, liste = [], el = null, monte = false;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function slugDe(l) { try { return new URL(l).pathname.replace(/^\/+|\/+$/g, '').split('/').pop(); } catch (e) { return ''; } }
   function rub(s) { s = String(s || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -37,16 +37,16 @@
   }
   function tour() {
     if (!liste.length || !monter()) return;
-    // Une seule file de diffusion, 90 s par élément : actualité, actualité, banderole Hanouka, actualité, actualité, Hanouka…
-    // (sans banderole de fête : les actualités l'une après l'autre). Même calcul pour tous : chacun voit la même chose au même moment.
-    var hn = document.getElementById('hnbanner'), slot = Math.floor(Date.now() / PAS), a;
+    // Une seule file de diffusion : actualité (1 min 20), actualité (1 min 20), banderole Hanouka (3 min 50), actualité, actualité, Hanouka…
+    // (sans banderole de fête : les actualités l'une après l'autre, 1 min 20 chacune). Même calcul pour tous : chacun voit la même chose au même moment.
+    var hn = document.getElementById('hnbanner'), now = Date.now(), a;
     // toujours au même emplacement que la banderole Hanouka (elle n'est pas au même endroit sur ordinateur et sur téléphone) : la page ne saute pas
     if (hn && el.previousElementSibling !== hn) hn.parentNode.insertBefore(el, hn.nextSibling);
     if (hn) {
-      var pos = slot % 3;
+      var CYCLE = 2 * ACTU + FETE, dans = now % CYCLE, pos = dans < ACTU ? 0 : dans < 2 * ACTU ? 1 : 2;
       if (pos === 2) { if (!el.hidden) { el.hidden = true; hn.style.display = ''; } return; }
-      a = liste[(Math.floor(slot / 3) * 2 + pos) % liste.length];
-    } else a = liste[slot % liste.length];
+      a = liste[(Math.floor(now / CYCLE) * 2 + pos) % liste.length];
+    } else a = liste[Math.floor(now / ACTU) % liste.length];
     var href = '/news/', cle = slugDe(a.lien);
     if (el.hidden || el.getAttribute('data-a') !== cle) {
       el.href = href; el.setAttribute('data-a', cle); el.setAttribute('aria-label', 'Actualité : ' + a.titre);
