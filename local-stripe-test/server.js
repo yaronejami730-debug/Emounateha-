@@ -54,7 +54,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const clean = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 function sirenValide(s) { s = String(s).replace(/\s/g, ''); if (!/^\d{9}$/.test(s)) return false; let sum = 0; for (let i = 0; i < 9; i++) { let d = +s[i]; if (i % 2 === 1) { d *= 2; if (d > 9) d -= 9; } sum += d; } return sum % 10 === 0; }
 const mailer = require('./mailer');
-const acc = require('./accounts')({ load, save, RECUS, clean, sirenValide, mailer });
+const acc = require('./accounts')({ load, save, RECUS, clean, sirenValide, mailer, assurerPdf: f => assurerPdf(f) });
 const MODES = ['Virement bancaire', 'Chèque', 'Espèces', 'Carte bancaire (Stripe, test)'];
 // --- À quoi affecter le don ---
 // Les fêtes s'ouvrent AVANT leur date (« avant » = nombre de jours) et se ferment à la fête (Hanouka : à la fin des 8 jours).
@@ -132,13 +132,24 @@ function validerDonateur(b) {
 // --- reçu : HTML -> PDF (Chrome) ---
 const lieu = ASSO.lieuSignature || '';
 const OK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.4l3.1 3.1 6.6-7" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';   // coche dessinée : ne dépend d'aucune police
-function remplir(don, numero) {
+// Modèle du reçu. Le PDF n'est plus conservé : il est refabriqué à la demande à partir de la fiche « impr » enregistrée avec le don (voir fabriquer).
+// Pour changer un jour le dessin du reçu ou ce qui y est imprimé sur l'association (adresse, signataire, logo, signature) :
+//   1. copier templates/cerfa.html en templates/cerfa-v1.html (le dessin d'aujourd'hui) ;
+//   2. au besoin, écrire dans templates/asso-v1.json les valeurs d'aujourd'hui de asso.config.json qui changent (et « logoRecu », « signatureImage » si ces images changent : garder alors les anciennes images sous un autre nom) ;
+//   3. passer MODELE à 2, puis modifier cerfa.html / asso.config.json.
+// Les reçus déjà émis ressortent alors avec leur modèle d'origine.
+const MODELE = 1;
+const modeleDe = v => { const f = path.join(__dirname, 'templates', `cerfa-v${v}.html`); return v && v !== MODELE && fs.existsSync(f) ? f : TEMPLATE_PATH; };
+const assoDe = v => { const f = path.join(__dirname, 'templates', `asso-v${v}.json`); return v && v !== MODELE && fs.existsSync(f) ? { ...ASSO, ...JSON.parse(fs.readFileSync(f, 'utf8')) } : ASSO; };
+function remplir(don, numero, { signe, modele } = {}) {
+  const ASSO = assoDe(modele), ancien = !!modele && modele !== MODELE;
   const fmt = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const ent = don.type === 'entreprise';
   const img = (f, mime) => `data:${mime};base64,${fs.readFileSync(path.join(__dirname, f)).toString('base64')}`;
-  const LOGO = ['logo-recu.jpg', 'logo-recu.png'].find(f => fs.existsSync(path.join(__dirname, f)));   // logo complet (emblème + אמונתך + EMOUNATEHA) : toujours celui-ci sur les reçus. Version JPEG 800 px de haut (≈ 560 points par pouce pour 36 mm) : le reçu pèse ≈ 290 Ko au lieu de ≈ 950 Ko ; le PNG d'origine reste en secours
+  const LOGO = [...(ancien && ASSO.logoRecu ? [ASSO.logoRecu] : []), 'logo-recu.jpg', 'logo-recu.png'].find(f => fs.existsSync(path.join(__dirname, f)));   // logo complet (emblème + אמונתך + EMOUNATEHA) : toujours celui-ci sur les reçus. Version JPEG 800 px de haut (≈ 560 points par pouce pour 36 mm) : le reçu pèse ≈ 290 Ko au lieu de ≈ 950 Ko ; le PNG d'origine reste en secours
   const logo = LOGO ? img(LOGO, /\.png$/i.test(LOGO) ? 'image/png' : 'image/jpeg') : '';
-  const sigEnv = process.env.SIGNATURE_PNG_B64 ? 'data:image/png;base64,' + process.env.SIGNATURE_PNG_B64.replace(/\s/g, '') : '';   // en ligne : signature dans une variable d'environnement (jamais dans Git)
+  const sigB64 = ancien ? process.env['SIGNATURE_PNG_B64_V' + modele] || (assoDe(modele).signatureImage !== assoDe(MODELE).signatureImage ? '' : process.env.SIGNATURE_PNG_B64) : process.env.SIGNATURE_PNG_B64;
+  const sigEnv = sigB64 ? 'data:image/png;base64,' + sigB64.replace(/\s/g, '') : '';   // en ligne : signature dans une variable d'environnement (jamais dans Git)
   const sigOk = sigEnv || (ASSO.signatureImage && fs.existsSync(path.join(__dirname, ASSO.signatureImage)));
   const sig = sigOk ? `<img src="${sigEnv || img(ASSO.signatureImage, /\.png$/i.test(ASSO.signatureImage) ? 'image/png' : 'image/jpeg')}" alt="signature"/>`
                     : `<div style="height:16mm"></div><div class="who2">${esc(ASSO.signataire || 'Signé électroniquement')}</div>`;
@@ -154,13 +165,13 @@ function remplir(don, numero) {
     donateurBloc: esc(don.nom) + '<br>' + esc(don.adresse.split(',')[0]) + '<br>' + esc(don.adresse.split(',').slice(1).join(',').trim()),
     donateurNom: esc(don.nom.toUpperCase()), donateurSiren: ent && don.siren ? ligne('Numéro SIREN', don.siren.replace(/(\d{3})(?=\d)/g, '$1 ')) : '', donateurAdresse: esc(don.adresse),
     check200: ent ? '' : OK, check238: ent ? OK : '', check978: '',
-    modePaiement: esc(don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')), dateSignature: fmt(Date.now()),
+    modePaiement: esc(don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')), dateSignature: fmt(signe || Date.now()),
     assoForme: esc(ASSO.forme || ''), assoSiret: esc(ASSO.siret || ''), assoContact: esc(`${ASSO.email} · ${ASSO.telephone}`), assoNomMin: esc(ASSO.nom), assoEmail: esc(ASSO.email), conservation: esc(ASSO.conservation || '6 ans'),
     dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? `Don mensuel (un reçu pour chaque prélèvement) — échéance n°${don.echeance || 1}${don.nb ? ' sur ' + don.nb : ''}` : 'Don ponctuel',
     modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : /klarna/i.test(don.mode) ? 'Klarna' : /Apple Pay/i.test(don.mode) ? 'Carte bancaire (Apple Pay)' : /Google Pay/i.test(don.mode) ? 'Carte bancaire (Google Pay)' : 'Carte bancaire', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
     blocSignature: sig, piedPage: esc(`Reçu cerfa généré par ${ASSO.nom}`), testDisplay: process.env.NO_TEST_BANNER || PREFIX !== 'TEST' ? 'display:none' : ''
   };
-  let html = fs.readFileSync(TEMPLATE_PATH, 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
+  let html = fs.readFileSync(modeleDe(modele), 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
 }
 let browserP = null;
 const browser = () => browserP || (browserP = (async () => {
@@ -218,17 +229,40 @@ async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, do
   return { sent: false, eml: (process.env.BASE_PATH || '') + '/recus/' + eml, note: "SMTP non configuré : email enregistré en fichier .eml (double-clic pour l'ouvrir dans Mail)" };
 }
 
+// Reçu demandé alors que son PDF n'est pas (ou plus) sur ce disque : refabriqué à partir de sa fiche « impr », avec son modèle et sa date d'origine.
+// Les reçus d'avant ce système n'ont pas de fiche : leur PDF d'origine reste conservé (store.js le retrouve en base).
+function ficheDuFichier(d, f) {
+  for (const r of [...Object.values(d.receipts || {}), ...Object.values(d.manuels || {})]) {
+    if (r.file === f) return r;
+    for (const c of r.corrections || []) if (c.file === f) return c;
+  }
+  return null;
+}
+const refEnCours = new Map();
+async function assurerPdf(f) {
+  f = path.basename(String(f || '')); const p = path.join(RECUS, f);
+  if (!/^recu_[\w-]+\.pdf$/.test(f)) return false;
+  if (fs.existsSync(p)) return true;
+  const r = ficheDuFichier(load(), f); if (!r || !r.impr || !r.numero) return false;
+  if (!refEnCours.has(f)) refEnCours.set(f, pdf(remplir(r.impr, r.numero, { signe: r.impr.signe, modele: r.impr.v }), p).finally(() => refEnCours.delete(f)));   // deux demandes en même temps : une seule fabrication
+  await refEnCours.get(f); console.log('[recu] refabriqué à la demande :', r.numero);
+  return fs.existsSync(p);
+}
+
 // alerte e-mail à l'administrateur à chaque don réussi (une seule fois par don : appelée juste après la création du reçu ; n'échoue jamais)
 const notifyAdmin = out => mailer.notifyAdminDon({ nom: out.nom, email: out.donorEmail, type: out.type, montant: out.montant, dateDon: out.dateDon, affectation: out.affectation, mode: out.mode, numero: out.numero, mensuel: out.mensuel, echeance: out.echeance, fin: out.fin, nb: out.nb, total: out.total, ambassadeur: out.ambassadeur, test: PREFIX === 'TEST' });
 async function fabriquer(don, { envoyerEmail }) {
   const annee = new Date(don.dateDon).getFullYear();
   const numero = nextNumero(annee);
   const file = path.join(RECUS, `recu_${nomFichier(numero)}_${crypto.randomBytes(3).toString('hex')}.pdf`);
-  await pdf(remplir(don, numero), file);
-  const out = { numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
+  const signe = new Date().toISOString();
+  // tout ce qui est imprimé sur le reçu et qui dépend du don : suffit à refabriquer le même reçu plus tard (le PDF lui-même n'est plus conservé en ligne)
+  const impr = { v: MODELE, signe, type: don.type === 'entreprise' ? 'entreprise' : 'particulier', nom: don.nom, adresse: don.adresse, siren: don.siren || '', montant: don.montant, mode: don.mode, dateDon: don.dateDon, mensuel: !!don.mensuel, echeance: don.echeance || 0, nb: don.nb || 0, remplace: don.remplace || '' };
+  await pdf(remplir(impr, numero, { signe, modele: MODELE }), file);
+  const out = { impr, sha: crypto.createHash('sha256').update(vault.readFile(file)).digest('hex'), numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
   if (don.proche) { out.proche = don.proche; out.accordAt = don.accordAt || null; }
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
-  out.creeLe = new Date().toISOString();   // moment où le reçu (PDF) a été fabriqué : l'ordre de création suit la numérotation
+  out.creeLe = signe;   // moment où le reçu (PDF) a été fabriqué : l'ordre de création suit la numérotation
   if (envoyerEmail) { out.email = { ...out.email, at: out.creeLe, to: String(don.email || '').toLowerCase(), par: 'auto' }; out.mails = [out.email]; }   // trace de l'envoi
   return out;
 }
@@ -518,8 +552,8 @@ app.post('/api/me/receipts/:ref/corriger', async (req, res) => {
     }
     const don = { type: r.type, nom: ent ? form.raisonSociale : form.prenom + ' ' + form.nom.toUpperCase(), siren: ent ? form.siren : '', adresse: `${form.adresse}, ${form.cp} ${form.ville}`, ville: form.ville, email: s.email, montant: r.montant, mode: r.mode, dateDon: r.dateDon, affectation: r.affectation, mensuel: r.mensuel, echeance: r.echeance, nb: r.nb, form, remplace: r.numero, proche: r.proche, accordAt: r.accordAt };
     const out = await fabriquer(don, { envoyerEmail: true });
-    const d2 = load(), cur = d2.receipts[ref], ancien = { numero: cur.numero, file: cur.file, nom: cur.nom, form: cur.form, at: Date.now() };
-    Object.assign(cur, { numero: out.numero, pdf: out.pdf, file: out.file, nom: out.nom, form: out.form, email: out.email, remplace: ancien.numero, corrections: [...(cur.corrections || []), ancien] });
+    const d2 = load(), cur = d2.receipts[ref], ancien = { numero: cur.numero, file: cur.file, nom: cur.nom, form: cur.form, at: Date.now(), ...(cur.impr ? { impr: cur.impr, sha: cur.sha } : {}) };
+    Object.assign(cur, { numero: out.numero, pdf: out.pdf, file: out.file, impr: out.impr, sha: out.sha, nom: out.nom, form: out.form, email: out.email, remplace: ancien.numero, corrections: [...(cur.corrections || []), ancien] });
     if (nomChange && r.proche) cur.accordAt = Date.now();
     maj(acc.ensureUser(d2, s.email), d2); delete cur.vuPar; acc.relier(d2); save(d2);
     console.log('[correction] reçu', ancien.numero, '->', out.numero, nomChange ? '(nom changé)' : '');
@@ -557,7 +591,7 @@ app.post('/api/admin/renvoyer', async (req, res) => {
   try {
     const ref = String(req.body.ref || ''), r = trouverRecu(load(), ref); if (!r) throw new Error('Reçu introuvable');
     const to = String(req.body.email || r.donorEmail || '').trim().toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) throw new Error('Adresse e-mail invalide');
-    let out; try { out = await envoyer({ to, numero: r.numero, pdfFile: path.join(RECUS, path.basename(r.file)), nom: r.nom, affectation: r.affectation, mensuel: r.mensuel, don: r }); } catch (e) { out = { error: e.message }; }
+    let out; try { if (!await assurerPdf(r.file)) throw new Error('PDF du reçu introuvable'); out = await envoyer({ to, numero: r.numero, pdfFile: path.join(RECUS, path.basename(r.file)), nom: r.nom, affectation: r.affectation, mensuel: r.mensuel, don: r }); } catch (e) { out = { error: e.message }; }
     const trace = { ...out, at: new Date().toISOString(), to, par: 'crm' };
     const d = load(), r2 = trouverRecu(d, ref); if (!r2) throw new Error('Reçu introuvable');
     r2.mails = [...(r2.mails || (r2.email && !r2.email.skipped ? [r2.email] : [])), trace]; r2.email = trace; if (!r2.donorEmail) r2.donorEmail = to; save(d);
@@ -612,10 +646,11 @@ app.post('/api/admin/recu', async (req, res) => {
     res.json({ ok: true, numero: out.numero, file: out.file, email: out.email });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
-app.get('/api/admin/pdf', (req, res) => {
+app.get('/api/admin/pdf', async (req, res) => {
   if (!adminOk(req, res)) return;
   const f = path.basename(String(req.query.f || '')), p = path.join(RECUS, f);
-  if (!/^recu_[\w-]+\.pdf$/.test(f) || !fs.existsSync(p)) return res.status(404).json({ error: 'PDF introuvable' });
+  try { if (!/^recu_[\w-]+\.pdf$/.test(f) || !await assurerPdf(f)) return res.status(404).json({ error: 'PDF introuvable' }); }
+  catch (e) { console.error('[recu] refabrication impossible', f, e.message); return res.status(503).json({ error: 'Le reçu n\'a pas pu être préparé. Réessayez dans un instant.' }); }
   res.type('application/pdf').send(vault.readFile(p));
 });
 app.post('/api/recu', async (req, res) => {

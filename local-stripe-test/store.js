@@ -58,10 +58,16 @@ module.exports = function createStore({ DATA, RECUS }) {
         if (ok) {
           if (fs.existsSync(DATA)) { const now = fs.readFileSync(DATA); if (!same(now, base)) { await c.query("insert into don_kv (key, value) values ('data.json', $1) on conflict (key) do update set value = excluded.value, updated_at = now()", [now]); pending = now; } }
           const envoyes = [];
-          for (const f of fs.existsSync(RECUS) ? fs.readdirSync(RECUS) : []) { const fp = path.join(RECUS, f); if (fs.statSync(fp).mtimeMs >= t0) { await c.query('insert into don_kv (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value, updated_at = now()', ['recus/' + f, fs.readFileSync(fp)]); envoyes.push(fp); } }
+          // Les PDF des reçus ne sont plus enregistrés en base (≈ 300 Ko chacun : la base gratuite aurait été pleine en quelques mois) :
+          // le serveur les refabrique à la demande à partir de la fiche du don, gardée dans data.json. Les PDF déjà en base y restent et sont toujours servis.
+          for (const f of fs.existsSync(RECUS) ? fs.readdirSync(RECUS) : []) { if (/\.pdf$/i.test(f)) continue; const fp = path.join(RECUS, f); if (fs.statSync(fp).mtimeMs >= t0) { await c.query('insert into don_kv (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value, updated_at = now()', ['recus/' + f, fs.readFileSync(fp)]); envoyes.push(fp); } }
           await c.query('commit');
           for (const fp of envoyes) { try { const vieux = new Date(946684800000); fs.utimesSync(fp, vieux, vieux); } catch (e) {} }   // enregistré : plus jamais renvoyé, sauf s'il est modifié
           if (pending) cache = { h: md5(pending), buf: pending };   // seulement une fois l'écriture validée
+          try {   // disque temporaire : on ne garde que les 150 PDF les plus récemment touchés (les autres seront refabriqués ou retéléchargés si on les redemande)
+            const pdfs = fs.readdirSync(RECUS).filter(f => /\.pdf$/i.test(f));
+            if (pdfs.length > 150) pdfs.map(f => ({ f, t: fs.statSync(path.join(RECUS, f)).ctimeMs })).sort((x, y) => y.t - x.t).slice(150).forEach(x => { try { fs.unlinkSync(path.join(RECUS, x.f)); } catch (e) {} });
+          } catch (e) {}
         } else await c.query('rollback');
       } catch (e) { console.error('[store] écriture impossible', e.message); try { await c.query('rollback'); } catch (x) {} }
       finally { c.release(); }

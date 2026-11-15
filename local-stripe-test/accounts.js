@@ -3,7 +3,7 @@
    Données dans data.json : users, sessions, otps, urlSecret (jamais commité). */
 const fs = require('fs'), path = require('path'), crypto = require('crypto'), vault = require('./vault');
 
-module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer }) {
+module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer, assurerPdf }) {
   const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
   const safeEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
   const normEmail = e => String(e || '').trim().toLowerCase().slice(0, 160);
@@ -269,14 +269,16 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
     });
 
     // PDF / email : lien signé (valable un temps limité) OU propriétaire connecté
-    app.get('/recus/:file', (req, res) => {
+    app.get('/recus/:file', async (req, res) => {
       const f = req.params.file; if (!/^recu_[A-Za-z0-9_.-]+\.(pdf|eml)$/.test(f)) return res.status(404).end();
-      const p = path.join(RECUS, f); if (!fs.existsSync(p)) return res.status(404).end();
+      const p = path.join(RECUS, f); if (f.endsWith('.eml') && !fs.existsSync(p)) return res.status(404).end();
       const base = f.replace(/\.eml$/, '.pdf'), dd = load();
       if ([...Object.values(dd.receipts || {}), ...Object.values(dd.manuels || {})].some(r => (r.corrections || []).some(c => c.file === base))) return res.status(403).type('text').send('Ce reçu a été annulé et remplacé. Retrouvez le nouveau reçu dans votre espace donateur.');
       const e = Number(req.query.e), s = String(req.query.s || ''); let ok = e > Date.now() / 1000 && safeEq(s, sig(f, e));
       if (!ok) { const ses = getSession(req); if (ses) ok = Object.values(dd.receipts || {}).some(r => r.file === base && (r.donorEmail === ses.email || (r.vuPar === ses.email && !f.endsWith('.eml')))) || Object.values(dd.manuels || {}).some(r => r.file === base && r.donorEmail === ses.email); }
       if (!ok) return res.status(403).type('text').send('Lien expiré ou non autorisé. Reconnectez-vous à votre espace donateur.');
+      // le PDF n'est plus conservé : s'il n'est pas sur ce disque, il est refabriqué à partir de la fiche du reçu (seulement une fois l'accès vérifié)
+      if (!f.endsWith('.eml')) { try { if (!(assurerPdf ? await assurerPdf(f) : fs.existsSync(p))) return res.status(404).end(); } catch (e) { console.error('[recus] refabrication impossible', f, e.message); return res.status(503).type('text').send('Votre reçu n\'a pas pu être préparé. Réessayez dans un instant.'); } }
       let buf; try { buf = vault.readFile(p); } catch (e) { console.error('[recus] fichier illisible', f); return res.status(500).end(); }
       res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Content-Disposition', 'inline'); if (f.endsWith('.eml')) res.type('message/rfc822'); else res.type('application/pdf'); res.send(buf);
     });
