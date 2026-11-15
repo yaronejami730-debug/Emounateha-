@@ -136,8 +136,8 @@ function remplir(don, numero) {
   const fmt = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const ent = don.type === 'entreprise';
   const img = (f, mime) => `data:${mime};base64,${fs.readFileSync(path.join(__dirname, f)).toString('base64')}`;
-  const LOGO = 'logo-recu.png';   // logo complet (emblème + אמונתך + EMOUNATEHA) : toujours celui-ci sur les reçus
-  const logo = LOGO && fs.existsSync(path.join(__dirname, LOGO)) ? img(LOGO, /\.png$/i.test(LOGO) ? 'image/png' : 'image/jpeg') : '';
+  const LOGO = ['logo-recu.jpg', 'logo-recu.png'].find(f => fs.existsSync(path.join(__dirname, f)));   // logo complet (emblème + אמונתך + EMOUNATEHA) : toujours celui-ci sur les reçus. Version JPEG 800 px de haut (≈ 560 points par pouce pour 36 mm) : le reçu pèse ≈ 290 Ko au lieu de ≈ 950 Ko ; le PNG d'origine reste en secours
+  const logo = LOGO ? img(LOGO, /\.png$/i.test(LOGO) ? 'image/png' : 'image/jpeg') : '';
   const sigEnv = process.env.SIGNATURE_PNG_B64 ? 'data:image/png;base64,' + process.env.SIGNATURE_PNG_B64.replace(/\s/g, '') : '';   // en ligne : signature dans une variable d'environnement (jamais dans Git)
   const sigOk = sigEnv || (ASSO.signatureImage && fs.existsSync(path.join(__dirname, ASSO.signatureImage)));
   const sig = sigOk ? `<img src="${sigEnv || img(ASSO.signatureImage, /\.png$/i.test(ASSO.signatureImage) ? 'image/png' : 'image/jpeg')}" alt="signature"/>`
