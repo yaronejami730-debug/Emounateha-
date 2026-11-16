@@ -64,6 +64,8 @@ async function don(body,carte='pm_card_visa'){const i=await call('POST','/api/in
  let y=await call('POST','/api/finalize',{id:'pi_inexistant123'});ok(y.st===400,'identifiant de paiement inventé : refusé',y);
  y=await call('GET','/api/admin/recus');ok(y.st===401,'liste des reçus sans autorisation : fermée (401)',y.st);
  T('9. Frais Stripe et net (base de la commission)');
+ /* Stripe prépare la ligne de frais quelques secondes après le paiement : on attend (jusqu'à 15 s) avant de juger */
+ for(let k=0;k<10&&!(d.pi.latest_charge&&d.pi.latest_charge.balance_transaction);k++){await wait(1500);d.pi=await stripe.paymentIntents.retrieve(d.pi.id,{expand:['latest_charge.balance_transaction']})}
  const bt=d.pi.latest_charge&&d.pi.latest_charge.balance_transaction;ok(bt&&bt.amount===5200&&bt.fee>0&&bt.net===bt.amount-bt.fee,'don de 52 € : frais '+(bt?(bt.fee/100).toFixed(2):'?')+' €, net '+(bt?(bt.net/100).toFixed(2):'?')+' € lus chez Stripe',bt&&{a:bt.amount,f:bt.fee,n:bt.net});
  const C=require(ROOT+'/commission.js');const c1=C.calculer([bt]);ok(c1.controle&&c1.commission===Math.round(bt.net*0.07),'commission calculée sur ce net : '+(c1.commission/100).toFixed(2)+' €, contrôle au centime',c1);
  T('10. Reçus manuels (virement, chèque, espèces)');
