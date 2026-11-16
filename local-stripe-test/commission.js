@@ -85,12 +85,12 @@ function releveMail(p, r, live, rattrapage) {
 
 // ───────── Encaissement par carte, virement par virement ─────────
 // La commission est réglée par carte bancaire (celle que l'association a enregistrée sur le compte Stripe du prestataire), JAMAIS avant que l'argent
-// soit arrivé à la banque de l'association : on part des virements de Stripe vers sa banque, et on n'encaisse qu'à partir de 17 h (Paris) LE JOUR D'ARRIVÉE.
-// Stripe ne donne que le jour d'arrivée, pas l'heure : les banques créditent en général le matin ; à 17 h l'argent est là, et le plus tôt possible après.
+// soit arrivé à la banque de l'association : on part des virements de Stripe vers sa banque, et on n'encaisse qu'à partir de 12 h 30 (Paris) LE JOUR D'ARRIVÉE (fenêtre 12 h 30 – 14 h).
+// Stripe ne donne que le jour d'arrivée, pas l'heure : les banques créditent en général le matin ; à 12 h 30 l'argent est là, et le plus tôt possible après.
 // Base d'un virement = les dons qu'il regroupe − frais Stripe − remboursements − litiges (les mouvements que Stripe rattache à ce virement).
 // Rien n'est mémorisé ici : ce qui a déjà été facturé se lit sur les factures du compte du prestataire (aucun risque de compter deux fois si un fichier se perd).
 // Deux verrous : la clé STRIPE_COMMISSION_KEY ET COMMISSION_ENCAISSER=oui. S'il en manque un : simulation seulement, rien n'est créé ni encaissé.
-const HEURE = Math.max(0, Math.min(23, Number(process.env.COMMISSION_HEURE || 17)));   // heure de Paris, le jour d'arrivée du virement
+const HEURE = Math.max(0, Math.min(23, Number(process.env.COMMISSION_HEURE || 12.5)));   // heure de Paris, le jour d'arrivée du virement
 const MINIMUM = 50;          // en dessous de 0,50 € Stripe refuse un paiement : on attend les virements suivants
 const LOT = 60;              // virements traités par passage (le reste au passage suivant)
 const DEPUIS = /^\d{4}-\d{2}-\d{2}$/.test(process.env.COMMISSION_DEPUIS || '') ? Math.floor(Date.parse(process.env.COMMISSION_DEPUIS + 'T00:00:00Z') / 1000) : 0;   // par défaut : depuis le tout premier virement

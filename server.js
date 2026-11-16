@@ -470,6 +470,7 @@ async function syncYoutube(force = false) {
 
 // ---------- Scheduler ----------
 const parisDay = d => new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+const parisMinute = () => +new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', minute: 'numeric' });
 const parisHour = () => +new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', hour: 'numeric', hour12: false }) % 24;
 const dayKey = parisDay;
 // Quota réel côté Brevo (tous usages du compte confondus : tests, autres envois…)
@@ -651,10 +652,10 @@ async function releveCommission() {
     return j;
   } catch (e) { console.error('relevé de commission', e.message); return null; }
 }
-// Commission : deux passages par jour (Paris). À partir de 17 h : le serveur des dons encaisse par carte la commission des virements arrivés en banque le jour même. À partir de 9 h : nouvel essai des factures refusées et rattrapage.
+// Commission : deux passages par jour (Paris). Entre 12 h 30 et 14 h (premier passage dès 12 h 30) : le serveur des dons encaisse par carte la commission des virements arrivés en banque le jour même. À partir de 9 h : nouvel essai des factures refusées et rattrapage.
 // Sans la clé Stripe du prestataire côté serveur des dons, c'est une simple simulation : rien n'est créé. Raté ou incomplet : nouvel essai à l'heure suivante.
 async function encaisserCommission() {
-  const s = db.settings, h = parisHour(), auj = parisDay(Date.now()) + (h >= 17 ? ' soir' : ' journée') + ' r7'   /* changer ce repère (r2, r3…) relance un passage tout de suite après la mise en ligne */;
+  const s = db.settings, h = parisHour(), auj = parisDay(Date.now()) + (h > 12 || (h === 12 && parisMinute() >= 30) ? ' midi' : ' journée') + ' r8'   /* changer ce repère (r2, r3…) relance un passage tout de suite après la mise en ligne */;
   if (h < 9 || s.commissionEncaisse === auj || s.commissionEncaisse === auj + ' ' + h + ' h') return null;
   s.commissionEncaisse = auj + ' ' + h + ' h'; save();   // noté avant l'appel : une autre instance ne lance pas le même passage
   try {
