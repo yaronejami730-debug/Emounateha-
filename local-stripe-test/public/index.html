@@ -643,12 +643,15 @@ body.camp:not(.camp-accueil) #cp .cp-choix,body.camp:not(.camp-accueil) #cp .cp-
 #cpBar .cp-go{margin:0;min-height:52px}
 body.camp.camp-accueil #dn{display:none!important}
 /* fin de la page de campagne : comme sur les pages du site, l'aquarelle se fond dans le blanc, puis le pied de page (aquarelle) repart du blanc ; visible aussi sur téléphone */
-body.camp.camp-accueil #cp::after{content:"";position:absolute;left:0;right:0;bottom:0;height:110px;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 14%,rgba(255,255,255,.14) 30%,rgba(255,255,255,.34) 48%,rgba(255,255,255,.62) 66%,rgba(255,255,255,.86) 84%,#fff 100%);pointer-events:none}
+body.camp.camp-accueil #cp section.cp-fin{position:relative;margin-top:150px;padding:6px 0 48px;background:#fff}   /* dernière partie sur fond blanc, comme le contenu des pages du site : l'aquarelle s'y fond au-dessus, le pied de page en repart */
+body.camp.camp-accueil #cp section.cp-fin::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:110px;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 14%,rgba(255,255,255,.14) 30%,rgba(255,255,255,.34) 48%,rgba(255,255,255,.62) 66%,rgba(255,255,255,.86) 84%,#fff 100%);pointer-events:none}
+body.camp.camp-accueil #cp section.cp-fin h2{color:#164c52}
+body.camp.camp-accueil #cp section.cp-fin ol.cp-etapes li{color:#3a4f52}body.camp.camp-accueil #cp section.cp-fin ol.cp-etapes li b{color:#14272a}
 html body.camp.camp-accueil footer{display:block!important}
 html body.camp.camp-accueil footer .legal{display:block;font-size:0}html body.camp.camp-accueil footer .legal a{display:inline-block;margin:0 9px;padding:8px 2px;font-size:13px}   /* liens légaux régulièrement espacés */
 body.camp.camp-accueil #cpBar{display:block}
-body.camp.camp-accueil #cp{padding-bottom:130px}
-@media(max-width:899px){html body.camp.camp-accueil footer{padding-top:78px!important;padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}body.camp.camp-accueil #cp{padding-bottom:104px!important}}   /* la barre « Rejoindre » reste collée en bas : le pied se termine au-dessus */
+body.camp.camp-accueil #cp{padding-bottom:0}
+@media(max-width:899px){html body.camp.camp-accueil footer{padding-top:78px!important;padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}body.camp.camp-accueil #cp{padding-bottom:0!important}}   /* la barre « Rejoindre » reste collée en bas : le pied se termine au-dessus */
 /* une fois le formulaire ouvert : il ne reste qu'un rappel */
 body.camp:not(.camp-accueil) #cp .cp-img,body.camp:not(.camp-accueil) #cp .cp-nb,body.camp:not(.camp-accueil) #cp .cp-seg,body.camp:not(.camp-accueil) #cp .cp-leg,body.camp:not(.camp-accueil) #cp .cp-pan .cp-go,body.camp:not(.camp-accueil) #cp .cp-pays,body.camp:not(.camp-accueil) #cp .cp-cerfa,body.camp:not(.camp-accueil) #cp section.cp-s{display:none}
 body.camp:not(.camp-accueil) #cp .cp-pan{margin:0;padding:16px 20px;border-radius:0;box-shadow:0 1px 0 #dfe7e7}
@@ -728,7 +731,7 @@ body.camp:not(.camp-accueil) #cp .cp-part{display:none}
   #cp h2{font-size:28px}
   #cp ul.cp-liste{grid-template-columns:repeat(3,1fr)}#cp ul.cp-noms{grid-template-columns:repeat(4,1fr)}
   #cp ol.cp-etapes{grid-template-columns:repeat(3,1fr);gap:32px}
-  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:150px}
+  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:0}body.camp.camp-accueil #cp section.cp-fin{padding:10px 0 64px}
   body.camp:not(.camp-accueil) #cp .cp-tete .cp-w{display:block}
 }
 @media(max-width:899px){#cp .cp-tete .cp-w{padding:0}}
@@ -1454,7 +1457,7 @@ function campagneInit(b) {
     '<div class="cp-pays" id="cpPays" aria-label="Moyens de paiement acceptés"></div><p class="cp-cerfa">' + doc + 'Reçu fiscal CERFA instantané</p></div></div></div>' +
     '<section class="cp-s"><div class="cp-w"><h2>' + esc(C.sectionTitre || 'Dans chaque colis de Hanouka') + '</h2>' + (b.description ? '<p class="cp-intro">' + esc(b.description).replace(/\n/g, '<br>') + '</p>' : '') +
     ((C.contenu || []).length ? '<ul class="cp-liste">' + C.contenu.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + '</div></section>' +
-    '<section class="cp-s"><div class="cp-w"><h2>' + (men ? 'Rejoindre en trois étapes' : 'Participer en trois étapes') + '</h2><ol class="cp-etapes">' + etapes.map(e => '<li><b>' + esc(e[0]) + '</b>' + esc(e[1]) + '</li>').join('') + '</ol></div></section>' +
+    '<section class="cp-s cp-fin"><div class="cp-w"><h2>' + (men ? 'Rejoindre en trois étapes' : 'Participer en trois étapes') + '</h2><ol class="cp-etapes">' + etapes.map(e => '<li><b>' + esc(e[0]) + '</b>' + esc(e[1]) + '</li>').join('') + '</ol></div></section>' +
     '<section class="cp-s" id="cpWall" hidden><div class="cp-w"><h2>' + (men ? 'Ils ont rejoint le ' + (C.marque ? esc(C.marque.nom) : 'club') : 'Ils participent') + '</h2><ul class="cp-noms" id="cpNoms"></ul><p class="cp-autres" id="cpAutres"></p></div></section>';
   const dn = $('dn'); dn.parentNode.insertBefore(page, dn); lanceVid();
   // « Partager à vos proches » : la feuille de partage du téléphone (WhatsApp, SMS, e-mail…) ; sur ordinateur, le lien est copié
