@@ -21,7 +21,8 @@ const ASSO = JSON.parse(fs.readFileSync(path.join(__dirname, 'asso.config.json')
 const PORT = Number(process.env.PORT || 3100);
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const LIVE = /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY || '');   // vrais paiements
-const PREFIX = process.env.NUM_PREFIX !== undefined ? process.env.NUM_PREFIX : (LIVE ? '' : 'TEST');
+// en vrais paiements (clé live), jamais de numérotation « TEST », même si NUM_PREFIX=TEST est resté dans les variables Vercel
+const PREFIX = LIVE ? (/^TEST$/i.test(process.env.NUM_PREFIX || '') ? '' : (process.env.NUM_PREFIX || '')) : (process.env.NUM_PREFIX !== undefined ? process.env.NUM_PREFIX : 'TEST');
 const T = LIVE ? '' : ' (TEST)';
 const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? '/tmp/don' : __dirname);           // en ligne : disque persistant (/data)
 fs.mkdirSync(DATA_DIR, { recursive: true });
