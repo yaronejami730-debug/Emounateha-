@@ -1297,6 +1297,18 @@ async function chabadTexte(type, jour, jeton, lang) {
     const c1 = +m[2], v1 = +m[3], c2 = m[4] ? +m[4] : c1, v2 = m[5] ? +m[5] : v1;
     const x = await sefaria(`${bk} ${c1}:${v1}-${c2 === c1 ? '' : c2 + ':'}${v2}`, VQ);
     v = { title: 'Houmach', ref: it.desc.replace(/\s+with Rashi$/i, ''), trLang: x.trLang, sections: sections(x.he, x.tr, c1, v1, 'Chapitre') };
+    // Rachi, sous chaque verset : hébreu vocalisé de Sefaria (mots commentés en gras) ; traduction anglaise seulement pour la version anglaise du site (il n'existe pas de Rachi en français chez Sefaria)
+    try {
+      const rx = await sefaria(`Rashi on ${bk} ${c1}:${v1}-${c2 === c1 ? '' : c2 + ':'}${v2}`, lang === 'en' ? 'version=english&version=hebrew' : 'version=hebrew');
+      const parCh = t => !Array.isArray(t) || !t.length ? [] : c2 !== c1 ? t : (v1 === v2 && !Array.isArray(t[0]) ? [[t]] : [t]);   // toujours [chapitre][verset][commentaires]
+      const RH = parCh(rx.he), RT = lang === 'en' ? parCh(rx.tr) : [], liste = x => Array.isArray(x) ? x : x ? [x] : [];
+      v.sections.forEach((sc, ci) => sc.items.forEach(i => {
+        const k = i.n - (ci === 0 ? v1 : 1), he = liste((RH[ci] || [])[k]), tr = liste((RT[ci] || [])[k]);
+        const r = he.map((h, q) => { const m = /^\s*<b>([\s\S]*?)<\/b>\s*([\s\S]*)$/.exec(String(h)); return { dh: cleanTxt(m ? m[1] : ''), he: cleanTxt(m ? m[2] : h), tr: cleanTxt(tr[q] || '') }; }).filter(c => c.dh || c.he);
+        if (r.length) i.rachi = r;
+      }));
+      v.rachi = v.sections.some(sc => sc.items.some(i => i.rachi));
+    } catch (e) { console.error('[houmach] Rachi', e.message); }
   } else if (type === 'tehilim') {
     const nums = (it.desc.match(/\d+/g) || []).map(Number); if (!nums.length) throw new Error('portion illisible');
     const a = Math.min(...nums), b = Math.max(...nums);
@@ -2414,6 +2426,7 @@ if (require.main === module) {
 module.exports = handle;
 module.exports.loadDb = loadDb;
 module.exports.chabadZmanim = chabadZmanim;
+module.exports.chabadTexte = chabadTexte;
 module.exports.campaignPlan = (id) => { const c = db.campaigns.find(x => x.id === id); return c ? { plan: campaignPlan(c), stats: campaignStats(c) } : null; };
 module.exports.sendChabbatTest = async (to, cityId, mode) => { const city = cityById(cityId); const dow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' })).getDay(); const wk = await hebcalWeek(city, 8, (4 - dow + 7) % 7); /* un test se lit comme le mail du jeudi, même envoyé un autre jour */ const c = { id: 'test', firstName: 'Yarone', lastName: 'Jami', email: to, tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); const r = await brevoSend({ to, subject: '[TEST] ' + t.subject, html: renderEmail(t, c) }); return { subject: t.subject, result: r.simulated ? 'simulé (pas de clé Brevo)' : 'envoyé' }; };
 module.exports.chabbatHtml = async (cityId, mode) => { const city = cityById(cityId); const wk = await hebcalWeek(city); const c = { id: 'preview', firstName: 'Yarone', lastName: 'Jami', email: 'exemple@email.com', tags: ['civ:M'] }; const t = chabbatTemplate(city, wk, mode || 'weekly', c); return { subject: t.subject, html: renderEmail(t, c) }; };
