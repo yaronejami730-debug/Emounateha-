@@ -49,18 +49,20 @@ const CLUB = 'club-emounateha', HAN = 'campagne-hanouka', subs = [];
 
   T('Compteur');
   r = await call('GET', '/api/besoin/' + CLUB);
-  ok(r.j.participants === 3, 'trois membres comptés (les paiements non terminés ne comptent pas)', r.j.participants);
+  ok(r.j.participants === 4, 'quatre membres comptés : 26 € = 1, 18 € = 1, 50 € = 2 tranches de 18 € (les paiements non terminés ne comptent pas)', r.j.participants);
   ok(JSON.stringify(r.j.noms) === JSON.stringify(['Sarah LÉVY']), 'seul le nom de la personne qui l\'a demandé est affiché', r.j.noms);
   ok(!/2600|1800|5000|"montant"|collecte/.test(JSON.stringify(r.j).replace(/"parts?":[^,]*(,\d+\])?/g, '')), 'aucune somme dans la réponse publique (hors montants proposés)', r.j);
   // 2e mois : le prélèvement suivant crée un reçu, mais ne compte pas un membre de plus (reçu de webhook, sans rattachement au compteur)
   { const d = lire(); d.receipts['in_essai_mois2'] = { ...d.receipts[a.id], numero: 'ESSAI-M2', impr: { ...d.receipts[a.id].impr, echeance: 2 }, besoin: undefined, besoinNom: undefined }; vault.writeFile(path.join(dir, 'data.json'), Buffer.from(JSON.stringify(d)));
-    await wait(300); r = await call('GET', '/api/besoin/' + CLUB); ok(r.j.participants === 3, '2e prélèvement du même abonné : toujours trois membres', r.j.participants); }
+    await wait(300); r = await call('GET', '/api/besoin/' + CLUB); ok(r.j.participants === 4, '2e prélèvement du même abonné : toujours quatre membres', r.j.participants); }
+  { const g = await don({ ...P, email: 'noa.benhamou@exemple.com', prenom: 'Noa', nom: 'Benhamou', besoin: CLUB, montant: '260' }); ok(g.i.st === 200 && g.f.st === 200, '260 € par mois : accepté', g.i);
+    await wait(300); r = await call('GET', '/api/besoin/' + CLUB); ok(r.j.participants === 14, '260 € = 10 membres au plus (plafond par don) : quatorze en tout', r.j.participants); }
 
   T('Hanouka : inchangée');
   let h = await don({ ...P, besoin: HAN, montant: '500', frequence: 'mensuel' });
   ok(h.i.st === 200 && h.i.j.montant === 1800 && h.i.j.mensuel === false && h.f.st === 200, '18 € ponctuel imposé, quoi qu\'envoie la page', h.i);
   r = await call('GET', '/api/besoin/' + HAN); ok(r.j.participants === 1 && r.j.campagne.lumieres === true, 'un participant, objectif en huit lumières', r.j);
-  r = await call('GET', '/api/besoin/' + CLUB); ok(r.j.participants === 3, 'le club ne bouge pas', r.j.participants);
+  r = await call('GET', '/api/besoin/' + CLUB); ok(r.j.participants === 14, 'le club ne bouge pas', r.j.participants);
 
   for (const s of subs) try { await stripe.subscriptions.cancel(s); } catch (e) {}   // ménage : abonnements de test arrêtés
   { const l = await stripe.subscriptions.search({ query: 'metadata["besoin"]:"' + CLUB + '" AND status:"active"', limit: 20 }).catch(() => ({ data: [] })); for (const s of l.data) if (Date.now() / 1000 - s.created < 900) try { await stripe.subscriptions.cancel(s.id); } catch (e) {} }
