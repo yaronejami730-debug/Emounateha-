@@ -34,7 +34,8 @@
       "mensuel": true,
       "mot": "membre",
       "objectif": 770,
-      "unite": 26,
+      "unite": 18,
+      "plafond": 10,
       "actif": true,
       "contenu": [
         "Aide aux familles",
