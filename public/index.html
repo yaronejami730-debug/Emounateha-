@@ -264,6 +264,10 @@ body{overflow-x:hidden}
    au-dessus des tuiles et de la carte des horaires de Chabbat, sans jamais les recouvrir. Un appui ouvre l'aperçu de la cagnotte. */
 .urgsec{position:relative;z-index:6;margin-top:-62px;padding:0;text-align:center}.urgsec[hidden]{display:none}
 .urgh{display:inline-block;margin:0 0 8px;padding:4px 14px;border-radius:99px;background:#164c52;color:#f6e094;font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;box-shadow:0 4px 12px rgba(14,52,58,.35),inset 0 0 0 1px rgba(246,224,148,.45)}
+.pillgold{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 24px;border-radius:99px;background:#c4a24a;border:1.5px solid #c4a24a;color:#1b2b2d!important;font:700 14px/1.2 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif!important;text-decoration:none;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25);animation:none;cursor:pointer}
+.pillgold *{font-family:inherit!important}.pillgold .h{font:900 20px/1 EmouHe,"Frank Ruhl Libre","Times New Roman",serif!important}
+.pillgold:hover{background:#e4cd8a;border-color:#e4cd8a}.pillgold:active{transform:scale(.97)}
+.urgl.urgclub{justify-content:flex-start!important}
 .urgl{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:620px;margin:0 auto}
 /* une cagnotte = un bouton doré, comme « Faire un don » : seulement son nom */
 .urgl{flex-direction:row!important;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;max-width:980px!important}
@@ -615,26 +619,6 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script src="/bandeau-actus.js?v=14" defer></script>
 <script src="/ecrire-rabbi.js?v=34" defer></script>
 <script src="/partager.js?v=1" defer></script>
-<script>/* cagnottes urgentes : choisies dans le CRM (« Mettre sur la page d'accueil »). Rien ne s'affiche s'il n'y en a pas. */
-(function(){var esc=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})},eur=function(c){return(c/100).toLocaleString('fr-FR',{maximumFractionDigits:2})+'\u00a0€'};
-var pret=new Promise(function(ok){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ok);else ok()});   /* la réponse peut arriver avant que la page soit entièrement lue */
-/* la liste est relue toutes les 5 minutes et au retour sur la page : au-delà de trois cagnottes, le site les fait alterner toutes les 20 minutes */
-var signature='';
-function charge(){Promise.all([fetch('/api/besoins-accueil').then(function(r){return r.ok?r.json():null}),pret]).then(function(a){var j=a[0],sec=document.getElementById('urgent'),box=document.getElementById('urgl');if(!j||!sec||!box)return;var l=j.list||[];
-var sig=JSON.stringify(l);if(sig===signature)return;signature=sig;box._l=l;if(!l.length){sec.hidden=true;box.innerHTML='';return}
-var coeur='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.500-4.600-7.500-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 7.500 2.700c0 5.600-7.500 10.200-7.500 10.200Z"/></svg>';
-box.innerHTML=l.map(function(b,n){var connu=b.collecte!=null;
-var m=connu?'<b>'+eur(b.collecte)+'</b> '+(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):(b.objectif?'Objectif <b>'+eur(b.objectif)+'</b>':'');
-return '<a class="urgc" href="'+esc(b.lien)+'" data-i="'+n+'" aria-label="Cagnotte : '+esc(b.titre)+'"><b class="ut">'+esc(b.titre)+'</b></a>'}).join('');
-/* un appui ouvre l'aperçu (titre, texte, montant, bouton Participer) au lieu de quitter la page ; sans JavaScript, le lien mène à la page de la cagnotte */
-if(!box._pret){box._pret=1;box.addEventListener('click',function(ev){var a=ev.target.closest('.urgc');if(!a||ev.metaKey||ev.ctrlKey)return;var b=(box._l||[])[+a.dataset.i];if(!b)return;ev.preventDefault();
- var connu=b.collecte!=null,pct=connu&&b.objectif?Math.max(3,Math.min(100,Math.round(b.collecte*100/b.objectif))):0,o=document.createElement('div');o.id='urgap';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Cagnotte : '+b.titre);
- o.innerHTML='<div class="ap"><div class="aph"><span class="apk">Cagnotte solidaire</span><b class="apt">'+esc(b.titre)+'</b>'+(b.beneficiaire?'<span class="app">Pour '+esc(b.beneficiaire)+'</span>':'')+'<button class="apx" type="button" aria-label="Fermer">✕</button></div><div class="apb">'+(b.description?'<p class="apd">'+esc(b.description)+'</p>':'')+(connu||b.objectif?'<div class="apm">'+(connu?'<b>'+eur(b.collecte)+'</b>':'')+'<span>'+(connu?(b.objectif?'collectés sur '+eur(b.objectif):'collectés'):'Objectif : '+eur(b.objectif))+'</span></div>':'')+(b.objectif?'<div class="apbar"><i style="width:'+pct+'%"></i></div>':'')+(b.dons?'<div class="apn">'+b.dons+' don'+(b.dons>1?'s':'')+' déjà reçu'+(b.dons>1?'s':'')+'</div>':'')+'<a class="apgo" href="'+esc(b.lien)+'">Participer à cette cagnotte</a><p class="apf">Les dons sont reversés au bénéficiaire après déduction des frais de collecte.</p></div></div>';
- var ferme=function(){o.classList.remove('on');document.documentElement.style.overflow='';document.removeEventListener('keydown',touche);setTimeout(function(){o.remove()},240)},touche=function(e){if(e.key==='Escape')ferme()};
- o.addEventListener('click',function(e){if(e.target===o||e.target.closest('.apx'))ferme()});document.addEventListener('keydown',touche);
- var vieux=document.getElementById('urgap');if(vieux)vieux.remove();document.body.appendChild(o);document.documentElement.style.overflow='hidden';requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add('on')})})})}
-sec.hidden=false}).catch(function(){})}
-charge();setInterval(charge,300000);document.addEventListener('visibilitychange',function(){if(!document.hidden)charge()})})();</script>
 <script>/* apercuscroll : en aperçu jeudi, descend vers la carte des horaires */if(/apercu=jeudi/.test(location.search))addEventListener("load",function(){setTimeout(function(){var c=document.getElementById("paracha");if(c)window.scrollTo(0,Math.max(0,c.getBoundingClientRect().top+scrollY-170))},1200)})</script>
 <script src="/wa-bouton.js?v=2" defer></script>
 <!-- seo:start -->
@@ -807,7 +791,7 @@ body>header,body>section,body>footer,body>main,body>.parmailwrap{overflow-x:clip
   <div class="pc"><span class="plab">Votre ville</span><label class="citysel" title="Cliquez pour changer de ville"><span class="cityname" id="parcityname" aria-hidden="true"></span><select id="parcity" aria-label="Choisir votre ville"></select><span class="chev">▾</span></label><small id="parnote"></small></div>
   <a class="parall" href="/horaires/">Voir tous les horaires de votre ville <span aria-hidden="true">→</span></a>
 </div></div></section>
-<section class="urgsec" id="urgent" hidden aria-label="Cagnottes en cours"><div class="wrap"><div class="urgl" id="urgl"></div></div></section>
+<section class="urgsec" id="urgent" aria-label="Club ’Haï"><div class="wrap"><div class="urgl urgclub" id="urgl"><a class="pillgold" href="https://clubhai.emounateha.fr/" data-club-pill><span class="h" lang="he" dir="rtl">יח</span><span>Club ’Haï</span></a></div></div></section>
 <section class="qa" aria-label="Accès rapides"><div class="wrap">
   <a href="/colis/"><img class="qi" src="/tuiles/colis.png?v=4" alt="" width="40" height="40" loading="eager"><span>Colis de Chabbat<small>et de fêtes, aux familles</small></span></a>
   <a href="/torah/"><img class="qi" src="/tuiles/torah.png?v=4" alt="" width="40" height="40" loading="eager"><span>Diffusion de la Torah<small>Vidéo et cours chaque jour</small></span></a>

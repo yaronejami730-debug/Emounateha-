@@ -155,5 +155,11 @@
       "source": "/vetements-et-soins/",
       "destination": "/api/index.js"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/rattrapage",
+      "schedule": "*/15 * * * *"
+    }
   ]
 }

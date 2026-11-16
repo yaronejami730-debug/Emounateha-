@@ -576,6 +576,33 @@ app.post('/api/me/receipts/:ref/corriger', async (req, res) => {
     res.json({ ok: true, numero: out.numero, remplace: ancien.numero, email: out.email && out.email.sent ? true : false });
   } catch (e) { res.status(400).json({ error: e.message }); } finally { if (verrou) corrEnCours.delete(ref); }
 });
+// FILET DE SÉCURITÉ (17 nov 2026) : avec PayPal et Klarna le donateur quitte le site pour payer. S'il ferme la fenêtre avant de revenir ET que le webhook Stripe
+// n'arrive pas, le paiement resterait « en attente » : argent encaissé, mais ni reçu CERFA, ni e-mail, ni compteur. Ce passage (toutes les 15 minutes, voir vercel.json)
+// reprend chaque paiement en attente, demande à Stripe s'il a abouti, et crée le reçu s'il est payé (même chemin que le webhook : jamais de doublon).
+// Aucun paramètre venant du visiteur ; la réponse ne contient que des nombres. Une fois toutes les RATTRAPAGE_MIN_S secondes au plus (120 par défaut).
+let rattrapageAt = 0;
+async function rattraper() {
+  const out = { vus: 0, crees: 0, enCours: 0, nonPayes: 0, erreurs: 0 };
+  const ids = Object.keys(load().pending || {}); out.vus = ids.length;
+  for (const id of ids) {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(id);
+      if (pi.status === 'succeeded') { const r = await receiptForPayment(id); if (!r.deja) { out.crees++; console.log('[rattrapage] reçu créé pour un paiement payé resté sans reçu', id, '->', r.numero); } }
+      else if (pi.status === 'processing') out.enCours++;
+      else out.nonPayes++;
+    } catch (e) { out.erreurs++; console.error('[rattrapage]', id, e.message); }
+  }
+  return out;
+}
+app.get('/api/rattrapage', async (req, res) => {
+  try {
+    if (!stripe) return res.status(503).json({ error: 'Stripe non configuré' });
+    const min = Number(process.env.RATTRAPAGE_MIN_S != null ? process.env.RATTRAPAGE_MIN_S : 120) * 1000;
+    if (Date.now() - rattrapageAt < min) return res.json({ deja: true });
+    rattrapageAt = Date.now();
+    res.json(await rattraper());
+  } catch (e) { console.error('[rattrapage]', e.message); res.status(500).json({ error: 'rattrapage impossible' }); }
+});
 app.post('/api/finalize', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré');

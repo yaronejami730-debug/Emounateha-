@@ -41,6 +41,8 @@ Ce que la porte contrôle (voir `local-stripe-test/tests/`) :
 | `echecs.js` | Mensualité refusée par la banque : traitement et e-mails |
 | `commission-*.js`, `virements.js` | Commission de 7 % et e-mails de virement |
 | `cagnottes-calcul.js` | Calcul des mini-cagnottes |
+| `rattrapage.js` | **Filet PayPal / Klarna** : un paiement payé dont le donateur n'est jamais revenu sur le site (et sans webhook) reçoit quand même son reçu, son e-mail et sa place dans le compteur, sans doublon ; un don abandonné n'a pas de reçu |
+| `pages-site.js` | Boutons de l'accueil (« Club ’Haï ») et de la page des colis (« Là où il y en a le plus besoin ») : présents, visibles, en or plein, sans animation, bons liens |
 
 #### Tous les parcours d'argent doivent être couverts — rien n'est « hors champ »
 | Parcours | Où | Couvert par |
@@ -50,6 +52,7 @@ Ce que la porte contrôle (voir `local-stripe-test/tests/`) :
 | **Hanouka** (18 € ponctuel) et autres fêtes | `/campagne/hanouka` | `campagnes.js`, `boutons-pages.js` |
 | Mini-cagnottes « besoin » | `/besoin/<slug>` | `cagnottes-calcul.js` (calcul) — page à vérifier à la main si on la modifie |
 | Moyens de paiement : **carte** (dont Apple Pay / Google Pay), **PayPal**, **Klarna**, **prélèvement SEPA** | tous les formulaires | `moyens.js` (ponctuel **et** mensuel) |
+| **Dons PayPal / Klarna jamais finalisés** : passage de rattrapage toutes les 15 min (`/api/rattrapage`, cron de `local-stripe-test/vercel.json`) | serveur | `rattrapage.js` ; vérifier à la main dans les journaux Vercel de `emounateha-don` que le passage tourne (« [rattrapage] ») |
 | Dons en espèces, chèque ou virement (reçu manuel) | formulaire, option « Générer le reçu » | `tous-les-dons.js` |
 | **Envoi du reçu CERFA par e-mail**, PDF joint, et reçu redemandé identique | après chaque don | `tous-les-dons.js`, `recu-a-la-demande.js` (mails simulés : on vérifie le contenu et la pièce jointe) |
 | **Chaque mensualité** = un nouveau reçu envoyé | webhook `invoice.paid` | `moyens.js`, `campagnes.js`, `echecs.js` (mensualité refusée) |

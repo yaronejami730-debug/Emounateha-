@@ -24,6 +24,12 @@ const etat = p => p.evaluate(() => { const g = document.getElementById('go'), r 
     const p = await ouvre('https://don.emounateha.fr/', w, h); const e = await etat(p);
     ok(e.goVisible && /Continuer/.test(e.go), 'page de don : bouton « Continuer » visible', e); ok(!p._err.length, 'page de don : aucune erreur JavaScript', p._err); await p.close();
   }
+  console.log('\n— boutons du site');
+  { const h = await (await fetch('https://www.emounateha.fr/?v=' + Date.now())).text(), c = await (await fetch('https://www.emounateha.fr/colis/?v=' + Date.now())).text();
+    ok(/class="pillgold" href="https:\/\/clubhai\.emounateha\.fr\/"/.test(h) && !/api\/besoins-accueil/.test(h), 'accueil : bouton « Club ’Haï » présent, plus de boutons de cagnottes');
+    ok(/class="plusbesoin"><a class="pillgold" href="https:\/\/don\.emounateha\.fr\/\?aff=besoin"/.test(c), 'colis : bouton « Là où il y en a le plus besoin » présent');
+    const p = await ouvre('https://don.emounateha.fr/?aff=besoin', 390, 780); const v = await p.evaluate(() => { const x = document.querySelector('input[name=affr]:checked'); return x ? x.value : null; });
+    ok(v && /besoin est le plus grand/i.test(v), 'le lien du bouton ouvre le don « là où le besoin est le plus grand »', v); await p.close(); }
   console.log('\n— serveur de dons');
   const c = await (await fetch('https://don.emounateha.fr/api/config')).json().catch(() => null);
   ok(c && c.stripe === true && /^pk_/.test(c.publishableKey || ''), 'Stripe configuré (clé publique présente)', c && { stripe: c.stripe, live: c.live });
