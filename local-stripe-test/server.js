@@ -281,7 +281,7 @@ const HOTE_CLUB = 'clubhai.emounateha.fr';   // le Club 'Haï a sa propre adress
 const hits = new Map();
 app.use((req, res, next) => {
   const host = req.headers.host || '';
-  if (host.toLowerCase() === HOTE_CLUB && /^\/(api\/index(\.js)?)?$/.test(req.path)) { req.clubHote = true; const k = req.url.indexOf('?'); req.url = '/campagne/club' + (k < 0 ? '' : req.url.slice(k)); }
+  if (host.toLowerCase() === HOTE_CLUB && /^\/(api\/index(\.js)?|campagne\/club\/?)?$/.test(req.path)) { req.clubHote = true; const k = req.url.indexOf('?'); req.url = '/campagne/club' + (k < 0 ? '' : req.url.slice(k)); }
   if (!process.env.VERCEL && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !req.headers['cf-connecting-ip']) return next();          // ordinateur local
   if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST && host !== 'don.emounateha.fr' && host.toLowerCase() !== HOTE_CLUB) return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
   if (req.path.startsWith('/backoffice') || req.path === '/api/recu') return res.status(403).type('text').send("Réservé à l'ordinateur local");
@@ -717,7 +717,9 @@ app.get('/api/besoin/:slug', async (req, res) => {
   const b = await besoinInfo(String(req.params.slug)); if (!b) return res.status(404).json({ error: 'Cagnotte introuvable' });
   res.setHeader('Cache-Control', 'no-store'); res.json(besoinFiche(b));
 });
-app.get('/campagne/:adresse', (req, res, next) => { const c = campagnes().find(x => x.adresse === String(req.params.adresse)); return pageBesoin(c || null, res, next, c ? (req.clubHote ? 'https://' + HOTE_CLUB + '/' : '/campagne/' + c.adresse) : ''); });
+app.get('/campagne/:adresse', (req, res, next) => { const c = campagnes().find(x => x.adresse === String(req.params.adresse));
+  if (c && c.adresse === 'club' && req.headers.host === 'don.emounateha.fr') { const k = req.originalUrl.indexOf('?'); return res.redirect(301, 'https://' + HOTE_CLUB + '/' + (k < 0 ? '' : req.originalUrl.slice(k))); }   // ancienne adresse du club : les liens déjà partagés arrivent sur la nouvelle
+  return pageBesoin(c || null, res, next, c ? (req.clubHote ? 'https://' + HOTE_CLUB + '/' : '/campagne/' + c.adresse) : ''); });
 app.get('/besoin/:slug', async (req, res, next) => pageBesoin(await besoinInfo(String(req.params.slug)), res, next));
 function pageBesoin(b, res, next, chemin) {
   let html; try { html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8'); } catch (e) { return next(); }
