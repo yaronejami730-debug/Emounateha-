@@ -33,7 +33,7 @@ Ce que la porte contrôle (voir `local-stripe-test/tests/`) :
 
 | Fichier | Ce qu'il prouve |
 |---|---|
-| `boutons-pages.js` | En vrai navigateur (téléphone + ordinateur) : « Rejoindre » (Club), « Participer » (Hanouka), « Continuer » (don) ouvrent le formulaire ; montant libre ; montant invalide bloqué ; pas d'erreur JavaScript |
+| `boutons-pages.js` | En vrai navigateur (téléphone + ordinateur) : « Rejoindre » (Club), « Participer » (Hanouka), « Continuer » (don) ouvrent le formulaire ; montant libre ; montant invalide bloqué ; pas d'erreur JavaScript ; **relevé de tous les boutons et champs** comparé à la référence |
 | `moyens.js` | Carte, PayPal, Klarna, prélèvement SEPA, en don ponctuel **et** mensuel ; SEPA : reçu seulement après versement |
 | `campagnes.js` | Club (18 €/26 € par mois, abonnement actif, sans date de fin) et Hanouka : montant et fréquence imposés par le serveur ; compteur |
 | `tous-les-dons.js` | Tous les types de dons (particulier, entreprise, affectations, mensuel…), reçus créés |
@@ -41,6 +41,26 @@ Ce que la porte contrôle (voir `local-stripe-test/tests/`) :
 | `echecs.js` | Mensualité refusée par la banque : traitement et e-mails |
 | `commission-*.js`, `virements.js` | Commission de 7 % et e-mails de virement |
 | `cagnottes-calcul.js` | Calcul des mini-cagnottes |
+
+#### Tous les parcours d'argent doivent être couverts — rien n'est « hors champ »
+| Parcours | Où | Couvert par |
+|---|---|---|
+| Don général (ponctuel et mensuel, particulier et professionnel, toutes les affectations : colis, toit, vêtements, réinsertion, soutien…) | `don.emounateha.fr`, `/don-cerfa/` | `tous-les-dons.js`, `boutons-pages.js` |
+| **Club ’Haï** (18 €, 26 €, montant libre, par mois ; compteur par tranches de 18 €, 10 membres au plus par don) | `clubhai.emounateha.fr`, `/campagne/club` | `campagnes.js`, `boutons-pages.js` |
+| **Hanouka** (18 € ponctuel) et autres fêtes | `/campagne/hanouka` | `campagnes.js`, `boutons-pages.js` |
+| Mini-cagnottes « besoin » | `/besoin/<slug>` | `cagnottes-calcul.js` (calcul) — page à vérifier à la main si on la modifie |
+| Moyens de paiement : **carte** (dont Apple Pay / Google Pay), **PayPal**, **Klarna**, **prélèvement SEPA** | tous les formulaires | `moyens.js` (ponctuel **et** mensuel) |
+| Dons en espèces, chèque ou virement (reçu manuel) | formulaire, option « Générer le reçu » | `tous-les-dons.js` |
+| **Envoi du reçu CERFA par e-mail**, PDF joint, et reçu redemandé identique | après chaque don | `tous-les-dons.js`, `recu-a-la-demande.js` (mails simulés : on vérifie le contenu et la pièce jointe) |
+| **Chaque mensualité** = un nouveau reçu envoyé | webhook `invoice.paid` | `moyens.js`, `campagnes.js`, `echecs.js` (mensualité refusée) |
+| Espace donateur : code à 6 chiffres par e-mail et SMS, arrêt du don mensuel | `/espace` | `tous-les-dons.js` — SMS à vérifier à la main si on touche `accounts.js` / `mailer.js` |
+| Commission de 7 % du prestataire (tous moyens de paiement : calculée sur le solde Stripe, net des frais) | serveur | `commission-*.js`, `virements.js` |
+
+**Si on crée un nouveau parcours de paiement** (nouvelle campagne, nouveau moyen, nouvelle page de don), il est interdit de déployer tant qu'il n'a pas **son** test dans `local-stripe-test/tests/` ET sa page dans le relevé des boutons.
+
+#### Règle du bouton qui change
+`boutons-pages.js` compare, pour chaque page de paiement, la liste de **tous** les boutons et champs (texte, nom, présence) à `local-stripe-test/tests/boutons-reference.json`.
+**Un bouton ajouté, retiré, renommé, déplacé ou dont la page change = DOUTE = la porte se ferme.** Il faut alors : (1) tester à la main le clic du bouton concerné, sur téléphone et ordinateur ; (2) montrer le changement à Yarone et obtenir son accord ; (3) seulement ensuite `node local-stripe-test/tests/boutons-pages.js --maj`, dans un commit séparé « Relevé des boutons : … » . Jamais de `--maj` pour « faire passer » un test sans avoir compris pourquoi le relevé a changé.
 
 ### 3. Contrôles que les tests ne peuvent pas faire seuls (à faire à chaque fois qu'on touche au paiement)
 Si la modification touche l'un de ces fichiers : `local-stripe-test/public/index.html`, `local-stripe-test/server.js`, `accounts.js`, `mailer.js`, `store.js`, `vault.js`, `local-stripe-test/vercel.json`, `middleware.js`, `vercel.json`, ou la page d'un Club/campagne — alors **en plus** de la porte :
