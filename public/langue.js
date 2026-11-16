@@ -77,7 +77,7 @@
     if (flot) box.className += ' lang-pop-fab';
     document.body.appendChild(box);
     if (flot) {   // au-dessus d'une barre fixée en bas de l'écran (page de don : « Continuer »), jamais dessus
-      var cale = function () { var bar = document.querySelector('.dn-actions'), h = 0; if (bar) { var r = bar.getBoundingClientRect(); if (r.height && getComputedStyle(bar).position === 'fixed' && getComputedStyle(bar).display !== 'none') h = Math.max(0, innerHeight - r.top); } a.style.bottom = h ? (h + 10) + 'px' : ''; box.style.bottom = h ? (h + 60) + 'px' : ''; };
+      var cale = function () { var bar = [].slice.call(document.querySelectorAll('.dn-actions,#cpBar')).filter(function (x) { return getComputedStyle(x).display !== 'none' && getComputedStyle(x).position === 'fixed' && x.getBoundingClientRect().height > 0; })[0], h = 0; /* barre fixe du bas : don (« Continuer ») ou club (« Rejoindre ») */ if (bar) { var r = bar.getBoundingClientRect(); if (r.height) h = Math.max(0, innerHeight - r.top); } a.style.bottom = h ? (h + 10) + 'px' : ''; box.style.bottom = h ? (h + 60) + 'px' : ''; };
       cale(); addEventListener('resize', cale); setInterval(cale, 800);
       // tout en bas de la page, le bouton s'efface : il ne recouvre plus les liens du pied de page (il revient dès qu'on remonte)
       var bas = function () { var fin = (document.documentElement.scrollHeight - innerHeight) - (window.pageYOffset || 0) < 70 && document.documentElement.scrollHeight > innerHeight + 140; if (!box.hidden) fin = false; a.style.opacity = fin ? '0' : ''; a.style.pointerEvents = fin ? 'none' : ''; };
