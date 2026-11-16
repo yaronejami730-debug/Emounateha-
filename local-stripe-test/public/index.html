@@ -642,6 +642,7 @@ body.camp:not(.camp-accueil) #cp .cp-choix,body.camp:not(.camp-accueil) #cp .cp-
 #cpBar.on{transform:none}
 #cpBar .cp-go{margin:0;min-height:52px}
 body.camp.camp-accueil #dn{display:none!important}
+body.camp.camp-accueil footer::before{display:none}   /* pas de fondu blanc : le pied suit directement la page de campagne, sur le même fond */
 body.camp.camp-accueil #cpBar{display:block}
 body.camp.camp-accueil #cp{padding-bottom:136px}
 /* une fois le formulaire ouvert : il ne reste qu'un rappel */
@@ -710,7 +711,7 @@ body.camp:not(.camp-accueil) #cp .cp-pan{padding:14px 20px;box-shadow:none}
   #cp h2{font-size:28px}
   #cp ul.cp-liste{grid-template-columns:repeat(3,1fr)}#cp ul.cp-noms{grid-template-columns:repeat(4,1fr)}
   #cp ol.cp-etapes{grid-template-columns:repeat(3,1fr);gap:32px}
-  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:0}
+  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:64px}
   body.camp:not(.camp-accueil) #cp .cp-tete .cp-w{display:block}
 }
 @media(max-width:899px){#cp .cp-tete .cp-w{padding:0}}
