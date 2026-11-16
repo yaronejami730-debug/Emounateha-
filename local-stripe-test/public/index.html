@@ -642,9 +642,24 @@ body.camp:not(.camp-accueil) #cp .cp-choix,body.camp:not(.camp-accueil) #cp .cp-
 #cpBar.on{transform:none}
 #cpBar .cp-go{margin:0;min-height:52px}
 body.camp.camp-accueil #dn{display:none!important}
-body.camp.camp-accueil footer::before{display:none}   /* pas de fondu blanc : le pied suit directement la page de campagne, sur le même fond */
+/* pied de page des pages de campagne : bloc vert nuit, logo, contacts en boutons, liens légaux ; visible aussi sur téléphone */
+html body.camp.camp-accueil footer{display:block!important;position:relative;background:#123f45;padding:40px 22px 28px;border-top:1px solid rgba(240,217,138,.5);box-shadow:0 -14px 30px -18px rgba(5,25,28,.7);color:#d3e6e6;font-size:14px;line-height:1.5;text-align:center}
+html body.camp.camp-accueil footer::before{content:"";position:static;display:block;width:132px;height:118px;margin:0 auto 14px;background:url(/logo-complet-accueil.png?v=1) center/contain no-repeat}
+html body.camp.camp-accueil footer p{margin:0}
+html body.camp.camp-accueil footer>p:first-of-type{font-size:15px;color:#e7f1f1}
+html body.camp.camp-accueil footer>p:first-of-type b{font-size:17px;color:#f0d98a}
+html body.camp.camp-accueil footer>p:nth-of-type(2){margin-top:16px;font-size:0;display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+html body.camp.camp-accueil footer>p:nth-of-type(2) a{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:99px;border:1.5px solid rgba(240,217,138,.6);font-size:14px;font-weight:600;color:#f6e3a4;text-decoration:none}
+html body.camp.camp-accueil footer>p:nth-of-type(2) a:hover{background:rgba(240,217,138,.14)}
+html body.camp.camp-accueil footer .legal{display:block;margin-top:20px;font-size:0}
+html body.camp.camp-accueil footer .legal a{display:inline-block;margin:0 11px;padding:8px 2px;font-size:13.5px;color:#e7f1f1;text-decoration:underline;text-decoration-color:rgba(240,217,138,.5);text-underline-offset:4px}
+html body.camp.camp-accueil footer .sir{margin-top:14px;font-size:12.5px;color:#a9c6c7}
+html body.camp.camp-accueil footer .copy{margin-top:4px;font-size:12.5px;color:#a9c6c7}
+html body.camp.camp-accueil footer .dev{max-width:520px;margin:20px auto 0;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);font-size:12px;color:#8fb0b1}
+html body.camp.camp-accueil footer .dev a{padding:0;color:#8fb0b1}
 body.camp.camp-accueil #cpBar{display:block}
-body.camp.camp-accueil #cp{padding-bottom:136px}
+body.camp.camp-accueil #cp{padding-bottom:44px}
+@media(max-width:899px){html body.camp.camp-accueil footer{padding-bottom:calc(136px + env(safe-area-inset-bottom))}}   /* la barre « Rejoindre » reste collée en bas : le pied se termine au-dessus */
 /* une fois le formulaire ouvert : il ne reste qu'un rappel */
 body.camp:not(.camp-accueil) #cp .cp-img,body.camp:not(.camp-accueil) #cp .cp-nb,body.camp:not(.camp-accueil) #cp .cp-seg,body.camp:not(.camp-accueil) #cp .cp-leg,body.camp:not(.camp-accueil) #cp .cp-pan .cp-go,body.camp:not(.camp-accueil) #cp .cp-pays,body.camp:not(.camp-accueil) #cp .cp-cerfa,body.camp:not(.camp-accueil) #cp section.cp-s{display:none}
 body.camp:not(.camp-accueil) #cp .cp-pan{margin:0;padding:16px 20px;border-radius:0;box-shadow:0 1px 0 #dfe7e7}
@@ -696,6 +711,9 @@ body.camp:not(.camp-accueil) #cp .cp-pan{padding:14px 20px;box-shadow:none}
 #cp.cp-cpt .cp-mot{font-size:14px;font-weight:700;letter-spacing:.2em!important;text-transform:uppercase}
 @media(min-width:900px){#cp.cp-cpt .cp-od .d{width:72px}#cp.cp-cpt .cp-od .d b span{font-size:62px}}
 @media(max-width:360px){#cp.cp-cpt .cp-od .d{width:50px}#cp.cp-cpt .cp-od .d b span{font-size:42px}}
+#cp .cp-son{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:2;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:99px;cursor:pointer;background:linear-gradient(180deg,#f0d98a,#e2c46c 45%,#c4a24a);color:#1b2b2d;font-size:15px;font-weight:700;box-shadow:0 8px 22px -6px rgba(0,0,0,.55);animation:cpson 1.6s ease-in-out infinite}
+@keyframes cpson{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
+@media(prefers-reduced-motion:reduce){#cp .cp-son{animation:none}}
 .cp-nomrow{display:flex;align-items:flex-start;gap:10px;margin:0 0 16px;padding:12px 14px;border-radius:12px;background:#f4f7f7;cursor:pointer;font-size:15px;line-height:1.4;color:#14272a}
 .cp-nomrow input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#1f6a72}
 .cp-nomrow small{display:block;margin-top:2px;font-size:13px;color:#51666a}
@@ -1408,13 +1426,27 @@ function campagneInit(b) {
   const eur = x => x.toLocaleString('fr-FR') + ' €', bouton1 = () => part > 0 ? (men ? 'Rejoindre pour ' : 'Participer pour ') + eur(part) + (men ? ' par mois' : '') : (men ? 'Rejoindre le ' + (C.marque ? C.marque.nom : 'club') : 'Participer'), partsTxt = parts.map(eur).join(' ou ') + (men ? ' par mois' : '');
   const etapes = C.etapes && C.etapes.length === 3 ? C.etapes : [[C.libre ? 'Vous choisissez ' + parts.map(eur).join(', ') + ' ou un autre montant' : men ? 'Vous choisissez ' + partsTxt : 'Vous participez pour ' + partsTxt, men ? 'Le même montant chaque mois, sans limite de durée.' : 'Un seul montant, le même pour tous.'], ['Vous indiquez vos coordonnées', 'Ou vous vous connectez : elles sont déjà remplies.'], ['Vous recevez votre reçu fiscal', men ? 'Un CERFA par e-mail, en PDF, après chaque prélèvement.' : 'Le CERFA arrive par e-mail, en PDF, juste après le paiement.']];
   document.body.classList.add('camp', 'camp-accueil');
+  // vidéo de la campagne : on la lance AVEC le son ; si le navigateur le refuse (lecture sonore automatique bloquée), elle démarre sans le son,
+  // un bouton « Activer le son » apparaît, et le premier toucher sur la page (hors boutons) remet le son
+  let cpVid = null;
+  const lanceVid = () => { cpVid = page.querySelector('video.cp-vid'); if (!cpVid) return;
+    const sansSon = () => {
+      if (cpVid._att) return; cpVid._att = true; cpVid.muted = true; cpVid.play().catch(() => {});
+      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'cp-son'; bt.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Activer le son';
+      cpVid.parentNode.appendChild(bt);
+      const avec = e => { if (e && e.target && e.target.closest && e.target.closest('a,button:not(.cp-son),input,label,select,textarea')) return; if (!document.body.classList.contains('camp-accueil')) return;
+        cpVid.muted = false; cpVid.play().catch(() => {}); bt.remove(); document.removeEventListener('click', avec, true); };
+      document.addEventListener('click', avec, true); cpVid.addEventListener('volumechange', () => { if (!cpVid.muted) { bt.remove(); document.removeEventListener('click', avec, true); } });
+    };
+    cpVid.muted = false; const essai = cpVid.play(); if (essai && essai.catch) essai.catch(sansSon); setTimeout(() => { if (cpVid.paused && !cpVid._att && document.body.classList.contains('camp-accueil')) sansSon(); }, 900);
+  };
   // aperçu de mise en page, hors du site en ligne seulement : ?apercu=137 affiche 137 participants
   const ap = !/(^|\.)emounateha\.fr$/.test(location.hostname) && /[?&]apercu=(\d{1,5})/.exec(location.search);
   const page = document.createElement('div'); page.id = 'cp'; if (C.marque) page.classList.add('cp-cpt');   // club : en-tête centré, compteur à rouleaux
   const nbCh = Math.max(1, String(obj || 0).length);
   const doc = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f0d98a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>';
   const autre = !/(^|\.)emounateha\.fr$/.test(location.hostname) && /[?&]img=anim/.test(location.search) ? '/fetes/campagne-hanouka-anim.jpg' : '';   // aperçu local : comparer l'autre image
-  page.innerHTML = '<a class="cp-haut" href="https://www.emounateha.fr/" aria-label="Émounatéha, retour au site"><img src="/logo-complet-accueil.png?v=1" alt="Émounatéha"></a><div class="cp-tete"><div class="cp-w"><div class="cp-img">' + (C.video && !autre ? '<video class="cp-photo cp-vid" src="' + esc(C.video) + '" poster="' + esc(C.image || '') + '" autoplay muted loop playsinline controls preload="metadata"></video>' : '<img class="cp-photo" src="' + esc(autre || C.image || '/fetes/hanouka.jpg') + '" alt="">') + '</div>' +
+  page.innerHTML = '<a class="cp-haut" href="https://www.emounateha.fr/" aria-label="Émounatéha, retour au site"><img src="/logo-complet-accueil.png?v=1" alt="Émounatéha"></a><div class="cp-tete"><div class="cp-w"><div class="cp-img">' + (C.video && !autre ? '<video class="cp-photo cp-vid" src="' + esc(C.video) + '" poster="' + esc(C.image || '') + '" loop playsinline controls preload="auto"></video>' : '<img class="cp-photo" src="' + esc(autre || C.image || '/fetes/hanouka.jpg') + '" alt="">') + '</div>' +
     '<div class="cp-pan">' + (C.marque ? '<div class="cp-marque" aria-label="' + esc(C.marque.nom) + (C.marque.par ? ', par Émounatéha' : '') + '"><p class="n" aria-hidden="true">' + (C.marque.he ? '<i lang="he" dir="rtl">' + esc(C.marque.he) + '</i>' : '') + '<b>' + esc(C.marque.nom) + '</b></p>' + (C.marque.par ? '<p class="p" aria-hidden="true">by <b>Émounatéha</b><i lang="he" dir="rtl">' + esc(C.marque.par) + '</i></p>' : '') + '</div>' : '<p class="cp-sur">' + esc(C.etiquette) + '</p>') + '<h1 class="cp-t">' + esc(b.titre) + '</h1>' +
     '<div class="cp-nb" id="cpNb"><div class="cp-od" id="cpOd" aria-hidden="true">' + Array.from({ length: nbCh }, () => '<div class="d"><b>' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(x => '<span>' + x + '</span>').join('') + '</b></div>').join('') + '</div><span class="cp-mot" id="cpMot">' + esc(mots(2)) + '</span></div>' +
     (obj ? '<div class="cp-seg" id="cpSeg" role="progressbar" aria-valuemin="0" aria-valuemax="' + obj + '">' + '<i><u></u></i>'.repeat(8) + '</div><p class="cp-leg"><span id="cpPro"></span><b>Objectif ' + fr(obj) + '</b></p>' : '') +
@@ -1425,7 +1457,7 @@ function campagneInit(b) {
     ((C.contenu || []).length ? '<ul class="cp-liste">' + C.contenu.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + '</div></section>' +
     '<section class="cp-s"><div class="cp-w"><h2>' + (men ? 'Rejoindre en trois étapes' : 'Participer en trois étapes') + '</h2><ol class="cp-etapes">' + etapes.map(e => '<li><b>' + esc(e[0]) + '</b>' + esc(e[1]) + '</li>').join('') + '</ol></div></section>' +
     '<section class="cp-s" id="cpWall" hidden><div class="cp-w"><h2>' + (men ? 'Ils ont rejoint le ' + (C.marque ? esc(C.marque.nom) : 'club') : 'Ils participent') + '</h2><ul class="cp-noms" id="cpNoms"></ul><p class="cp-autres" id="cpAutres"></p></div></section>';
-  const dn = $('dn'); dn.parentNode.insertBefore(page, dn);
+  const dn = $('dn'); dn.parentNode.insertBefore(page, dn); lanceVid();
   const bar = document.createElement('div'); bar.id = 'cpBar'; bar.innerHTML = '<p id="cpBarN"></p><button type="button" class="cp-go" data-go>' + bouton1() + '</button>'; document.body.appendChild(bar);
   { const src = document.querySelector('#amtBox .dn-pays'); if (src) $('cpPays').innerHTML = src.innerHTML; }   // mêmes logos que sur la page de don
   const ord = k => k === 1 ? '1re' : k + 'e';
@@ -1471,7 +1503,7 @@ function campagneInit(b) {
   const t = document.querySelector('#p2 .dn-type'); if (t && !$('bsNom')) t.insertAdjacentHTML('beforebegin', '<label class="cp-nomrow"><input id="bsNom" type="checkbox"><span>Afficher mon nom parmi les ' + esc(mots(2)) + '<small>Aucun montant n\'est affiché. Sans cette case, vous êtes compté sans être nommé.</small></span></label>');
   const teinte = c => { let m = document.querySelector('meta[name=theme-color]'); if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); } m.content = c; };   // couleur de la barre du haut du téléphone : bleu sur l'affiche, blanc sur le formulaire
   teinte('#1f6a72');
-  const gp = goPanel; goPanel = n => { gp(n); document.body.classList.toggle('camp-accueil', n === 1); teinte(n === 1 ? '#1f6a72' : '#ffffff'); scrollTo({ top: 0 }); };
+  const gp = goPanel; goPanel = n => { gp(n); document.body.classList.toggle('camp-accueil', n === 1); if (cpVid) { if (n === 1) cpVid.play().catch(() => {}); else cpVid.pause(); }   /* la vidéo se tait dès qu'on passe au formulaire */ teinte(n === 1 ? '#1f6a72' : '#ffffff'); scrollTo({ top: 0 }); };
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-go]')) { if (!(part > 0)) { const l = $('cpLibre'); if (l) { l.classList.add('err'); l.scrollIntoView({ block: 'center', behavior: 'smooth' }); $('cpLibreIn').focus({ preventScroll: true }); } return; } $('montant').value = String(part); upSum(); $('go').click(); } });
   document.title = b.titre + ' — ' + C.etiquette + ' · Émounatéha';
 }
