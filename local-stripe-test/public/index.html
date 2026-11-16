@@ -706,6 +706,9 @@ body.camp:not(.camp-accueil) #cp .cp-pan{padding:14px 20px;box-shadow:none}
 #cp .cp-part{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;margin:12px 0 0;padding:10px 20px;border-radius:12px;border:1.5px solid rgba(240,217,138,.75);background:rgba(9,36,40,.28);color:#f6e3a4;font-size:16px;font-weight:700;cursor:pointer}
 #cp .cp-part:hover{background:rgba(240,217,138,.14)}
 body.camp:not(.camp-accueil) #cp .cp-part{display:none}
+.dn-part{margin:18px 0 4px;padding:16px;border-radius:14px;background:#f3f8f8;border:1px solid #d3e0e0;text-align:center}
+.dn-part p{margin:0 0 10px;font-size:15px;line-height:1.45;color:#24505a;font-weight:600}
+.dn-part button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;padding:10px 20px;border:0;border-radius:12px;cursor:pointer;background:linear-gradient(180deg,#f0d98a,#e2c46c 45%,#c4a24a);color:#1b2b2d;font-size:16px;font-weight:700}
 .cp-nomrow{display:flex;align-items:flex-start;gap:10px;margin:0 0 16px;padding:12px 14px;border-radius:12px;background:#f4f7f7;cursor:pointer;font-size:15px;line-height:1.4;color:#14272a}
 .cp-nomrow input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#1f6a72}
 .cp-nomrow small{display:block;margin-top:2px;font-size:13px;color:#51666a}
@@ -1452,10 +1455,7 @@ function campagneInit(b) {
     '<section class="cp-s" id="cpWall" hidden><div class="cp-w"><h2>' + (men ? 'Ils ont rejoint le ' + (C.marque ? esc(C.marque.nom) : 'club') : 'Ils participent') + '</h2><ul class="cp-noms" id="cpNoms"></ul><p class="cp-autres" id="cpAutres"></p></div></section>';
   const dn = $('dn'); dn.parentNode.insertBefore(page, dn); lanceVid();
   // « Partager à vos proches » : la feuille de partage du téléphone (WhatsApp, SMS, e-mail…) ; sur ordinateur, le lien est copié
-  { const bp = $('cpPart'), lien = location.origin + location.pathname, nomC = C.marque ? C.marque.nom : b.titre, txt = 'Rejoignez le ' + nomC + ' d’Émounatéha';
-    if (bp) bp.onclick = async () => { const lab = bp.querySelector('span'), dit = t => { lab.textContent = t; setTimeout(() => { lab.textContent = 'Partager à vos proches'; }, 2600); };
-      try { if (navigator.share) { await navigator.share({ title: nomC + ' · Émounatéha', text: txt, url: lien }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-      try { await navigator.clipboard.writeText(lien); dit('Lien copié'); } catch (e) { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt + ' : ' + lien); } }; }
+  if ($('cpPart')) partager($('cpPart'), C.marque ? C.marque.nom : b.titre, location.origin + location.pathname);
   const bar = document.createElement('div'); bar.id = 'cpBar'; bar.innerHTML = '<p id="cpBarN"></p><button type="button" class="cp-go" data-go>' + bouton1() + '</button>'; document.body.appendChild(bar);
   { const src = document.querySelector('#amtBox .dn-pays'); if (src) $('cpPays').innerHTML = src.innerHTML; }   // mêmes logos que sur la page de don
   const ord = k => k === 1 ? '1re' : k + 'e';
@@ -2029,6 +2029,23 @@ let formVu = false;   // le donateur est revenu au formulaire : on ne le saute p
 $('back').onclick = () => { formVu = true; elements = null; $('payel').innerHTML = ''; goPanel(panel === 3 ? 2 : 1); };
 
 if (/[?&]diag=1/.test(location.search)) $('exDiag').hidden = false;
+// « Partager à vos proches » (page de campagne et page de remerciement) : feuille de partage du téléphone ; sur ordinateur, le lien est copié
+function partager(bp, nom, lien) {
+  const lab = bp.querySelector('span'), base = lab.textContent, dit = t => { lab.textContent = t; setTimeout(() => { lab.textContent = base; }, 2600); }, club = BESOIN && BESOIN.campagne && BESOIN.campagne.marque, txt = club ? 'Rejoignez le ' + nom + ' d’Émounatéha' : 'Participez avec moi : ' + nom + ' (Émounatéha)';
+  bp.onclick = async () => {
+    try { if (navigator.share) { await navigator.share({ title: nom + ' · Émounatéha', text: txt, url: lien }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(lien); dit('Lien copié'); } catch (e) { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt + ' : ' + lien); }
+  };
+}
+const ICO_PART = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
+// après un don à une campagne : on propose d'en parler autour de soi
+function partageMerci() {
+  const C = BESOIN && BESOIN.campagne; if (!C) return; const ret = $('res').querySelector('.dn-retour');
+  const h = '<div class="dn-part"><p>' + (C.mensuel ? 'Invitez vos proches à rejoindre le club à leur tour.' : 'Invitez vos proches à participer à leur tour.') + '</p><button type="button" id="mercPart">' + ICO_PART + '<span>Partager à vos proches</span></button></div>';
+  if (ret) ret.insertAdjacentHTML('beforebegin', h); else $('res').insertAdjacentHTML('beforeend', h);
+  partager($('mercPart'), C.marque ? C.marque.nom : BESOIN.titre, location.origin + location.pathname);
+  $('mercPart').addEventListener('click', () => { const st = $('retStop'); if (st) st.click(); });   // on ne renvoie pas vers le site pendant que la personne partage
+}
 function renderRes(o) {
   if (EMBED) { try { parent.postMessage({ type: 'don:done' }, '*'); } catch (e) {} }
   if (o.attente) {   // prélèvement SEPA : la banque met quelques jours, le reçu fiscal part par email à la réception des fonds
@@ -2039,7 +2056,7 @@ function renderRes(o) {
       (o.affectation ? row('Affectation', esc(o.affectation)) : '') + row('Paiement', esc(o.moyen || 'Prélèvement SEPA') + (o.mensuel ? ' · chaque mois' : '')) + row('Reçu fiscal', 'Envoyé à la réception des fonds') + '</div>' +
       '<p class="dn-mail"><b>Votre reçu fiscal (CERFA) vous sera envoyé par email</b>' + (to ? ' à ' + to : '') + ' dès que votre banque aura versé le don. Vous le retrouverez aussi dans votre espace donateur.</p>' +
       '<div class="dn-retour"><a class="dn-back on" href="https://www.emounateha.fr/">Retourner sur emounateha.fr</a></div>';
-    goPanel(4); elements = null; $('payel').innerHTML = ''; return;
+    partageMerci(); goPanel(4); elements = null; $('payel').innerHTML = ''; return;
   }
   const dev = /^(127\.0\.0\.1|localhost)$/.test(location.hostname) || /[?&]diag=1/.test(location.search);
   const to = esc($('email').value.trim());
@@ -2063,6 +2080,7 @@ function renderRes(o) {
   $('res').insertAdjacentHTML('beforeend', '<div class="dn-retour"><a class="dn-back on" href="https://www.emounateha.fr/">Retourner sur emounateha.fr</a><p id="retTxt">Retour automatique sur le site dans <b id="retN">30</b> s · <button type="button" id="retStop" class="dn-link">rester sur cette page</button></p></div>');
   let n = 30; const tm = setInterval(() => { n--; const el = $('retN'); if (el) el.textContent = n; if (n <= 0) { clearInterval(tm); location.href = 'https://www.emounateha.fr/'; } }, 1000);
   $('retStop').onclick = () => { clearInterval(tm); $('retTxt').textContent = 'Vous pouvez télécharger votre reçu, puis revenir sur le site quand vous le souhaitez.'; };
+  partageMerci();
   goPanel(4); elements = null; $('payel').innerHTML = '';
 }
 setMode(mode);
