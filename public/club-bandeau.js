@@ -4,7 +4,8 @@ var LOCAL=/^(localhost|127\.0\.0\.1|192\.168\.)/.test(location.hostname);
 var LINK=LOCAL?'http://'+location.hostname+':3100/campagne/club':'https://clubhai.emounateha.fr/';
 var css=document.createElement('style');
 css.textContent=
-'#clband{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:nowrap;padding:7px 14px;background:#123f45;color:#fff;font:600 13px/1.2 Inter,system-ui,sans-serif;text-align:center;text-decoration:none;position:sticky;top:0;z-index:119;box-shadow:0 2px 10px rgba(10,40,45,.18);border-top:1px solid rgba(228,205,138,.35)}'+
+'#clband{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:nowrap;padding:7px 14px;background:#123f45;color:#fff;font:600 13px/1.2 Inter,system-ui,sans-serif;text-align:center;text-decoration:none;position:sticky;top:0;z-index:119;box-shadow:0 2px 10px rgba(10,40,45,.18)}'+
+'#hnband+#clband{border-top:1px solid rgba(228,205,138,.35)}'+   /* filet seulement sous le bandeau de fête : en haut de page, rien ne doit couper la zone de l\'heure sur iPhone */
 '#clband .h{font:900 21px/1 EmouHe,"Frank Ruhl Libre","Times New Roman",serif;color:#e4cd8a;flex:none}'+
 '#clband .t{font:700 13px/1 Cinzel,Georgia,serif;letter-spacing:.1em;color:#e4cd8a;text-transform:uppercase;white-space:nowrap}'+
 '#clband .c{font:500 13px/1 Inter,system-ui,sans-serif;color:#fff;white-space:nowrap}#clband .c b{color:#e4cd8a;font-weight:700}'+

@@ -707,7 +707,7 @@ body.camp:not(.camp-accueil) #cp .cp-pan{padding:14px 20px;box-shadow:none}
 #cp .cp-son{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:2;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:99px;cursor:pointer;background:linear-gradient(180deg,#f0d98a,#e2c46c 45%,#c4a24a);color:#1b2b2d;font-size:15px;font-weight:700;box-shadow:0 8px 22px -6px rgba(0,0,0,.55);animation:cpson 1.6s ease-in-out infinite}
 @keyframes cpson{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
 @media(prefers-reduced-motion:reduce){#cp .cp-son{animation:none}}
-#cp .cp-part{position:absolute;z-index:3;top:14px;right:12px;display:flex;align-items:center;gap:8px;max-width:128px;min-height:44px;padding:7px 12px;border-radius:14px;border:1.5px solid rgba(240,217,138,.75);background:rgba(9,36,40,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#f6e3a4;font-size:12.5px;line-height:1.2;font-weight:700;text-align:left;cursor:pointer}
+#cp .cp-part{position:absolute;z-index:3;top:20px;right:12px;display:flex;align-items:center;gap:8px;max-width:128px;min-height:44px;padding:7px 12px;border-radius:14px;border:1.5px solid rgba(240,217,138,.75);background:rgba(9,36,40,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#f6e3a4;font-size:12.5px;line-height:1.2;font-weight:700;text-align:left;cursor:pointer}
 #cp .cp-part svg{flex:none;width:18px;height:18px}
 #cp .cp-part:hover{background:rgba(240,217,138,.16)}
 @media(max-width:360px){#cp .cp-part{max-width:92px;padding:6px 9px;font-size:11.5px;gap:6px}#cp .cp-part svg{width:16px;height:16px}#cp .cp-haut{justify-content:flex-start;padding-left:16px}}
@@ -716,6 +716,9 @@ body.camp:not(.camp-accueil) #cp .cp-part{display:none}
 .dn-part{margin:18px 0 4px;padding:16px;border-radius:14px;background:#f3f8f8;border:1px solid #d3e0e0;text-align:center}
 .dn-part p{margin:0 0 10px;font-size:15px;line-height:1.45;color:#24505a;font-weight:600}
 .dn-part button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;padding:10px 20px;border:0;border-radius:12px;cursor:pointer;background:linear-gradient(180deg,#f0d98a,#e2c46c 45%,#c4a24a);color:#1b2b2d;font-size:16px;font-weight:700}
+/* iPhone (Safari récent) : sans barre fixe en haut, le texte de la page défile sous l'heure et la batterie. Cette fine bande fixe, de la couleur de la page, donne à Safari une couleur pleine pour cette zone. */
+#cp .cp-toit{position:fixed;z-index:70;top:0;left:0;right:0;height:6px;background:#1f6a72;pointer-events:none}
+body.camp:not(.camp-accueil) #cp .cp-toit{display:none}
 .cp-nomrow{display:flex;align-items:flex-start;gap:10px;margin:0 0 16px;padding:12px 14px;border-radius:12px;background:#f4f7f7;cursor:pointer;font-size:15px;line-height:1.4;color:#14272a}
 .cp-nomrow input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#1f6a72}
 .cp-nomrow small{display:block;margin-top:2px;font-size:13px;color:#51666a}
@@ -1289,7 +1292,7 @@ body.camp:not(.camp-accueil) #cp .cp-part{display:none}
 <div class="dn-load" id="dnLoad" role="status" aria-live="polite"><div><img src="/logo.png?v=2" alt=""><p id="dnLoadTxt">Un instant…</p><small>Merci de patienter</small></div></div>
 </section>
 
-<footer>
+<footer id="pied">
   <p><b>Émounatéha</b> · Association à but non lucratif</p>
   <p><a href="tel:+33669670770">06 69 67 07 70</a> · <a href="mailto:emounateha770@gmail.com">emounateha770@gmail.com</a></p>
   <p class="sir">SIREN 930 755 558 · RNA W931028738</p>
@@ -1448,7 +1451,7 @@ function campagneInit(b) {
   const nbCh = Math.max(1, String(obj || 0).length);
   const doc = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f0d98a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>';
   const autre = !/(^|\.)emounateha\.fr$/.test(location.hostname) && /[?&]img=anim/.test(location.search) ? '/fetes/campagne-hanouka-anim.jpg' : '';   // aperçu local : comparer l'autre image
-  page.innerHTML = '<button type="button" class="cp-part" id="cpPart" aria-label="Partager à vos proches">' + ICO_PART + '<span>Partager à vos proches</span></button><a class="cp-haut" href="https://www.emounateha.fr/" aria-label="Émounatéha, retour au site"><img src="/logo-complet-accueil.png?v=1" alt="Émounatéha"></a><div class="cp-tete"><div class="cp-w"><div class="cp-img">' + (C.video && !autre ? '<video class="cp-photo cp-vid" src="' + esc(C.video) + '" poster="' + esc(C.image || '') + '" playsinline controls preload="auto"></video>' : '<img class="cp-photo" src="' + esc(autre || C.image || '/fetes/hanouka.jpg') + '" alt="">') + '</div>' +
+  page.innerHTML = '<div class="cp-toit" aria-hidden="true"></div><button type="button" class="cp-part" id="cpPart" aria-label="Partager à vos proches">' + ICO_PART + '<span>Partager à vos proches</span></button><a class="cp-haut" href="https://www.emounateha.fr/" aria-label="Émounatéha, retour au site"><img src="/logo-complet-accueil.png?v=1" alt="Émounatéha"></a><div class="cp-tete"><div class="cp-w"><div class="cp-img">' + (C.video && !autre ? '<video class="cp-photo cp-vid" src="' + esc(C.video) + '" poster="' + esc(C.image || '') + '" playsinline controls preload="auto"></video>' : '<img class="cp-photo" src="' + esc(autre || C.image || '/fetes/hanouka.jpg') + '" alt="">') + '</div>' +
     '<div class="cp-pan">' + (C.marque ? '<div class="cp-marque" aria-label="' + esc(C.marque.nom) + (C.marque.par ? ', par Émounatéha' : '') + '"><p class="n" aria-hidden="true">' + (C.marque.he ? '<i lang="he" dir="rtl">' + esc(C.marque.he) + '</i>' : '') + '<b>' + esc(C.marque.nom) + '</b></p>' + (C.marque.par ? '<p class="p" aria-hidden="true">by <b>Émounatéha</b><i lang="he" dir="rtl">' + esc(C.marque.par) + '</i></p>' : '') + '</div>' : '<p class="cp-sur">' + esc(C.etiquette) + '</p>') + '<h1 class="cp-t">' + esc(b.titre) + '</h1>' +
     '<div class="cp-nb" id="cpNb"><div class="cp-od" id="cpOd" aria-hidden="true">' + Array.from({ length: nbCh }, () => '<div class="d"><b>' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(x => '<span>' + x + '</span>').join('') + '</b></div>').join('') + '</div><span class="cp-mot" id="cpMot">' + esc(mots(2)) + '</span></div>' +
     (obj ? '<div class="cp-seg" id="cpSeg" role="progressbar" aria-valuemin="0" aria-valuemax="' + obj + '">' + '<i><u></u></i>'.repeat(8) + '</div><p class="cp-leg"><span id="cpPro"></span><b>Objectif ' + fr(obj) + '</b></p>' : '') +
