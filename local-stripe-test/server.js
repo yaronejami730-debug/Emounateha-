@@ -277,11 +277,13 @@ app.disable('x-powered-by');
 app.use((req, res, next) => { if (req.url === '/don-cerfa' || req.url.startsWith('/don-cerfa/') || req.url.startsWith('/don-cerfa?')) req.url = req.url.slice(10) || '/'; next(); });
 if (process.env.VERCEL) { app.set('trust proxy', true); app.use(require('./store')({ DATA, RECUS })); }   // Vercel : données dans Postgres (voir store.js)
 // --- accès : l'ordinateur local a tous les droits ; via le tunnel HTTPS (*.trycloudflare.com) seule la page de don est ouverte ---
+const HOTE_CLUB = 'clubhai.emounateha.fr';   // le Club 'Haï a sa propre adresse : la page du club y est servie à la racine (sans redirection)
 const hits = new Map();
 app.use((req, res, next) => {
   const host = req.headers.host || '';
+  if (host.toLowerCase() === HOTE_CLUB && /^\/(api\/index(\.js)?)?$/.test(req.path)) { req.clubHote = true; const k = req.url.indexOf('?'); req.url = '/campagne/club' + (k < 0 ? '' : req.url.slice(k)); }
   if (!process.env.VERCEL && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && !req.headers['cf-connecting-ip']) return next();          // ordinateur local
-  if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST && host !== 'don.emounateha.fr') return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
+  if (!/^[a-z0-9-]+\.trycloudflare\.com$/i.test(host) && !(process.env.VERCEL && /\.vercel\.app$/i.test(host)) && host !== process.env.PUBLIC_HOST && host !== 'don.emounateha.fr' && host.toLowerCase() !== HOTE_CLUB) return res.status(403).type('text').send('Hôte non autorisé');   // rien d'autre n'entre
   if (req.path.startsWith('/backoffice') || req.path === '/api/recu') return res.status(403).type('text').send("Réservé à l'ordinateur local");
   if (req.path === '/api/vu') return next();                                                                             // mesure d'audience : hors limite (un signe de vie toutes les 30 s)
   if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {                                        // limite : 30 envois (60 modifications de profil) / 10 min / visiteur
@@ -308,7 +310,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/webhook' || req.path === '/api/vu') return next();   // le webhook est protégé par la signature Stripe ; /api/vu ne modifie rien ici
   const o = req.headers.origin; if (!o) return next();
-  try { const h = new URL(o).host; if (h === req.headers.host || ('don.emounateha.fr,www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
+  try { const h = new URL(o).host; if (h === req.headers.host || ('don.emounateha.fr,clubhai.emounateha.fr,www.emounateha.fr,emounateha.fr,' + (process.env.ALLOWED_ORIGIN_HOSTS || '')).split(',').map(x => x.trim()).includes(h)) return next(); } catch (e) {}
   res.status(403).json({ error: 'Origine non autorisée' });
 });
 app.use((req, res, next) => { if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('.html') || req.path.endsWith('/'))) res.setHeader('Cache-Control', 'no-store');
@@ -715,7 +717,7 @@ app.get('/api/besoin/:slug', async (req, res) => {
   const b = await besoinInfo(String(req.params.slug)); if (!b) return res.status(404).json({ error: 'Cagnotte introuvable' });
   res.setHeader('Cache-Control', 'no-store'); res.json(besoinFiche(b));
 });
-app.get('/campagne/:adresse', (req, res, next) => { const c = campagnes().find(x => x.adresse === String(req.params.adresse)); return pageBesoin(c || null, res, next, c ? '/campagne/' + c.adresse : ''); });
+app.get('/campagne/:adresse', (req, res, next) => { const c = campagnes().find(x => x.adresse === String(req.params.adresse)); return pageBesoin(c || null, res, next, c ? (req.clubHote ? 'https://' + HOTE_CLUB + '/' : '/campagne/' + c.adresse) : ''); });
 app.get('/besoin/:slug', async (req, res, next) => pageBesoin(await besoinInfo(String(req.params.slug)), res, next));
 function pageBesoin(b, res, next, chemin) {
   let html; try { html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8'); } catch (e) { return next(); }
@@ -724,7 +726,7 @@ function pageBesoin(b, res, next, chemin) {
     return res.send(html.replace('<body', '<body data-besoin-off="null"'));
   }
   const q = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, '$1https://don.emounateha.fr' + (chemin || '/besoin/' + b.slug) + '$2')
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, '$1' + (/^https:/.test(chemin || '') ? chemin : 'https://don.emounateha.fr' + (chemin || '/besoin/' + b.slug)) + '$2')
     .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + (b.campagne ? ' — ' + q(b.campagne.etiquette) + ' · Émounatéha$2' : ' — Cagnotte Émounatéha$2'))
     .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q((b.description || 'Participez à cette cagnotte : chaque don compte.').slice(0, 180)) + '$2');
   if (b.campagne && b.campagne.apercu) {   // aperçu du lien partagé (WhatsApp, SMS, réseaux) : l'image propre à la campagne, au format paysage
