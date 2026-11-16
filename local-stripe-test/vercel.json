@@ -24,6 +24,10 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/campagne/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
       "source": "/roch-hachana",
       "destination": "/api/index.js"
     },
