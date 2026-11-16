@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sidour Tehilat Hachem en ligne — Émounatéha</title>
+<meta name="description" content="Le Sidour Tehilat Hachem en ligne, page par page : Brakhot du matin, Chaharit, Chemoné Esré, Birkat Hamazone, Min'ha, Arvit, Hallel, Avinou Malkénou, Séfirat Haomer.">
+<link rel="canonical" href="https://www.emounateha.fr/sidour/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Émounatéha">
+<meta property="og:title" content="Sidour Tehilat Hachem en ligne">
+<meta property="og:description" content="Le Sidour page par page, sur téléphone et ordinateur.">
+<meta property="og:url" content="https://www.emounateha.fr/sidour/">
+<meta name="theme-color" content="#4aa3ba">
+<link rel="icon" href="/logo.png?v=2">
+<link rel="stylesheet" href="/ecriture.css?v=14">
+<style>
+:root{--teal:#1f6a72;--teal-d:#164c52;--teal-dd:#0f393e;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--mut:#51666a;--barre:58px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:#3f95ab linear-gradient(180deg,#5db4cb 0%,#51b1c8 38%,#2f7488 78%,#245f73 100%) fixed;color:#fff;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit}
+.or{background:linear-gradient(180deg,#e2c477 0%,#b58c36 45%,#7d5c16 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* barre du haut */
+.haut{position:fixed;z-index:20;left:0;right:0;top:0;height:calc(var(--barre) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 10px 0;display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,#4aa3ba,#3a8da4);border-bottom:3px solid var(--gold)}
+.haut a,.haut button{display:inline-flex;align-items:center;gap:6px;border:1.5px solid rgba(228,205,138,.55);background:rgba(255,255,255,.06);color:var(--gold-l);text-decoration:none;border-radius:99px;padding:8px 13px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap;min-height:38px}
+.haut a:hover,.haut button:hover{background:rgba(255,255,255,.14)}
+.haut svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chap{flex:1;min-width:0;text-align:center;line-height:1.15;cursor:pointer;background:none;border:0;padding:0;min-height:0}
+.chap b{display:block;font-size:20px;font-weight:900;background-image:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);font-family:'EmouHe','Frank Ruhl Libre',serif!important}
+.chap small{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#cfe3e4;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* pages */
+.scene{position:fixed;left:0;right:0;top:calc(var(--barre) + env(safe-area-inset-top,0px));bottom:calc(var(--barre) + env(safe-area-inset-bottom,0px));display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;background:transparent}
+.scene::-webkit-scrollbar{display:none}
+.feuille{flex:0 0 100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;padding:6px 0}
+.feuille img{border:1px solid #cfe0e1;display:block;height:100%;width:auto;max-width:100%;object-fit:contain;background:#fff;box-shadow:0 6px 24px rgba(20,60,66,.28);border-radius:3px;-webkit-user-drag:none;user-select:none}
+.feuille .vide{width:min(560px,92%);height:min(86%,740px);display:grid;place-items:center;border-radius:6px;background:rgba(255,255,255,.06);color:#9fc1c4;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+
+/* barre du bas */
+.bas{position:fixed;z-index:20;left:0;right:0;bottom:0;height:calc(var(--barre) + env(safe-area-inset-bottom,0px));padding:0 10px env(safe-area-inset-bottom,0px);display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(0deg,#1f5568,#2b6a7f);border-top:3px solid var(--gold)}
+.bas button{width:54px;height:42px;display:grid;place-items:center;border:1.5px solid rgba(228,205,138,.55);background:rgba(255,255,255,.06);border-radius:14px;cursor:pointer;color:var(--gold-l)}
+.bas button:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.bas button:disabled{opacity:.3;cursor:default}
+.bas .num,.bas .num small{text-shadow:0 1px 4px rgba(0,0,0,.35)}
+.bas svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.num{flex:1;text-align:center;font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#e8f2f2}
+.num small{display:block;font-size:10.5px;letter-spacing:.1em;color:#9fc1c4;font-weight:600}
+
+/* sommaire */
+.somm{position:fixed;z-index:30;inset:0;overflow-y:auto;background:#3f95ab linear-gradient(180deg,#5db4cb 0%,#51b1c8 38%,#2f7488 78%,#245f73 100%) fixed;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px))}
+.somm[hidden]{display:none}
+.somm-in{max-width:760px;margin:0 auto;text-align:center}
+.somm-top{margin:0 0 10px;padding:0;position:relative}
+.retour{display:inline-flex;align-items:center;gap:6px;margin:0 auto 6px;border:1.5px solid rgba(228,205,138,.55);background:rgba(255,255,255,.06);color:var(--gold-l);text-decoration:none;border-radius:99px;padding:8px 15px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.retour svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lecture{display:block;margin:0 auto 14px}
+.somm h1{margin:10px 0 0;line-height:1.05}
+.somm h1 .he{background-image:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);display:block;font-size:clamp(44px,12vw,72px);font-weight:900;font-family:'EmouHe','Frank Ruhl Libre',serif!important}
+.somm h1 .fr{display:block;margin-top:6px;font-size:clamp(14px,4vw,19px);letter-spacing:.3em;text-transform:uppercase;color:var(--gold-l);font-weight:700}
+.somm .sub{margin:0 auto 20px;color:#e6f1f1;font-size:14px;max-width:520px;line-height:1.5}
+.reprendre{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 22px;max-width:420px;width:100%;border:0;border-radius:99px;padding:14px 20px;background:var(--gold);color:#1b2b2d;font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.reprendre:hover{background:var(--gold-l)}
+.reprendre[hidden]{display:none}
+.grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:620px){.grille{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
+.carte{display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;gap:5px;min-height:96px;padding:12px 8px 11px;border:2px solid #cfe0e1;border-radius:18px;background:#fff url(/bg.png) repeat;cursor:pointer;text-align:center;box-shadow:0 8px 20px rgba(20,60,66,.12);transition:transform .15s,background .15s}
+.carte:hover{background-color:#f4fafa;border-color:var(--gold);transform:translateY(-2px)}
+.carte .h{font-size:25px;font-weight:900;line-height:1.05;font-family:'EmouHe','Frank Ruhl Libre',serif!important}
+.carte .f{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--teal);line-height:1.25}
+.carte .p{font-size:10px;letter-spacing:.1em;color:var(--mut);font-weight:600;text-transform:uppercase}
+.carte.grand{grid-column:1/-1;min-height:120px;border-color:var(--gold)}
+.carte.grand .h{font-size:40px}
+.carte.grand .f{font-size:14px;letter-spacing:.3em}
+.groupe{border:2px solid rgba(228,205,138,.4);border-radius:22px;padding:14px 10px 12px;background:rgba(0,0,0,.14)}
+.groupe h2{margin:0 0 12px;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:900}
+.groupe h2 .or{font-size:34px;font-family:'EmouHe','Frank Ruhl Libre',serif!important;line-height:1.05}
+.groupe h2 .gf{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-l);font-weight:700}
+.carte.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(196,162,74,.35),0 8px 20px rgba(20,60,66,.12)}
+.note{margin:22px auto 0;max-width:520px;color:#cfe3e4;font-size:12px;line-height:1.55}
+@media(max-width:380px){.haut a span,.haut button span{display:none}.chap b{font-size:18px}}
+@media(prefers-reduced-motion:reduce){.carte{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="haut">
+  <a href="/torah/" aria-label="Retour au site"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Site</span></a>
+  <button type="button" class="chap" id="chap" aria-label="Ouvrir le sommaire"><b class="or" id="chapHe" lang="he" dir="rtl"></b><small id="chapFr"></small></button>
+  <button type="button" id="ouvrir" aria-label="Sommaire du Sidour"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Sommaire</span></button>
+</header>
+
+<main class="scene" id="scene" dir="rtl" aria-label="Pages du Sidour"></main>
+
+<nav class="bas" aria-label="Changer de page">
+  <button type="button" id="suiv" aria-label="Page suivante"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="num" id="num"></div>
+  <button type="button" id="prec" aria-label="Page précédente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+</nav>
+
+<section class="somm" id="somm" aria-label="Sidour Tehilat Hachem : choisir une prière">
+  <div class="somm-in">
+    <div class="somm-top"><a class="retour" href="/torah/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Retour au site</a>
+    <h1><span class="he or" lang="he" dir="rtl">סידור</span><span class="fr">Sidour Tehilat Hachem</span></h1></div>
+    <p class="sub">Le livre de prières, page par page. Choisissez une prière, puis balayez l’écran vers la droite pour tourner la page.</p>
+    <button type="button" class="reprendre" id="reprendre" hidden></button>
+    <div id="grille"></div>
+    <p class="note">Les pages se tournent de droite à gauche, comme dans un livre hébraïque. Flèches du clavier : ← page suivante, → page précédente.</p>
+  </div>
+</section>
+
+<script>
+/* pages disponibles (numéro dans le livre) ; les pages 19 à 22 sont reprises au début de Min'ha */
+var NUMS=[];for(var i=6;i<=95;i++)NUMS.push(i);
+NUMS=NUMS.concat([19,20,21,22]);for(i=96;i<=126;i++)NUMS.push(i);
+NUMS=NUMS.concat([241,242,243,244,245,246,247,248,249,277,278,279,341,342,343]);
+var DEB_MINHA=90,FIN_MINHA=93;
+var SECTIONS=[
+ {id:'chaharit',debut:6,fr:'Cha\u2019harit',he:'שחרית'},
+ {id:'birkat-hamazone',debut:87,fr:'Birkat Hamazone',he:'ברכת המזון'},
+ {id:'minha',debut:96,fr:'Min\u2019ha',he:'מנחה'},
+ {id:'arvit',debut:106,fr:'Arvit',he:'מעריב'},
+ {id:'chema-hamita',debut:118,fr:'Kriat Chema al hamita',he:'קריאת שמע על המטה'},
+ {id:'hallel',debut:241,fr:'Hallel',he:'הלל'},
+ {id:'moussaf',debut:245,fr:'Moussaf de Roch \u2019Hodech',he:'מוסף לראש חודש'},
+ {id:'avinou-malkenou',debut:277,fr:'Avinou Malkénou',he:'אבינו מלכנו'},
+ {id:'omer',debut:341,fr:'Séfirat Haomer',he:'ספירת העומר'}
+];
+/* repères à l'intérieur de Cha'harit (affichés en haut du lecteur) */
+var SUBS=[[6,'Brakhot du matin'],[12,'Ma Tovou'],[27,'Hodou'],[41,'Ichtaba\u2019h'],[50,'Chemoné Esré'],[71,'Achré, Ouva Letsion'],[84,'Alénou']];
+function subDe(n){var r='';SUBS.forEach(function(x){if(x[0]<=n)r=x[1]});return r}
+var ALIAS={chaharit:'chaharit',brakhot:'chaharit',hodou:'chaharit',birkat:'birkat-hamazone',kriat:'chema-hamita',chema:'chema-hamita',sefirat:'omer'};
+function sectionDe(n){var s=null;SECTIONS.forEach(function(x){if(x.debut<=n)s=x});return s}
+var PAGES=NUMS.map(function(n,i){var m=i>=DEB_MINHA&&i<=FIN_MINHA;return{n:n,sec:m?SECTIONS[2]:sectionDe(n),f:'/sidour/pages/page-'+String(n).padStart(3,'0')+'.webp?v=1'}});
+function indexDe(sec){return sec.id==='minha'?DEB_MINHA:PAGES.findIndex(function(p,i){return !(i>=DEB_MINHA&&i<=FIN_MINHA)&&p.n>=sec.debut})}
+var $=function(i){return document.getElementById(i)},scene=$('scene'),somm=$('somm'),cur=0,feuilles=[],imgs=[];
+var CLE='em-sidour-page';
+
+/* feuilles */
+PAGES.forEach(function(p,i){
+  var f=document.createElement('div');f.className='feuille';f.dataset.i=i;
+  var im=document.createElement('img');im.alt='Sidour, '+p.sec.fr+', page '+p.n;im.draggable=false;im.decoding='async';
+  f.appendChild(im);scene.appendChild(f);feuilles.push(f);imgs.push(im);
+});
+function charger(k){for(var j=k-1;j<=k+2;j++)if(imgs[j]&&!imgs[j].src)imgs[j].src=PAGES[j].f}
+
+/* page courante */
+function maj(){
+  var p=PAGES[cur];charger(cur);
+  $('chapHe').textContent=p.sec.he;$('chapFr').textContent=(p.sec.id==='chaharit'?'Cha\u2019harit · '+subDe(p.n):p.sec.fr);
+  $('num').innerHTML='Page '+p.n+'<small>'+(cur+1)+' sur '+PAGES.length+'</small>';
+  $('suiv').disabled=cur>=PAGES.length-1;$('prec').disabled=cur<=0;
+  try{localStorage.setItem(CLE,String(cur))}catch(e){}
+  document.title=p.sec.fr+' · Sidour Tehilat Hachem — Émounatéha';
+}
+function aller(i,doux){
+  i=Math.max(0,Math.min(PAGES.length-1,i));cur=i;charger(i);
+  feuilles[i].scrollIntoView({inline:'center',block:'nearest',behavior:doux===false?'auto':'smooth'});maj();
+}
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&e.intersectionRatio>=.6){var i=+e.target.dataset.i;if(i!==cur){cur=i;maj()}}})},{root:scene,threshold:[.6]});
+feuilles.forEach(function(f){io.observe(f)});
+
+/* sommaire */
+var grille=$('grille');
+function carte(s,cls){
+  var n=PAGES.filter(function(p,i){return p.sec===s&&!(i>=DEB_MINHA&&i<=FIN_MINHA&&s.id!=='minha')}).length;
+  var b=document.createElement('button');b.type='button';b.className='carte'+(cls?' '+cls:'');b.dataset.id=s.id;
+  b.innerHTML='<span class="h or" lang="he" dir="rtl">'+s.he+'</span><span class="f">'+s.fr+'</span><span class="p">'+n+' pages</span>';
+  b.addEventListener('click',function(){ouvrirPriere(s)});
+  return b;
+}
+var par=function(id){return SECTIONS.filter(function(x){return x.id===id})[0]};
+/* un seul carré Cha'harit, puis Min'ha, Arvit, et le reste dans l'ordre du livre */
+var ordre=['chaharit','minha','arvit','birkat-hamazone','chema-hamita','hallel','moussaf','avinou-malkenou','omer'];
+var g=document.createElement('div');g.className='grille';
+ordre.forEach(function(id){g.appendChild(carte(par(id),id==='chaharit'?'grand':''))});
+grille.appendChild(g);
+function ouvrirPriere(s){fermerSomm();aller(indexDe(s),false);try{history.replaceState(null,'','#'+s.id)}catch(e){}}
+function ouvrirSomm(){
+  somm.hidden=false;somm.scrollTop=0;
+  var s=PAGES[cur].sec;grille.querySelectorAll('.carte').forEach(function(c){c.classList.toggle('on',c.dataset.id===s.id)});
+  var r=$('reprendre');if(started){r.hidden=false;r.textContent='Reprendre : '+s.fr+', page '+PAGES[cur].n}else r.hidden=true;
+}
+function fermerSomm(){somm.hidden=true}
+var started=false;
+
+$('ouvrir').addEventListener('click',ouvrirSomm);$('chap').addEventListener('click',ouvrirSomm);
+$('reprendre').addEventListener('click',function(){fermerSomm()});
+$('suiv').addEventListener('click',function(){aller(cur+1)});
+$('prec').addEventListener('click',function(){aller(cur-1)});
+document.addEventListener('keydown',function(e){
+  if(somm.hidden){
+    if(e.key==='ArrowLeft'){aller(cur+1);e.preventDefault()}
+    else if(e.key==='ArrowRight'){aller(cur-1);e.preventDefault()}
+    else if(e.key==='Escape')ouvrirSomm();
+  }else if(e.key==='Escape'&&started)fermerSomm();
+});
+
+/* démarrage : lien direct (#minha), sinon dernière page lue, sinon sommaire */
+(function(){
+  var h=(location.hash||'').replace('#',''),s=null;
+  if(h){h=ALIAS[h]||h;SECTIONS.forEach(function(x){if(x.id===h)s=x})}
+  var m=-1;try{m=parseInt(localStorage.getItem(CLE),10)}catch(e){}
+  var vu=m>=0&&m<PAGES.length;if(vu)cur=m;
+  if(s){started=true;fermerSomm();aller(indexDe(s),false)}
+  else{started=vu;aller(cur,false);ouvrirSomm();started=true}
+})();
+</script>
+</body>
+</html>
