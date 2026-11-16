@@ -168,7 +168,7 @@ function remplir(don, numero, { signe, modele } = {}) {
     modePaiement: esc(don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne')), dateSignature: fmt(signe || Date.now()),
     assoForme: esc(ASSO.forme || ''), assoSiret: esc(ASSO.siret || ''), assoContact: esc(`${ASSO.email} · ${ASSO.telephone}`), assoNomMin: esc(ASSO.nom), assoEmail: esc(ASSO.email), conservation: esc(ASSO.conservation || '6 ans'),
     dateVersement: fmt(don.dateDon), periodicite: don.mensuel ? `Don mensuel (un reçu pour chaque prélèvement) — échéance n°${don.echeance || 1}${don.nb ? ' sur ' + don.nb : ''}` : 'Don ponctuel',
-    modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : /klarna/i.test(don.mode) ? 'Klarna' : /Apple Pay/i.test(don.mode) ? 'Carte bancaire (Apple Pay)' : /Google Pay/i.test(don.mode) ? 'Carte bancaire (Google Pay)' : 'Carte bancaire', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
+    modeCourt: /Esp[eè]ces/i.test(don.mode) ? 'Espèces' : /Ch[eè]que/i.test(don.mode) ? 'Chèque' : /Virement/i.test(don.mode) ? 'Virement' : /paypal/i.test(don.mode) ? 'PayPal' : /klarna/i.test(don.mode) ? 'Klarna' : /SEPA/i.test(don.mode) ? 'Prélèvement SEPA' : /Apple Pay/i.test(don.mode) ? 'Carte bancaire (Apple Pay)' : /Google Pay/i.test(don.mode) ? 'Carte bancaire (Google Pay)' : 'Carte bancaire', modeEsp: /Esp[eè]ces/i.test(don.mode) ? OK : '', modeChq: /Ch[eè]que/i.test(don.mode) ? OK : '', modeVir: /Esp[eè]ces|Ch[eè]que/i.test(don.mode) ? '' : OK,
     blocSignature: sig, piedPage: esc(`Reçu cerfa généré par ${ASSO.nom}`), testDisplay: process.env.NO_TEST_BANNER || PREFIX !== 'TEST' ? 'display:none' : ''
   };
   let html = fs.readFileSync(modeleDe(modele), 'utf8'); for (const [k, val] of Object.entries(v)) html = html.split(`{{${k}}}`).join(val); return html;
@@ -209,7 +209,7 @@ async function pdfTampon(html) {
 // --- email : vrai envoi si SMTP configuré, sinon fichier .eml (ouvrable dans Mail) ---
 async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, don }) {
   if (don && !mailer.isFake(to)) {     // vraie adresse : email Brevo (modèle unique pour tous les dons), reçu en pièce jointe
-    const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance, remplace: don.remplace || '',
+    const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance, remplace: don.remplace || '', club: clubDe(don.besoin),
       spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
     if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${nomFichier(numero)}.pdf`, content: vault.readFile(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
   }
@@ -322,16 +322,19 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
       const id = ev.data.object.id, d = load();
       if (d.pending[id] || d.receipts[id]) { const r = await receiptForPayment(id); console.log('[webhook]', ev.type, id, '->', r.numero, r.deja ? '(déjà créé)' : '(créé par le webhook)'); }
       else console.log('[webhook]', ev.type, id, '-> ignoré (paiement qui ne vient pas de cette page)');
+    } else if (ev.type === 'payment_intent.payment_failed') {
+      const id = ev.data.object.id, d = load();
+      if (d.pending[id] && d.pending[id].attente) { delete d.pending[id]; save(d); console.log('[webhook]', ev.type, id, '-> prélèvement refusé par la banque, aucun reçu créé'); }
     } else if (ev.type === 'invoice.paid' && ev.data.object.billing_reason === 'subscription_cycle') {
       const inv = ev.data.object, d = load();                      // don mensuel : un reçu à chaque prélèvement (2e échéance et suivantes)
       if (d.receipts[inv.id]) console.log('[webhook] invoice.paid', inv.id, '(déjà créé)');
       else {
         const subId = inv.subscription || (inv.parent && inv.parent.subscription_details && inv.parent.subscription_details.subscription);
         if (!subId) throw new Error('abonnement introuvable sur la facture ' + inv.id);
-        const sub = await stripe.subscriptions.retrieve(subId), cu = await stripe.customers.retrieve(inv.customer), m = sub.metadata || {}, ad = cu.address || {};
+        const sub = await stripe.subscriptions.retrieve(subId, { expand: ['default_payment_method'] }), cu = await stripe.customers.retrieve(inv.customer), m = sub.metadata || {}, ad = cu.address || {};
         const n = (await stripe.invoices.list({ subscription: sub.id, limit: 100 })).data.filter(i => i.status === 'paid').length;
         const out = await fabriquer({ type: m.type === 'entreprise' ? 'entreprise' : 'particulier', nom: cu.name, siren: m.siren || '', adresse: `${ad.line1 || ''}, ${ad.postal_code || ''} ${ad.city || ''}`, email: cu.email, montant: inv.amount_paid, mensuel: true, nb: m.nb ? +m.nb : 0, echeance: n,
-          mode: 'Carte bancaire — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
+          mode: moyenDe(sub.default_payment_method && typeof sub.default_payment_method === 'object' ? sub.default_payment_method : null) + ' — don mensuel, échéance n°' + n, dateDon: new Date((inv.status_transitions.paid_at || inv.created) * 1000).toISOString(), affectation: m.affectation }, { envoyerEmail: m.envoi === '1' });
         out.affectation = m.affectation; out.mensuel = true; if (m.fin) out.fin = m.fin; if (m.nb) { out.nb = +m.nb; out.total = +m.total; } { const a = attrDe(m); if (Object.keys(a).length) { out.attr = a; out.attrRepeat = true; } }   // prélèvement suivant : même provenance que le 1er don
         if (m.ambassadeur) out.ambassadeur = m.ambassadeur;
         if (m.proche) { const pr = acc.prochesDe((load().users || {})[String(cu.email || '').toLowerCase()]).find(x => x.id === m.proche); out.proche = m.proche; if (pr && !pr.supprime && pr.lien) out.vuPar = pr.lien; }   // don mensuel au nom d'un proche relié
@@ -388,6 +391,7 @@ const attrDe = m => cleanAttr({ src: m.utm_source, med: m.utm_medium, c: m.utm_c
 app.post('/api/intent', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré (.env)');
+    { const camp = req.body.besoin && campagnes().find(c => c.slug === String(req.body.besoin)); if (camp) { const C = camp.campagne, voulu = Math.round(Number(req.body.montant) * 100); if (!(C.libre && voulu >= 100)) req.body.montant = (C.parts.includes(voulu) ? voulu : C.part) / 100;   /* « autre montant » (libre à true) : montant libre, contrôlé comme tout don (1 € au moins) */ req.body.frequence = C.mensuel ? 'mensuel' : 'ponctuel'; req.body.duree = 'infini'; req.body.repartition = ''; } }   // campagne : seuls les montants prévus sont acceptés, quoi qu'envoie la page ; campagne mensuelle = don mensuel sans limite de durée
     const fete = await lignesFete(req.body); if (fete) req.body.montant = fete.total / 100;   // le total est recalculé ici ; le don d'une fête / action peut aussi être mensuel ou réparti en plusieurs fois
     const sess = acc.getSession(req); let proche = null;
     if (req.body.procheId) {
@@ -403,9 +407,9 @@ app.post('/api/intent', async (req, res) => {
     if (req.body.besoin) {
       besoin = await besoinInfo(String(req.body.besoin));
       if (!besoin || !besoin.actif) throw new Error("Cette cagnotte n'est plus ouverte aux dons.");
-      if (mensuel) throw new Error('Une cagnotte reçoit uniquement des dons ponctuels.');
+      if (mensuel && !(besoin.campagne && besoin.campagne.mensuel)) throw new Error('Une cagnotte reçoit uniquement des dons ponctuels.');
     }
-    const aff = besoin ? ('Besoin : ' + besoin.titre).slice(0, 78) : fete ? fete.affectation : affectation(req.body, await affectationsOk());
+    const aff = besoin ? ((besoin.campagne ? besoin.campagne.etiquette : 'Besoin') + ' : ' + besoin.titre).slice(0, 78) : fete ? fete.affectation : affectation(req.body, await affectationsOk());
     let amb = String(req.body.amb || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);   // lien d'ambassadeur
     if (!amb) { // donateur déjà venu par un ambassadeur : il lui reste attribué, en permanence
       const em = String(don.email || '').toLowerCase(), prev = Object.values(load().receipts || {}).filter(r => r.ambassadeur && r.donorEmail === em).sort((a, b) => String(a.dateDon).localeCompare(String(b.dateDon)))[0];
@@ -434,33 +438,37 @@ app.post('/api/intent', async (req, res) => {
     }
     const meta = { type: don.type, donateur: don.nom.slice(0, 100), ville: don.ville.slice(0, 60), affectation: aff.slice(0, 80), frequence: mensuel ? 'mensuel' : 'ponctuel', ambassadeur: amb, ...(besoin ? { besoin: besoin.slug } : {}), ...(fin ? { fin } : {}), ...attrMeta(attr) };
     // libellé visible dans Stripe, sur chaque paiement : à quoi le don est destiné (action, fête, « là où le besoin est le plus grand », ou la cagnotte)
-    const libelle = (`Don ${mensuel ? (nb ? 'en ' + nb + ' fois ' : 'mensuel ') : ''}${ASSO.nom}${T} — ` + (besoin ? 'Besoin : ' + besoin.titre + ' (' + besoin.slug + ')' : aff)).slice(0, 240);
+    const libelle = (`Don ${mensuel ? (nb ? 'en ' + nb + ' fois ' : 'mensuel ') : ''}${ASSO.nom}${T} — ` + (besoin ? (besoin.campagne ? besoin.campagne.etiquette : 'Besoin') + ' : ' + besoin.titre + ' (' + besoin.slug + ')' : aff)).slice(0, 240);
+    // moyens proposés : carte (Apple Pay et Google Pay passent par la carte), PayPal, Klarna, prélèvement SEPA ; si un moyen n'est pas activé sur le compte Stripe, on essaie sans lui (jamais sans la carte)
+    const MOYENS = [['card', 'paypal', 'klarna', 'sepa_debit'], ['card', 'paypal', 'sepa_debit'], ['card', 'sepa_debit'], ['card', 'paypal', 'klarna'], ['card', 'paypal'], ['card']];
     let id, clientSecret, subscription = null;
     if (mensuel) {
       const cust = await stripe.customers.create({ email: don.email, name: don.nom, address: { line1: don.adresse.split(',')[0], postal_code: (don.adresse.match(/\b\d{5}\b/) || [''])[0], city: don.ville, country: 'FR' }, metadata: meta });
       const prod = await stripe.products.create({ name: `${nb ? 'Don en ' + nb + ' fois' : 'Don mensuel'} ${ASSO.nom}${T}` });
-      const sub = await stripe.subscriptions.create({ customer: cust.id, description: libelle, payment_behavior: 'default_incomplete', payment_settings: { payment_method_types: ['card'], save_default_payment_method: 'on_subscription' },
+      let sub, refus;
+      for (const types of MOYENS) { try { sub = await stripe.subscriptions.create({ customer: cust.id, description: libelle, payment_behavior: 'default_incomplete', payment_settings: { payment_method_types: types, save_default_payment_method: 'on_subscription' },
         items: [{ price_data: { currency: 'eur', unit_amount: par, recurring: { interval: 'month' }, product: prod.id } }],
         ...(reste ? { add_invoice_items: [{ price_data: { currency: 'eur', unit_amount: reste, product: prod.id } }] } : {}),
         ...(fin ? { cancel_at: Math.floor(Date.parse(fin + 'T23:59:59Z') / 1000) } : {}),   // Stripe arrête les prélèvements à cette date
-        metadata: { ...meta, ...(nb ? { nb: String(nb), total: String(total) } : {}), siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0', ...(don.proche ? { proche: don.proche } : {}) }, expand: ['latest_invoice.payment_intent'] });
+        metadata: { ...meta, ...(nb ? { nb: String(nb), total: String(total) } : {}), siren: don.siren || '', envoi: req.body.envoyerEmail ? '1' : '0', ...(don.proche ? { proche: don.proche } : {}) }, expand: ['latest_invoice.payment_intent'] }); break; } catch (e) { refus = e; console.error('[intent] abonnement, moyens', types.join('+'), 'refusés :', e.message); } }
+      if (!sub) throw refus;
       const pi = sub.latest_invoice.payment_intent; id = pi.id; clientSecret = pi.client_secret; subscription = sub.id;
     } else {
-      // don ponctuel : carte (Apple Pay et Google Pay passent par la carte), PayPal et Klarna ; si un moyen n'est pas activé sur le compte Stripe, on retire les moyens en trop (jamais la carte)
       const envT = (process.env.PAYMENT_METHODS || 'card').split(',').map(x => x.trim()).filter(Boolean), base = { amount: don.montant, currency: 'eur', description: libelle, metadata: meta };
-      const essais = [[...new Set([...envT, 'card', 'paypal', 'klarna'])], [...new Set([...envT, 'card', 'paypal'])], ['card']];
+      const essais = MOYENS.map(t => [...new Set([...envT, ...t])]);
       let pi, derniere;
       for (const types of essais) { try { pi = await stripe.paymentIntents.create({ ...base, payment_method_types: types }); break; } catch (e) { derniere = e; console.error('[intent] moyens', types.join('+'), 'refusés :', e.message); } }
       if (!pi) throw derniere;
       id = pi.id; clientSecret = pi.client_secret;
     }
-    const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > 3 * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours
+    const d = load(); for (const [k, v] of Object.entries(d.pending)) if (Date.now() - (v.at || 0) > (v.attente ? 45 : 3) * 86400000) delete d.pending[k];   // paiements jamais terminés : effacés après 3 jours (45 jours pour un prélèvement SEPA en cours à la banque)
     d.pending[id] = { ...don, amb, besoin: besoin ? besoin.slug : '', besoinNom: !!(besoin && req.body.afficherNom === true), envoyerEmail: !!req.body.envoyerEmail, affectation: aff, mensuel, subscription, fin, nb, total, attr, lignes: fete && !mensuel ? fete.lignes : null, owner: sess ? sess.email : null, saveProfile: !!(sess && req.body.saveProfile && !proche), at: Date.now() }; save(d);
     res.json({ clientSecret, id, montant: don.montant, mensuel });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 // 2) après paiement : le navigateur OU le webhook Stripe déclenchent la création du reçu ; on vérifie toujours auprès de Stripe, et une seule fois par paiement
 const inflight = new Map();
+const moyenDe = pm => { const wal = pm && pm.card && pm.card.wallet && pm.card.wallet.type; return !pm ? 'Carte bancaire' : pm.type === 'paypal' ? 'PayPal' : pm.type === 'klarna' ? 'Klarna' : pm.type === 'sepa_debit' ? 'Prélèvement SEPA' : wal === 'apple_pay' ? 'Carte bancaire (Apple Pay)' : wal === 'google_pay' ? 'Carte bancaire (Google Pay)' : 'Carte bancaire'; };
 async function receiptForPayment(id) {
   const d0 = load(); if (d0.receipts[id]) return { ...d0.receipts[id], deja: true };
   if (inflight.has(id)) return inflight.get(id);                 // deux demandes en même temps : la 2e attend la 1re
@@ -468,8 +476,12 @@ async function receiptForPayment(id) {
     const d = load(); if (d.receipts[id]) return { ...d.receipts[id], deja: true };
     const p = d.pending[id]; if (!p) throw new Error('Paiement inconnu de cette page');
     const pi = await stripe.paymentIntents.retrieve(id, { expand: ['payment_method'] });
-    const pm = pi.payment_method || {}, wal = pm.card && pm.card.wallet && pm.card.wallet.type;
-    const moyen = pm.type === 'paypal' ? 'PayPal' : pm.type === 'klarna' ? 'Klarna' : wal === 'apple_pay' ? 'Carte bancaire (Apple Pay)' : wal === 'google_pay' ? 'Carte bancaire (Google Pay)' : 'Carte bancaire';
+    const pm = pi.payment_method || {};
+    const moyen = moyenDe(pm);
+    if (pi.status === 'processing') {
+      if (!p.attente) { p.attente = Date.now(); p.envoyerEmail = true; save(d); }
+      return { attente: true, moyen, montant: p.montant, mensuel: !!p.mensuel, affectation: p.affectation, nb: p.nb || 0, total: p.total || 0, fin: p.fin || '' };
+    }
     if (pi.status !== 'succeeded') throw new Error(`Paiement non abouti (statut : ${pi.status})`);
     if (pi.amount !== p.montant) throw new Error('Montant incohérent');
     const out = await fabriquer({ ...p, echeance: 1, mode: moyen + (p.mensuel ? ' — don mensuel, 1re échéance' : ''), dateDon: new Date(pi.created * 1000).toISOString() }, { envoyerEmail: p.envoyerEmail });
@@ -565,7 +577,7 @@ app.post('/api/finalize', async (req, res) => {
   try {
     if (!stripe) throw new Error('Stripe non configuré');
     const id = String(req.body.id || ''); if (!/^pi_[A-Za-z0-9]+$/.test(id)) throw new Error('Paiement inconnu');
-    res.json(acc.publicReceipt(await receiptForPayment(id)));
+    const r = await receiptForPayment(id); res.json(r.attente ? r : acc.publicReceipt(r));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 // 3) reçu SANS paiement (virement, chèque, espèces déjà reçus)
@@ -583,7 +595,7 @@ const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.n
   mail: r.email && !r.email.skipped ? { sent: !!r.email.sent, messageId: r.email.messageId || '', at: r.email.at || null, to: r.email.to || r.donorEmail || '', error: r.email.error || '', note: r.email.note || '', brevo: !!r.email.brevo, par: r.email.par || 'auto' } : null, mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
 const ordreNum = n => { const m = String(n || '').match(/(\d{4})\D+(\d+)$/); return (/^TEST/i.test(String(n || '')) ? 0 : 1e12) + (m ? +m[1] * 1e6 + +m[2] : 0); };
 const trouverRecu = (d, ref) => { for (const coll of ['receipts', 'manuels']) if (d[coll] && Object.prototype.hasOwnProperty.call(d[coll], ref)) return d[coll][ref]; return null; };
-const mailDuRecu = r => mailer.donEmail({ prenom: r.type === 'entreprise' ? '' : (r.form && r.form.prenom) || '', montant: r.montant, dateDon: r.dateDon, affectation: r.affectation, mode: String(r.mode || '').replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero: r.numero, mensuel: r.mensuel, echeance: r.echeance, remplace: r.remplace || '',
+const mailDuRecu = r => mailer.donEmail({ prenom: r.type === 'entreprise' ? '' : (r.form && r.form.prenom) || '', montant: r.montant, dateDon: r.dateDon, affectation: r.affectation, mode: String(r.mode || '').replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero: r.numero, mensuel: r.mensuel, echeance: r.echeance, remplace: r.remplace || '', club: clubDe(r.besoin),
   spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
 // CRM : (r)envoyer le reçu par e-mail au donateur, avec trace de l'envoi
 app.post('/api/admin/renvoyer', async (req, res) => {
@@ -672,9 +684,17 @@ app.get(['/holidays.json', '/diffusion.json', '/api/zmanim', '/api/parasha', '/a
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.use(express.static(SITE_PUBLIC, { index: false, dotfiles: 'deny' }));
 // ---- mini-cagnottes « besoin » : la fiche vient du CRM (site principal), le montant collecté vient des reçus de ce serveur
+// Campagnes de participation (campagnes.config.json) : même mécanique qu'une cagnotte (le don est attribué par son étiquette), mais la page compte les PARTICIPANTS, jamais les euros.
+const CAMP_FILE = path.join(__dirname, 'campagnes.config.json'); let campCache = { m: 0, list: [] };
+const clubDe = slug => { try { const c = slug && campagnes().find(x => x.slug === slug); return c && c.marque && c.mensuel ? { nom: c.marque.nom, he: c.marque.he || '', goral: c.goral || '' } : null; } catch (e) { return null; } };   // club (don mensuel) : message de bienvenue dans l'email du 1er don
+function campagnes() {
+  try { const m = fs.statSync(CAMP_FILE).mtimeMs; if (m !== campCache.m) campCache = { m, list: (JSON.parse(fs.readFileSync(CAMP_FILE, 'utf8')).campagnes || []).filter(c => /^[a-z0-9-]{1,40}$/.test(c.slug || '') && /^[a-z0-9-]{1,40}$/.test(c.adresse || '') && c.titre && (Number(c.part) > 0 || (Array.isArray(c.parts) && c.parts.length && c.parts.every(x => Number(x) > 0)))).map(c => ({ slug: c.slug, adresse: c.adresse, titre: String(c.titre).slice(0, 80), description: String(c.description || '').slice(0, 600), actif: c.actif !== false, campagne: { sectionTitre: String(c.sectionTitre || '').slice(0, 90), contenu: (Array.isArray(c.contenu) ? c.contenu : []).slice(0, 24).map(x => String(x).slice(0, 40)), image: /^\/[a-z0-9\/_.-]{1,80}\.(jpg|jpeg|png|webp)$/i.test(c.image || '') ? c.image : '', video: /^\/[a-z0-9\/_.-]{1,80}\.mp4$/i.test(c.video || '') ? c.video : '', etiquette: String(c.etiquette || 'Campagne').slice(0, 40), part: Math.round(Number(Array.isArray(c.parts) && c.parts.length ? c.parts[0] : c.part) * 100), parts: (Array.isArray(c.parts) && c.parts.length ? c.parts : [c.part]).slice(0, 4).map(x => Math.round(Number(x) * 100)), mensuel: c.mensuel === true, mot: String(c.mot || 'participant').replace(/[^a-zA-Zàâéèêëîïôöûüç ]/g, '').slice(0, 20) || 'participant', goral: String(c.goral || '').slice(0, 300), lumieres: c.lumieres === true, marque: c.marque && c.marque.nom ? { nom: String(c.marque.nom).slice(0, 30), he: String(c.marque.he || '').replace(/[^\u0590-\u05FF ]/g, '').slice(0, 12), par: String(c.marque.par || '').replace(/[^\u0590-\u05FF ]/g, '').slice(0, 16) } : null, libre: c.libre === true, etapes: (Array.isArray(c.etapes) ? c.etapes : []).slice(0, 3).map(e => [String((e && e[0]) || '').slice(0, 70), String((e && e[1]) || '').slice(0, 140)]), objectif: Math.max(0, Math.round(Number(c.objectif) || 0)) } })) }; } catch (e) { console.error('[campagnes] fichier illisible, ancienne version conservée :', e.message); }
+  return campCache.list;
+}
 const besoinCache = new Map();
 async function besoinInfo(slug) {
   if (!/^[a-z0-9-]{1,40}$/.test(slug)) return null;
+  const camp = campagnes().find(c => c.slug === slug); if (camp) return camp;
   const c = besoinCache.get(slug); if (c && Date.now() - c.at < 20000) return c.v;
   let v = c ? c.v : null;
   try { const r = await fetch(SITE + '/api/besoin?slug=' + slug, { signal: AbortSignal.timeout(5000) }); if (r.ok) v = await r.json(); else if (r.status === 404) v = null; } catch (e) { console.error('[besoin]', e.message); }
@@ -684,6 +704,10 @@ async function besoinInfo(slug) {
 function besoinFiche(b) {   // ce que la page affiche : la fiche + le total des dons reçus par ce lien
   let collecte = 0, dons = 0; const liste = [];
   for (const r of Object.values(load().receipts || {})) if (r.besoin === b.slug) { collecte += r.montant || 0; dons++; liste.push({ nom: r.besoinNom ? String(r.nom || '').slice(0, 60) : 'Anonyme', montant: r.montant || 0, date: r.dateDon }); }
+  if (b.campagne) {   // campagne : un don = un participant ; aucun montant ne sort d'ici (ni total, ni don par don)
+    liste.sort((x, y) => String(y.date).localeCompare(String(x.date)));
+    return { slug: b.slug, titre: b.titre, description: b.description || '', actif: !!b.actif, campagne: b.campagne, participants: dons, noms: liste.filter(x => x.nom !== 'Anonyme').slice(0, 60).map(x => x.nom) };
+  }
   liste.sort((x, y) => String(y.date).localeCompare(String(x.date)));   // anonyme par défaut ; le nom n'apparaît que si le donateur a coché « Afficher mon nom »
   return { slug: b.slug, titre: b.titre, beneficiaire: String(b.beneficiaire || '').slice(0, 120), description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte, dons, donateurs: liste.slice(0, 40).map(x => ({ nom: x.nom, montant: x.montant })) };
 }
@@ -691,21 +715,22 @@ app.get('/api/besoin/:slug', async (req, res) => {
   const b = await besoinInfo(String(req.params.slug)); if (!b) return res.status(404).json({ error: 'Cagnotte introuvable' });
   res.setHeader('Cache-Control', 'no-store'); res.json(besoinFiche(b));
 });
-app.get('/besoin/:slug', async (req, res, next) => {
-  const b = await besoinInfo(String(req.params.slug));
+app.get('/campagne/:adresse', (req, res, next) => { const c = campagnes().find(x => x.adresse === String(req.params.adresse)); return pageBesoin(c || null, res, next, c ? '/campagne/' + c.adresse : ''); });
+app.get('/besoin/:slug', async (req, res, next) => pageBesoin(await besoinInfo(String(req.params.slug)), res, next));
+function pageBesoin(b, res, next, chemin) {
   let html; try { html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8'); } catch (e) { return next(); }
   if (!b) {   // adresse de cagnotte inconnue : on le dit clairement (« Cagnotte introuvable »), au lieu d'afficher le don général comme si de rien n'était
     res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8'); res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Robots-Tag', 'noindex');
     return res.send(html.replace('<body', '<body data-besoin-off="null"'));
   }
   const q = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, '$1https://don.emounateha.fr/besoin/' + b.slug + '$2')
-    .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + ' — Cagnotte Émounatéha$2')
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, '$1https://don.emounateha.fr' + (chemin || '/besoin/' + b.slug) + '$2')
+    .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + (b.campagne ? ' — ' + q(b.campagne.etiquette) + ' · Émounatéha$2' : ' — Cagnotte Émounatéha$2'))
     .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q((b.description || 'Participez à cette cagnotte : chaque don compte.').slice(0, 180)) + '$2');
   // la fiche est écrite dans la page : la cagnotte s'affiche tout de suite, sans passer par l'écran de don général (fête en cours, choix d'action…)
-  html = html.replace('<body', '<body data-besoin' + (b.actif ? '' : '-off') + '="' + q(JSON.stringify({ slug: b.slug, titre: b.titre, beneficiaire: String(b.beneficiaire || '').slice(0, 120), description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte: null, dons: 0 })) + '"');   // le total collecté est demandé ensuite par la page (/api/besoin/<slug>) : cette adresse-ci ne lit pas les reçus   // clôturée : simple message, puis don normal
+  html = html.replace('<body', '<body data-besoin' + (b.actif ? '' : '-off') + '="' + q(JSON.stringify({ slug: b.slug, titre: b.titre, beneficiaire: String(b.beneficiaire || '').slice(0, 120), description: b.description || '', objectif: b.objectif || null, actif: !!b.actif, collecte: null, dons: 0, ...(b.campagne ? { campagne: b.campagne, participants: null } : {}) })) + '"');   // le total collecté est demandé ensuite par la page (/api/besoin/<slug>) : cette adresse-ci ne lit pas les reçus   // clôturée : simple message, puis don normal
   res.setHeader('Cache-Control', 'no-store'); res.type('html').send(html);
-});
+}
 // une adresse par action : don.emounateha.fr/hanouka, /un-toit-sur-la-tete, /reinsertion-sociale, /l-aide-a-la-scolarite… (la page présélectionne l'action)
 const slugOf = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' et ').replace(/^l['’]/, 'l-').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 function slugsAffectations() {

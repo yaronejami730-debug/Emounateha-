@@ -34,7 +34,7 @@ var b=document.createElement('a');b.id='hnband';b.href=LINK;
 b.innerHTML=flame+'<span class="t">Hanouka</span><span class="c">'+cnt+'</span><u>Offrir un colis</u>';
 function mountBand(){document.body.insertBefore(b,document.body.firstChild);
   /* bandeau toujours visible : la barre de menu se cale juste en dessous */
-  function fit(){var n=document.querySelector('.sec-nav');if(n&&n.style)n.style.top=b.offsetHeight+'px'}
+  function fit(){if(window.clFit)return window.clFit();var n=document.querySelector('.sec-nav');if(n&&n.style)n.style.top=b.offsetHeight+'px'}
   fit();addEventListener('resize',fit);setTimeout(fit,400);setTimeout(fit,1500)}
 if(document.body)mountBand();else document.addEventListener('DOMContentLoaded',mountBand);
 /* fenêtre « flyer » : l'affiche Hanouka en grand, une fois par visite ; le bandeau la rouvre */

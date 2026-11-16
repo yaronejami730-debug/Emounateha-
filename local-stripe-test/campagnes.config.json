@@ -1,0 +1,65 @@
+{
+  "_aide": "Campagnes de participation : adresse don.emounateha.fr/campagne/<adresse>. La page affiche un compteur de PARTICIPANTS (jamais de somme). part = montant d'une participation en euros, ou parts = plusieurs montants au choix (ex. [18, 26]) ; libre à true = bouton « Autre montant » (montant libre) ; mensuel à true = don mensuel sans limite de durée ; mot = nom du compteur au singulier (participant, membre) ; objectif = nombre visé ; lumieres à true = l'objectif est découpé en huit lumières (Hanouka). Pour fermer une campagne : actif à false.",
+  "campagnes": [
+    {
+      "adresse": "hanouka",
+      "slug": "campagne-hanouka",
+      "etiquette": "Campagne de Hanouka",
+      "titre": "Une lumière dans chaque foyer",
+      "description": "Avec 18 €, vous prenez part à toutes les actions de Hanouka d'Émounatéha.",
+      "part": 18,
+      "objectif": 770,
+      "actif": true,
+      "contenu": [
+        "Distribution de beignets",
+        "Distribution de hanoukiot",
+        "Voitures de Hanouka",
+        "Parade de Hanouka",
+        "Colis de Hanouka pour les familles"
+      ],
+      "image": "/fetes/campagne-hanouka.jpg",
+      "sectionTitre": "Votre participation, dans toutes les actions de Hanouka",
+      "lumieres": true
+    },
+    {
+      "adresse": "club",
+      "slug": "club-emounateha",
+      "etiquette": "Club 'Haï",
+      "titre": "Chaque mois, à leurs côtés",
+      "description": "En rejoignant le Club 'Haï, vous faites vivre chaque mois toutes nos missions de bonté et de bienveillance.\n\nDerrière votre don, des familles reçoivent leurs colis de Chabbat et de fêtes. Des personnes en difficulté retrouvent un toit, à l'hôtel ou en logement temporaire. Des téfilines et des mézouzot sont vérifiées pour ceux qui ne peuvent pas le faire. Des enfants sont soutenus dans leur scolarité. Et bien plus encore.\n\n'Haï, c'est 18 : la vie. Donner chaque mois, c'est s'associer à tout ce bien, et s'ouvrir à une grande bénédiction.",
+      "parts": [
+        18,
+        26
+      ],
+      "mensuel": true,
+      "mot": "membre",
+      "objectif": 770,
+      "actif": true,
+      "contenu": [
+        "Aide aux familles",
+        "Produits de première nécessité",
+        "Colis de Chabbat",
+        "Colis de fêtes",
+        "Réinsertion sociale",
+        "Un toit sur la tête",
+        "Vêtements et soins",
+        "Soutien moral",
+        "Diffusion de la Torah",
+        "Cours de Tanya",
+        "Vérification des téfilines",
+        "Vérification des mézouzot",
+        "Soutien scolaire"
+      ],
+      "image": "/fetes/club-hai.jpg",
+      "video": "/fetes/club-hai.mp4",
+      "sectionTitre": "Votre don mensuel, dans toutes nos actions",
+      "libre": true,
+      "marque": {
+        "nom": "Club 'Haï",
+        "he": "יח",
+        "par": "אמונתך"
+      },
+      "goral": "En rejoignant le club, vous participez au Goral du Club 'Haï : un tirage au sort entre les membres. Le lot sera annoncé très prochainement."
+    }
+  ]
+}
