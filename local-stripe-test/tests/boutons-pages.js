@@ -78,7 +78,7 @@ async function page(url, w, h) { const p = await browser.newPage(); const err = 
     await p.close();
   }
   T('Lien « Là où il y en a le plus besoin » (page des colis)');
-  { const p = await page(B + '/?aff=besoin', 390, 780); const r = await p.evaluate(() => { const c = document.querySelector('input[name=affr]:checked'); return c ? c.value : null; });
+  { const p = await page(B + '/?aff=besoin', 390, 780); let r = null; for (let k = 0; k < 20 && !(r && /besoin est le plus grand/i.test(r)); k++) { r = await p.evaluate(() => { const c = document.querySelector('input[name=affr]:checked'); return c ? c.value : null; }); if (!(r && /besoin est le plus grand/i.test(r))) await wait(500); }   // la page coche le choix un instant après son chargement
     ok(r && /besoin est le plus grand/i.test(r), 'le don s\'ouvre avec « là où le besoin est le plus grand » déjà choisi', r); ok(!p._err.length, 'aucune erreur JavaScript', p._err); await p.close(); }
 
   T('Relevé de référence des boutons et champs (un changement ferme la porte)');
