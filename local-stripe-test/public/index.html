@@ -1516,6 +1516,11 @@ function campagneInit(b) {
   page.addEventListener('change', e => { if (e.target.name !== 'cpPart') return; if ($('cpLibreIn')) { $('cpLibreIn').value = ''; $('cpLibre').classList.remove('err'); } part = +e.target.value; majPart(); });
   page.addEventListener('input', e => { if (e.target.id !== 'cpLibreIn') return; $('cpLibre').classList.remove('err'); const v = libreVal(); if ($('cpLibreIn').value !== '') document.querySelectorAll('input[name=cpPart]').forEach(r => { r.checked = false; }); part = v; majPart(); });
   page.addEventListener('focusout', e => { if (e.target.id !== 'cpLibreIn' || $('cpLibreIn').value !== '') return; const r = document.querySelector('input[name=cpPart]'); if (r) { r.checked = true; part = +r.value; majPart(); } });   // champ laissé vide : retour au premier montant
+  // la case « afficher mon nom » se trouve avec les coordonnées
+  const t = document.querySelector('#p2 .dn-type'); if (t && !$('bsNom')) t.insertAdjacentHTML('beforebegin', '<label class="cp-nomrow"><input id="bsNom" type="checkbox"><span>Afficher mon nom parmi les ' + esc(mots(2)) + '<small>Aucun montant n\'est affiché. Sans cette case, vous êtes compté sans être nommé.</small></span></label>');
+  const teinte = c => { let m = document.querySelector('meta[name=theme-color]'); if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); } m.content = c; };   // couleur de la barre du haut du téléphone : bleu sur l'affiche, blanc sur le formulaire
+  teinte('#1f6a72');
+  const gp = goPanel; goPanel = n => { gp(n); document.body.classList.toggle('camp-accueil', n === 1); if (cpVid) { if (n === 1) cpVid.play().catch(() => {}); else cpVid.pause(); }   /* la vidéo se tait dès qu'on passe au formulaire */ teinte(n === 1 ? '#1f6a72' : '#ffffff'); scrollTo({ top: 0 }); };
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-go]')) { if (!(part > 0)) { const l = $('cpLibre'); if (l) { l.classList.add('err'); l.scrollIntoView({ block: 'center', behavior: 'smooth' }); $('cpLibreIn').focus({ preventScroll: true }); } return; } $('montant').value = String(part); upSum(); $('go').click(); } });
   document.title = C.apercuTitre || b.titre + ' — ' + C.etiquette + ' · Émounatéha';
 }
