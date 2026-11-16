@@ -130,4 +130,21 @@ async function notifyAdminDon(d) {   // ne casse jamais le flux du don
   catch (e) { console.error('[mail admin] échec :', e.message); return { sent: false, error: e.message }; }
 }
 
-module.exports = { settings, isFake, send, shell, otpEmail, donEmail, adminDonEmail, notifyAdminDon, ADMIN_EMAIL };
+// SMS (Brevo, transactionnel) : le code de connexion part aussi par SMS quand un téléphone est connu pour ce compte
+function smsPhone(p) {   // -> format Brevo : indicatif + numéro, sans + (ex. 33612345678)
+  let s = String(p || '').trim().replace(/[\s.\-()]/g, ''); const intl = /^(\+|00)/.test(s); s = s.replace(/^(\+|00)/, '');
+  if (!/^\d+$/.test(s)) return '';
+  if (!intl && /^0\d{9}$/.test(s)) return '33' + s.slice(1);
+  if (/^33\d{9}$/.test(s)) return s;
+  return intl && s.length >= 8 && s.length <= 15 ? s : '';
+}
+async function sendSms({ to, text, email }) {
+  const num = smsPhone(to); if (!num) return { sent: false, reason: 'numéro absent ou invalide' };
+  if (email && isFake(email)) return { sent: false, simulated: true, reason: 'adresse de test : SMS non envoyé' };
+  const s = await settings(); if (!s) return { sent: false, simulated: true, reason: 'Brevo non configuré' };
+  const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', { method: 'POST', headers: { 'api-key': s.brevoApiKey, 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ sender: 'Emounateha', recipient: num, content: String(text).slice(0, 160), type: 'transactional', tag: 'code-connexion' }) });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error('Brevo SMS ' + res.status + ' : ' + (j.message || 'erreur'));
+  return { sent: true, messageId: j.messageId };
+}
+module.exports = { settings, isFake, send, sendSms, smsPhone, shell, otpEmail, donEmail, adminDonEmail, notifyAdminDon, ADMIN_EMAIL };

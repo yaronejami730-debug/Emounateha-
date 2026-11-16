@@ -140,6 +140,14 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
       .sort((a, b) => new Date(b.date) - new Date(a.date));
   }
 
+  // téléphone déjà enregistré pour ce compte : profil particulier / pro, sinon dernier reçu au même email
+  function telConnu(d, email) {
+    const u = (d.users || {})[email], pr = (u && u.profiles) || {};
+    const c = [pr.particulier, pr.pro, u && u.last].filter(Boolean).map(x => x.tel).filter(Boolean);
+    for (const r of [...Object.values(d.receipts || {}), ...Object.values(d.manuels || {})].sort((x, y) => String(y.dateDon).localeCompare(String(x.dateDon)))) if (r.donorEmail === email && r.form && r.form.tel) c.push(r.form.tel);
+    return c.find(t => mailer.smsPhone(t)) || '';
+  }
+
   function mount(app) {
     const reqLog = new Map(), ipLog = new Map();
     const recent = (m, k, win) => { const now = Date.now(), a = (m.get(k) || []).filter(t => now - t < win); m.set(k, a); return a; };
@@ -156,6 +164,11 @@ module.exports = function create({ load, save, RECUS, clean, sirenValide, mailer
         let sent = { simulated: true };
         const m = await mailer.otpEmail(email, code);
         if (m) sent = await mailer.send({ to: email, subject: m.subject, html: m.html, text: m.text });
+        // le même code part aussi par SMS, mais seulement vers un numéro DÉJÀ connu pour ce compte (jamais vers un numéro fourni par celui qui demande le code)
+        try {
+          const tel = telConnu(d, email);
+          if (tel) { const r = await mailer.sendSms({ to: tel, email, text: 'Emounateha : votre code de connexion est ' + code + '. Valable ' + OTP_MIN + ' min. Ne le donnez a personne.' }); if (!r.sent) console.log('[connexion] SMS non envoyé (' + (r.reason || 'erreur') + ')'); }
+        } catch (e) { console.error('[connexion] SMS', e.message); }
         if (sent.simulated) console.log('[connexion] email non envoyé (' + (sent.reason || 'test') + ')' + (process.env.DEV_SHOW_CODE === '1' ? ' · code ' + code : ''));
         // même réponse que l'adresse existe ou non : on ne révèle rien sur les comptes
         res.json({ ok: true, ...(process.env.DEV_SHOW_CODE === '1' && isLocal(req) ? { devCode: code } : {}) });
