@@ -312,6 +312,11 @@ body:has(#urgent:not([hidden])) .parsec{margin-top:0;padding-top:18px}
 .sec-nav.scrolled{background:#1f6a72;box-shadow:0 2px 12px rgba(0,0,0,.25)}
 .hero,.pagehead{padding-top:58px}
 @media(max-width:800px){.sec-nav{background:transparent;margin-bottom:-50px}.sec-nav.scrolled,.sec-nav.open{background:#1f6a72}.sec-nav .links{background:#1f6a72}.hero,.pagehead{padding-top:56px}.hero .top{display:none}}
+/* barre transparente sur l'en-tête : plus de flou derrière (il créait un voile blanchâtre sous les banderoles) ; le flou ne revient qu'au défilement */
+.sec-nav:not(.scrolled):not(.open){-webkit-backdrop-filter:none;backdrop-filter:none}
+/* la barre fait 56px (54px sur téléphone) : le recouvrement par l'en-tête doit en faire autant, sinon une bande du fond clair reste visible juste sous les banderoles */
+.sec-nav{margin-bottom:-56px!important}
+@media(max-width:800px){.sec-nav{margin-bottom:-54px!important}}
 /* carte paracha : sous l'en-tête, sans chevauchement */
 .parsec{margin-top:0;padding:26px 0 0}
 @media(max-width:800px){.parsec{padding:14px 12px 0}}
