@@ -1489,7 +1489,7 @@ function campagneInit(b) {
       const reste = lum < 8 ? Math.ceil((lum + 1) * parSeg) - n : 0;
       $('cpPro').textContent = C.lumieres ? (lum >= 8 ? 'Les huit lumières sont allumées' : 'Encore ' + fr(reste) + ' pour allumer la ' + ord(lum + 1) + ' lumière') : n >= obj ? 'Objectif atteint' : 'Encore ' + fr(obj - n) + ' ' + mots(obj - n) + ' pour y arriver';
     }
-    const noms = b.noms || [], anon = Math.max(0, n - noms.length);
+    const noms = b.noms || [], anon = Math.max(0, (b.donateurs != null ? b.donateurs : n) - noms.length);   // « Et X autres » compte les vrais donateurs, pas les parts
     $('cpWall').hidden = !noms.length; $('cpNoms').innerHTML = noms.map(x => '<li>' + esc(x) + '</li>').join(''); $('cpAutres').textContent = noms.length && anon ? 'Et ' + fr(anon) + ' autre' + (anon > 1 ? 's' : '') + ' ' + mots(anon) + '.' : '';
     vu = n;
   };
