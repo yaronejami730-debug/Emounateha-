@@ -10,3 +10,4 @@ vercel.env
 .env*
 affiches/fonts/
 supabase/cron-taches.sql
+.deploiement-verifie
