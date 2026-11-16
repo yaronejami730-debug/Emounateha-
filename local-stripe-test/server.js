@@ -736,7 +736,7 @@ function pageBesoin(b, res, next, chemin) {
     html = html.replace(/(<meta property="og:image" content=")[^"]*(")/, '$1' + img + '$2').replace(/(<meta name="twitter:image" content=")[^"]*(")/, '$1' + img + '$2')
       .replace(/(<meta property="og:image:width" content=")[^"]*(")/, '$11200$2').replace(/(<meta property="og:image:height" content=")[^"]*(")/, '$1630$2')
       .replace(/(<meta property="og:image:alt" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTitre || b.campagne.etiquette + ' — ' + b.titre) + '$2');
-    if (b.campagne.apercuTitre) html = html.replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTitre) + '$2').replace(/(<meta name="twitter:title" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTitre) + '$2');
+    if (b.campagne.apercuTitre) html = html.replace(/<title>[^<]*<\/title>/, '<title>' + q(b.campagne.apercuTitre) + '</title>').replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTitre) + '$2').replace(/(<meta name="twitter:title" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTitre) + '$2');
     if (b.campagne.apercuTexte) html = html.replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTexte) + '$2').replace(/(<meta name="twitter:description" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTexte) + '$2');
   }
   // la fiche est écrite dans la page : la cagnotte s'affiche tout de suite, sans passer par l'écran de don général (fête en cours, choix d'action…)
