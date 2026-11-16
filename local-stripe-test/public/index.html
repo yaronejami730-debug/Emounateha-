@@ -647,6 +647,12 @@ body.camp.camp-accueil #cp section.cp-fin{position:relative;margin-top:150px;pad
 body.camp.camp-accueil #cp section.cp-fin::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:110px;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.04) 14%,rgba(255,255,255,.14) 30%,rgba(255,255,255,.34) 48%,rgba(255,255,255,.62) 66%,rgba(255,255,255,.86) 84%,#fff 100%);pointer-events:none}
 body.camp.camp-accueil #cp section.cp-fin h2{color:#164c52}
 body.camp.camp-accueil #cp section.cp-fin ol.cp-etapes li{color:#3a4f52}body.camp.camp-accueil #cp section.cp-fin ol.cp-etapes li b{color:#14272a}
+/* « Ils ont rejoint » fait partie de la même zone blanche que « Rejoindre en trois étapes » : un seul fond jusqu'au pied de page (plus de bande bleue coincée entre les deux) */
+body.camp.camp-accueil #cp section.cp-fin{padding-bottom:20px}
+body.camp.camp-accueil #cp section#cpWall{position:relative;margin:0;padding:6px 0 48px;background:#fff}
+body.camp.camp-accueil #cp section#cpWall h2{color:#164c52}
+body.camp.camp-accueil #cp section#cpWall ul.cp-noms li{color:#14272a;border-top-color:#e3eaea}
+body.camp.camp-accueil #cp section#cpWall .cp-autres,body.camp.camp-accueil #cp section#cpWall p{color:#3a4f52}
 html body.camp.camp-accueil footer{display:block!important}
 html body.camp.camp-accueil footer .legal{display:block;font-size:0}html body.camp.camp-accueil footer .legal a{display:inline-block;margin:0 9px;padding:8px 2px;font-size:13px}   /* liens légaux régulièrement espacés */
 body.camp.camp-accueil #cpBar{display:block}
@@ -742,7 +748,7 @@ body.camp:not(.camp-accueil) #cp .cp-toit{display:none}
   #cp h2{font-size:28px}
   #cp ul.cp-liste{grid-template-columns:repeat(3,1fr)}#cp ul.cp-noms{grid-template-columns:repeat(4,1fr)}
   #cp ol.cp-etapes{grid-template-columns:repeat(3,1fr);gap:32px}
-  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:0}body.camp.camp-accueil #cp section.cp-fin{padding:10px 0 64px}
+  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:0}body.camp.camp-accueil #cp section.cp-fin{padding:10px 0 24px}body.camp.camp-accueil #cp section#cpWall{padding:10px 0 64px}
   body.camp:not(.camp-accueil) #cp .cp-tete .cp-w{display:block}
 }
 @media(max-width:899px){#cp .cp-tete .cp-w{padding:0}}
