@@ -43,7 +43,7 @@ Ce que la porte contrôle (voir `local-stripe-test/tests/`) :
 | `cagnottes-calcul.js` | Calcul des mini-cagnottes |
 | `rattrapage.js` | **Filet PayPal / Klarna** : un paiement payé dont le donateur n'est jamais revenu sur le site (et sans webhook) reçoit quand même son reçu, son e-mail et sa place dans le compteur, sans doublon ; un don abandonné n'a pas de reçu |
 | `pixel-meta.js` | **Pixel Meta (3623623251140424)** : chargé seulement avec l'accord (em_ok=2), jamais avant / après refus / en local ; bandeau pour les visiteurs `fbclid` ; retrait de l'accord ; CSP du serveur de dons ; événement « Donate » une seule fois par don (montant + devise + identifiant du paiement, rien d'autre) branché sur Apple/Google Pay, carte et retour PayPal/Klarna. Le test coupe toute requête vers Meta : il n'envoie jamais de faux événement à ta campagne |
-| `pages-site.js` | Boutons de l'accueil (« Club ’Haï ») et de la page des colis (« Là où il y en a le plus besoin ») : présents, visibles, en or plein, sans animation, bons liens |
+| `pages-site.js` | Boutons de l'accueil (« Club ’Haï ») et de la page des colis (« Là où il y en a le plus besoin ») : présents, visibles, en or brillant (couleur du logo hébreu), sans animation, bons liens |
 
 #### Tous les parcours d'argent doivent être couverts — rien n'est « hors champ »
 | Parcours | Où | Couvert par |

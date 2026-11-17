@@ -10,7 +10,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { c ? pass++ : fail++; console.l
   T('Accueil');
   ok(/<a class="pillgold" href="https:\/\/clubhai\.emounateha\.fr\/"[^>]*>[^]*?Club ’Haï<\/span><\/a>/.test(home), 'bouton « Club ’Haï » vers clubhai.emounateha.fr');
   ok(!/api\/besoins-accueil/.test(home) && !/class="urgc"/.test(home.replace(/<style[^]*?<\/style>/g, '')), 'plus aucun bouton de cagnotte (loyer, urgence, retard) sur l\'accueil');
-  ok(/\.pillgold\{[^}]*background:#c4a24a[^}]*animation:none/.test(home), 'même style que « Offrir un colis » (or plein), sans clignotement');
+  ok(/\.pillgold\{[^}]*background:linear-gradient\(180deg,#f3e08f[^}]*#d0a848[^}]*animation:none/.test(home), 'or brillant du logo hébreu (dégradé), sans clignotement');
   ok(/@media\(min-width:801px\)\{\.urgl\.urgclub\{justify-content:center/.test(home), 'ordinateur : bouton Club ’Haï centré (à gauche sur téléphone)');
   T('Page des colis');
   ok(/<div class="plusbesoin"><a class="pillgold" href="https:\/\/don\.emounateha\.fr\/\?aff=besoin">Là où il y en a le plus besoin<\/a><\/div>\s*<div class="ctabs"/.test(colis), 'bouton « Là où il y en a le plus besoin » juste au-dessus des carrés, vers le don « là où le besoin est le plus grand »');
@@ -21,9 +21,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { c ? pass++ : fail++; console.l
     const p = await b.newPage(); const err = []; p.on('pageerror', e => err.push(e.message)); await p.setViewport({ width: w, height: h, isMobile: w < 600, hasTouch: w < 600 });
     for (const [lib, f, sel] of [['accueil', path.join(SITE, 'index.html'), '#urgent .pillgold'], ['colis', path.join(SITE, 'colis', 'index.html'), '.plusbesoin .pillgold']]) {
       await p.setContent(fs.readFileSync(f, 'utf8').replace(/<script[^>]*src=[^>]*><\/script>/g, ''), { waitUntil: 'domcontentloaded' });
-      const r = await p.$eval(sel, a => { const q = a.getBoundingClientRect(), c = getComputedStyle(a); return { w: q.width | 0, h: q.height | 0, anim: c.animationName, bg: c.backgroundColor, vis: q.height > 0 && c.visibility !== 'hidden' }; }).catch(() => null);
+      const r = await p.$eval(sel, a => { const q = a.getBoundingClientRect(), c = getComputedStyle(a); return { w: q.width | 0, h: q.height | 0, anim: c.animationName, bg: c.backgroundImage, vis: q.height > 0 && c.visibility !== 'hidden' }; }).catch(() => null);
       if (w >= 801 && lib === 'accueil') { const c = await p.evaluate(() => { const a = document.querySelector('#urgent .pillgold').getBoundingClientRect(); return Math.abs((a.left + a.right) / 2 - innerWidth / 2); }); ok(c < 3, 'ordinateur : le bouton Club ’Haï est bien au milieu de la page (écart ' + Math.round(c) + ' px)', c); }
-      ok(r && r.vis && r.h >= 40 && r.anim === 'none' && r.bg === 'rgb(196, 162, 74)', nom + ' : bouton ' + lib + ' visible, assez grand pour le doigt, or plein, sans animation', r);
+      ok(r && r.vis && r.h >= 40 && r.anim === 'none' && /linear-gradient/.test(r.bg) && /243, 224, 143/.test(r.bg), nom + ' : bouton ' + lib + ' visible, assez grand pour le doigt, or brillant, sans animation', r);
     }
     ok(!err.length, nom + ' : aucune erreur JavaScript', err); await p.close();
   }
