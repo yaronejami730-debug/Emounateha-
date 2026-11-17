@@ -21,11 +21,11 @@ html body .sec-nav .ndate small{font-weight:600;text-transform:uppercase;letter-
 html body h1,html body h2,html body h3,html body h4,html body .title h2,html body .card h3,html body .step h3,html body #rchband b,html body #rchband small{font-weight:800}
 /* téléphone en paysage / petite tablette (801 à 1100 px) : le menu tient entre la date et ב״ה */
 @media(min-width:801px) and (max-width:1100px){
-  html body .sec-nav .links a{font-size:clamp(8.6px,1.02vw,11px)!important;letter-spacing:0!important;padding-left:clamp(2px,.45vw,5px)!important;padding-right:clamp(2px,.45vw,5px)!important;white-space:nowrap}
+  html body .sec-nav .links a{font-size:clamp(8.6px,1.02vw,11px)!important;letter-spacing:0!important;padding-left:clamp(2px,.3vw,5px)!important;padding-right:clamp(2px,.3vw,5px)!important;white-space:nowrap}
   html body .sec-nav .ndate small{font-size:clamp(7.6px,.9vw,9.5px)!important;letter-spacing:0!important;white-space:nowrap}
   html body .sec-nav .ndate b{font-size:clamp(11px,1.4vw,14px)!important}
 }
-@media(min-width:1101px) and (max-width:1440px){html body .sec-nav .links a{font-size:clamp(11px,.95vw,13px)!important;padding-left:6px!important;padding-right:6px!important;letter-spacing:0!important}}
+@media(min-width:1101px) and (max-width:1440px){html body .sec-nav .links a{font-size:clamp(10.5px,.88vw,12px)!important;padding-left:4px!important;padding-right:4px!important;letter-spacing:0!important}}
 /* tout ce qui était dans l'ancienne écriture de titre (grasse) reste en gras */
 html body #parheb,html body #pm .pmnote b,html body #pm .pmok h3,html body #pm .pmt,html body #rchband b,html body #vm .dhd b,html body #wv .wvt,html body .ab-head h1,html body .ambform h3,html body .ambtxt h2,html body .arch h2,html body .art b,html body .chan h3,html body .citysel select,html body .colis h3,html body .contact strong,html body .dhead h3,html body .esh,html body .etude h2,html body .feat .ftit,html body .hbar .range,html body .htable .cap,html body .htable td b,html body .it .cap b,html body .lang-pop b,html body .mc b,html body .miss .ic,html body .miss b,html body .month,html body .nlbox h3,html body .pagehead h1,html body .parcard b,html body .price b,html body .pt .n,html body .quote,html body .rowhd b,html body .shc .sht b,html body .step::before,html body .today .dhe,html body .today h2,html body .zbox h4,html body .zbox li b,html body h1,html body h2,html body h3,html body td:first-child,html body th,html body [style*="Bree Serif"]{font-weight:700}
 /* bandeau de Roch 'Hodech : une seule ligne, discret */
@@ -54,3 +54,5 @@ html body .nlbox .nlimg::after{display:none}
 html body .nlbox .nlin{margin-top:-40px;position:relative}
 html body .nlbox .nlk{text-shadow:0 1px 6px rgba(0,0,0,.45)}
 html body .nlbox h3{margin-top:6px;text-shadow:0 2px 10px rgba(0,0,0,.35)}
+
+@media(min-width:1441px){html body .sec-nav .links a{font-size:10.5px!important;padding-left:3px!important;padding-right:3px!important}}
