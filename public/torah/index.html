@@ -438,7 +438,7 @@ body{overflow-x:hidden}
 <script src="/consentement.js?v=4"></script>
 <script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=17">
+<link rel="stylesheet" href="/ecriture.css?v=18">
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="/#mission">Qui sommes-nous</a><a href="/#actions">Nos actions</a><a href="/torah/">Diffusion de la Torah</a><a href="/colis/">Les colis</a><a href="/#aider">Comment aider</a><a href="/horaires/">Horaires</a><a href="/news/">Actualité</a><a href="/#contact">Contact</a></div></div></nav>
@@ -646,6 +646,17 @@ html body .pagehead{padding-bottom:70px}
 .stab.on .sth{background-image:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);text-shadow:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.28))}
 @media(max-width:520px){.stab{font-size:10.5px;letter-spacing:.1em;padding-left:calc(2px + .1em)}}
 @media(max-width:360px){.stab{font-size:9.8px;letter-spacing:.07em}}
+/* Onglets de la Torah, version nette : 5 carrés égaux, hébreu sur une ligne, français lisible sur 1-2 lignes ; téléphone 3 + 2 centrés */
+.stabs{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:10px!important;max-width:800px!important}
+.stabs .stab{display:flex!important;flex-direction:column-reverse!important;align-items:center!important;justify-content:center!important;gap:6px!important;min-height:92px!important;padding:12px 8px!important;border-width:1.5px!important;border-radius:16px!important;font-size:11.5px!important;letter-spacing:.1em!important;line-height:1.25!important;text-align:center!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important}
+.stabs .stab .sth{font-size:26px!important;line-height:1!important;white-space:nowrap!important;margin:0!important}
+@media(max-width:700px){
+ .stabs{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:8px!important;max-width:420px!important;padding:0 12px!important}
+ .stabs .stab{grid-column:span 2;min-height:88px!important;padding:11px 4px!important;font-size:10.5px!important;letter-spacing:.08em!important}
+ .stabs .stab:nth-child(4){grid-column:2/4}.stabs .stab:nth-child(5){grid-column:4/6}
+ .stabs .stab .sth{font-size:21px!important}
+}
+@media(max-width:350px){.stabs{padding:0 8px!important;gap:6px!important}.stabs .stab{font-size:9.2px!important;letter-spacing:.04em!important;padding:10px 2px!important}.stabs .stab .sth{font-size:17px!important}}
 .etude{max-width:760px;margin:0 auto 30px;background:#fff;border:1px solid #e3ecec;border-radius:18px;box-shadow:0 10px 30px rgba(20,60,66,.1);padding:26px 22px;text-align:center}
 .etude .dkick{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
 .etude h2{font-family:'Bree Serif',serif;font-weight:400;font-size:26px;color:var(--teal);margin:6px 0 4px}
