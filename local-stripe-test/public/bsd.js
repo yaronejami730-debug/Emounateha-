@@ -16,8 +16,8 @@ function place(s){var t=0,a=document.getElementById('hnband'),c=document.getElem
   s.dataset.deg='1';document.body.style.marginTop=(parseFloat(getComputedStyle(document.body).marginTop)||0)+28+'px';s.style.top=(t+5-(getComputedStyle(document.body).position!=='static'?28:0))+'px'}
 function clair(s){var r=s.getBoundingClientRect(),l=document.elementsFromPoint?document.elementsFromPoint(r.left+r.width/2,r.top+r.height/2):[];for(var i=0;i<l.length;i++){if(l[i]===s)continue;var c=getComputedStyle(l[i]);if(c.backgroundImage&&c.backgroundImage!=='none'&&!/gradient\(rgba?\(255, 255, 255/.test(c.backgroundImage)&&/url\(/.test(c.backgroundImage)&&!/bg\.png/.test(c.backgroundImage))return false;var m=/rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)/.exec(c.backgroundColor);if(m&&(m[4]===undefined||+m[4]>.5))return (.299*m[1]+.587*m[2]+.114*m[3])>170}return true}
 function teinte(s){s.classList.toggle('sombre',clair(s))}
-function go(){pose();var s=document.querySelector('.bsd-haut');if(s){place(s);teinte(s);setTimeout(function(){teinte(s)},900);
+function go(){pose();var haut=function(){if(!location.hash&&scrollY>0&&scrollY<150)scrollTo(0,0)};haut();setTimeout(haut,500);var s=document.querySelector('.bsd-haut');if(s){place(s);teinte(s);setTimeout(function(){teinte(s)},900);
   /* la page de don se cale d'elle-même quelques pixels plus bas au chargement : on revient tout en haut pour que ב״ה soit visible en entier */
-  var haut=function(){if(!location.hash&&scrollY>0&&scrollY<150)scrollTo(0,0)};haut();setTimeout(haut,500);setTimeout(function(){place(s)},800);addEventListener('resize',function(){place(s)})}}
+setTimeout(function(){place(s)},800);addEventListener('resize',function(){place(s)})}}
 if(document.readyState==='complete')setTimeout(go,300);else addEventListener('load',function(){setTimeout(go,300)});
 })();
