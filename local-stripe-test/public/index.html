@@ -988,7 +988,7 @@ body.camp:not(.camp-accueil) #cp .cp-toit{display:none}
 </style>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/ecriture.css?v=13">
-<script src="/consentement.js?v=3"></script>
+<script src="/consentement.js?v=4"></script>
 </head>
 <body>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="http://localhost:3000/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="http://localhost:3000/#mission">Qui sommes-nous</a><a href="http://localhost:3000/#actions">Nos actions</a><a href="http://localhost:3000/torah/">Diffusion de la Torah</a><a href="http://localhost:3000/colis/">Les colis</a><a href="http://localhost:3000/#aider">Comment aider</a><a href="http://localhost:3000/horaires/">Horaires</a><a href="http://localhost:3000/#contact">Contact</a></div></div></nav>
@@ -2014,6 +2014,7 @@ async function act() {
             const { error, paymentIntent } = await stripe.confirmPayment({ elements, clientSecret, redirect: 'if_required', confirmParams: { return_url: location.href } });
             if (error) throw new Error(error.message || 'Paiement refusé');
             if (!paymentIntent || paymentIntent.status !== 'succeeded') throw new Error('Paiement non abouti');
+            pixelDon(paymentIntent.id, paymentIntent.amount_received || paymentIntent.amount);
             renderRes(await withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
           } catch (e) { show(e.message); }
         });
@@ -2030,6 +2031,7 @@ async function act() {
       const { error, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required', confirmParams: { return_url: location.href, payment_method_data: { billing_details: { name: isEnt() ? $('rs').value.trim() : ($('prenom').value.trim() + ' ' + $('nom').value.trim()), email: $('email').value.trim(), address: { line1: $('adr').value.trim(), postal_code: $('cp').value.trim(), city: $('ville').value.trim(), state: '', country: 'FR' } } } } });
       if (error) { $('go').textContent = 'Réessayer'; throw new Error(error.message || 'Paiement refusé'); }
       if (!paymentIntent || !/^(succeeded|processing)$/.test(paymentIntent.status)) { $('go').textContent = 'Réessayer'; throw new Error('Paiement non abouti (statut : ' + (paymentIntent && paymentIntent.status) + ')'); }
+      if (paymentIntent.status === 'succeeded') pixelDon(paymentIntent.id, paymentIntent.amount_received || paymentIntent.amount);
       renderRes(await withLoad(paymentIntent.status === 'processing' ? 'Enregistrement de votre prélèvement…' : 'Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id: paymentIntent.id })));
     }
     else if (panel === 4) {   // nouveau don : on repart du profil du donateur (jamais d'une autre personne) ; données aléatoires seulement en mode test
@@ -2047,7 +2049,7 @@ $('go').onclick = act;
   if (!id || !/^pi_[A-Za-z0-9]+$/.test(id)) return;
   history.replaceState(null, '', location.pathname);
   if (st !== 'succeeded' && st !== 'pending') { setTimeout(() => show(st === 'failed' ? 'Le paiement a été refusé. Vous pouvez réessayer.' : 'Paiement non abouti. Vous pouvez réessayer.'), 300); return; }
-  const go = () => withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id })).then(renderRes).catch(e => show(e.message));
+  const go = () => withLoad('Paiement reçu — création de votre reçu fiscal…', () => post('/api/finalize', { id })).then(r => { if (st === 'succeeded' && r && !r.attente) pixelDon(id, r.montant); return r; }).then(renderRes).catch(e => show(e.message));
   if (document.readyState === 'complete') go(); else addEventListener('load', go);
 })();
 $('f').addEventListener('submit', e => { e.preventDefault(); act(); });
@@ -2071,6 +2073,18 @@ function partageMerci() {
   if (ret) ret.insertAdjacentHTML('beforebegin', h); else $('res').insertAdjacentHTML('beforeend', h);
   partager($('mercPart'), C.marque ? C.marque.nom : BESOIN.titre, location.origin + location.pathname);
   $('mercPart').addEventListener('click', () => { const st = $('retStop'); if (st) st.click(); });   // on ne renvoie pas vers le site pendant que la personne partage
+}
+// Meta Ads : UN seul événement « Donate » par don, seulement si le visiteur a accepté (le pixel est chargé par consentement.js, jamais avant).
+// On n'envoie que le montant réel et la devise, avec l'identifiant du paiement pour que Meta ne compte jamais deux fois : ni nom, ni e-mail, ni adresse.
+function pixelDon(id, cents) {
+  try {
+    if (!/^pi_[A-Za-z0-9]+$/.test(id || '') || !(cents > 0)) return;
+    if (typeof window.fbq !== 'function' || !window.emConsent || window.emConsent.mesure() !== 'oui') return;
+    window.__pxDon = window.__pxDon || {}; if (window.__pxDon[id]) return;
+    try { if (sessionStorage.getItem('em_don_' + id)) return; sessionStorage.setItem('em_don_' + id, '1'); } catch (e) {}   // le retour de PayPal / Klarna recharge la page : une seule fois quand même
+    window.__pxDon[id] = 1;
+    window.fbq('track', 'Donate', { value: Math.round(cents) / 100, currency: 'EUR' }, { eventID: id });
+  } catch (e) {}
 }
 function renderRes(o) {
   if (EMBED) { try { parent.postMessage({ type: 'don:done' }, '*'); } catch (e) {} }

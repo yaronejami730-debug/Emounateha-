@@ -31,6 +31,20 @@ const etat = p => p.evaluate(() => { const g = document.getElementById('go'), r 
     ok(/class="plusbesoin"><a class="pillgold" href="https:\/\/don\.emounateha\.fr\/\?aff=besoin"/.test(c), 'colis : bouton « Là où il y en a le plus besoin » présent');
     const p = await ouvre('https://don.emounateha.fr/?aff=besoin', 390, 780); let v = null; for (let k = 0; k < 20 && !v; k++) { v = await p.evaluate(() => { const x = document.querySelector('input[name=affr]:checked'); return x && /besoin est le plus grand/i.test(x.value) ? x.value : null; }); if (!v) await wait(500); }   // la page coche le choix un instant après son chargement
     ok(v && /besoin est le plus grand/i.test(v), 'le lien du bouton ouvre le don « là où le besoin est le plus grand »', v); await p.close(); }
+  console.log('\n— pixel Meta (aucune requête n\'est envoyée à Meta : elles sont coupées par ce contrôle)');
+  for (const [lib, base] of [['www.emounateha.fr', 'https://www.emounateha.fr'], ['don.emounateha.fr', 'https://don.emounateha.fr']]) {
+    const ctx = async (cookie, q) => { const c = await b.createBrowserContext(), p = await c.newPage(), fb = []; p._ctx = c; await p.setRequestInterception(true); p.on('request', r => { const u = r.url(); if (/facebook\.(net|com)/.test(u)) { fb.push(u); return r.abort(); } if (/clarity\.ms/.test(u)) return r.abort(); r.continue(); });
+      if (cookie !== undefined) await p.setCookie({ name: 'em_ok', value: cookie, url: base }); await p.setViewport({ width: 390, height: 780, isMobile: true, hasTouch: true });
+      await p.goto(base + '/' + (q || '') , { waitUntil: 'networkidle2' }); await wait(800); p._fb = fb; return p; };
+    let p = await ctx(undefined); ok(!p._fb.length && await p.evaluate(() => typeof window.fbq === 'undefined' && !document.getElementById('emck')), lib + ' : visiteur sans choix : pixel non chargé, pas de bandeau', p._fb); await p._ctx.close();
+    p = await ctx('0'); ok(!p._fb.length, lib + ' : refus : pixel non chargé', p._fb); await p._ctx.close();
+    p = await ctx(undefined, '?fbclid=IwAR_controle'); ok(await p.evaluate(() => !!document.getElementById('emck')) && !p._fb.length, lib + ' : visiteur venu d\'une pub Meta (fbclid) : bandeau affiché, pixel pas encore chargé', p._fb);
+    ok(await p.evaluate(() => /pixel Meta/.test(document.getElementById('emck').innerText) && !/Aucune publicité/i.test(document.getElementById('emck').innerText)), lib + ' : texte du bandeau à jour (pixel Meta, plus « Aucune publicité »)'); await p._ctx.close();
+    p = await ctx('2'); ok(p._fb.some(u => /connect\.facebook\.net\/.*fbevents\.js/.test(u)) && await p.evaluate(() => typeof window.fbq === 'function' && Array.from(window.fbq.queue || [], a => Array.from(a)).some(a => a[0] === 'init' && a[1] === '3623623251140424')), lib + ' : accord : le pixel 3623623251140424 est demandé (et coupé par ce contrôle)', p._fb);
+    ok(await p.evaluate(() => !(window.__csp && window.__csp.length)), lib + ' : aucune erreur de sécurité'); await p._ctx.close();
+  }
+  { const h = (await fetch('https://don.emounateha.fr/')).headers.get('content-security-policy') || ''; ok(/script-src[^;]*connect\.facebook\.net/.test(h) && /connect-src[^;]*www\.facebook\.com/.test(h), 'don : la CSP autorise le pixel Meta', h.slice(0, 160));
+    const c = await (await fetch('https://www.emounateha.fr/confidentialite/?v=' + Date.now())).text(); ok(/pixel Meta/.test(c) && /_fbp, _fbc/.test(c) && !/aucune publicité/i.test(c), 'page confidentialité : pixel Meta décrit, plus de « aucune publicité »'); }
   console.log('\n— serveur de dons');
   const c = await (await fetch('https://don.emounateha.fr/api/config')).json().catch(() => null);
   ok(c && c.stripe === true && /^pk_/.test(c.publishableKey || ''), 'Stripe configuré (clé publique présente)', c && { stripe: c.stripe, live: c.live });

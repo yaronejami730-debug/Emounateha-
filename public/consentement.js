@@ -1,14 +1,15 @@
 /* Consentement (RGPD / CNIL).
    Microsoft Clarity (observation de l'usage du site : pages vues, clics, défilement) est chargé SANS cookie pour tout visiteur, sans bandeau ;
    il n'est pas chargé du tout pour qui a cliqué « Refuser » (bouton « Modifier mon choix » de la page Confidentialité).
-   Le bandeau n'apparaît que pour un visiteur venu d'un de nos e-mails : s'il accepte, le site retient 30 jours quel e-mail l'a amené (cookie em_attr)
-   et Clarity peut alors déposer ses cookies (_clck, _clsk). Le choix est gardé 6 mois (cookie em_ok, strictement nécessaire), commun à www et à don :
+   Le bandeau n'apparaît que pour un visiteur venu d'un de nos e-mails ou d'une publicité Meta (paramètre fbclid) : s'il accepte, le site retient 30 jours quel e-mail l'a amené (cookie em_attr),
+   Clarity peut alors déposer ses cookies (_clck, _clsk) et le pixel Meta (mesure de nos publicités, événement « Donate ») est chargé.
+   Le pixel Meta n'est chargé QUE si em_ok=2 : jamais avant l'accord, jamais en cas de refus (ni de « 1 », ancien accord limité à l'e-mail), jamais en local ni en aperçu. Le choix est gardé 6 mois (cookie em_ok, strictement nécessaire), commun à www et à don :
    0 = refusé, 2 = accepté (1 = ancien accord, pour le seul souvenir de l'e-mail : pas de cookie Clarity).
    window.emConsent : etat() → 'oui' | 'non' | '' ; mesure() → idem pour les cookies Clarity ; demander(fn) ; ouvrir() → rouvre le bandeau. */
 (function () {
   if (window.emConsent) return;
   var DOM = /(^|\.)emounateha\.fr$/.test(location.hostname) ? '; Domain=.emounateha.fr' : '', SEC = location.protocol === 'https:' ? '; Secure' : '';
-  var CLARITY = 'zc8po82kyk';
+  var CLARITY = 'zc8po82kyk', META = '3623623251140424';
   function brut() { var m = document.cookie.match(/(?:^|; )em_ok=([012])/); return m ? m[1] : ''; }
   function etat() { var v = brut(); return v ? (v === '0' ? 'non' : 'oui') : ''; }
   function mesure() { var v = brut(); return v === '2' ? 'oui' : v === '0' ? 'non' : ''; }
@@ -23,10 +24,23 @@
     try { if (window.clarity) { window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' }); window.clarity('stop'); } } catch (e) {}
     ['_clck', '_clsk'].forEach(function (n) { document.cookie = n + '=; Max-Age=0; Path=/' + DOM; document.cookie = n + '=; Max-Age=0; Path=/'; });
   }
+  // Pixel Meta (mesure de nos publicités Facebook / Instagram) : même garde que Clarity (vrai site seulement) ET accord explicite (em_ok=2) ; rien n'est chargé autrement
+  function meta() {
+    if (!DOM && !window.__emTest) return;
+    if (mesure() !== 'oui') return;
+    if (window.__emMeta) { try { window.fbq('consent', 'grant'); } catch (e) {} return; }
+    window.__emMeta = true;
+    (function (f, b, e, v, n, t, s) { if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); }; if (!f._fbq) f._fbq = n; n.push = n; n.loaded = true; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = true; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s); })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    window.fbq('init', META); window.fbq('track', 'PageView');
+  }
+  function metaStop() {   // refus ou retrait de l'accord : le pixel ne mesure plus rien et ses cookies sont effacés
+    try { if (window.fbq) window.fbq('consent', 'revoke'); } catch (e) {}
+    ['_fbp', '_fbc'].forEach(function (n) { document.cookie = n + '=; Max-Age=0; Path=/' + DOM; document.cookie = n + '=; Max-Age=0; Path=/'; });
+  }
   function noter(ok) {
     document.cookie = 'em_ok=' + (ok ? 2 : 0) + '; Max-Age=' + 183 * 86400 + '; Path=/; SameSite=Lax' + DOM + SEC;
-    if (!ok) { document.cookie = 'em_attr=; Max-Age=0; Path=/' + DOM; clarityStop(); }   // refus : on efface ce qui aurait pu être gardé avant
-    else clarity();
+    if (!ok) { document.cookie = 'em_attr=; Max-Age=0; Path=/' + DOM; clarityStop(); metaStop(); }   // refus : on efface ce qui aurait pu être gardé avant
+    else { clarity(); meta(); }
   }
   var attente = [], ouvert = false;
   function bandeau() {
@@ -38,7 +52,7 @@
       '#emck button:focus-visible{outline:3px solid rgba(31,106,114,.35);outline-offset:2px}@media(max-width:360px){#emck{padding:14px}#emck .emck-b{flex-direction:column}}';
     document.head.appendChild(st);
     var d = document.createElement('div'); d.id = 'emck'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Votre accord');
-    d.innerHTML = '<b>Votre accord</b><p>Pour améliorer ce site, acceptez-vous que nous observions comment il est utilisé (pages vues, clics — outil Microsoft Clarity) et retenions 30 jours l’e-mail qui vous a amené ici ? Vos saisies sont masquées. Aucune publicité, aucune revente. <a href="' + (/^don\./.test(location.hostname) ? 'https://www.emounateha.fr' : '') + '/confidentialite/">En savoir plus</a></p>' +
+    d.innerHTML = '<b>Votre accord</b><p>Pour améliorer ce site et mesurer l’efficacité de nos publicités, acceptez-vous que nous observions comment il est utilisé (pages vues, clics — outil Microsoft Clarity), que nous retenions 30 jours l’e-mail qui vous a amené ici, et que Meta (Facebook, Instagram) mesure l’effet de nos publicités (pixel Meta : pages vues et dons, sans votre nom ni votre e-mail) ? Vos saisies sont masquées. Aucune revente de vos données. <a href="' + (/^don\./.test(location.hostname) ? 'https://www.emounateha.fr' : '') + '/confidentialite/">En savoir plus</a></p>' +
       '<div class="emck-b"><button type="button" data-v="0">Refuser</button><button type="button" data-v="1">Accepter</button></div>';
     d.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var ok = b.dataset.v === '1'; noter(ok); d.remove(); st.remove(); ouvert = false; var f = attente; attente = []; f.forEach(function (x) { try { x(ok); } catch (er) {} }); });
     (document.body || document.documentElement).appendChild(d);
@@ -52,4 +66,7 @@
   };
   // à l'arrivée : Clarity pour tous sauf refus (sans cookie tant qu'il n'y a pas eu d'accord) ; aucun bandeau d'office
   if (mesure() !== 'non') clarity();
+  meta();   // pixel Meta : seulement si le visiteur a déjà accepté (em_ok=2)
+  // visiteur venu d'une publicité Meta (fbclid dans l'adresse) sans choix enregistré : le bandeau s'affiche, comme pour ceux venus d'un e-mail
+  try { if (/[?&]fbclid=/.test(location.search) && !etat()) window.emConsent.demander(function () {}); } catch (e) {}
 })();

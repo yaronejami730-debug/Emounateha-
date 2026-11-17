@@ -42,6 +42,7 @@ Ce que la porte contrôle (voir `local-stripe-test/tests/`) :
 | `commission-*.js`, `virements.js` | Commission de 7 % et e-mails de virement |
 | `cagnottes-calcul.js` | Calcul des mini-cagnottes |
 | `rattrapage.js` | **Filet PayPal / Klarna** : un paiement payé dont le donateur n'est jamais revenu sur le site (et sans webhook) reçoit quand même son reçu, son e-mail et sa place dans le compteur, sans doublon ; un don abandonné n'a pas de reçu |
+| `pixel-meta.js` | **Pixel Meta (3623623251140424)** : chargé seulement avec l'accord (em_ok=2), jamais avant / après refus / en local ; bandeau pour les visiteurs `fbclid` ; retrait de l'accord ; CSP du serveur de dons ; événement « Donate » une seule fois par don (montant + devise + identifiant du paiement, rien d'autre) branché sur Apple/Google Pay, carte et retour PayPal/Klarna. Le test coupe toute requête vers Meta : il n'envoie jamais de faux événement à ta campagne |
 | `pages-site.js` | Boutons de l'accueil (« Club ’Haï ») et de la page des colis (« Là où il y en a le plus besoin ») : présents, visibles, en or plein, sans animation, bons liens |
 
 #### Tous les parcours d'argent doivent être couverts — rien n'est « hors champ »
@@ -72,7 +73,8 @@ Si la modification touche l'un de ces fichiers : `local-stripe-test/public/index
 2. **Dons mensuels** : l'abonnement créé est actif, au bon montant, **sans date de fin**, et le donateur peut l'arrêter depuis son espace.
 3. **Webhook Stripe réel** (non testable hors ligne) : dans le tableau de bord Stripe **du projet** (pas le compte personnel de Yarone), le point d'entrée du webhook existe et écoute au minimum `payment_intent.succeeded`, `payment_intent.payment_failed`, `invoice.paid`. Si un doute : on ne déploie pas, on demande à Yarone de vérifier.
 4. **Clés** : on ne change jamais les clés (`STRIPE_*`, `DATABASE_URL`, `DATA_KEY`) sans accord explicite de Yarone. Mode test/réel : ne jamais le basculer sans accord. Numérotation des reçus : série réelle `A2026/…` en production, série `TEST-…` seulement en test (`NUM_PREFIX`) — ne jamais les mélanger.
-5. **Connexion donateur** : le code à 6 chiffres part par e-mail **et** par SMS (`accounts.js`).
+5. **Pixel Meta** : on ne fait JAMAIS de vrai don ni d'essai qui enverrait des événements à la vraie campagne. Pour vérifier la réception côté Meta, Yarone ouvre le Gestionnaire d'événements → « Tester les événements », accepte le bandeau sur le vrai site (`?fbclid=essai`) et voit PageView ; l'événement « Donate » se vérifie sur le premier vrai don. Si le pixel ou son texte de consentement change : relire `consentement.js` et `/confidentialite/`, et ne jamais charger le pixel sans em_ok=2.
+6. **Connexion donateur** : le code à 6 chiffres part par e-mail **et** par SMS (`accounts.js`).
 
 ### 4. Déployer (seulement si 1, 2 et 3 sont verts)
 - Vérifier le compte : `vercel whoami` doit afficher `emounateha770-1135`. Sinon : **stop**, demander à Yarone de se reconnecter (`vercel login`).
