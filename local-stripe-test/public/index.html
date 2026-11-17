@@ -729,7 +729,7 @@ body.camp:not(.camp-accueil) #cp .cp-retour{display:none}
 @media(min-width:900px){#cp .cp-part{top:22px;right:26px;max-width:none;padding:9px 18px;font-size:14.5px;border-radius:99px}}
 body.camp:not(.camp-accueil) #cp .cp-part{display:none}
 /* page du Club : ב״ה en haut à droite (police du nom en hébreu) ; « Retour au site » et « Partager à vos proches » sous le logo, au milieu, petits */
-#cp .cp-bsd{position:absolute;z-index:3;top:12px;right:16px;font-family:'EmouHe','Frank Ruhl Libre','Times New Roman',serif!important;font-weight:900;font-size:24px;line-height:1;background:linear-gradient(180deg,#f6e3a0,#e8d078 55%,#c4a24a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;text-shadow:none;pointer-events:none}
+#cp .cp-bsd{position:absolute;z-index:3;top:12px;right:14px;font-family:'EmouFr','EmouHe','Frank Ruhl Libre',Inter,system-ui,sans-serif!important;font-weight:900;font-size:17px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.32));background:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;text-shadow:none;pointer-events:none}
 body.camp:not(.camp-accueil) #cp .cp-bsd{display:none}
 #cp .cp-retour,#cp .cp-part{top:162px!important;left:50%!important;right:auto!important;max-width:none!important;min-height:32px!important;padding:5px 12px!important;border-radius:99px!important;font-size:11.5px!important;gap:6px!important;white-space:nowrap;align-items:center}
 #cp .cp-retour{transform:translateX(calc(-100% - 5px))}
@@ -738,7 +738,7 @@ body.camp:not(.camp-accueil) #cp .cp-bsd{display:none}
 #cp .cp-tete{padding-top:46px!important}
 @media(max-width:430px){#cp .cp-retour,#cp .cp-part{font-size:10.5px!important;padding:5px 10px!important;gap:5px!important}}
 @media(max-width:372px){#cp .cp-retour,#cp .cp-part{font-size:11px!important;padding:5px 12px!important;transform:translateX(-50%)!important}#cp .cp-retour{top:156px!important}#cp .cp-part{top:194px!important}#cp .cp-tete{padding-top:84px!important}}
-@media(min-width:900px){#cp .cp-bsd{top:20px;right:30px;font-size:30px}#cp .cp-retour,#cp .cp-part{top:246px!important;font-size:13px!important;min-height:36px!important;padding:6px 16px!important}#cp .cp-tete{padding-top:56px!important}}
+@media(min-width:900px){#cp .cp-bsd{top:18px;right:22px;font-size:18px}#cp .cp-retour,#cp .cp-part{top:246px!important;font-size:13px!important;min-height:36px!important;padding:6px 16px!important}#cp .cp-tete{padding-top:56px!important}}
 body.camp:not(.camp-accueil) #cp .cp-tete{padding-top:0!important}
 .dn-part{margin:18px 0 4px;padding:16px;border-radius:14px;background:#f3f8f8;border:1px solid #d3e0e0;text-align:center}
 .dn-part p{margin:0 0 10px;font-size:15px;line-height:1.45;color:#24505a;font-weight:600}
@@ -1090,6 +1090,9 @@ body.camp:not(.camp-accueil) #cp .cp-toit{display:none}
 .fete-hero:empty{display:none}
 .fete-hero{background:linear-gradient(180deg,#fffaf0,#fff);border:1.5px solid #ece3c6;border-radius:18px;padding:14px;margin:4px 0 6px}
 .fh-top{display:flex;gap:14px;align-items:center}
+.fh-part{margin-left:auto;align-self:flex-start;flex:none;display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border-radius:99px;border:1.5px solid #e3d3a0;background:#fff;color:#1f6a72;font:700 12px/1 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(20,60,66,.08)}
+.fh-part:hover{border-color:#c4a24a;background:#fffaf0}.fh-part:active{transform:scale(.96)}
+@media(max-width:480px){.fh-top{position:relative}.fh-part{position:absolute;top:-6px;right:-4px;min-height:0;padding:0;width:32px;height:32px;justify-content:center}.fh-part span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
 .fh-top img{width:96px;height:96px;object-fit:cover;background:#fff;border-radius:14px;flex:none;box-shadow:0 4px 12px rgba(20,60,66,.15)}
 .fh-k{display:inline-block;background:var(--teal);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.4px;padding:3px 10px;border-radius:99px;text-transform:uppercase}
 .fh-t b{display:block;font-family:'Bree Serif',serif;font-weight:400;font-size:28px;color:var(--teal);margin-top:4px;line-height:1.1}
@@ -1604,9 +1607,15 @@ function renderActs(it) {
   { const fr = document.querySelector('.dn-actfree'); if (fr) fr.hidden = it.actions.length === 1 && !it.actions[0].montant; }   // une seule action, à montant libre : le champ « don libre » ferait doublon
   $('actLab').textContent = 'Comment souhaitez-vous participer ?';
   const hero = $('feteHero');
-  if (hero) hero.innerHTML = (it.image || it.intro) ? ('<div class="fh-top">' + (it.image ? '<img src="' + esc(it.image) + '" alt="">' : '') + '<div class="fh-t"><span class="fh-k">' + esc(it.jours != null ? joursTxt(it.jours) : (/chabbat/i.test(it.label) ? 'Chaque semaine' : 'Nos actions')) + '</span><b>' + esc(it.titre || it.label) + '</b></div></div>' +
+  if (hero) hero.innerHTML = (it.image || it.intro) ? ('<div class="fh-top">' + (it.image ? '<img src="' + esc(it.image) + '" alt="">' : '') + '<div class="fh-t"><span class="fh-k">' + esc(it.jours != null ? joursTxt(it.jours) : (/chabbat/i.test(it.label) ? 'Chaque semaine' : 'Nos actions')) + '</span><b>' + esc(it.titre || it.label) + '</b></div><button type="button" class="fh-part" id="fhPart" aria-label="Partager cette page de don"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg><span>Partager</span></button></div>' +
     (it.intro ? '<p class="fh-p">' + esc(it.intro) + '</p>' : '') +
     (it.apropos && it.apropos.length ? '<details class="fh-d"><summary>Qu\'est-ce que ' + esc(it.titre || it.label) + ' ?</summary>' + it.apropos.map(x => '<p>' + esc(x) + '</p>').join('') + '</details>' : '')) : '';
+  { // « Partager » : envoie l'adresse propre à cette action (don.emounateha.fr/<action>/), dont l'aperçu WhatsApp porte le titre et l'image de l'action
+    const fp = $('fhPart'); if (fp) { const nom = it.titre || it.label, sl = String(nom || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' et ').replace(/^l['’]/, 'l-').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), lien = location.origin + '/' + sl + '/', lab = fp.querySelector('span'), txt = 'Participez avec moi : ' + nom + ' (Émounatéha)';
+      fp.onclick = async () => {
+        try { if (navigator.share) { await navigator.share({ title: nom + ' · Émounatéha', text: txt, url: lien }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { await navigator.clipboard.writeText(lien); lab.textContent = 'Lien copié'; setTimeout(() => { lab.textContent = 'Partager'; }, 2600); } catch (e) { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt + ' : ' + lien); }
+      }; fp.dataset.lien = lien; } }
   $('acts').innerHTML = it.actions.map(a => {
     const on = (it.defaut || []).includes(a.id); if (on) ACTS[a.id] = a.montant ? String(a.montant) : '';
     return '<div class="dn-act' + (on ? ' on' : '') + '" data-id="' + esc(a.id) + '"><label class="dn-actrow"><input type="checkbox"' + (on ? ' checked' : '') + '><span class="bx"></span><span class="tx"><b>' + esc(a.label) + '</b>' + (a.desc ? '<small>' + esc(a.desc) + '</small>' : '') + '</span></label>' +
@@ -2150,5 +2159,6 @@ if(location.pathname==='/'||location.pathname==='/index.html'||document.body.dat
 
 <script src="/vu.js?v=3" defer></script>
 <script src="/langue.js?v=10" defer></script>
+<script src="/bsd.js?v=5" defer></script>
 </body>
 </html>
