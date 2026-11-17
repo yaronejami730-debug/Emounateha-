@@ -180,3 +180,6 @@
   .qa a{font-size:12px;padding:9px 7px}.qa a small{font-size:10px}
   .sec-nav .ndate b{font-size:12.5px}.sec-nav .ndate small{font-size:8px}.sec-nav .nbsd{font-size:13px}
 }
+
+/* menu burger : une entrée de plus (Actualité) ; les bandeaux du haut réduisent la place, donc entrées un peu plus serrées et menu défilant si l écran est très court */
+@media(max-width:800px){.sec-nav .links{max-height:calc(100vh - 130px)!important;max-height:calc(100dvh - 130px)!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}.sec-nav .links a{padding-top:11px;padding-bottom:11px}}
