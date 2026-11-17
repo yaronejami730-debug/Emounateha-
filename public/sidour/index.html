@@ -121,13 +121,15 @@ button{font:inherit;color:inherit}
 
 <script>
 /* pages disponibles (numéro dans le livre) ; les pages 19 à 22 sont reprises au début de Min'ha */
+var par=function(id){return SECTIONS.filter(function(x){return x.id===id})[0]};
 var NUMS=[];for(var i=6;i<=95;i++)NUMS.push(i);
 NUMS=NUMS.concat([19,20,21,22]);for(i=96;i<=126;i++)NUMS.push(i);
 NUMS=NUMS.concat([241,242,243,244,245,246,247,248,249,277,278,279,341,342,343]);
-var DEB_MINHA=90,FIN_MINHA=93;
+var DEB_MINHA=91,FIN_MINHA=94;   /* +1 : la page 94b (suite de la page 94) s'intercale avant Min'ha */
 var SECTIONS=[
  {id:'chaharit',debut:6,fr:'Cha\u2019harit',he:'שחרית'},
  {id:'birkat-hamazone',debut:87,fr:'Birkat Hamazone',he:'ברכת המזון'},
+ {id:'meen-chalosh',debut:9999,fr:'Méïn Chalosh',he:'ברכה אחרונה'},
  {id:'minha',debut:96,fr:'Min\u2019ha',he:'מנחה'},
  {id:'arvit',debut:106,fr:'Arvit',he:'מעריב'},
  {id:'chema-hamita',debut:118,fr:'Kriat Chema al hamita',he:'קריאת שמע על המטה'},
@@ -139,10 +141,13 @@ var SECTIONS=[
 /* repères à l'intérieur de Cha'harit (affichés en haut du lecteur) */
 var SUBS=[[6,'Brakhot du matin'],[12,'Ma Tovou'],[27,'Hodou'],[41,'Ichtaba\u2019h'],[50,'Chemoné Esré'],[71,'Achré, Ouva Letsion'],[84,'Alénou']];
 function subDe(n){var r='';SUBS.forEach(function(x){if(x[0]<=n)r=x[1]});return r}
-var ALIAS={chaharit:'chaharit',brakhot:'chaharit',hodou:'chaharit',birkat:'birkat-hamazone',kriat:'chema-hamita',chema:'chema-hamita',sefirat:'omer'};
+var ALIAS={chaharit:'chaharit',brakhot:'chaharit',hodou:'chaharit',birkat:'birkat-hamazone',kriat:'chema-hamita',chema:'chema-hamita',sefirat:'omer',meen:'meen-chalosh',acharona:'meen-chalosh'};
 function sectionDe(n){var s=null;SECTIONS.forEach(function(x){if(x.debut<=n)s=x});return s}
-var PAGES=NUMS.map(function(n,i){var m=i>=DEB_MINHA&&i<=FIN_MINHA;return{n:n,sec:m?SECTIONS[2]:sectionDe(n),f:'/sidour/pages/page-'+String(n).padStart(3,'0')+'.webp?v=1'}});
-function indexDe(sec){return sec.id==='minha'?DEB_MINHA:PAGES.findIndex(function(p,i){return !(i>=DEB_MINHA&&i<=FIN_MINHA)&&p.n>=sec.debut})}
+var MC=par('meen-chalosh');
+var PAGES=NUMS.map(function(n,i){var m=i>=DEB_MINHA&&i<=FIN_MINHA;return{n:n,sec:m?par('minha'):sectionDe(n),f:'/sidour/pages/page-'+String(n).padStart(3,'0')+'.webp?v=2'}});
+/* « Nusach bra\u2019kha a\u2019harona méïn chalosh » : la page 94 est coupée au titre ; le bas de la page 94 et la page 95 forment un onglet à part, sous Birkat Hamazone */
+(function(){var i=PAGES.findIndex(function(p){return p.n===94});PAGES.splice(i+1,0,{n:94,sec:MC,f:'/sidour/pages/page-094b.webp?v=2'});PAGES[i+2].sec=MC})();
+function indexDe(sec){return sec.id==='minha'?DEB_MINHA:sec.id==='meen-chalosh'?PAGES.findIndex(function(p){return p.sec===sec}):PAGES.findIndex(function(p,i){return !(i>=DEB_MINHA&&i<=FIN_MINHA)&&p.n>=sec.debut})}
 var $=function(i){return document.getElementById(i)},scene=$('scene'),somm=$('somm'),cur=0,feuilles=[],imgs=[];
 var CLE='em-sidour-page';
 
@@ -179,9 +184,8 @@ function carte(s,cls){
   b.addEventListener('click',function(){ouvrirPriere(s)});
   return b;
 }
-var par=function(id){return SECTIONS.filter(function(x){return x.id===id})[0]};
 /* un seul carré Cha'harit, puis Min'ha, Arvit, et le reste dans l'ordre du livre */
-var ordre=['chaharit','minha','arvit','birkat-hamazone','chema-hamita','hallel','moussaf','avinou-malkenou','omer'];
+var ordre=['chaharit','minha','arvit','birkat-hamazone','meen-chalosh','chema-hamita','hallel','moussaf','avinou-malkenou','omer'];
 var g=document.createElement('div');g.className='grille';
 ordre.forEach(function(id){g.appendChild(carte(par(id),id==='chaharit'?'grand':''))});
 grille.appendChild(g);
