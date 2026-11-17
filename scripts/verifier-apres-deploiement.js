@@ -19,6 +19,7 @@ const etat = p => p.evaluate(() => { const g = document.getElementById('go'), r 
       await p.evaluate(() => document.querySelector('.cp-pan .cp-go').click()); await wait(1500);
       const e = await etat(p);
       ok(!e.accueil && e.goVisible && e.montant === montant, lib + ' : le clic ouvre le formulaire de don', e);
+      ok(await p.evaluate(() => !/Ils ont rejoint/i.test(document.body.innerText)), lib + ' : aucune liste « Ils ont rejoint le Club ’Haï » (même avec des membres)');
       ok(!p._err.length, lib + ' : aucune erreur JavaScript', p._err); await p.close();
     }
     const p = await ouvre('https://don.emounateha.fr/', w, h); const e = await etat(p);

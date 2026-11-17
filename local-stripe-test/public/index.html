@@ -649,6 +649,7 @@ body.camp.camp-accueil #cp section.cp-fin h2{color:#164c52}
 body.camp.camp-accueil #cp section.cp-fin ol.cp-etapes li{color:#3a4f52}body.camp.camp-accueil #cp section.cp-fin ol.cp-etapes li b{color:#14272a}
 /* « Ils ont rejoint » fait partie de la même zone blanche que « Rejoindre en trois étapes » : un seul fond jusqu'au pied de page (plus de bande bleue coincée entre les deux) */
 body.camp.camp-accueil #cp section.cp-fin{padding-bottom:20px}
+body.camp.camp-accueil #cp section.cp-fin:last-of-type{padding-bottom:48px}   /* sans liste de membres, « Rejoindre en trois étapes » ferme la zone blanche */
 body.camp.camp-accueil #cp section#cpWall{position:relative;margin:0;padding:6px 0 48px;background:#fff}
 body.camp.camp-accueil #cp section#cpWall h2{color:#164c52}
 body.camp.camp-accueil #cp section#cpWall ul.cp-noms li{color:#14272a;border-top-color:#e3eaea}
@@ -748,7 +749,7 @@ body.camp:not(.camp-accueil) #cp .cp-toit{display:none}
   #cp h2{font-size:28px}
   #cp ul.cp-liste{grid-template-columns:repeat(3,1fr)}#cp ul.cp-noms{grid-template-columns:repeat(4,1fr)}
   #cp ol.cp-etapes{grid-template-columns:repeat(3,1fr);gap:32px}
-  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:0}body.camp.camp-accueil #cp section.cp-fin{padding:10px 0 24px}body.camp.camp-accueil #cp section#cpWall{padding:10px 0 64px}
+  body.camp.camp-accueil #cpBar{display:none}body.camp.camp-accueil #cp{padding-bottom:0}body.camp.camp-accueil #cp section.cp-fin{padding:10px 0 24px}body.camp.camp-accueil #cp section.cp-fin:last-of-type{padding-bottom:64px}body.camp.camp-accueil #cp section#cpWall{padding:10px 0 64px}
   body.camp:not(.camp-accueil) #cp .cp-tete .cp-w{display:block}
 }
 @media(max-width:899px){#cp .cp-tete .cp-w{padding:0}}
@@ -1475,7 +1476,7 @@ function campagneInit(b) {
     '<section class="cp-s"><div class="cp-w"><h2>' + esc(C.sectionTitre || 'Dans chaque colis de Hanouka') + '</h2>' + (b.description ? '<p class="cp-intro">' + esc(b.description).replace(/\n/g, '<br>') + '</p>' : '') +
     ((C.contenu || []).length ? '<ul class="cp-liste">' + C.contenu.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + '</div></section>' +
     '<section class="cp-s cp-fin"><div class="cp-w"><h2>' + (men ? 'Rejoindre en trois étapes' : 'Participer en trois étapes') + '</h2><ol class="cp-etapes">' + etapes.map(e => '<li><b>' + esc(e[0]) + '</b>' + esc(e[1]) + '</li>').join('') + '</ol></div></section>' +
-    '<section class="cp-s" id="cpWall" hidden><div class="cp-w"><h2>' + (men ? 'Ils ont rejoint le ' + (C.marque ? esc(C.marque.nom) : 'club') : 'Ils participent') + '</h2><ul class="cp-noms" id="cpNoms"></ul><p class="cp-autres" id="cpAutres"></p></div></section>';
+    (men ? '' : '<section class="cp-s" id="cpWall" hidden><div class="cp-w"><h2>' + (men ? 'Ils ont rejoint le ' + (C.marque ? esc(C.marque.nom) : 'club') : 'Ils participent') + '</h2><ul class="cp-noms" id="cpNoms"></ul><p class="cp-autres" id="cpAutres"></p></div></section>');
   const dn = $('dn'); dn.parentNode.insertBefore(page, dn); lanceVid();
   // « Partager à vos proches » : la feuille de partage du téléphone (WhatsApp, SMS, e-mail…) ; sur ordinateur, le lien est copié
   if ($('cpPart')) partager($('cpPart'), C.marque ? C.marque.nom : b.titre, location.origin + location.pathname);
@@ -1499,7 +1500,7 @@ function campagneInit(b) {
       $('cpPro').textContent = C.lumieres ? (lum >= 8 ? 'Les huit lumières sont allumées' : 'Encore ' + fr(reste) + ' pour allumer la ' + ord(lum + 1) + ' lumière') : n >= obj ? 'Objectif atteint' : 'Encore ' + fr(obj - n) + ' ' + mots(obj - n) + ' pour y arriver';
     }
     const noms = b.noms || [], anon = Math.max(0, (b.donateurs != null ? b.donateurs : n) - noms.length);   // « Et X autres » compte les vrais donateurs, pas les parts
-    $('cpWall').hidden = !noms.length; $('cpNoms').innerHTML = noms.map(x => '<li>' + esc(x) + '</li>').join(''); $('cpAutres').textContent = noms.length && anon ? 'Et ' + fr(anon) + ' autre' + (anon > 1 ? 's' : '') + ' ' + mots(anon) + '.' : '';
+    if ($('cpWall')) { $('cpWall').hidden = !noms.length; $('cpNoms').innerHTML = noms.map(x => '<li>' + esc(x) + '</li>').join(''); $('cpAutres').textContent = noms.length && anon ? 'Et ' + fr(anon) + ' autre' + (anon > 1 ? 's' : '') + ' ' + mots(anon) + '.' : ''; }
     vu = n;
   };
   dessine(b);

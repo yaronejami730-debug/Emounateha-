@@ -30,6 +30,7 @@ async function page(url, w, h) { const p = await browser.newPage(); const err = 
     let p = await page(B + '/campagne/club', w, h);
     let e = await etat(p);
     if (w < 600) RELEVES['club : accueil'] = await releve(p);
+    ok(await p.evaluate(() => !document.getElementById('cpWall') && !/Ils ont rejoint/i.test(document.body.innerText)), 'Club : aucune liste « Ils ont rejoint le Club ’Haï » (supprimée à la demande de Yarone)');
     ok(e.accueil && !e.goVisible, 'à l’ouverture : page d’accueil du Club, formulaire fermé', e);
     const bt = await p.$$eval('.cp-go', l => l.map(x => x.textContent.trim()));
     ok(bt.length >= 1 && bt.every(t => /^Rejoindre pour 18 € par mois$/.test(t)), 'bouton « Rejoindre pour 18 € par mois »', bt);
