@@ -10,7 +10,7 @@
 <link rel="preload" as="image" href="/hanouka-lp/hero.jpg?v=5" fetchpriority="high" media="(max-width:899px)">
 <link rel="preload" as="image" href="/hanouka-lp/hero-wide.jpg?v=5" fetchpriority="high" media="(min-width:900px)">
 <style>
-:root{--teal:#1f6a72;--gold:#c4a24a;--gold-l:#e4cd8a;--ink:#14272a;--night:#141414}
+:root{--teal:#1f6a72;--gold:#c4a24a;--orgrad:linear-gradient(180deg,#f3e08f 0%,#e8d078 42%,#d0a848 100%);--orgrad-l:linear-gradient(180deg,#fbeba8 0%,#f0dc8a 42%,#dcb856 100%);--gold-l:#e4cd8a;--ink:#14272a;--night:#141414}
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 html,body{height:100%}
@@ -54,7 +54,7 @@ a{color:inherit}
 .firstc .cnt b{font-weight:700;color:#fff}
 .foot{margin-top:auto;padding:46px 22px calc(26px + env(safe-area-inset-bottom));max-width:640px;margin-left:auto;margin-right:auto;width:100%;background:linear-gradient(to bottom,rgba(18,18,18,0) 0,rgba(18,18,18,.22) 90px,rgba(18,18,18,.3) 100%);-webkit-backdrop-filter:blur(2px) saturate(115%);backdrop-filter:blur(2px) saturate(115%);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 90px);mask-image:linear-gradient(to bottom,transparent 0,#000 90px)}
 .when{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:99px;background:rgba(18,18,18,.55);border:1px solid rgba(228,205,138,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);font-size:12.5px;font-weight:600;color:#f1e7c9;margin-bottom:8px}
-.when i{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 rgba(196,162,74,.6);animation:glow 2.4s ease-out infinite}
+.when i{width:8px;height:8px;border-radius:50%;background:var(--orgrad);box-shadow:0 0 0 0 rgba(196,162,74,.6);animation:glow 2.4s ease-out infinite}
 .when b{font-weight:800;color:#fff}
 @keyframes glow{0%{box-shadow:0 0 0 0 rgba(196,162,74,.65)}100%{box-shadow:0 0 0 9px rgba(196,162,74,0)}}
 h1{font-weight:800;font-size:clamp(21px,5.8vw,26px);line-height:1.05;letter-spacing:-.8px;color:#fff;text-wrap:balance;text-shadow:0 2px 18px rgba(0,0,0,.5)}
