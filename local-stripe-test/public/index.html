@@ -1003,6 +1003,9 @@ body.camp:not(.camp-accueil) #cp .cp-toit{display:none}
 <script src="/consentement.js?v=4"></script>
 </head>
 <body>
+<script>/* page de campagne (Club ’Haï, Hanouka) : on n'affiche pas le formulaire de don général pendant le chargement, sinon la page « saute » */
+if(/"campagne"/.test(document.body.getAttribute('data-besoin')||'')){document.body.classList.add('camp-att');setTimeout(function(){document.body.classList.remove('camp-att')},4000)}</script>
+<style>html:has(body.camp-att),body.camp-att{background:#1f6a72!important}body.camp-att>*{visibility:hidden!important}</style>
 <nav class="sec-nav" aria-label="Sections de la page"><div class="wrap"><a class="nbrand" href="http://localhost:3000/"><img src="/logo.png?v=2" alt="Émounatéha"><span>Émounatéha</span></a><span class="ndate" id="ndate"></span><span class="nbsd">ב״ה</span><button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="links" id="navLinks"><a href="http://localhost:3000/#mission">Qui sommes-nous</a><a href="http://localhost:3000/#actions">Nos actions</a><a href="http://localhost:3000/torah/">Diffusion de la Torah</a><a href="http://localhost:3000/colis/">Les colis</a><a href="http://localhost:3000/#aider">Comment aider</a><a href="http://localhost:3000/horaires/">Horaires</a><a href="http://localhost:3000/#contact">Contact</a></div></div></nav>
 <header class="pagehead"><div class="wrap"><h1>Faire un don</h1><p>Votre reçu fiscal CERFA instantané vous est envoyé par email, en PDF.</p><span class="dn-pill">Mode test · aucun argent réel</span></div></header>
 <style>
@@ -1460,7 +1463,7 @@ function campagneInit(b) {
   let part = parts[0];
   const eur = x => x.toLocaleString('fr-FR') + ' €', bouton1 = () => part > 0 ? (men ? 'Rejoindre pour ' : 'Participer pour ') + eur(part) + (men ? ' par mois' : '') : (men ? 'Rejoindre le ' + (C.marque ? C.marque.nom : 'club') : 'Participer'), partsTxt = parts.map(eur).join(' ou ') + (men ? ' par mois' : '');
   const etapes = C.etapes && C.etapes.length === 3 ? C.etapes : [[C.libre ? 'Vous choisissez ' + parts.map(eur).join(', ') + ' ou un autre montant' : men ? 'Vous choisissez ' + partsTxt : 'Vous participez pour ' + partsTxt, men ? 'Le même montant chaque mois, sans limite de durée.' : 'Un seul montant, le même pour tous.'], ['Vous indiquez vos coordonnées', 'Ou vous vous connectez : elles sont déjà remplies.'], ['Vous recevez votre reçu fiscal', men ? 'Un CERFA par e-mail, en PDF, après chaque prélèvement.' : 'Le CERFA arrive par e-mail, en PDF, juste après le paiement.']];
-  document.body.classList.add('camp', 'camp-accueil');
+  document.body.classList.add('camp', 'camp-accueil'); document.body.classList.remove('camp-att');
   // vidéo de la campagne : on la lance AVEC le son ; si le navigateur le refuse (lecture sonore automatique bloquée), elle démarre sans le son,
   // un bouton « Activer le son » apparaît, et le premier toucher sur la page (hors boutons) remet le son
   let cpVid = null;
