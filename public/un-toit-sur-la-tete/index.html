@@ -633,7 +633,7 @@ const RET='?retour='+encodeURIComponent(location.href.split('#')[0]),DON='https:
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const vbtn=v=>'<button type="button" class="cv" data-id="'+v.id+'" data-t="'+esc(v.title)+'" aria-label="Lire : '+esc(v.title)+'"><img src="/yt/'+v.id+'/hqdefault.jpg" alt="" loading="lazy"><span class="cvp" aria-hidden="true"></span></button>';
 function renderLib(list){const feat=document.getElementById('feat'),lib=document.getElementById('lib'),g=document.getElementById('libGrid');
-  if(!list||!list.length){feat.innerHTML='<div class="art"><div><img src="/tuiles/'+ART.icon+'?v=3" alt=""><b>'+esc(ART.name)+'</b><span>'+ART.msg+' <a href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener">Voir la chaîne</a></span><div class="artact"><a class="btn gold" href="'+DON+'">♥ Faire un don</a><a class="btn artcolis" href="'+COLIS+'">Offrir un colis</a></div></div></div>';lib.hidden=true;return}
+  if(!list||!list.length){feat.innerHTML='<div class="art"><div><img src="/tuiles/'+ART.icon+'?v=3" alt=""><b>'+esc(ART.name)+'</b><span>'+ART.msg+' <a href="https://youtube.com/@emounateharaba-h4b" target="_blank" rel="noopener">Voir la chaîne</a></span></div></div>';lib.hidden=true;return}
   const f=list[0];feat.innerHTML=vbtn(f)+'<div class="flab">▶ En vidéo</div><div class="ftit">'+esc(f.title.replace(/\s*[·\-–]\s*\d+\s*$/,''))+'</div>';
   const rest=list.slice(1);
   if(rest.length){lib.hidden=false;g.innerHTML=rest.map(v=>'<div class="lv rv">'+vbtn(v)+'<div class="cap">'+esc(v.title)+'</div></div>').join('')}else lib.hidden=true;
