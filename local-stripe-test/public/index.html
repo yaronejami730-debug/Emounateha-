@@ -1124,6 +1124,10 @@ if(/"campagne"/.test(document.body.getAttribute('data-besoin')||'')){document.bo
 .dn-topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 12px}.dn-topbar .dn-back{margin:0}
 .dn-esp{background:#f3eedd!important;border-color:#e2cf98!important;color:#7a5f17!important}
 @media(max-width:560px){.dn-topbar .dn-l{display:none}}
+.dn-topbar .dn-tpart{cursor:pointer;font-family:inherit;width:auto!important;flex:0 0 auto;justify-content:center}   /* « Partager » : sur toutes les pages de don (don général, « là où le besoin est le plus grand », actions, fêtes) */
+body:has(#fhPart) .dn-topbar .dn-tpart{display:none}   /* la page d'une action a déjà son bouton « Partager » à côté du titre */
+@media(max-width:560px){html body .dn-topbar .dn-tpart{padding:0;width:38px!important;height:38px;border-radius:50%}}
+@media(max-width:380px){.dn-topbar .dn-back{padding:8px 10px;font-size:12.5px;gap:5px}}
 .dn-retour{text-align:center;margin-top:18px}
 .dn-retour p{margin:10px 0 0;font-size:13px;color:#51666a}
 
@@ -1181,7 +1185,7 @@ if(/"campagne"/.test(document.body.getAttribute('data-besoin')||'')){document.bo
 </style>
 
 <section id="dn"><div class="dn-wrap">
-  <div class="dn-topbar"><a class="dn-back" href="https://www.emounateha.fr/"><span>←</span> <span class="dn-l">Retourner sur </span>emounateha.fr</a><a class="dn-back dn-esp" href="/espace/"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Espace donateur</a></div>
+  <div class="dn-topbar"><a class="dn-back" href="https://www.emounateha.fr/"><span>←</span> <span class="dn-l">Retourner sur </span>emounateha.fr</a><button type="button" class="dn-back dn-tpart" id="dnPart" aria-label="Partager cette page de don"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg><span class="dn-l">Partager</span></button><a class="dn-back dn-esp" href="/espace/"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Espace donateur</a></div>
   <ol class="dn-steps" id="dnSteps"><i class="dn-fill" id="dnFill"></i><li>Votre don</li><li>Coordonnées</li><li id="dnS3">Paiement</li></ol>
   <div class="dn-acct" id="acct">
     <div id="acctOut" class="dn-acct-out"><span>Déjà donateur ?</span><button type="button" id="acctOpen" class="dn-link">Se connecter</button><span>pour payer en un clic, sans remplir le formulaire</span></div>
@@ -1685,6 +1689,9 @@ const cfgP = fetch('/api/config').then(r => r.json()).then(c => {
   { // lien depuis la page Torah (ou ailleurs) : ?montant=26|52…&express=1&retour=https://www.emounateha.fr/torah/
     const q = new URLSearchParams(location.search), m = Number(String(q.get('montant') || '').replace(',', '.'));
     if (Number.isFinite(m) && m >= 1 && m <= 999999) { $('montant').value = String(m).replace('.', ','); mark(); upSum(); }
+    { const dp = $('dnPart'); if (dp) dp.onclick = async () => { const lien = location.origin + location.pathname, t = (document.title || 'Faire un don — Émounatéha'), txt = 'Participez avec moi : ' + t, lab = dp.querySelector('span');
+        try { if (navigator.share) { await navigator.share({ title: t, text: txt, url: lien }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+        try { await navigator.clipboard.writeText(lien); lab.textContent = 'Lien copié'; lab.style.display = 'inline'; setTimeout(() => { lab.textContent = 'Partager'; lab.style.display = ''; }, 2600); } catch (e) { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt + ' : ' + lien); } }; }
     const ret = q.get('retour') || ''; if (/^https:\/\/(www\.)?emounateha\.fr\//.test(ret)) { const a = document.querySelector('.dn-topbar .dn-back'); if (a) { a.href = ret; a.innerHTML = '<span>←</span> Retour à la vidéo'; } }
   }
   pickAff(0);   // la 1re carte (la fête qui approche, sinon « là où le besoin est le plus grand ») est cochée par défaut
