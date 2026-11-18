@@ -30,7 +30,7 @@ a{color:inherit}
 .partners img{display:block;height:92px;width:auto;filter:drop-shadow(0 2px 12px rgba(0,0,0,.5))}
 .partners .x{font-size:34px;font-weight:700;color:var(--gold-l);opacity:.9;line-height:1}
 .partners img.allo{height:58px;width:58px;border-radius:50%}
-.bsd{font-size:16px;font-weight:700;color:var(--gold-l);text-shadow:0 1px 8px rgba(0,0,0,.55)}
+.bsd{font-family:'EmouFr','EmouHe','Frank Ruhl Libre',Inter,system-ui,sans-serif;font-weight:900;font-size:17px;line-height:1;background:linear-gradient(180deg,#fff1b0 0%,#f0d57c 45%,#d2ab49 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;text-shadow:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.32))}@media(min-width:801px){.bsd{font-size:18px}}
 
 
 @keyframes tick{0%{transform:translateY(-4px);opacity:.3}100%{transform:none;opacity:1}}
@@ -110,6 +110,11 @@ h1 em{font-style:normal;color:var(--gold-l)}
 .skip{display:block;width:max-content;margin:14px auto 0;padding:11px 26px;border-radius:99px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff;font:600 15px/1 Manrope,system-ui,sans-serif;text-decoration:none;letter-spacing:.01em}
 .skip:active{background:rgba(255,255,255,.2)}
 @media(min-width:900px){.skip{margin-left:0}}
+/* petits écrans : le prix « 130 € » tient dans le bouton à glisser */
+@media(max-width:400px){html body .unlock .lbl,html body .unlock .lbl *{font-size:13px!important;letter-spacing:0!important}html body .unlock .lbl{gap:6px;padding-left:66px;padding-right:12px;white-space:nowrap}}
+@media(max-width:340px){html body .unlock .lbl,html body .unlock .lbl *{font-size:10.8px!important}html body .unlock .lbl{gap:4px;padding-left:62px;padding-right:8px}}
+/* téléphone à l'horizontale (écran bas) : la page défile, pour atteindre « Aller sur le site » */
+@media(max-height:520px){html,body{height:auto!important;min-height:100%}body{overflow-y:auto!important;overflow-x:hidden}.stage{position:relative!important;inset:auto!important;min-height:100svh;height:auto!important;padding-bottom:16px}}
 </style>
 <style>
 /* seul le grand titre en Cinzel, le reste garde la police d'origine (Manrope) */
@@ -138,7 +143,7 @@ html body h1 em{font-style:normal}
 <script src="/consentement.js?v=4"></script>
 <script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=18">
+<link rel="stylesheet" href="/ecriture.css?v=19">
 </head>
 <body>
 <main class="stage">

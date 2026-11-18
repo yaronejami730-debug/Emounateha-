@@ -3,6 +3,17 @@
    Ne paie rien et ne crée rien : il ouvre les vraies pages dans Chrome, clique sur les boutons de don et vérifie que le formulaire s'ouvre.
    Au moindre échec : code 1 → il faut revenir en arrière tout de suite (rollback). */
 const path = require('path');
+// Juste après une mise en ligne, le premier passage échoue parfois une fois (le déploiement finit de se propager). On refait donc UN second passage complet 30 s plus tard ;
+// le site n'est déclaré bon que si un passage entier réussit. Deux passages en échec = site cassé (code 1).
+if (!process.env.VERIF_ENFANT) {
+  const { spawnSync } = require('child_process'); let r;
+  for (let k = 1; k <= 2; k++) {
+    r = spawnSync(process.execPath, [__filename], { env: { ...process.env, VERIF_ENFANT: '1' }, stdio: 'inherit' });
+    if (r.status === 0) break;
+    if (k < 2) { console.log('\nPremier passage en échec : second et dernier passage dans 30 secondes…\n'); Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30000); }
+  }
+  process.exit(r.status === 0 ? 0 : 1);
+}
 const puppeteer = require(path.join(__dirname, '..', 'local-stripe-test', 'node_modules', 'puppeteer-core'));
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', wait = ms => new Promise(r => setTimeout(r, ms));
 let pass = 0, fail = 0; const ok = (c, m, x) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  ECHEC', m, c ? '' : JSON.stringify(x === undefined ? null : x).slice(0, 400)); };

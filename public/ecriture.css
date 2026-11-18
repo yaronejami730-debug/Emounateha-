@@ -19,13 +19,6 @@ html body .sec-nav .ndate small{font-weight:600;text-transform:uppercase;letter-
 @media(max-width:360px){html body .sec-nav .ndate small{font-size:9.6px;letter-spacing:.02em}}
 /* titres en gras, partout (sections, cartes, bandeau de Roch 'Hodech) */
 html body h1,html body h2,html body h3,html body h4,html body .title h2,html body .card h3,html body .step h3,html body #rchband b,html body #rchband small{font-weight:800}
-/* téléphone en paysage / petite tablette (801 à 1100 px) : le menu tient entre la date et ב״ה */
-@media(min-width:801px) and (max-width:1100px){
-  html body .sec-nav .links a{font-size:clamp(8.8px,1.05vw,11.5px)!important;letter-spacing:0!important;padding-left:2px!important;padding-right:2px!important;white-space:nowrap}
-  html body .sec-nav .links{justify-content:space-between!important;gap:0!important}
-  html body .sec-nav .ndate small{font-size:clamp(7.6px,.9vw,9.5px)!important;letter-spacing:0!important;white-space:nowrap}
-  html body .sec-nav .ndate b{font-size:clamp(11px,1.4vw,14px)!important}
-}
 /* ordinateur : menu du haut lisible. Écriture plus grande, entrées réparties sur toute la largeur, blocs date et ב״ה moins larges, barre plus large sur grand écran ; « Langue » réduit au globe sous 1300 px */
 @media(min-width:1101px){
   html body .sec-nav .wrap{max-width:1560px!important}
@@ -74,4 +67,43 @@ html body #act .cta .btns{display:flex!important;flex-direction:row!important;fl
 html body #act .cta .btn{width:auto!important;min-width:0!important;padding:9px 20px!important;font-size:13.5px!important;border-radius:99px!important;flex:0 1 auto!important}
 html body #act .cta small{margin-top:10px!important;font-size:11.5px!important}
 @media(min-width:1101px) and (max-width:1160px){html body .sec-nav .links a{font-size:10.8px!important}}
-@media(min-width:801px) and (max-width:859px){html body .sec-nav .links a{font-size:8.4px!important}}
+
+/* ===== 801 à 1100 px (petite fenêtre d'ordinateur, tablette, téléphone en paysage) : MENU BURGER =====
+   La rangée de liens était écrite trop petit à ces largeurs (8,4 à 11,5 px). On y affiche donc la même barre que sur
+   téléphone (≤ 800 px) : bouton menu à gauche, date au centre, ב״ה à droite, panneau déroulant sur toute la largeur.
+   Seule la barre du haut change : le reste de la page garde sa mise en page d'ordinateur.
+   Rien ici ne s'applique sous 801 px ni au-dessus de 1100 px. */
+@media(min-width:801px) and (max-width:1100px){
+  /* la barre : les trois éléments sont posés en absolu dedans (hauteur d'ordinateur conservée : 56 px) */
+  html body nav.sec-nav .wrap{position:relative!important;justify-content:space-between!important;padding:0 6px 0 10px!important}
+  /* bouton menu (les trois traits), à gauche */
+  html body nav.sec-nav .burger{display:flex!important;position:absolute!important;left:10px!important;right:auto!important;top:50%!important;transform:translateY(-50%)!important;width:38px!important;height:38px!important;padding:11px 8px!important;margin:0!important;order:0!important;border-radius:11px!important;background:rgba(255,255,255,.55)!important;border:1px solid rgba(196,162,74,.6)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(0,0,0,.12)!important;z-index:2!important;touch-action:manipulation}
+  html body nav.sec-nav .burger span,html body nav.sec-nav.scrolled .burger span,html body nav.sec-nav.open .burger span{width:100%!important;height:3px!important;flex:none!important;align-self:stretch!important;background:#1b2b2d!important;box-shadow:none!important}
+  html body nav.sec-nav.open .burger span:nth-child(1){transform:translateY(5.5px) rotate(45deg)!important}
+  html body nav.sec-nav.open .burger span:nth-child(2){opacity:0!important}
+  html body nav.sec-nav.open .burger span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)!important}
+  /* date, au centre */
+  html body nav.sec-nav .ndate{display:block!important;position:absolute!important;left:50%!important;right:auto!important;top:auto!important;transform:translateX(-50%)!important;order:1!important;flex:none!important;min-width:120px!important;margin:0!important;padding:6px 44px!important;text-align:center!important;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35);line-height:1.2;direction:ltr}
+  html body nav.sec-nav .ndate b{font-size:17px!important;text-align:center!important}
+  html body nav.sec-nav .ndate small{font-size:10.5px!important;letter-spacing:.04em!important;white-space:nowrap}
+  html body nav.sec-nav.open .ndate small,html body nav.sec-nav.scrolled.open .ndate small{color:#fff!important}
+  /* ב״ה, à droite */
+  html body nav.sec-nav .nbsd{display:block!important;position:absolute!important;right:14px!important;left:auto!important;top:50%!important;transform:translateY(-50%)!important;order:2!important;flex:none!important;min-width:0!important;margin:0!important;font-size:17px!important;line-height:1!important;text-align:start!important;z-index:1!important}
+  /* bouton d'appel de la barre : même taille que sur téléphone (appel.js le place juste à gauche du ב״ה) */
+  html body nav.sec-nav .ncall{width:34px;height:34px}
+  html body nav.sec-nav .ncall svg{width:18px;height:18px;margin:-9px 0 0 -9px}
+  /* panneau déroulant : fermé par défaut, ouvert par le bouton menu (classe .open posée par le script de la page) */
+  html body nav.sec-nav .links{display:none!important;position:absolute!important;top:100%!important;left:0!important;right:0!important;width:100%!important;margin:0!important;order:4!important;flex:none!important;flex-direction:column!important;justify-content:flex-start!important;gap:0!important;min-width:0!important;box-sizing:border-box!important;max-height:calc(100vh - 145px)!important;max-height:calc(100dvh - 145px)!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:6px 10px max(14px,env(safe-area-inset-bottom))!important;border-top:1px solid rgba(255,255,255,.2)!important;border-radius:0!important;box-shadow:0 14px 30px rgba(0,0,0,.28)!important;background-image:url(/header.jpg)!important;background-size:cover!important;background-position:center!important;background-color:#1f6a72!important}
+  html body nav.sec-nav.open .links{display:flex!important}
+  /* entrées du panneau : grandes et lisibles (17 px), une par ligne */
+  html body nav.sec-nav .links a,html body nav.sec-nav.scrolled .links a,html body nav.sec-nav.open .links a,html body nav.sec-nav.scrolled.open .links a{display:flex!important;align-items:center!important;flex:none!important;min-height:50px!important;font-size:17px!important;letter-spacing:normal!important;white-space:nowrap;padding:11px 12px!important;color:#fff!important;text-shadow:0 1px 4px rgba(0,0,0,.3)!important;border-left:0!important;border-bottom:1px solid rgba(255,255,255,.14)!important;border-radius:0}
+  html body nav.sec-nav .links a:hover{background:rgba(255,255,255,.08)!important;border-radius:8px}
+  html body nav.sec-nav .links a.ndon{display:none!important}
+  /* « Changer la langue » écrit en entier dans le panneau (et non le globe seul) */
+  html body nav.sec-nav .links a .lang-long{display:inline!important}
+  html body nav.sec-nav .links a .lang-short{display:none!important}
+  /* bouton doré « Appeler », en bas du panneau (repris d'appel.js, qui ne l'affichait que sous 801 px) */
+  html body nav.sec-nav .links a.ncall-menu,html body nav.sec-nav.scrolled .links a.ncall-menu,html body nav.sec-nav.open .links a.ncall-menu,html body nav.sec-nav.scrolled.open .links a.ncall-menu{display:flex!important;align-items:center!important;justify-content:center!important;gap:10px;box-sizing:border-box;margin:10px 16px 6px!important;padding:13px 18px!important;border-radius:99px!important;background:linear-gradient(180deg,#e0c56e,#c4a24a)!important;color:#1b2b2d!important;font-weight:700!important;font-size:16px!important;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);border:0!important}
+  html body nav.sec-nav .links a.ncall-menu svg{width:20px;height:20px;flex:none;transform-origin:50% 50%;animation:ncRing 3.2s ease-in-out infinite}
+}
+@media(min-width:801px) and (max-width:1100px) and (prefers-reduced-motion:reduce){html body nav.sec-nav .links a.ncall-menu svg{animation:none}}

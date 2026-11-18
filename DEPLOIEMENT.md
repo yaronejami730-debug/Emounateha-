@@ -89,6 +89,7 @@ Si la modification touche l'un de ces fichiers : `local-stripe-test/public/index
 node scripts/verifier-apres-deploiement.js
 ```
 Il ouvre les vraies pages (Club ’Haï, page de dons, site), clique sur les boutons, vérifie que le formulaire s'ouvre, que Stripe est configuré, que le webhook répond. Il ne paie rien.
+Si le premier passage échoue (le déploiement finit parfois de se propager), il refait de lui-même **un seul** second passage complet 30 secondes plus tard. Deux passages en échec = site cassé.
 **S'il échoue : retour arrière IMMÉDIAT** (ci-dessous), puis on prévient Yarone.
 
 ### 6. Rapport honnête à Yarone

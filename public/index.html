@@ -621,6 +621,9 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 .musbtn.on{background:linear-gradient(180deg,#f3e08f,#d0a848);color:#1b2b2d;border-color:#f3e08f}
 @media(prefers-reduced-motion:reduce){.musbtn .eq i{animation:none;height:8px}}
 
+/* roue des actions, petits téléphones : les sous-titres courbes se montaient dessus ; on ne garde que le titre de chaque pastille */
+@media(max-width:400px){.ob .tb{display:none}.ob .ta{font-size:11.5px;letter-spacing:.1px}}
+@media(max-width:340px){.ob .ta{font-size:10.5px;letter-spacing:0}}
 /* téléphone, accueil : plus de « fumée » entre la bannière et le bouton Club ’Haï. Fondu court et net sous la bannière, bouton posé sur le blanc */
 @media(max-width:800px){
   body:not(:has(#paracha:not([hidden]))) .hero::after{height:40px!important;background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 55%,#fff 100%)!important}
@@ -664,7 +667,7 @@ html body .parole .rebbe cite{display:flex;align-items:center;justify-content:ce
 <script src="/consentement.js?v=4"></script>
 <script src="/attribution.js?v=2" defer></script>
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/ecriture.css?v=18">
+<link rel="stylesheet" href="/ecriture.css?v=19">
 <style id="chabbat-ligne">
 /* Chabbat : bandeau fin — « Chabbat Toledot · תולדות » · entrée · sortie · ville (ville selon la position, modifiable).
    Ordinateur : une ligne. Téléphone : deux lignes serrées (nom en haut, heures et ville en dessous), jamais de débordement. */
