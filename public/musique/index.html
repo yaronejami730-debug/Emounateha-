@@ -84,7 +84,7 @@
   <h2>À la une</h2>
   <div class="une" data-i="0">
     <span class="badge">NOUVEAU</span>
-    <img src="oufaratsta.jpg" alt="Oufaratsta">
+    <img src="/musique/oufaratsta.jpg" alt="Oufaratsta">
     <div class="vo"><div><b>Oufaratsta · ופרצת</b><span>Émounatéha</span></div>
       <div class="rond"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
   </div>
@@ -107,7 +107,7 @@
 
 <div class="mini" id="mini">
   <div class="barre" id="barreMini"></div>
-  <img id="miniImg" src="oufaratsta.jpg" alt="">
+  <img id="miniImg" src="/musique/oufaratsta.jpg" alt="">
   <div class="t"><b id="miniT">Oufaratsta</b><span>Émounatéha</span></div>
   <button id="miniBtn" aria-label="Lecture/Pause">
     <svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -117,7 +117,7 @@
 
 <section class="plein" id="plein">
   <button class="bas" id="fermer" aria-label="Réduire">⌄</button>
-  <div class="pochette"><img id="pImg" src="oufaratsta.jpg" alt=""></div>
+  <div class="pochette"><img id="pImg" src="/musique/oufaratsta.jpg" alt=""></div>
   <div class="titre" id="pT">Oufaratsta · ופרצת</div>
   <div class="artiste">Émounatéha</div>
   <input type="range" id="pos" min="0" max="1000" value="0">
@@ -137,7 +137,7 @@
 <audio id="a" preload="metadata"></audio>
 <script>
 const PISTES=[
-  {t:'Oufaratsta · ופרצת',court:'Oufaratsta',src:'oufaratsta.m4a',img:'oufaratsta.jpg'}
+  {t:'Oufaratsta · ופרצת',court:'Oufaratsta',src:'/musique/oufaratsta.m4a',img:'/musique/oufaratsta.jpg'}
 ];
 const $=i=>document.getElementById(i), a=$('a'), plein=$('plein'), mini=$('mini');
 let cur=0;
