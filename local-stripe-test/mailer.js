@@ -138,11 +138,11 @@ function smsPhone(p) {   // -> format Brevo : indicatif + numéro, sans + (ex. 3
   if (/^33\d{9}$/.test(s)) return s;
   return intl && s.length >= 8 && s.length <= 15 ? s : '';
 }
-async function sendSms({ to, text, email }) {
+async function sendSms({ to, text, email, tag = 'code-connexion' }) {
   const num = smsPhone(to); if (!num) return { sent: false, reason: 'numéro absent ou invalide' };
   if (email && isFake(email)) return { sent: false, simulated: true, reason: 'adresse de test : SMS non envoyé' };
   const s = await settings(); if (!s) return { sent: false, simulated: true, reason: 'Brevo non configuré' };
-  const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', { method: 'POST', headers: { 'api-key': s.brevoApiKey, 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ sender: 'Emounateha', recipient: num, content: String(text).slice(0, 160), type: 'transactional', tag: 'code-connexion' }) });
+  const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', { method: 'POST', headers: { 'api-key': s.brevoApiKey, 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ sender: 'Emounateha', recipient: num, content: String(text).slice(0, 160), type: 'transactional', tag }) });
   const j = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error('Brevo SMS ' + res.status + ' : ' + (j.message || 'erreur'));
   return { sent: true, messageId: j.messageId };

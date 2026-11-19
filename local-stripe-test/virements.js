@@ -127,7 +127,13 @@ function exemples() {
   ];
 }
 
-function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon }) {
+// Les e-mails « virement en cours » partent à 19 h (heure de Paris) au lieu de la nuit où Stripe lance le virement (demande de Yarone, 19 nov 2026).
+// Un virement refusé par la banque reste signalé tout de suite. Le SMS part en même temps que l'e-mail.
+const HEURE_ENVOI = 19;
+const heureParisReelle = () => Number(new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Paris' }).format(new Date()));
+const smsVirement = p => 'Emounateha : virement de ' + eur(p.amount).replace(/[\u202f\u00a0]/g, ' ').replace('€', 'EUR') + ' en cours vers la banque, arrivee prevue le ' + new Date(p.arrival_date * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', ...P }) + '.';
+
+function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, heureParis = heureParisReelle, adminSms = () => process.env.ADMIN_SMS || '0669670770' }) {
   // fabrique le message complet (corps + CSV + PDF) et l'envoie ; si le PDF ne peut pas être fabriqué, le mail part quand même avec le CSV
   async function envoyer(p, mv, recus, opt) {
     const echec = !!opt.echec, c = echec ? null : contenu(mv), L = echec ? [] : lignes(mv, recus);
@@ -159,11 +165,16 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon }) {
         if (p.currency && String(p.currency).toLowerCase() !== 'eur') { vus[p.id] = avant || 'vu'; continue; }
         if (avant === 'echec' || (avant === 'vu' && !echec)) continue;
         if (!avant && p.amount <= 0 && !echec) { vus[p.id] = 'vu'; continue; }   // régularisation négative : pas un virement reçu
+        if (!echec && heureParis() < HEURE_ENVOI) continue;   // avant 19 h : on attend (pas noté comme vu, repris à la vérification de 19 h)
         try {
           const mv = []; if (!echec) for await (const m of stripe.balanceTransactions.list({ payout: p.id, limit: 100, expand: ['data.source'] })) { mv.push(m); if (mv.length > 5000) break; }
           const r = await envoyer(p, mv, load().receipts || {}, { echec, test });
           if (r.mail !== true) throw new Error('e-mail non envoyé');   // pas noté comme vu : nouvel essai à la prochaine vérification
           vus[p.id] = echec ? 'echec' : 'vu'; envoyes.push({ id: p.id, montant: p.amount, echec, ...r });
+          if (!echec && !test && mailer.sendSms) {   // SMS en même temps que l'e-mail ; un SMS raté ne renvoie pas l'e-mail (virement déjà noté comme vu)
+            try { const sm = await mailer.sendSms({ to: adminSms(), text: smsVirement(p), tag: 'virement' }); envoyes[envoyes.length - 1].sms = !!(sm && sm.sent === true); if (!(sm && sm.sent)) console.error('virements SMS non envoyé', (sm && sm.reason) || ''); }
+            catch (e) { envoyes[envoyes.length - 1].sms = false; console.error('virements SMS', e.message); }
+          }
         } catch (e) { erreurs.push(p.id + ' : ' + e.message); }   // pas noté comme vu : nouvel essai à la prochaine vérification
       }
       const garde = Object.fromEntries(Object.entries(vus).slice(-400));
