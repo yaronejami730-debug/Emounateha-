@@ -5,6 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Musique · Émounatéha</title>
 <meta name="description" content="La musique d'Émounatéha : Oufaratsta. À écouter en ligne.">
+<link rel="canonical" href="https://www.emounateha.fr/musique/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Émounatéha">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:url" content="https://www.emounateha.fr/musique/">
+<meta property="og:title" content="Musique · Émounatéha">
+<meta property="og:description" content="Oufaratsta ופרצת : le nouveau titre d'Émounatéha, à écouter en ligne.">
+<meta property="og:image" content="https://www.emounateha.fr/apercus/musique.jpg?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta property="og:image:alt" content="Pochette de Oufaratsta ופרצת, Émounatéha">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Musique · Émounatéha">
+<meta name="twitter:description" content="Oufaratsta ופרצת : le nouveau titre d'Émounatéha, à écouter en ligne.">
+<meta name="twitter:image" content="https://www.emounateha.fr/apercus/musique.jpg?v=1">
+<link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ecriture.css?v=19">
 <style>
   :root{--or:#d9a441;--or2:#f0c870;--fond:#120d06;--creme:#f6ecd6}
   *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -14,10 +31,10 @@
   .haut{display:flex;align-items:center;justify-content:space-between}
   .haut a{color:var(--creme);text-decoration:none;font-size:14px;opacity:.85}
   .haut .bsd{color:var(--or);font-size:15px}
-  .marque{display:flex;align-items:center;gap:10px;margin:18px 0 6px}
-  .marque img{width:38px;height:38px;border-radius:9px}
-  .marque b{font-size:24px;letter-spacing:.04em}
-  .sous{font-size:13px;opacity:.7;margin-bottom:22px}
+  .marque{display:flex;flex-direction:column;align-items:center;text-align:center;margin:10px 0 8px}
+  .marque img{width:104px;height:auto;display:block;margin-bottom:8px}
+  .marque b{font-size:30px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .sous{font-size:13px;opacity:.75;margin:4px 0 6px;text-align:center}
   h2{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--or);margin:26px 0 12px}
   /* à la une */
   .une{position:relative;border-radius:18px;overflow:hidden;cursor:pointer;box-shadow:0 16px 40px rgba(0,0,0,.55)}
@@ -44,6 +61,22 @@
   .btn.or{background:var(--or);color:#1a1206}
   .btn.ligne{border:1px solid rgba(217,164,65,.6);color:var(--or2);background:none;width:100%;font-family:inherit}
   .pied{margin-top:30px;text-align:center;font-size:12px;opacity:.55}
+  /* ordinateur */
+  .cols{display:block}
+  @media(min-width:900px){
+    .tel{max-width:1080px;padding:calc(20px + env(safe-area-inset-top)) 40px 140px}
+    .marque img{width:128px}
+    .marque b{font-size:38px}
+    .cols{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:56px;align-items:start;margin-top:10px}
+    .col-g{position:sticky;top:24px}
+    .col-g h2:first-child,.col-d h2:first-child{margin-top:0}
+    .piste:hover{background:rgba(255,255,255,.08)}
+    .une:hover img{transform:scale(1.02)}.une img{transition:transform .4s}
+    .btn:hover{filter:brightness(1.08)}
+    .mini{max-width:620px;border-radius:14px 14px 0 0;border:1px solid rgba(217,164,65,.3);border-bottom:0}
+    .plein{inset:auto;top:50%;left:50%;margin:0;width:460px;max-width:92vw;height:min(840px,94vh);border-radius:22px;transform:translate(-50%,-40%) scale(.96);opacity:0;transition:transform .3s ease,opacity .3s ease}
+    .plein.on{transform:translate(-50%,-50%);opacity:1;box-shadow:0 0 0 100vmax rgba(0,0,0,.7),0 30px 80px rgba(0,0,0,.7)}
+  }
   /* mini lecteur */
   .mini{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#1f170b;border-top:1px solid rgba(217,164,65,.3);display:none;align-items:center;gap:12px;cursor:pointer;z-index:4}
   .mini.on{display:flex}
@@ -78,29 +111,35 @@
 <body>
 <div class="tel">
   <div class="haut"><a href="/">‹ Retour au site</a><span class="bsd">ב״ה</span></div>
-  <div class="marque"><img src="/logo.png?v=2" alt=""><b>Musique</b></div>
+  <div class="marque"><img src="/logo-complet-accueil.png?v=1" alt="Émounatéha — אמונתך"><b>Musique</b></div>
   <div class="sous">Émounatéha · à écouter où tu veux</div>
 
-  <h2>À la une</h2>
-  <div class="une" data-i="0">
-    <span class="badge">NOUVEAU</span>
-    <img src="/musique/oufaratsta.jpg" alt="Oufaratsta">
-    <div class="vo"><div><b>Oufaratsta · ופרצת</b><span>Émounatéha</span></div>
-      <div class="rond"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
+  <div class="cols">
+  <div class="col-g">
+    <h2>À la une</h2>
+    <div class="une" data-i="0">
+      <span class="badge" id="nouveau">NOUVEAU</span>
+      <img src="/musique/oufaratsta.jpg" alt="Oufaratsta">
+      <div class="vo"><div><b>Oufaratsta · ופרצת</b><span>Émounatéha</span></div>
+        <div class="rond"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
+    </div>
   </div>
 
-  <h2>Tous les titres</h2>
-  <div id="liste"></div>
+  <div class="col-d">
+    <h2>Tous les titres</h2>
+    <div id="liste"></div>
 
-  <h2>À propos</h2>
-  <div class="carte">
-    <p>Émounatéha agit pour sensibiliser, aider, lutter, distribuer et favoriser. La musique accompagne ces actions.</p>
-    <p>Chaque écoute est un geste : partage-la autour de toi.</p>
+    <h2>À propos</h2>
+    <div class="carte">
+      <p>Émounatéha agit pour sensibiliser, aider, lutter, distribuer et favoriser. La musique accompagne ces actions.</p>
+      <p>Chaque écoute est un geste : partage-la autour de toi.</p>
+    </div>
+
+    <h2>Agir avec nous</h2>
+    <a class="btn or" href="https://clubhai.emounateha.fr/">Rejoindre le Club ’Haï</a>
+    <button class="btn ligne" id="part">Partager cette page</button>
   </div>
-
-  <h2>Agir avec nous</h2>
-  <a class="btn or" href="https://don.emounateha.fr/">Aidez-nous à les aider</a>
-  <button class="btn ligne" id="part">Partager cette page</button>
+  </div>
 
   <div class="pied">© Émounatéha</div>
 </div>
@@ -177,6 +216,8 @@ $('pos').oninput=e=>{a.currentTime=e.target.value/1000*a.duration};
 $('part').onclick=()=>{const d={title:'Musique · Émounatéha',url:location.href};navigator.share?navigator.share(d).catch(()=>{}):navigator.clipboard&&navigator.clipboard.writeText(d.url)};
 if('mediaSession' in navigator){navigator.mediaSession.setActionHandler('previoustrack',()=>charger(cur-1,true));navigator.mediaSession.setActionHandler('nexttrack',()=>charger(cur+1,true))}
 a.src=PISTES[0].src; dessiner();
+// le badge « NOUVEAU » reste dix jours (jusqu'au 29 novembre 2026 inclus)
+if(Date.now()>=Date.parse('2026-11-30T00:00:00+01:00')){const n=$('nouveau');if(n)n.remove()}
 </script>
 </body>
 </html>
