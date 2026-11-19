@@ -120,6 +120,7 @@
   <div class="pochette"><img id="pImg" src="/musique/oufaratsta.jpg" alt=""></div>
   <div class="titre" id="pT">Oufaratsta · ופרצת</div>
   <div class="artiste">Émounatéha</div>
+  <div id="msg" style="min-height:18px;margin-top:8px;font-size:13px;color:#f0c870"></div>
   <input type="range" id="pos" min="0" max="1000" value="0">
   <div class="temps"><span id="tc">0:00</span><span id="td">0:00</span></div>
   <div class="ctrl">
@@ -147,13 +148,15 @@ function dessiner(){
 }
 function charger(i,jouer){
   cur=(i+PISTES.length)%PISTES.length; const p=PISTES[cur];
-  a.src=p.src; $('pT').textContent=p.t; $('pImg').src=p.img; $('miniImg').src=p.img; $('miniT').textContent=p.court;
+  if(a.getAttribute('src')!==p.src)a.src=p.src; $('pT').textContent=p.t; $('pImg').src=p.img; $('miniImg').src=p.img; $('miniT').textContent=p.court;
   mini.classList.add('on'); dessiner();
   if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:p.court,artist:'Émounatéha',artwork:[{src:p.img}]});
-  if(jouer)a.play();
+  if(jouer)lire();
 }
+function msg(t){$('msg').textContent=t||''}
+function lire(){const pr=a.play();if(pr&&pr.catch)pr.catch(e=>msg('Lecture impossible ('+(e&&e.name||'erreur')+'). Touche le bouton lecture.'))}
 function etat(){[plein,mini].forEach(e=>e.classList.toggle('joue',!a.paused))}
-function bascule(){a.paused?a.play():a.pause()}
+function bascule(){a.paused?lire():a.pause()}
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-i]'); if(!el)return;
   charger(+el.dataset.i,true); plein.classList.add('on');
@@ -165,6 +168,8 @@ $('prec').onclick=()=>charger(cur-1,true); $('suiv').onclick=()=>charger(cur+1,t
 $('recul').onclick=()=>a.currentTime=Math.max(0,a.currentTime-10);
 $('avance').onclick=()=>a.currentTime=Math.min(a.duration||0,a.currentTime+10);
 a.onplay=a.onpause=etat;
+a.onwaiting=()=>msg('Chargement…');a.onplaying=a.oncanplay=()=>msg('');
+a.onerror=()=>msg('Fichier audio illisible (code '+(a.error?a.error.code:'?')+'). Recharge la page.');
 a.onended=()=>{if(PISTES.length>1)charger(cur+1,true);else{a.currentTime=0;etat()}};
 a.onloadedmetadata=()=>$('td').textContent=fmt(a.duration);
 a.ontimeupdate=()=>{if(!a.duration)return;const p=a.currentTime/a.duration;$('pos').value=p*1000;$('tc').textContent=fmt(a.currentTime);$('barreMini').style.width=p*100+'%'};
