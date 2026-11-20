@@ -130,7 +130,7 @@ function exemples() {
 // But (Yarone, 19-20 nov 2026) : prévenir par e-mail ET SMS qu'un virement va arriver à la banque dans les heures qui viennent. Sinon ça ne sert à rien.
 //  - virement déjà arrivé : aucun message (marqué comme vu)
 //  - la veille du jour d'arrivée : à 19 h (heure de Paris), avec les règles de Chabbat et des fêtes de chabbat.js (veille de Chabbat = 3 h avant l'allumage, rien pendant Chabbat, reprise 2 h après la sortie)
-//  - le jour d'arrivée, virement pas encore arrivé : dès 7 h (il arrive vers 8 h ; Stripe le lance vers 2 h, trop tôt pour écrire), sauf pendant Chabbat
+//  - le jour d'arrivée, virement pas encore arrivé (veille manquée) : tout de suite, sauf pendant Chabbat
 //  - arrivée dans plus d'un jour : on attend
 // Un virement refusé par la banque reste signalé tout de suite. Le SMS part en même temps que l'e-mail.
 const jourParis = ms => new Date(ms).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });

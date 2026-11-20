@@ -5,16 +5,16 @@
 //  - le soir de la sortie : à partir de 2 h après la sortie
 // Les horaires viennent de Hebcal (Paris). Si Hebcal ne répond pas : vendredi et samedi on n'envoie rien (jamais d'envoi pendant Chabbat par erreur), les autres jours 19 h.
 const GEONAMEID = 2988507;   // Paris
-const HEURE_ORDINAIRE = 19, HEURE_MATIN = 7, AVANT_ALLUMAGE_H = 3, APRES_SORTIE_H = 2;
+const HEURE_ORDINAIRE = 19, AVANT_ALLUMAGE_H = 3, APRES_SORTIE_H = 2;
 const H = 3600000, TZ = 'Europe/Paris';
 const jourParis = ms => new Date(ms).toLocaleDateString('sv-SE', { timeZone: TZ });
 const heureParis = ms => Number(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: TZ }).formatToParts(new Date(ms)).find(x => x.type === 'hour').value);
 const jourSemaineParis = ms => new Date(ms).toLocaleDateString('en-US', { weekday: 'short', timeZone: TZ });
 
 // evenements : [{ type: 'allumage' | 'sortie', t: ms }] ; null si Hebcal est injoignable
-// opts.tot : jour d'arrivée du virement (il arrive vers 8 h) : on prévient dès 7 h, jamais la nuit, et jamais pendant Chabbat
+// opts.tot : jour d'arrivée du virement, il faut prévenir sans attendre — seul l'interdit de Chabbat reste
 function autorise(maintenant, evenements, opts = {}) {
-  if (!evenements) { const j = jourSemaineParis(maintenant); return j !== 'Fri' && j !== 'Sat' && heureParis(maintenant) >= (opts.tot ? HEURE_MATIN : HEURE_ORDINAIRE); }
+  if (!evenements) { const j = jourSemaineParis(maintenant); return j !== 'Fri' && j !== 'Sat' && (opts.tot || heureParis(maintenant) >= HEURE_ORDINAIRE); }
   const ev = evenements.slice().sort((a, b) => a.t - b.t), jour = jourParis(maintenant);
   // Chabbat / fête en cours (de l'allumage jusqu'à 2 h après la sortie) : on n'envoie rien
   for (let i = 0; i < ev.length; i++) {
@@ -23,7 +23,7 @@ function autorise(maintenant, evenements, opts = {}) {
     const fin = sortie ? sortie.t + APRES_SORTIE_H * H : ev[i].t + 30 * H;
     if (maintenant >= ev[i].t && maintenant < fin) return false;
   }
-  if (opts.tot) return heureParis(maintenant) >= HEURE_MATIN;
+  if (opts.tot) return true;
   const allumageDuJour = ev.find(e => e.type === 'allumage' && jourParis(e.t) === jour);
   if (allumageDuJour) return maintenant >= allumageDuJour.t - AVANT_ALLUMAGE_H * H;   // veille de Chabbat : 3 h avant (et avant l'allumage, car après c'est bloqué plus haut)
   const sortieDuJour = ev.find(e => e.type === 'sortie' && jourParis(e.t) === jour);
@@ -48,4 +48,4 @@ async function evenements(maintenant, fetchFn = fetch) {
 }
 async function peutEnvoyer(maintenant = Date.now(), fetchFn, opts) { return autorise(maintenant, await evenements(maintenant, fetchFn), opts); }
 
-module.exports = { autorise, evenements, peutEnvoyer, HEURE_ORDINAIRE, HEURE_MATIN, AVANT_ALLUMAGE_H, APRES_SORTIE_H };
+module.exports = { autorise, evenements, peutEnvoyer, HEURE_ORDINAIRE, AVANT_ALLUMAGE_H, APRES_SORTIE_H };
