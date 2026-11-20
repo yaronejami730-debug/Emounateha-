@@ -177,7 +177,7 @@
 <audio id="a" preload="metadata"></audio>
 <script>
 const PISTES=[
-  {t:'Oufaratsta · ופרצת',court:'Oufaratsta',src:'/musique/oufaratsta.m4a',img:'/musique/oufaratsta.jpg'}
+  {id:'oufaratsta',t:'Oufaratsta · ופרצת',court:'Oufaratsta',src:'/musique/oufaratsta.m4a',img:'/musique/oufaratsta.jpg'}
 ];
 const $=i=>document.getElementById(i), a=$('a'), plein=$('plein'), mini=$('mini');
 let cur=0;
@@ -187,12 +187,15 @@ function dessiner(){
 }
 function charger(i,jouer){
   cur=(i+PISTES.length)%PISTES.length; const p=PISTES[cur];
-  if(a.getAttribute('src')!==p.src)a.src=p.src; $('pT').textContent=p.t; $('pImg').src=p.img; $('miniImg').src=p.img; $('miniT').textContent=p.court;
+  if(a.getAttribute('src')!==p.src){a.src=p.src;compte=false} $('pT').textContent=p.t; $('pImg').src=p.img; $('miniImg').src=p.img; $('miniT').textContent=p.court;
   mini.classList.add('on'); dessiner();
   if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:p.court,artist:'Émounatéha',artwork:[{src:p.img}]});
   if(jouer)lire();
 }
 function msg(t){$('msg').textContent=t||''}
+// Nombre d'écoutes (affiché dans le CRM) : une écoute = 10 secondes de lecture d'un titre. Aucun cookie, rien de personnel n'est envoyé.
+let compte=false;
+function compter(fin){try{if(!/(^|\.)emounateha\.fr$/.test(location.hostname)||navigator.webdriver)return;fetch('/api/ecoute',{method:'POST',headers:{'content-type':'text/plain'},body:JSON.stringify({p:PISTES[cur].id,f:fin?1:0}),keepalive:true,credentials:'omit'}).catch(()=>{})}catch(e){}}
 function lire(){const pr=a.play();if(pr&&pr.catch)pr.catch(e=>msg('Lecture impossible ('+(e&&e.name||'erreur')+'). Touche le bouton lecture.'))}
 function etat(){[plein,mini].forEach(e=>e.classList.toggle('joue',!a.paused))}
 function bascule(){a.paused?lire():a.pause()}
@@ -209,9 +212,9 @@ $('avance').onclick=()=>a.currentTime=Math.min(a.duration||0,a.currentTime+10);
 a.onplay=a.onpause=etat;
 a.onwaiting=()=>msg('Chargement…');a.onplaying=a.oncanplay=()=>msg('');
 a.onerror=()=>msg('Fichier audio illisible (code '+(a.error?a.error.code:'?')+'). Recharge la page.');
-a.onended=()=>{if(PISTES.length>1)charger(cur+1,true);else{a.currentTime=0;etat()}};
+a.onended=()=>{compter(1);compte=false;if(PISTES.length>1)charger(cur+1,true);else{a.currentTime=0;etat()}};
 a.onloadedmetadata=()=>$('td').textContent=fmt(a.duration);
-a.ontimeupdate=()=>{if(!a.duration)return;const p=a.currentTime/a.duration;$('pos').value=p*1000;$('tc').textContent=fmt(a.currentTime);$('barreMini').style.width=p*100+'%'};
+a.ontimeupdate=()=>{if(!compte&&a.currentTime>=10&&!a.paused){compte=true;compter(0)}if(!a.duration)return;const p=a.currentTime/a.duration;$('pos').value=p*1000;$('tc').textContent=fmt(a.currentTime);$('barreMini').style.width=p*100+'%'};
 $('pos').oninput=e=>{a.currentTime=e.target.value/1000*a.duration};
 $('part').onclick=()=>{const d={title:'Musique · Émounatéha',url:location.href};navigator.share?navigator.share(d).catch(()=>{}):navigator.clipboard&&navigator.clipboard.writeText(d.url)};
 if('mediaSession' in navigator){navigator.mediaSession.setActionHandler('previoustrack',()=>charger(cur-1,true));navigator.mediaSession.setActionHandler('nexttrack',()=>charger(cur+1,true))}

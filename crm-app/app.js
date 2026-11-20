@@ -1282,6 +1282,16 @@ const tfNb = n => Number(n || 0).toLocaleString('fr-FR');
 const tfPage = r => (r.site === 'www.emounateha.fr' ? '' : r.site.replace('.emounateha.fr', '') + ' · ') + (r.path === '/' ? (r.site === 'don.emounateha.fr' ? 'Page de don' : 'Accueil') : r.path);
 const tfLien = r => 'https://' + r.site + r.path;
 const tfJour = (d, long) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', long ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' });
+// Écoutes de la page /musique : par titre, sur la période choisie et depuis le début
+function tfMusique(d, periodeTxt) {
+  const m = d.musique; if (!m) return '';
+  const tot = Object.fromEntries((m.total || []).map(r => [r.piste, r])), per = Object.fromEntries((m.periode || []).map(r => [r.piste, r])), pistes = Object.keys(tot);
+  const nom = p => p.replace(/-/g, ' ').replace(/^./, c => c.toUpperCase()), td = 'text-align:right;font-variant-numeric:tabular-nums';
+  const somme = k => pistes.reduce((t, p) => t + (tot[p][k] || 0), 0);
+  return `<div class="card" style="margin-top:16px;padding:0;overflow:hidden"><div style="padding:18px 22px 10px"><div class="row" style="align-items:center"><b class="grow">Musique : nombre d'écoutes</b><a href="https://www.emounateha.fr/musique/" target="_blank" rel="noopener" style="color:var(--brand);font-weight:600">Ouvrir la page</a></div>
+      <div class="hint" style="margin-top:2px">${pistes.length ? tfNb(somme('ecoutes')) + ' écoute' + (somme('ecoutes') > 1 ? 's' : '') + ' depuis le début · une écoute = au moins 10 secondes de lecture' : 'Aucune écoute enregistrée pour l\'instant. Le compteur a démarré le jour de sa mise en ligne : les écoutes d\'avant ne sont pas connues.'}</div></div>
+    ${pistes.length ? `<div style="overflow-x:auto"><table><thead><tr><th>Titre</th><th style="text-align:right">Écoutes ${esc(periodeTxt)}</th><th style="text-align:right">Écoutes depuis le début</th><th style="text-align:right">Jusqu'au bout</th><th style="text-align:right">Auditeurs</th></tr></thead><tbody>${pistes.map(p => `<tr><td><b>${esc(nom(p))}</b></td><td style="${td}">${tfNb((per[p] || {}).ecoutes || 0)}</td><td style="${td}"><b>${tfNb(tot[p].ecoutes)}</b></td><td style="${td};color:var(--mut)">${tfNb(tot[p].entieres)}</td><td style="${td};color:var(--mut)">${tfNb(tot[p].auditeurs)}</td></tr>`).join('')}</tbody></table></div><div class="hint" style="padding:10px 22px 16px">Auditeurs : une même personne est comptée une fois par jour. Les écoutes faites avant la mise en ligne du compteur ne sont pas connues.</div>` : ''}</div>`;
+}
 function traficDraw() {
   const el = $('#tfBody'), d = TF.data; if (!el || !d) return;
   const max = Math.max(1, ...d.serie.map(x => x.u)), haut = [max, Math.round(max / 2)];
@@ -1308,6 +1318,7 @@ function traficDraw() {
       <div class="card"><b>D'où viennent les visiteurs</b><div class="hint" style="margin:2px 0 12px">${periodeTxt}</div>${rang(d.sources, totSrc, r => esc(r.ref || 'Accès direct (lien tapé, WhatsApp, e-mail…)'))}
         <b style="display:block;margin-top:22px">Appareils</b><div class="hint" style="margin:2px 0 12px">${periodeTxt}</div>${rang(d.appareils, totApp, r => esc(r.device || 'Inconnu'))}</div>
     </div>
+    ${tfMusique(d, periodeTxt)}
     <div class="hint" style="margin-top:14px">Mesure faite par le site lui-même, sans cookie : un visiteur est compté une seule fois par jour, quel que soit le nombre de pages qu'il ouvre. Les robots (Google, aperçus WhatsApp…) ne sont pas comptés. Ni l'adresse IP ni le nom des visiteurs ne sont enregistrés.</div>`;
   const tip = $('#tfTip'), plot = el.querySelector('.tf-plot');
   el.querySelectorAll('.tf-col').forEach(c => {

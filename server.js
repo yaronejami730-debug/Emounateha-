@@ -1414,7 +1414,13 @@ const ensureVisits = () => visitsReady || (visitsReady = pool.query(`
     primary key (day, visitor, site, path));
   create index if not exists visits_last_idx on public.visits (last_at);
   alter table public.visits enable row level security;
-  delete from public.visits where day < current_date - 120;`).catch(e => { visitsReady = null; throw e; }));
+  delete from public.visits where day < current_date - 120;
+  create table if not exists public.ecoutes (
+    day date not null, visitor text not null, piste text not null,
+    n int not null default 1, complet int not null default 0,
+    first_at timestamptz not null default now(), last_at timestamptz not null default now(),
+    primary key (day, visitor, piste));
+  alter table public.ecoutes enable row level security;`).catch(e => { visitsReady = null; throw e; }));
 // ---- Besoins : mini-cagnottes. Chaque besoin a son adresse don.emounateha.fr/besoin/<slug> ; les dons faits par cette adresse lui sont attribués.
 let besoinsReady = null;
 const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
@@ -1500,6 +1506,34 @@ async function vu(req, res) {
   } catch (e) { console.error('[trafic] visite non enregistrée', e.message); }
   fin();
 }
+// Écoutes de la page /musique (CRM, onglet Trafic). Même principe que les visites : ni adresse IP, ni navigateur, ni cookie,
+// seulement un identifiant anonyme qui change chaque jour. Une écoute = 10 secondes de lecture d'un titre ; « complet » = écouté jusqu'au bout.
+// Les écoutes ne sont jamais effacées : le total depuis le début reste affiché.
+async function ecoute(req, res) {
+  const fin = () => { res.writeHead(204, { 'cache-control': 'no-store' }); res.end(); };
+  try {
+    if (!pool) return fin();
+    const ua = String(req.headers['user-agent'] || ''); if (ua.length < 20 || VU_ROBOT.test(ua)) return fin();
+    let oh = ''; try { oh = new URL(req.headers.origin || req.headers.referer || '').hostname; } catch (e) {}
+    if (VU_SITES[oh] !== 'www.emounateha.fr') return fin();   // seulement depuis la page du site
+    const b = await readBody(req).catch(() => ({})) || {}, piste = String(b.p || '').toLowerCase();
+    if (!/^[a-z0-9-]{1,40}$/.test(piste)) return fin();
+    const ip = String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || '').split(',')[0].trim();
+    const day = jourParis(), visitor = crypto.createHash('sha256').update('emounateha-vu|' + (envVar('CRON_SECRET') || DATABASE_URL) + '|' + day + '|' + ip + '|' + ua).digest('hex').slice(0, 20);
+    const complet = b.f ? 1 : 0, n = complet ? 0 : 1;   // f = 1 : le titre vient d'être écouté jusqu'au bout (l'écoute elle-même a déjà été comptée)
+    await ensureVisits();
+    await pool.query(`insert into public.ecoutes (day, visitor, piste, n, complet) values ($1,$2,$3,$4,$5)
+      on conflict (day, visitor, piste) do update set last_at = now(), n = least(public.ecoutes.n + $6, 200), complet = least(public.ecoutes.complet + $5, 200)`, [day, visitor, piste, Math.max(n, complet), complet, n]);   // $4 : première ligne du jour (au moins 1 écoute) ; $6 : ce qu'on ajoute ensuite
+  } catch (e) { console.error('[musique] écoute non enregistrée', e.message); }
+  fin();
+}
+async function ecoutesMusique(depuis) {   // pour le CRM ; une panne ici ne casse jamais l'onglet Trafic
+  try {
+    const q = cond => `select piste, sum(n)::int as ecoutes, sum(complet)::int as entieres, count(*)::int as auditeurs, max(last_at) as derniere from public.ecoutes ${cond} group by piste order by ecoutes desc`;
+    const [periode, total] = await Promise.all([pool.query(q('where day >= $1'), [depuis]), pool.query(q(''))]);
+    return { periode: periode.rows, total: total.rows };
+  } catch (e) { console.error('[musique] écoutes illisibles', e.message); return null; }
+}
 async function trafic(req, res, url) {
   if (!pool) return send(res, 503, { error: 'Base indisponible' });
   await ensureVisits();
@@ -1514,11 +1548,12 @@ async function trafic(req, res, url) {
     pool.query('select device, count(*)::int as u from (select distinct day, visitor, device from public.visits where day >= $1) t group by device order by u desc', [depuis])
   ]);
   const enDirect = await pool.query("select count(distinct visitor)::int as n from public.visits where last_at > now() - interval '130 seconds'");
+  const musique = await ecoutesMusique(depuis);
   const map = Object.fromEntries(parJour.rows.map(r => [r.day, r])), serie = [];
   for (let i = Math.max(jours, 14) - 1; i >= 0; i--) { const d = jourParis(new Date(Date.now() - i * 86400000)); serie.push({ day: d, u: (map[d] || {}).u || 0, v: (map[d] || {}).v || 0 }); }
   const dansPeriode = serie.filter(x => x.day >= depuis);
   send(res, 200, { jours, enDirect: enDirect.rows[0].n, live: live.rows, aujourdhui: map[auj] || { u: 0, v: 0 }, hier: map[hier] || { u: 0, v: 0 },
-    periode: { u: dansPeriode.reduce((t, x) => t + x.u, 0), v: dansPeriode.reduce((t, x) => t + x.v, 0) }, serie, pages: pages.rows, sources: sources.rows, appareils: appareils.rows, maj: new Date().toISOString() });
+    periode: { u: dansPeriode.reduce((t, x) => t + x.u, 0), v: dansPeriode.reduce((t, x) => t + x.v, 0) }, serie, pages: pages.rows, sources: sources.rows, appareils: appareils.rows, musique, maj: new Date().toISOString() });
 }
 const readBody = req => new Promise((ok, ko) => {
   let b = ''; req.on('data', c => { b += c; if (b.length > 8e6) req.destroy(); });
@@ -2183,6 +2218,7 @@ async function handle(req, res) {
       res.setHeader('cache-control', 'private, no-store');
       return send(res, 200, Number.isFinite(la) && Number.isFinite(lo) ? { success: true, latitude: la, longitude: lo } : { success: false });
     }
+    if (url.pathname === '/api/ecoute' && req.method === 'POST') return ecoute(req, res);   // public : écoutes de /musique (anonyme)
     if (url.pathname === '/api/vu' && req.method === 'POST') return vu(req, res);   // public : mesure d'audience anonyme (onglet Trafic)
     if (url.pathname === '/api/shabbat-subscribe' && req.method === 'POST') return shabbatSubscribe(req, res);
     if (url.pathname === '/api/shabbat-city' && req.method === 'POST') return shabbatCity(req, res);
