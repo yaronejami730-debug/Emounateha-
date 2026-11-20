@@ -24,7 +24,7 @@ const P = (id, amount, o = {}) => ({ id, amount, currency: 'eur', status: 'in_tr
   const stripe = { payouts: { list: async o => ({ data: liste.slice() }) }, balanceTransactions: { list: o => (async function* () { yield { type: 'payout', amount: -1, fee: 0 }; yield { type: 'charge', amount: 100000, fee: 2000 }; })() } };
   const mailer = { ADMIN_EMAIL: () => 'admin@exemple.com', send: async x => { if (panne) throw new Error('Brevo en panne'); mails.push(x); return { sent: true }; }, sendSms: async x => { if (smsPanne) throw new Error('Brevo SMS en panne'); smsEnvoyes.push(x); return { sent: true }; } };
   process.env.STRIPE_SECRET_KEY = 'sk_test_x';
-  let pdfKo = false; V.monter(app, { maintenant: () => now, peutEnvoyer: async o => (o && o.tot) ? true : heure >= 19, pdfTampon: async h => { if (pdfKo) throw new Error('navigateur indisponible'); return Buffer.from('%PDF-essai ' + h.length); }, stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; ecritures++; } });
+  let pdfKo = false; V.monter(app, { maintenant: () => now, peutEnvoyer: async o => (o && o.tot) ? heure >= 7 : heure >= 19, pdfTampon: async h => { if (pdfKo) throw new Error('navigateur indisponible'); return Buffer.from('%PDF-essai ' + h.length); }, stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; ecritures++; } });
   const appel = async () => { let code = 200, corps; const res = { status: c => (code = c, res), json: j => (corps = j, res) }; await routes['/api/admin/virements/verifier']({ body: {} }, res); return { code, corps }; };
   let r = await appel(); ok(r.corps.miseEnService && mails.length === 0 && data.virements.vus.po_ancien === 'vu', 'mise en service : les virements passés ne déclenchent aucun e-mail', r.corps);
   r = await appel(); ok(r.corps.envoyes === 0 && mails.length === 0, 'rien de nouveau : aucun e-mail', r.corps);
@@ -67,7 +67,9 @@ const P = (id, amount, o = {}) => ({ id, amount, currency: 'eur', status: 'in_tr
     now = Date.parse('2026-11-14T20:00:00+01:00'); r = await appel(); ok(mails.length === nb && !data.virements.vus.po_loin, 'arrivée dans 2 jours : on attend encore');
     now = Date.parse('2026-11-15T20:00:00+01:00'); r = await appel(); ok(mails.length === nb + 1 && /220,00 €/.test(mails[nb].subject) && data.virements.vus.po_loin === 'vu', 'la veille de l\'arrivée, après 19 h : l\'e-mail part', [r.corps, mails.map(x => x.subject).slice(-1)]);
     heure = 3; now = Date.parse('2026-11-16T03:00:00+01:00'); liste.unshift(P('po_jourj', 33000)); r = await appel();
-    ok(mails.length === nb + 2 && /330,00 €/.test(mails[nb + 1].subject), 'jour d\'arrivée, virement pas encore arrivé (veille manquée) : prévenu tout de suite, même à 3 h', [r.corps, mails.map(x => x.subject).slice(-1)]);
+    ok(mails.length === nb + 1 && !data.virements.vus.po_jourj, 'jour d\'arrivée, virement lancé à 2 h : PAS de mail à 3 h du matin', r.corps);
+    heure = 7; now = Date.parse('2026-11-16T07:00:00+01:00'); r = await appel();
+    ok(mails.length === nb + 2 && /330,00 €/.test(mails[nb + 1].subject) && data.virements.vus.po_jourj === 'vu', 'jour d\'arrivée : l\'e-mail part à 7 h, une heure avant l\'argent', [r.corps, mails.map(x => x.subject).slice(-1)]);
     now = Date.parse('2026-11-15T19:30:00+01:00'); heure = 20; }
   autorise = false; r = await appel(); ok(r.code === 401, 'sans signature du serveur du site : refusé');
   const src = require('fs').readFileSync(require('path').join(__dirname, '../virements.js'), 'utf8').replace(/\/\/.*$/gm, '');
