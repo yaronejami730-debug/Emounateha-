@@ -24,6 +24,13 @@ ok(C.autorise(T('2026-11-19T20:00:00+01:00'), null) === true && C.autorise(T('20
 // fête (Yom Tov) en semaine : même règle qu\'un Chabbat
 const fete = [{ type: 'allumage', t: T('2026-09-22T18:55:00+02:00') }, { type: 'sortie', t: T('2026-09-23T19:50:00+02:00') }];
 ok(a('2026-09-22T15:54:00+02:00', fete) === false && a('2026-09-22T15:55:00+02:00', fete) === true && a('2026-09-23T12:00:00+02:00', fete) === false, 'veille de fête un mardi : 3 h avant l\'allumage, rien pendant la fête');
+// Relevé exact : tout de suite, sauf pendant Chabbat ou une fête (20 nov 2026)
+const h = (iso, ev) => C.horsChabbat(T(iso), ev);
+ok(h('2026-11-19T02:00:00+01:00', hiver) === true && h('2026-11-20T02:00:00+01:00', hiver) === true, 'relevé : à 2 h du matin, jeudi comme vendredi, l\'envoi part tout de suite');
+ok(h('2026-11-20T16:51:00+01:00', hiver) === true && h('2026-11-20T16:52:00+01:00', hiver) === false && h('2026-11-21T10:00:00+01:00', hiver) === false, 'relevé : rien de l\'allumage à la fin de Chabbat');
+ok(h('2026-11-21T19:54:00+01:00', hiver) === false && h('2026-11-21T19:55:00+01:00', hiver) === true && h('2026-11-22T02:00:00+01:00', hiver) === true, 'relevé : reprise 2 h après la sortie, puis de nouveau tout de suite');
+ok(h('2026-09-23T12:00:00+02:00', fete) === false && h('2026-09-22T10:00:00+02:00', fete) === true, 'relevé : même règle pour une fête en semaine');
+ok(C.horsChabbat(T('2026-11-20T02:00:00+01:00'), null) === true && C.horsChabbat(T('2026-11-20T14:00:00+01:00'), null) === false && C.horsChabbat(T('2026-11-21T22:00:00+01:00'), null) === false && C.horsChabbat(T('2026-11-22T02:00:00+01:00'), null) === true, 'relevé, Hebcal en panne : rien du vendredi 13 h au samedi minuit, sinon envoi');
 (async () => {   // lecture des horaires : faux Hebcal, mise en cache, panne
   let appels = 0, rep = { items: [{ category: 'candles', date: '2026-11-20T16:52:00+01:00' }, { category: 'havdalah', date: '2026-11-21T17:55:00+01:00' }, { category: 'parashat', date: '2026-11-21' }] };
   const faux = async url => { appels++; if (rep === 'panne') throw new Error('réseau'); return { ok: true, json: async () => rep, url }; };

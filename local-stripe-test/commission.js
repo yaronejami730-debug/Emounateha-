@@ -182,12 +182,14 @@ async function encaisser({ stripe, stripe2, simuler, recus = {}, maintenant = Da
 // ───────── Mail et PDF de l'encaissement : mêmes couleurs que les reçus, logo complet Émounatéha ─────────
 const TEAL = '#1f6a72', OR = '#b8923a', GRIS = '#6b7280';
 const escH = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const G = require('./gabarit.js');
 function logoData() { try { return 'data:image/png;base64,' + require('fs').readFileSync(require('path').join(__dirname, 'public', 'logo-asso.png')).toString('base64'); } catch (e) { return ''; } }
 function tableauVirements(r, tx) {
   const th = 'padding:8px 6px;border-bottom:2px solid ' + TEAL + ';text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:' + GRIS;
   const td = 'padding:9px 6px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px';
+  const T = k => (r.virements || []).reduce((a, l) => a + (Number(l[k]) || 0), 0);
   const lignes = (r.virements || []).map(l => `<tr><td style="${td};text-align:left">${escH(jourFr(l.arrivee))}</td><td style="${td}">${l.nbDons}</td><td style="${td}">${escH(eur(l.brut))}</td><td style="${td}">− ${escH(eur(l.frais + l.rembourse + l.litiges))}</td><td style="${td}">${escH(eur(l.net))}</td><td style="${td};font-weight:bold;color:${TEAL}">${escH(eur(l.commission))}</td></tr>`).join('');
-  return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:8px 0 0"><tr><th style="${th};text-align:left">Arrivée en banque</th><th style="${th}">Dons</th><th style="${th}">Encaissé</th><th style="${th}">Frais Stripe</th><th style="${th}">Net</th><th style="${th}">Commission ${escH(tx)} %</th></tr>${lignes}</table>`;
+  return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:8px 0 0"><tr><th style="${th};text-align:left">Arrivée en banque</th><th style="${th}">Dons</th><th style="${th}">Encaissé</th><th style="${th}">Frais Stripe</th><th style="${th}">Net</th><th style="${th}">Commission ${escH(tx)} %</th></tr>${lignes}${(r.virements || []).length > 1 ? `<tr>` + ['Total', T('nbDons'), eur(T('brut')), '− ' + eur(T('frais') + T('rembourse') + T('litiges')), eur(T('net')), eur(T('commission'))].map((v, i) => `<td style="padding:10px 6px;border-top:2px solid ${TEAL};font-weight:bold;font-size:13.5px;text-align:${i ? 'right' : 'left'}${i === 5 ? ';color:' + TEAL : ''}">${escH(v)}</td>`).join('') + '</tr>' : ''}</table>`;
 }
 function tableauPaiements(r, pourPdf) {
   const th = 'padding:7px 5px;border-bottom:2px solid ' + TEAL + ';font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:' + GRIS + ';text-align:', td = 'padding:7px 5px;border-bottom:1px solid #e5e7eb;font-size:12.5px;vertical-align:top;';
@@ -196,32 +198,26 @@ function tableauPaiements(r, pourPdf) {
   for (const v of r.virements || []) {
     const L = v.detail || []; if (!L.length) continue;
     const vus = pourPdf ? L : L.slice(0, 20);
-    out += `<h3 style="margin:20px 0 4px;font-size:15px;color:#111827">Les paiements du virement du ${escH(jourFr(v.arrivee))} (${escH(eur(v.montantVire))} virés)</h3>
+    out += `<p style="margin:14px 0 4px;font-size:14px;font-weight:bold;color:#111827">Virement arrivé le ${escH(jourFr(v.arrivee))} <span style="font-weight:normal;color:${GRIS}">· ${escH(eur(v.montantVire))} virés à l'association</span></p>
 <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse"><tr><th style="${th}left">Date</th><th style="${th}left">Donateur · objet</th><th style="${th}right">Paiement</th><th style="${th}right">Frais</th><th style="${th}right">Net</th></tr>` +
-      vus.map(l => `<tr><td style="${td}white-space:nowrap">${escH(jour(l.t))}</td><td style="${td}overflow-wrap:anywhere">${l.genre === 'Don' ? '' : '<b style="color:#b45309">' + escH(l.genre) + ' · </b>'}${escH(l.donateur || '')}${l.donateur && l.libelle ? ' · ' : ''}<span style="color:${GRIS}">${escH(l.libelle || (l.donateur ? '' : 'Paiement ' + l.ref))}</span>${l.recu ? `<br><span style="color:${GRIS};font-size:11px">reçu ${escH(l.recu)}</span>` : ''}</td><td style="${td}text-align:right">${escH(eur(l.brut))}</td><td style="${td}text-align:right">${l.frais ? '− ' + escH(eur(l.frais)) : ''}</td><td style="${td}text-align:right;font-weight:bold">${escH(eur(l.net))}</td></tr>`).join('') + '</table>' +
+      vus.map(l => `<tr><td style="${td}white-space:nowrap">${escH(jour(l.t))}</td><td style="${td}overflow-wrap:anywhere">${l.genre === 'Don' ? '' : '<b style="color:#b45309">' + escH(l.genre) + ' · </b>'}${escH(l.donateur || '')}${l.donateur && l.libelle ? ' · ' : ''}<span style="color:${GRIS}">${escH(l.libelle || (l.donateur ? '' : 'Paiement ' + l.ref))}</span>${l.recu ? `<br><span style="color:${GRIS};font-size:11px">reçu ${escH(l.recu)}</span>` : ''}</td><td style="${td}text-align:right">${escH(eur(l.brut))}</td><td style="${td}text-align:right">${l.frais ? '− ' + escH(eur(l.frais)) : ''}</td><td style="${td}text-align:right;font-weight:bold">${escH(eur(l.net))}</td></tr>`).join('') + (L.length > 1 ? `<tr><td colspan="2" style="padding:8px 5px;border-top:2px solid ${TEAL};font-weight:bold;font-size:12.5px">Total (${L.length} lignes)</td>` + [L.reduce((a, l) => a + l.brut, 0), -L.reduce((a, l) => a + l.frais, 0), L.reduce((a, l) => a + l.net, 0)].map(v => `<td style="padding:8px 5px;border-top:2px solid ${TEAL};text-align:right;font-weight:bold;font-size:12.5px;white-space:nowrap">${v < 0 ? '− ' : ''}${escH(eur(Math.abs(v)))}</td>`).join('') + '</tr>' : '') + '</table>' +
       (!pourPdf && L.length > vus.length ? `<p style="margin:8px 0 0;font-size:12px;color:${GRIS}">… et ${L.length - vus.length} autre(s) ligne(s) : liste complète dans le PDF joint.</p>` : '');
   }
   return out;
 }
 
 function corpsCommission(r, f, tx, refuse, pourPdf) {
-  const montant = f ? f.montant : 0, total = (r.virements || []).reduce((a, l) => a + l.commission, 0), net = (r.virements || []).reduce((a, l) => a + l.net, 0);
-  const statut = refuse ? 'Paiement refusé' : 'Commission encaissée';
-  return `<p style="margin:0 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:${refuse ? '#b45309' : OR};font-weight:bold">${escH(statut)}</p>
-<p style="margin:0;font-size:${pourPdf ? 32 : 34}px;font-weight:bold;color:${refuse ? '#b45309' : TEAL};line-height:1.1">${escH(eur(montant || total))}</p>
-<p style="margin:10px 0 16px;font-size:15px;line-height:1.55;color:#1f2937">${refuse ? 'La carte enregistrée a été refusée : la facture reste ouverte, un nouvel essai a lieu au prochain passage.' : `Commission de ${escH(tx)} % sur les dons nets de l'association (${escH(eur(net))} au total), prélevée par carte le jour de l'arrivée en banque de ${(r.virements || []).length > 1 ? 'ces virements' : 'ce virement'} Stripe.`}</p>
-<h3 style="margin:0 0 4px;font-size:15px;color:#111827">À quoi correspond cette commission</h3>
-${tableauVirements(r, tx)}
-${tableauPaiements(r, pourPdf)}
-<div style="margin:16px 0;padding:12px 14px;background:#f3f8f8;border-radius:10px;font-size:13.5px;line-height:1.55;color:#374151">Net = dons encaissés − frais Stripe − remboursements − litiges. Commission = net × ${escH(tx)} %. Aucun don n'est compté avant l'arrivée du virement Stripe en banque, et aucun virement n'est compté deux fois.</div>
-`;
+  const V = r.virements || [], montant = f ? f.montant : 0, total = V.reduce((a, l) => a + l.commission, 0), net = V.reduce((a, l) => a + l.net, 0), brut = V.reduce((a, l) => a + l.brut, 0);
+  const etabli = new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: 'long', year: 'numeric' });
+  return G.bandeau({ titre: 'Relevé de commission', sous: (f && f.numero ? 'Facture ' + f.numero + ' · ' : '') + 'établi le ' + etabli, pourPdf }) +
+    G.montant({ etiquette: refuse ? 'Commission : paiement refusé' : 'Commission encaissée', valeur: eur(montant || total), etat: refuse ? 'Carte refusée : la facture reste ouverte, nouvel essai au prochain passage' : 'Payée par carte' + (f && f.numero ? ' · facture ' + f.numero : ''), alerte: !!refuse }) +
+    G.reperes([{ l: 'Dons encaissés', v: eur(brut), sous: V.reduce((a, l) => a + l.nbDons, 0) + ' don(s)' }, { l: 'Net de l\'association', v: eur(net), sous: 'après frais Stripe' }, { l: 'Commission ' + tx + ' %', v: eur(total), sous: eur(net) + ' × ' + tx + ' %' }]) +
+    `<p style="margin:16px 0 0;font-size:15px;line-height:1.55;color:#1f2937">${refuse ? 'La carte enregistrée a été refusée : la facture reste ouverte, un nouvel essai a lieu au prochain passage.' : `Commission de ${escH(tx)} % sur les dons nets de l'association (${escH(eur(net))} au total), prélevée par carte le jour de l'arrivée en banque de ${V.length > 1 ? 'ces virements' : 'ce virement'} Stripe.`}</p>` +
+    G.partie(1, 'À quoi correspond cette commission') + tableauVirements(r, tx) +
+    G.note(['Net = dons encaissés − frais Stripe − remboursements − litiges.', 'Commission = net × ' + tx + ' %.', 'Aucun don n\'est compté avant l\'arrivée du virement Stripe en banque.', 'Aucun virement n\'est compté deux fois.'], 'Comment c\'est calculé') +
+    (V.some(v => (v.detail || []).length) ? G.partie(2, 'Le détail, paiement par paiement') + tableauPaiements(r, pourPdf) : '');
 }
-function pdfCommission(r, f, tx, refuse) {
-  const logo = logoData();
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><style>@page{size:A4;margin:16mm 15mm}html,body{background:#fff}body{font-family:Arial,Helvetica,sans-serif;color:#1f2937;margin:0}tr{page-break-inside:avoid}</style></head><body>
-<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin-bottom:20px;border-bottom:3px solid ${TEAL}"><tr><td style="padding:0 0 12px">${logo ? `<img src="${logo}" alt="Émounatéha" style="height:78px">` : '<span style="font-size:22px;font-weight:bold;color:' + TEAL + '">Émounatéha</span>'}</td><td style="padding:0 0 12px;text-align:right;font-size:12px;color:${GRIS}">Relevé de commission<br>établi le ${escH(new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: 'long', year: 'numeric' }))}</td></tr></table>
-${corpsCommission(r, f, tx, refuse, true)}<p style="margin:20px 0 0;font-size:10.5px;color:${GRIS}">Document établi automatiquement à partir des mouvements enregistrés par Stripe. Montants en euros, sans estimation.</p></body></html>`;
-}
+function pdfCommission(r, f, tx, refuse) { return G.enPdf(corpsCommission(r, f, tx, refuse, true)); }
 
 async function piecesJointes(m, pdfTampon) {   // PDF (logo Émounatéha) + CSV ; le PDF qui n'a pas pu être fabriqué n'empêche jamais le mail
   const pj = [];
@@ -243,7 +239,7 @@ function mailEncaissement(r, live) {
   const text = L.join('\n'), e = s => String(s).replace(/[&<>]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]));
   const n = c => (c / 100).toFixed(2).replace('.', ',');
   const csv = f ? '﻿' + ['Arrivée en banque;Montant viré;Dons;Dons encaissés;Frais Stripe;Remboursements;Litiges;Net;Commission;Virement Stripe'].concat((r.virements || []).map(l => [jourFr(l.arrivee), n(l.montantVire), l.nbDons, n(l.brut), n(l.frais), n(l.rembourse), n(l.litiges), n(l.net), n(l.commission), l.id].join(';'))).concat(['', ';;;;;;;' + n(r.net) + ';' + n(r.total)]).join('\r\n') : null;
-  return { subject, text, html: f ? `<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:620px"><p style="margin:0 0 14px"><img src="https://don.emounateha.fr/logo-asso.png" alt="Émounatéha" height="64" style="height:64px"></p>${corpsCommission(r, f, tx, refuse, false)}<p style="margin:16px 0 0;font-size:12px;color:${GRIS};line-height:1.5">En pièces jointes : le relevé en PDF (à classer) et le détail en CSV. Tous les montants sont lus dans Stripe.</p></div>` : `<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:600px"><h2 style="color:${refuse ? '#b45309' : '#1f6a72'};margin:0 0 10px">${e(subject)}</h2>` + L.map(x => `<p style="margin:6px 0;font-size:14px">${e(x)}</p>`).join('') + '</div>', pdfHtml: f ? pdfCommission(r, f, tx, refuse) : null, csv, fichier: f ? `commission_${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })}.csv` : null };
+  return { subject, text, html: f ? G.enMail(corpsCommission(r, f, tx, refuse, false), 'En pièces jointes : le relevé en PDF (à classer) et le détail en CSV. Tous les montants sont lus dans Stripe.') : `<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;max-width:600px"><h2 style="color:${refuse ? '#b45309' : '#1f6a72'};margin:0 0 10px">${e(subject)}</h2>` + L.map(x => `<p style="margin:6px 0;font-size:14px">${e(x)}</p>`).join('') + '</div>', pdfHtml: f ? pdfCommission(r, f, tx, refuse) : null, csv, fichier: f ? `commission_${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })}.csv` : null };
 }
 
 

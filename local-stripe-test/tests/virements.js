@@ -17,14 +17,16 @@ const P = (id, amount, o = {}) => ({ id, amount, currency: 'eur', status: 'in_tr
     ok(/Pourquoi ce montant/.test(mm.html) && /Sarah Lévy/.test(mm.html) && /<!doctype html>/.test(mm.pdfHtml) && /Relevé de virement Stripe/.test(mm.pdfHtml) && /Sarah Lévy/.test(mm.pdfHtml) && /^virement-stripe_2026-11-16_980-00EUR$/.test(mm.fichier), 'e-mail et PDF : explication du montant et tableau des dons', mm.fichier); }
   { const E = V.exemples(); ok(E.length === 3 && E[0].p.amount === V.contenu(E[0].mv).net && E[1].mv.some(x => x.type === 'refund') && E[2].echec, 'exemples : un virement simple, un avec remboursement, un refusé ; montants cohérents', E.map(e => e.p.amount)); }
   ok(!/commission|7 ?%/i.test(m.text + m.html) && !/[a-z0-9._-]+@[a-z]/i.test(m.text), 'e-mail : ni commission, ni adresse e-mail de donateur');
+  { const mp = V.mailVirement(P('po_1', 98000), { dons: 2, brut: 100000, frais: 2000, rembourse: 0, autres: 0, net: 98000 }, { prestataire: 6860 });
+    ok(/Frais bancaires retenus par Stripe : − 20,00 €/.test(mp.text) && /Frais prestataire[^\n]* : − 68,60 €/.test(mp.text) && /= Reste pour l'association : 911,40 €/.test(mp.text) && /Frais prestataire/.test(mp.html) && /Frais prestataire/.test(mp.pdfHtml) && /Frais prestataire/.test(V.csvVirement(P('po_1', 98000), { brut: 100000, frais: 2000 }, [], 6860)) && /= Viré sur le compte bancaire : 980,00 €/.test(mp.text), 'frais Stripe ET frais prestataire affichés (e-mail, PDF, CSV), avec le reste pour l\'association', mp.text); }
   m = V.mailVirement(P('po_2', 90000), { dons: 2, brut: 100000, frais: 2000, rembourse: 0, autres: 0, net: 98000 }); ok(/Solde reporté ou mouvement hors dons : − 80,00 €/.test(m.text), 'écart entre dons et virement : signalé, pas masqué', m.text);
   m = V.mailVirement(P('po_3', 5000, { status: 'failed', failure_message: 'Compte clôturé' }), null, { echec: true }); ok(/REFUSÉ/.test(m.subject) && /Compte clôturé/.test(m.text), 'virement refusé : e-mail d\'alerte avec le motif', m.subject);
   // point d'entrée : faux serveur, faux Stripe, faux e-mails
-  const routes = {}, app = { post: (p, f) => routes[p] = f }; let data = { receipts: {} }, mails = [], liste = [P('po_ancien', 12000, { status: 'paid' })], panne = false, autorise = true, ecritures = 0, heure = 20, smsEnvoyes = [], smsPanne = false;
-  const stripe = { payouts: { list: async o => ({ data: liste.slice() }) }, balanceTransactions: { list: o => (async function* () { yield { type: 'payout', amount: -1, fee: 0 }; yield { type: 'charge', amount: 100000, fee: 2000 }; })() } };
+  const routes = {}, app = { post: (p, f) => routes[p] = f }; let data = { receipts: {} }, mails = [], liste = [P('po_ancien', 12000, { status: 'paid' })], panne = false, autorise = true, ecritures = 0, heure = 20, chabbatEnCours = false, veille = false, soldeLus = 0, smsEnvoyes = [], smsPanne = false;
+  const stripe = { balance: { retrieve: async () => { soldeLus++; return { available: [{ currency: 'eur', amount: 500 }] }; } }, payouts: { list: async o => ({ data: liste.slice() }) }, balanceTransactions: { list: o => (async function* () { if (o.available_on) { yield { type: 'charge', net: 98000, currency: 'eur' }; return; } yield { type: 'payout', amount: -1, fee: 0 }; yield { type: 'charge', amount: 100000, fee: 2000 }; })() } };
   const mailer = { ADMIN_EMAIL: () => 'admin@exemple.com', send: async x => { if (panne) throw new Error('Brevo en panne'); mails.push(x); return { sent: true }; }, sendSms: async x => { if (smsPanne) throw new Error('Brevo SMS en panne'); smsEnvoyes.push(x); return { sent: true }; } };
   process.env.STRIPE_SECRET_KEY = 'sk_test_x';
-  let pdfKo = false; V.monter(app, { peutEnvoyer: async () => heure >= 19, pdfTampon: async h => { if (pdfKo) throw new Error('navigateur indisponible'); return Buffer.from('%PDF-essai ' + h.length); }, stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; ecritures++; } });
+  let pdfKo = false; V.monter(app, { peutEnvoyer: async () => !chabbatEnCours, peutSms: () => heure >= 7 && heure < 22, heureVeille: async () => veille, pdfTampon: async h => { if (pdfKo) throw new Error('navigateur indisponible'); return Buffer.from('%PDF-essai ' + h.length); }, stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; ecritures++; } });
   const appel = async () => { let code = 200, corps; const res = { status: c => (code = c, res), json: j => (corps = j, res) }; await routes['/api/admin/virements/verifier']({ body: {} }, res); return { code, corps }; };
   let r = await appel(); ok(r.corps.miseEnService && mails.length === 0 && data.virements.vus.po_ancien === 'vu', 'mise en service : les virements passés ne déclenchent aucun e-mail', r.corps);
   r = await appel(); ok(r.corps.envoyes === 0 && mails.length === 0, 'rien de nouveau : aucun e-mail', r.corps);
@@ -40,23 +42,35 @@ const P = (id, amount, o = {}) => ({ id, amount, currency: 'eur', status: 'in_tr
   ok(mails[0].attachments.length === 2 && /\.csv$/.test(mails[0].attachments[0].name) && /\.pdf$/.test(mails[0].attachments[1].name) && Buffer.from(mails[0].attachments[1].content, 'base64').toString().startsWith('%PDF'), 'vrai virement : CSV et PDF joints, au format attendu par Brevo', mails[0].attachments.map(a => a.name));
   ok(mails[1].attachments.length === 0, 'virement refusé : pas de pièce jointe');
   liste.unshift(P('po_sanspdf', 7000)); pdfKo = true; r = await appel(); ok(mails.length === 4 && mails[3].attachments.length === 1 && !/PDF/.test(mails[3].text.split('Pièces jointes')[1] || ''), 'PDF impossible à fabriquer : le mail part quand même, avec le CSV', [mails.length, (mails[3] || {}).attachments]); pdfKo = false;
-  // ---- 19 h et SMS (demande de Yarone, 19 nov 2026)
+  // ---- envoi dès que Stripe lance le virement (comme avant le 19 nov), sauf Chabbat ; SMS jamais la nuit (demande de Yarone, 20 nov 2026)
   { const nb = mails.length; heure = 2; liste.unshift(P('po_nuit', 31000)); r = await appel();
-    ok(mails.length === nb && r.corps.envoyes === 0 && !data.virements.vus.po_nuit, 'à 2 h du matin : le virement « en cours » n\'est PAS envoyé et reste à notifier', r.corps);
-    heure = 18; r = await appel(); ok(mails.length === nb && !data.virements.vus.po_nuit, 'à 18 h : toujours rien');
-    heure = 19; r = await appel(); ok(mails.length === nb + 1 && /310,00 €/.test(mails[nb].subject) && data.virements.vus.po_nuit === 'vu', 'à 19 h : l\'e-mail part, virement noté comme vu', [r.corps, mails.map(x => x.subject).slice(-1)]);
-    r = await appel(); ok(mails.length === nb + 1, 'après 19 h : pas de second e-mail');
-    heure = 3; liste.unshift(P('po_refuse', 6000, { status: 'failed', failure_code: 'account_closed' })); r = await appel();
-    ok(mails.length === nb + 2 && /REFUSÉ/.test(mails[nb + 1].subject), 'virement refusé par la banque : alerte immédiate, même la nuit', mails.map(x => x.subject).slice(-1)); heure = 20;
+    ok(mails.length === nb + 1 && /310,00 €/.test(mails[nb].subject) && data.virements.vus.po_nuit === 'vu', 'à 2 h du matin : l\'e-mail part tout de suite, avant l\'argent (plus d\'attente jusqu\'à 19 h)', [r.corps, mails.map(x => x.subject).slice(-1)]);
+    r = await appel(); ok(mails.length === nb + 1, 'pas de second e-mail');
+    chabbatEnCours = true; liste.unshift(P('po_chabbat', 32000)); r = await appel();
+    ok(mails.length === nb + 1 && r.corps.envoyes === 0 && !data.virements.vus.po_chabbat, 'pendant Chabbat : le virement « en cours » n\'est PAS envoyé et reste à notifier', r.corps);
+    liste.unshift(P('po_refuse', 6000, { status: 'failed', failure_code: 'account_closed' })); r = await appel();
+    ok(mails.length === nb + 2 && /REFUSÉ/.test(mails[nb + 1].subject), 'virement refusé par la banque : alerte immédiate', mails.map(x => x.subject).slice(-1));
+    chabbatEnCours = false; r = await appel(); ok(mails.length === nb + 3 && /320,00 €/.test(mails[nb + 2].subject) && data.virements.vus.po_chabbat === 'vu', 'après la sortie de Chabbat : l\'e-mail en attente part', mails.map(x => x.subject).slice(-1));
     ok(smsEnvoyes.length === 0, 'mode test (clé sk_test) : aucun SMS réel envoyé'); }
   { process.env.STRIPE_SECRET_KEY = 'sk_live_x'; const nbM = mails.length, nbS = smsEnvoyes.length;
-    heure = 4; liste.unshift(P('po_sms', 98000, { arrival_date: t('2026-11-20') })); r = await appel(); ok(smsEnvoyes.length === nbS && mails.length === nbM, 'à 4 h : ni e-mail ni SMS');
-    heure = 19; r = await appel();
-    ok(mails.length === nbM + 1 && smsEnvoyes.length === nbS + 1 && smsEnvoyes[nbS].to === '0669670770' && smsEnvoyes[nbS].tag === 'virement' && /980,00 EUR/.test(smsEnvoyes[nbS].text) && /20 novembre/.test(smsEnvoyes[nbS].text) && smsEnvoyes[nbS].text.length <= 160 && r.corps.detail[0].sms === true, 'à 19 h (mode réel) : e-mail + SMS au 06 69 67 07 70, 160 caractères au plus', [smsEnvoyes.slice(-1), r.corps]);
+    heure = 2; liste.unshift(P('po_sms', 98000, { arrival_date: t('2026-11-20') })); r = await appel();
+    ok(mails.length === nbM + 1 && smsEnvoyes.length === nbS && r.corps.detail[0].sms === 'à 7 h' && data.virements.smsAttente.po_sms, 'à 2 h (mode réel) : e-mail tout de suite, SMS gardé pour 7 h (pas de SMS la nuit)', r.corps);
+    heure = 6; r = await appel(); ok(smsEnvoyes.length === nbS && mails.length === nbM + 1, 'à 6 h : toujours pas de SMS, pas de second e-mail');
+    heure = 7; r = await appel();
+    ok(mails.length === nbM + 1 && smsEnvoyes.length === nbS + 1 && smsEnvoyes[nbS].to === '0669670770' && smsEnvoyes[nbS].tag === 'virement' && /980,00 EUR/.test(smsEnvoyes[nbS].text) && /20 novembre/.test(smsEnvoyes[nbS].text) && smsEnvoyes[nbS].text.length <= 160 && !data.virements.smsAttente.po_sms, 'à 7 h : le SMS part au 06 69 67 07 70, 160 caractères au plus', [smsEnvoyes.slice(-1), r.corps]);
     r = await appel(); ok(smsEnvoyes.length === nbS + 1, 'pas de second SMS');
-    smsPanne = true; heure = 20; liste.unshift(P('po_smspanne', 5000)); r = await appel();
-    ok(mails.length === nbM + 2 && data.virements.vus.po_smspanne === 'vu' && r.corps.detail[0].sms === false, 'SMS en panne : l\'e-mail part quand même, virement noté comme vu (pas de doublon d\'e-mail)', r.corps); smsPanne = false;
+    heure = 12; liste.unshift(P('po_jour', 4000)); r = await appel(); ok(mails.length === nbM + 2 && smsEnvoyes.length === nbS + 2 && r.corps.detail[0].sms === true, 'en journée : e-mail et SMS partent ensemble', r.corps);
+    heure = 3; chabbatEnCours = false; liste.unshift(P('po_veilleChabbat', 3000)); r = await appel(); chabbatEnCours = true; heure = 10; r = await appel();
+    ok(smsEnvoyes.length === nbS + 2 && data.virements.smsAttente.po_veilleChabbat, 'SMS en attente : pas envoyé pendant Chabbat'); chabbatEnCours = false; r = await appel(); ok(smsEnvoyes.length === nbS + 3, 'SMS en attente : envoyé après la sortie');
+    smsPanne = true; heure = 12; liste.unshift(P('po_smspanne', 5000)); r = await appel();
+    ok(mails.length === nbM + 4 && data.virements.vus.po_smspanne === 'vu' && r.corps.detail[0].sms === false, 'SMS en panne : l\'e-mail part quand même, virement noté comme vu (pas de doublon d\'e-mail)', r.corps); smsPanne = false;
     liste.unshift(P('po_refuse2', 7000, { status: 'failed', failure_code: 'account_closed' })); const nbS2 = smsEnvoyes.length; r = await appel(); ok(smsEnvoyes.length === nbS2, 'virement refusé : pas de SMS « en cours »');
+    // prévision de la veille : observation seulement (journal), jamais d'e-mail ni de SMS
+    const nbM3 = mails.length, nbS3 = smsEnvoyes.length; veille = true; r = await appel(); const pv = Object.values(data.virements.previsions || {});
+    ok(pv.length === 1 && pv[0].montant === 98500 && mails.length === nbM3 && smsEnvoyes.length === nbS3 && soldeLus === 1, 'veille à 19 h : prévision calculée (solde disponible + dons libérés demain) et notée, RIEN envoyé', [data.virements.previsions, soldeLus]);
+    r = await appel(); ok(soldeLus === 1, 'prévision : une seule fois par jour d\'arrivée'); veille = false;
+    const pr = await V.prevision({ balance: { retrieve: async () => ({ available: [{ currency: 'eur', amount: 1000 }, { currency: 'usd', amount: 999 }] }) }, balanceTransactions: { list: o => (async function* () { yield { type: 'charge', net: 5000, currency: 'eur' }; yield { type: 'payout', net: -700, currency: 'eur' }; yield { type: 'refund', net: -300, currency: 'eur' }; })() } }, Date.parse('2026-11-19T19:00:00+01:00'));
+    ok(pr.pour === '2026-11-20' && pr.montant === 5700 && pr.dejaDisponible === 1000 && pr.libereDemain === 4700, 'prévision : jour d\'arrivée = demain, euros seulement, virements exclus, remboursements déduits', pr);
     process.env.STRIPE_SECRET_KEY = 'sk_test_x'; }
   autorise = false; r = await appel(); ok(r.code === 401, 'sans signature du serveur du site : refusé');
   const src = require('fs').readFileSync(require('path').join(__dirname, '../virements.js'), 'utf8').replace(/\/\/.*$/gm, '');

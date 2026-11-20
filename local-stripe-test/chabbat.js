@@ -1,4 +1,9 @@
-// Quand peut-on envoyer l'e-mail et le SMS « virement en cours » à l'administrateur ? (demande de Yarone, 19 nov 2026)
+// Deux règles d'horaire pour prévenir l'administrateur d'un virement (demandes de Yarone, 19 et 20 nov 2026).
+//
+// 1) horsChabbat : le relevé exact part dès que Stripe lance le virement (la nuit même de l'arrivée, vers 2 h), SAUF de l'allumage
+//    jusqu'à 2 h après la sortie de Chabbat ou d'une fête. Attendre 19 h faisait arriver le message après l'argent (20 nov 2026).
+//
+// 2) autorise : l'heure de l'annonce de LA VEILLE (« demain, un virement arrive ») :
 //  - jour ordinaire : à partir de 19 h (heure de Paris)
 //  - jour où entre Chabbat (ou une fête) : à partir de 3 h AVANT l'allumage des bougies
 //  - de l'allumage jusqu'à 2 h APRÈS la sortie (havdala) : rien n'est envoyé
@@ -29,6 +34,20 @@ function autorise(maintenant, evenements) {
   return heureParis(maintenant) >= HEURE_ORDINAIRE;
 }
 
+// Relevé exact : tout de suite, sauf pendant Chabbat ou une fête (de l'allumage jusqu'à 2 h après la sortie).
+// Hebcal injoignable : par prudence, rien du vendredi 13 h au samedi minuit (heure de Paris), le reste du temps on envoie.
+function horsChabbat(maintenant, evenements) {
+  if (!evenements) { const j = jourSemaineParis(maintenant); return !(j === 'Sat' || (j === 'Fri' && heureParis(maintenant) >= 13)); }
+  const ev = evenements.slice().sort((a, b) => a.t - b.t);
+  for (let i = 0; i < ev.length; i++) {
+    if (ev[i].type !== 'allumage') continue;
+    const sortie = ev.slice(i + 1).find(e => e.type === 'sortie');
+    const fin = sortie ? sortie.t + APRES_SORTIE_H * H : ev[i].t + 30 * H;
+    if (maintenant >= ev[i].t && maintenant < fin) return false;
+  }
+  return true;
+}
+
 let cache = null;   // { jour, evenements }
 async function evenements(maintenant, fetchFn = fetch) {
   const jour = jourParis(maintenant);
@@ -46,4 +65,6 @@ async function evenements(maintenant, fetchFn = fetch) {
 }
 async function peutEnvoyer(maintenant = Date.now(), fetchFn) { return autorise(maintenant, await evenements(maintenant, fetchFn)); }
 
-module.exports = { autorise, evenements, peutEnvoyer, HEURE_ORDINAIRE, AVANT_ALLUMAGE_H, APRES_SORTIE_H };
+async function pasChabbat(maintenant = Date.now(), fetchFn) { return horsChabbat(maintenant, await evenements(maintenant, fetchFn)); }
+
+module.exports = { autorise, horsChabbat, pasChabbat, heureParis, jourParis, evenements, peutEnvoyer, HEURE_ORDINAIRE, AVANT_ALLUMAGE_H, APRES_SORTIE_H };
