@@ -127,18 +127,13 @@ function exemples() {
   ];
 }
 
-// But (Yarone, 19-20 nov 2026) : prévenir par e-mail ET SMS qu'un virement va arriver à la banque dans les heures qui viennent. Sinon ça ne sert à rien.
-//  - virement déjà arrivé : aucun message (marqué comme vu)
-//  - la veille du jour d'arrivée : à 19 h (heure de Paris), avec les règles de Chabbat et des fêtes de chabbat.js (veille de Chabbat = 3 h avant l'allumage, rien pendant Chabbat, reprise 2 h après la sortie)
-//  - le jour d'arrivée, virement pas encore arrivé (veille manquée) : tout de suite, sauf pendant Chabbat
-//  - arrivée dans plus d'un jour : on attend
+// Les e-mails « virement en cours » partent à 19 h (heure de Paris) au lieu de la nuit où Stripe lance le virement (demande de Yarone, 19 nov 2026),
+// en tenant compte de Chabbat et des fêtes (voir chabbat.js : veille = 3 h avant l'allumage, rien pendant Chabbat, reprise 2 h après la sortie).
 // Un virement refusé par la banque reste signalé tout de suite. Le SMS part en même temps que l'e-mail.
-const jourParis = ms => new Date(ms).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
-const jourUtc = ms => new Date(ms).toISOString().slice(0, 10);   // arrival_date de Stripe = minuit UTC du jour d'arrivée
 const chabbat = require('./chabbat.js');
 const smsVirement = p => 'Emounateha : virement de ' + eur(p.amount).replace(/[\u202f\u00a0]/g, ' ').replace('€', 'EUR') + ' en cours vers la banque, arrivee prevue le ' + new Date(p.arrival_date * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', ...P }) + '.';
 
-function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoyer = o => chabbat.peutEnvoyer(Date.now(), undefined, o), maintenant = () => Date.now(), adminSms = () => process.env.ADMIN_SMS || '0669670770' }) {
+function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoyer = () => chabbat.peutEnvoyer(), adminSms = () => process.env.ADMIN_SMS || '0669670770' }) {
   // fabrique le message complet (corps + CSV + PDF) et l'envoie ; si le PDF ne peut pas être fabriqué, le mail part quand même avec le CSV
   async function envoyer(p, mv, recus, opt) {
     const echec = !!opt.echec, c = echec ? null : contenu(mv), L = echec ? [] : lignes(mv, recus);
@@ -170,12 +165,7 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoy
         if (p.currency && String(p.currency).toLowerCase() !== 'eur') { vus[p.id] = avant || 'vu'; continue; }
         if (avant === 'echec' || (avant === 'vu' && !echec)) continue;
         if (!avant && p.amount <= 0 && !echec) { vus[p.id] = 'vu'; continue; }   // régularisation négative : pas un virement reçu
-        if (!echec) {
-          if (p.status === 'paid') { vus[p.id] = 'vu'; continue; }   // déjà arrivé en banque : prévenir ne servirait à rien
-          const auj = jourParis(maintenant()), arr = jourUtc(p.arrival_date * 1000), veille = jourUtc(p.arrival_date * 1000 - 86400000);
-          if (auj < veille) continue;   // arrivée dans plus d'un jour : on attend
-          if (!(await peutEnvoyer(auj >= arr ? { tot: true } : {}))) continue;   // 19 h la veille, Chabbat : on attend, pas noté comme vu, repris à une vérification suivante
-        }
+        if (!echec && !(await peutEnvoyer())) continue;   // pas encore l'heure (19 h, veille de Chabbat, Chabbat) : on attend, pas noté comme vu, repris à une vérification suivante
         try {
           const mv = []; if (!echec) for await (const m of stripe.balanceTransactions.list({ payout: p.id, limit: 100, expand: ['data.source'] })) { mv.push(m); if (mv.length > 5000) break; }
           const r = await envoyer(p, mv, load().receipts || {}, { echec, test });

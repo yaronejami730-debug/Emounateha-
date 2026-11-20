@@ -12,9 +12,8 @@ const heureParis = ms => Number(new Intl.DateTimeFormat('en-GB', { hour: '2-digi
 const jourSemaineParis = ms => new Date(ms).toLocaleDateString('en-US', { weekday: 'short', timeZone: TZ });
 
 // evenements : [{ type: 'allumage' | 'sortie', t: ms }] ; null si Hebcal est injoignable
-// opts.tot : jour d'arrivée du virement, il faut prévenir sans attendre — seul l'interdit de Chabbat reste
-function autorise(maintenant, evenements, opts = {}) {
-  if (!evenements) { const j = jourSemaineParis(maintenant); return j !== 'Fri' && j !== 'Sat' && (opts.tot || heureParis(maintenant) >= HEURE_ORDINAIRE); }
+function autorise(maintenant, evenements) {
+  if (!evenements) { const j = jourSemaineParis(maintenant); return j !== 'Fri' && j !== 'Sat' && heureParis(maintenant) >= HEURE_ORDINAIRE; }
   const ev = evenements.slice().sort((a, b) => a.t - b.t), jour = jourParis(maintenant);
   // Chabbat / fête en cours (de l'allumage jusqu'à 2 h après la sortie) : on n'envoie rien
   for (let i = 0; i < ev.length; i++) {
@@ -23,7 +22,6 @@ function autorise(maintenant, evenements, opts = {}) {
     const fin = sortie ? sortie.t + APRES_SORTIE_H * H : ev[i].t + 30 * H;
     if (maintenant >= ev[i].t && maintenant < fin) return false;
   }
-  if (opts.tot) return true;
   const allumageDuJour = ev.find(e => e.type === 'allumage' && jourParis(e.t) === jour);
   if (allumageDuJour) return maintenant >= allumageDuJour.t - AVANT_ALLUMAGE_H * H;   // veille de Chabbat : 3 h avant (et avant l'allumage, car après c'est bloqué plus haut)
   const sortieDuJour = ev.find(e => e.type === 'sortie' && jourParis(e.t) === jour);
@@ -46,6 +44,6 @@ async function evenements(maintenant, fetchFn = fetch) {
     cache = { jour, evenements: ev }; return ev;
   } catch (e) { console.error('chabbat : horaires indisponibles —', e.message); return null; }
 }
-async function peutEnvoyer(maintenant = Date.now(), fetchFn, opts) { return autorise(maintenant, await evenements(maintenant, fetchFn), opts); }
+async function peutEnvoyer(maintenant = Date.now(), fetchFn) { return autorise(maintenant, await evenements(maintenant, fetchFn)); }
 
 module.exports = { autorise, evenements, peutEnvoyer, HEURE_ORDINAIRE, AVANT_ALLUMAGE_H, APRES_SORTIE_H };

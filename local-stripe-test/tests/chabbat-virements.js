@@ -24,11 +24,6 @@ ok(C.autorise(T('2026-11-19T20:00:00+01:00'), null) === true && C.autorise(T('20
 // fête (Yom Tov) en semaine : même règle qu\'un Chabbat
 const fete = [{ type: 'allumage', t: T('2026-09-22T18:55:00+02:00') }, { type: 'sortie', t: T('2026-09-23T19:50:00+02:00') }];
 ok(a('2026-09-22T15:54:00+02:00', fete) === false && a('2026-09-22T15:55:00+02:00', fete) === true && a('2026-09-23T12:00:00+02:00', fete) === false, 'veille de fête un mardi : 3 h avant l\'allumage, rien pendant la fête');
-// jour d'arrivée du virement (option « tot ») : plus d'heure minimale, mais jamais pendant Chabbat
-ok(C.autorise(T('2026-11-19T03:00:00+01:00'), hiver, { tot: true }) === true, 'jour d\'arrivée ordinaire à 3 h du matin : on prévient tout de suite');
-ok(C.autorise(T('2026-11-20T09:00:00+01:00'), hiver, { tot: true }) === true && C.autorise(T('2026-11-20T16:52:00+01:00'), hiver, { tot: true }) === false, 'vendredi matin : on prévient sans attendre 13 h 52 ; plus rien dès l\'allumage');
-ok(C.autorise(T('2026-11-21T11:00:00+01:00'), hiver, { tot: true }) === false && C.autorise(T('2026-11-21T19:55:00+01:00'), hiver, { tot: true }) === true, 'pendant Chabbat : jamais ; après la sortie + 2 h : oui');
-ok(C.autorise(T('2026-11-19T03:00:00+01:00'), null, { tot: true }) === true && C.autorise(T('2026-11-20T09:00:00+01:00'), null, { tot: true }) === false, 'Hebcal en panne : jeudi oui, vendredi non, même le jour d\'arrivée');
 (async () => {   // lecture des horaires : faux Hebcal, mise en cache, panne
   let appels = 0, rep = { items: [{ category: 'candles', date: '2026-11-20T16:52:00+01:00' }, { category: 'havdalah', date: '2026-11-21T17:55:00+01:00' }, { category: 'parashat', date: '2026-11-21' }] };
   const faux = async url => { appels++; if (rep === 'panne') throw new Error('réseau'); return { ok: true, json: async () => rep, url }; };
