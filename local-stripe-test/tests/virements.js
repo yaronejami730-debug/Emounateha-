@@ -65,10 +65,16 @@ const P = (id, amount, o = {}) => ({ id, amount, currency: 'eur', status: 'in_tr
     smsPanne = true; heure = 12; liste.unshift(P('po_smspanne', 5000)); r = await appel();
     ok(mails.length === nbM + 4 && data.virements.vus.po_smspanne === 'vu' && r.corps.detail[0].sms === false, 'SMS en panne : l\'e-mail part quand même, virement noté comme vu (pas de doublon d\'e-mail)', r.corps); smsPanne = false;
     liste.unshift(P('po_refuse2', 7000, { status: 'failed', failure_code: 'account_closed' })); const nbS2 = smsEnvoyes.length; r = await appel(); ok(smsEnvoyes.length === nbS2, 'virement refusé : pas de SMS « en cours »');
-    // prévision de la veille : observation seulement (journal), jamais d'e-mail ni de SMS
-    const nbM3 = mails.length, nbS3 = smsEnvoyes.length; veille = true; r = await appel(); const pv = Object.values(data.virements.previsions || {});
-    ok(pv.length === 1 && pv[0].montant === 98500 && mails.length === nbM3 && smsEnvoyes.length === nbS3 && soldeLus === 1, 'veille à 19 h : prévision calculée (solde disponible + dons libérés demain) et notée, RIEN envoyé', [data.virements.previsions, soldeLus]);
-    r = await appel(); ok(soldeLus === 1, 'prévision : une seule fois par jour d\'arrivée'); veille = false;
+    // annonce de la veille à 19 h : e-mail + SMS « virement prévu demain, environ X € » (décision de Yarone, 20 nov 2026)
+    const nbM3 = mails.length, nbS3 = smsEnvoyes.length; r = await appel(); ok(mails.length === nbM3 && soldeLus === 0, 'avant l\'heure de la veille : aucune prévision, Stripe pas interrogé');
+    veille = true; panne = true; r = await appel(); panne = false; ok(Object.keys(data.virements.previsions || {}).length === 0, 'e-mail de prévision en panne : rien de noté, nouvel essai ensuite', data.virements.previsions);
+    r = await appel(); const pv = Object.entries(data.virements.previsions || {}), mp = mails[nbM3] || {}, sp = smsEnvoyes[nbS3] || {};
+    ok(pv.length === 1 && pv[0][1].montant === 98500 && pv[0][1].annonce === true && mails.length === nbM3 + 1 && /Virement prévu demain : environ 985,00 €/.test(mp.subject) && /prévision/.test(mp.text) && !(mp.attachments || []).length, 'veille à 19 h : e-mail « virement prévu demain, environ 985,00 € » (solde disponible + dons libérés demain), sans pièce jointe', [mp.subject, data.virements.previsions]);
+    ok(smsEnvoyes.length === nbS3 + 1 && sp.to === '0669670770' && /environ 985,00 EUR prevu demain/.test(sp.text) && sp.text.length <= 160, 'veille à 19 h : SMS de prévision, 160 caractères au plus', sp);
+    r = await appel(); ok(mails.length === nbM3 + 1 && smsEnvoyes.length === nbS3 + 1, 'prévision : une seule fois par jour d\'arrivée'); veille = false;
+    heure = 12; liste.unshift(P('po_annonce', 98400, { arrival_date: Date.parse(pv[0][0] + 'T00:00:00Z') / 1000 })); r = await appel();
+    ok(mails.length === nbM3 + 2 && /984,00 €/.test(mails[nbM3 + 1].subject) && smsEnvoyes.length === nbS3 + 1 && data.virements.previsions[pv[0][0]].reel === 98400, 'le lendemain : relevé exact par e-mail, PAS de second SMS, écart prévision / réel noté', [r.corps, data.virements.previsions]);
+    { const z = V.mailPrevision({ pour: '2026-11-20', montant: 30330 }); ok(/vendredi 20 novembre 2026/.test(z.text) && /environ 303,30 €/.test(z.subject) && !/commission/i.test(z.text + z.html), 'texte de la prévision : jour d\'arrivée en clair, montant « environ »', z.text); }
     const pr = await V.prevision({ balance: { retrieve: async () => ({ available: [{ currency: 'eur', amount: 1000 }, { currency: 'usd', amount: 999 }] }) }, balanceTransactions: { list: o => (async function* () { yield { type: 'charge', net: 5000, currency: 'eur' }; yield { type: 'payout', net: -700, currency: 'eur' }; yield { type: 'refund', net: -300, currency: 'eur' }; })() } }, Date.parse('2026-11-19T19:00:00+01:00'));
     ok(pr.pour === '2026-11-20' && pr.montant === 5700 && pr.dejaDisponible === 1000 && pr.libereDemain === 4700, 'prévision : jour d\'arrivée = demain, euros seulement, virements exclus, remboursements déduits', pr);
     process.env.STRIPE_SECRET_KEY = 'sk_test_x'; }

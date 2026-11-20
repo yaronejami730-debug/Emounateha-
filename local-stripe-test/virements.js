@@ -133,8 +133,10 @@ function exemples() {
 // Le SMS suit l'e-mail, mais jamais la nuit : entre 7 h et 22 h (heure de Paris), sinon il attend 7 h. Un virement refusé reste signalé tout de suite.
 //
 // Prévenir LA VEILLE à 19 h (souhait de Yarone) : impossible avec le virement lui-même, qui n'existe pas encore chez Stripe à ce moment-là.
-// On calcule donc une PRÉVISION (dons que Stripe libère le lendemain + solde déjà disponible). Pour l'instant en OBSERVATION :
-// elle est seulement écrite dans les journaux, puis comparée au vrai virement. Aucun e-mail ni SMS de prévision tant que ce n'est pas vérifié.
+// On envoie donc une PRÉVISION, d'après ce que Stripe annonce (dons qu'il libère le lendemain + solde déjà disponible) : e-mail + SMS
+// « virement prévu demain, environ X € », la veille à 19 h (vendredi : 3 h avant l'allumage ; samedi : 2 h après la sortie ; voir chabbat.js).
+// Décision de Yarone, 20 nov 2026. Le lendemain, le relevé exact part par e-mail dès que Stripe lance le virement (sans second SMS),
+// et l'écart entre la prévision et le montant réel est écrit dans les journaux.
 const chabbat = require('./chabbat.js');
 const smsVirement = p => 'Emounateha : virement de ' + eur(p.amount).replace(/[\u202f\u00a0]/g, ' ').replace('€', 'EUR') + ' en cours vers la banque, arrivee prevue le ' + new Date(p.arrival_date * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', ...P }) + '.';
 
@@ -148,6 +150,19 @@ async function prevision(stripe, maintenant = Date.now()) {   // LECTURE SEULE :
     libere += Math.round(Number(m.net) || 0); mouvements++; if (mouvements > 5000) break;
   }
   return { pour, montant: dispo + libere, dejaDisponible: dispo, libereDemain: libere, mouvements };
+}
+
+// L'annonce de la veille : courte, sans pièce jointe (le détail exact arrive avec le relevé du lendemain)
+function mailPrevision(pv, { test = false } = {}) {
+  const t = Date.parse(pv.pour + 'T12:00:00Z') / 1000, quand = jour(t), environ = 'environ ' + eur(pv.montant);
+  const subject = (test ? '[TEST] ' : '') + 'Virement prévu demain : ' + environ;
+  const intro = `Stripe prépare un virement vers le compte bancaire de l'association. Il devrait arriver demain, ${quand}, pour un montant d'${environ}.`;
+  const explique = ['Ce montant est une prévision : il correspond aux dons que Stripe libère demain, frais bancaires déjà déduits.', 'Le montant exact peut différer de quelques euros (remboursement ou don de dernière minute).', 'Demain, dès que Stripe lance le virement, vous recevez le relevé exact, avec le détail des dons en PDF.'];
+  const text = [test ? 'Compte Stripe de TEST : ce ne sont pas de vrais dons.' : null, intro, '', ...explique].filter(x => x !== null).join('\n');
+  const html = G.enMail(G.bandeau({ titre: 'Virement à venir', sous: 'Prévision · établie le ' + jourCourt(Math.floor(Date.now() / 1000)) }) + G.avertissement(test ? 'Compte Stripe de TEST : ce ne sont pas de vrais dons.' : '') +
+    G.montant({ etiquette: 'Virement prévu demain', valeur: environ, etat: 'Arrivée prévue le ' + quand }) + `<p style="margin:16px 0 0;font-size:15px;line-height:1.55;color:#1f2937">${esc(intro)}</p>` + G.note(explique, 'À savoir'), 'Montant lu dans Stripe la veille du virement. Le relevé exact suit.');
+  const sms = 'Emounateha : virement d\'' + environ.replace(/[\u202f\u00a0]/g, ' ').replace('€', 'EUR') + ' prevu demain ' + new Date(t * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', ...P }) + ' sur le compte bancaire. Releve exact par e-mail.';
+  return { subject, text, html, sms };
 }
 
 function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoyer = () => chabbat.pasChabbat(), heureVeille = () => chabbat.peutEnvoyer(), peutSms = (t = Date.now()) => { const h = chabbat.heureParis(t); return h >= 7 && h < 22; }, adminSms = () => process.env.ADMIN_SMS || '0669670770' }) {
@@ -181,11 +196,20 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoy
       }
       const vus = { ...(etat.vus || {}) }, envoyes = [], erreurs = [], ouvert = await peutEnvoyer();
       let smsAttente = { ...(etat.smsAttente || {}) }, previsions = { ...(etat.previsions || {}) };
-      // prévision de la veille, en observation : journal seulement, une fois par jour d'arrivée ; une panne ici ne bloque jamais le relevé
+      // annonce de la veille : une fois par jour d'arrivée, seulement si Stripe a quelque chose à virer ; une panne ici ne bloque jamais le relevé
       try {
         if (stripe.balance && await heureVeille()) {
           const pour = demainUtc(Date.now()).jour;
-          if (!previsions[pour]) { const pv = await prevision(stripe); previsions[pour] = { montant: pv.montant, le: new Date().toISOString() }; console.log('virements prévision (observation, rien envoyé)', JSON.stringify(pv)); }
+          if (!previsions[pour]) {
+            const pv = await prevision(stripe), note = { montant: pv.montant, le: new Date().toISOString(), annonce: false };
+            if (pv.montant > 0) {
+              const m = mailPrevision(pv, { test }), env = await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text });
+              if (!(env && env.sent === true)) throw new Error('e-mail de prévision non envoyé');   // pas noté : nouvel essai à la prochaine vérification
+              note.annonce = true; envoyes.push({ prevision: pour, montant: pv.montant, mail: true });
+              if (!test && mailer.sendSms) { try { const sm = await mailer.sendSms({ to: adminSms(), text: m.sms, tag: 'virement' }); envoyes[envoyes.length - 1].sms = !!(sm && sm.sent === true); } catch (e) { envoyes[envoyes.length - 1].sms = false; console.error('virements SMS prévision', e.message); } }
+            }
+            previsions[pour] = note; console.log('virements prévision', JSON.stringify({ ...pv, annonce: note.annonce }));
+          }
         }
       } catch (e) { console.error('virements prévision', e.message); }
       // SMS restés en attente (virement lancé la nuit) : envoyés dès 7 h, hors Chabbat
@@ -201,8 +225,9 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoy
           const r = await envoyer(p, mv, load().receipts || {}, { echec, test });
           if (r.mail !== true) throw new Error('e-mail non envoyé');   // pas noté comme vu : nouvel essai à la prochaine vérification
           vus[p.id] = echec ? 'echec' : 'vu'; envoyes.push({ id: p.id, montant: p.amount, echec, ...r });
-          if (!echec) { const jr = chabbat.jourParis(p.arrival_date * 1000), pv = previsions[jr]; if (pv && !pv.reel) { pv.reel = p.amount; console.log('virements prévision comparée au réel', JSON.stringify({ arrivee: jr, prevu: pv.montant, reel: p.amount, ecart: p.amount - pv.montant })); } }
-          if (!echec && !test && mailer.sendSms) {   // SMS après l'e-mail, jamais la nuit ; un SMS raté ne renvoie pas l'e-mail (virement déjà noté comme vu)
+          const jr = chabbat.jourParis(p.arrival_date * 1000), dejaAnnonce = !!(previsions[jr] && previsions[jr].annonce);   // SMS déjà reçu la veille : pas de second SMS
+          if (!echec) { const pv = previsions[jr]; if (pv && !pv.reel) { pv.reel = p.amount; console.log('virements prévision comparée au réel', JSON.stringify({ arrivee: jr, prevu: pv.montant, reel: p.amount, ecart: p.amount - pv.montant })); } }
+          if (!echec && !test && mailer.sendSms && !dejaAnnonce) {   // pas d'annonce la veille : SMS après l'e-mail, jamais la nuit ; un SMS raté ne renvoie pas l'e-mail (virement déjà noté comme vu)
             if (peutSms()) envoyes[envoyes.length - 1].sms = await sms(p);
             else { smsAttente[p.id] = { amount: p.amount, arrival_date: p.arrival_date }; envoyes[envoyes.length - 1].sms = 'à 7 h'; }
           }
@@ -219,4 +244,4 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoy
   });
 }
 
-module.exports = { contenu, lignes, csvVirement, calcul, mailVirement, exemples, prevision, monter };
+module.exports = { contenu, lignes, csvVirement, calcul, mailVirement, mailPrevision, exemples, prevision, monter };
