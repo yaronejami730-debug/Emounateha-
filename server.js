@@ -1527,11 +1527,15 @@ async function ecoute(req, res) {
   } catch (e) { console.error('[musique] écoute non enregistrée', e.message); }
   fin();
 }
+// Écoutes d'AVANT le compteur (page en ligne le 19 nov 2026 à 20 h 30, compteur le 20 nov vers 15 h 40) : rien ne les enregistrait.
+// Estimation tirée des journaux Vercel (demandes du fichier audio) : 37 visites de la page, dont 15 où l'audio a été lu au moins 10 secondes.
+// On retient 15 (chiffre prudent). Ajouté au total affiché dans le CRM, à la demande de Yarone (20 nov 2026).
+const ECOUTES_AVANT = { oufaratsta: 15 };
 async function ecoutesMusique(depuis) {   // pour le CRM ; une panne ici ne casse jamais l'onglet Trafic
   try {
     const q = cond => `select piste, sum(n)::int as ecoutes, sum(complet)::int as entieres, count(*)::int as auditeurs, max(last_at) as derniere from public.ecoutes ${cond} group by piste order by ecoutes desc`;
     const [periode, total] = await Promise.all([pool.query(q('where day >= $1'), [depuis]), pool.query(q(''))]);
-    return { periode: periode.rows, total: total.rows };
+    return { periode: periode.rows, total: total.rows, avant: ECOUTES_AVANT };
   } catch (e) { console.error('[musique] écoutes illisibles', e.message); return null; }
 }
 async function trafic(req, res, url) {
