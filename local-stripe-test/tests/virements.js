@@ -20,11 +20,11 @@ const P = (id, amount, o = {}) => ({ id, amount, currency: 'eur', status: 'in_tr
   m = V.mailVirement(P('po_2', 90000), { dons: 2, brut: 100000, frais: 2000, rembourse: 0, autres: 0, net: 98000 }); ok(/Solde reporté ou mouvement hors dons : − 80,00 €/.test(m.text), 'écart entre dons et virement : signalé, pas masqué', m.text);
   m = V.mailVirement(P('po_3', 5000, { status: 'failed', failure_message: 'Compte clôturé' }), null, { echec: true }); ok(/REFUSÉ/.test(m.subject) && /Compte clôturé/.test(m.text), 'virement refusé : e-mail d\'alerte avec le motif', m.subject);
   // point d'entrée : faux serveur, faux Stripe, faux e-mails
-  const routes = {}, app = { post: (p, f) => routes[p] = f }; let data = { receipts: {} }, mails = [], liste = [P('po_ancien', 12000, { status: 'paid' })], panne = false, autorise = true, ecritures = 0, heure = 20, smsEnvoyes = [], smsPanne = false;
+  const routes = {}, app = { post: (p, f) => routes[p] = f }; let data = { receipts: {} }, mails = [], liste = [P('po_ancien', 12000, { status: 'paid' })], panne = false, autorise = true, ecritures = 0, heure = 20, smsEnvoyes = [], smsPanne = false, now = Date.parse('2026-11-15T19:30:00+01:00');   // veille du jour d'arrivée des virements d'essai (16 nov)
   const stripe = { payouts: { list: async o => ({ data: liste.slice() }) }, balanceTransactions: { list: o => (async function* () { yield { type: 'payout', amount: -1, fee: 0 }; yield { type: 'charge', amount: 100000, fee: 2000 }; })() } };
   const mailer = { ADMIN_EMAIL: () => 'admin@exemple.com', send: async x => { if (panne) throw new Error('Brevo en panne'); mails.push(x); return { sent: true }; }, sendSms: async x => { if (smsPanne) throw new Error('Brevo SMS en panne'); smsEnvoyes.push(x); return { sent: true }; } };
   process.env.STRIPE_SECRET_KEY = 'sk_test_x';
-  let pdfKo = false; V.monter(app, { peutEnvoyer: async () => heure >= 19, pdfTampon: async h => { if (pdfKo) throw new Error('navigateur indisponible'); return Buffer.from('%PDF-essai ' + h.length); }, stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; ecritures++; } });
+  let pdfKo = false; V.monter(app, { maintenant: () => now, peutEnvoyer: async o => (o && o.tot) ? true : heure >= 19, pdfTampon: async h => { if (pdfKo) throw new Error('navigateur indisponible'); return Buffer.from('%PDF-essai ' + h.length); }, stripe, mailer, adminOk: (q, r) => { if (!autorise) r.status(401).json({}); return autorise; }, load: () => JSON.parse(JSON.stringify(data)), save: d => { data = d; ecritures++; } });
   const appel = async () => { let code = 200, corps; const res = { status: c => (code = c, res), json: j => (corps = j, res) }; await routes['/api/admin/virements/verifier']({ body: {} }, res); return { code, corps }; };
   let r = await appel(); ok(r.corps.miseEnService && mails.length === 0 && data.virements.vus.po_ancien === 'vu', 'mise en service : les virements passés ne déclenchent aucun e-mail', r.corps);
   r = await appel(); ok(r.corps.envoyes === 0 && mails.length === 0, 'rien de nouveau : aucun e-mail', r.corps);
@@ -50,14 +50,25 @@ const P = (id, amount, o = {}) => ({ id, amount, currency: 'eur', status: 'in_tr
     ok(mails.length === nb + 2 && /REFUSÉ/.test(mails[nb + 1].subject), 'virement refusé par la banque : alerte immédiate, même la nuit', mails.map(x => x.subject).slice(-1)); heure = 20;
     ok(smsEnvoyes.length === 0, 'mode test (clé sk_test) : aucun SMS réel envoyé'); }
   { process.env.STRIPE_SECRET_KEY = 'sk_live_x'; const nbM = mails.length, nbS = smsEnvoyes.length;
-    heure = 4; liste.unshift(P('po_sms', 98000, { arrival_date: t('2026-11-20') })); r = await appel(); ok(smsEnvoyes.length === nbS && mails.length === nbM, 'à 4 h : ni e-mail ni SMS');
+    now = Date.parse('2026-11-19T12:00:00+01:00'); heure = 4; liste.unshift(P('po_sms', 98000, { arrival_date: t('2026-11-20') })); r = await appel(); ok(smsEnvoyes.length === nbS && mails.length === nbM, 'à 4 h : ni e-mail ni SMS');
     heure = 19; r = await appel();
     ok(mails.length === nbM + 1 && smsEnvoyes.length === nbS + 1 && smsEnvoyes[nbS].to === '0669670770' && smsEnvoyes[nbS].tag === 'virement' && /980,00 EUR/.test(smsEnvoyes[nbS].text) && /20 novembre/.test(smsEnvoyes[nbS].text) && smsEnvoyes[nbS].text.length <= 160 && r.corps.detail[0].sms === true, 'à 19 h (mode réel) : e-mail + SMS au 06 69 67 07 70, 160 caractères au plus', [smsEnvoyes.slice(-1), r.corps]);
     r = await appel(); ok(smsEnvoyes.length === nbS + 1, 'pas de second SMS');
-    smsPanne = true; heure = 20; liste.unshift(P('po_smspanne', 5000)); r = await appel();
+    now = Date.parse('2026-11-15T19:30:00+01:00'); smsPanne = true; heure = 20; liste.unshift(P('po_smspanne', 5000)); r = await appel();
     ok(mails.length === nbM + 2 && data.virements.vus.po_smspanne === 'vu' && r.corps.detail[0].sms === false, 'SMS en panne : l\'e-mail part quand même, virement noté comme vu (pas de doublon d\'e-mail)', r.corps); smsPanne = false;
     liste.unshift(P('po_refuse2', 7000, { status: 'failed', failure_code: 'account_closed' })); const nbS2 = smsEnvoyes.length; r = await appel(); ok(smsEnvoyes.length === nbS2, 'virement refusé : pas de SMS « en cours »');
     process.env.STRIPE_SECRET_KEY = 'sk_test_x'; }
+  // ---- prévenir seulement si le virement va arriver (demande de Yarone, 20 nov 2026)
+  { const nb = mails.length; heure = 20;
+    liste.unshift(P('po_dejaarrive', 15000, { status: 'paid' })); r = await appel();
+    ok(mails.length === nb && data.virements.vus.po_dejaarrive === 'vu', 'virement déjà arrivé en banque : aucun e-mail, marqué comme vu', r.corps);
+    now = Date.parse('2026-11-13T20:00:00+01:00'); liste.unshift(P('po_loin', 22000)); r = await appel();
+    ok(mails.length === nb && !data.virements.vus.po_loin, 'arrivée dans 3 jours (le 16) : on attend, même à 20 h', r.corps);
+    now = Date.parse('2026-11-14T20:00:00+01:00'); r = await appel(); ok(mails.length === nb && !data.virements.vus.po_loin, 'arrivée dans 2 jours : on attend encore');
+    now = Date.parse('2026-11-15T20:00:00+01:00'); r = await appel(); ok(mails.length === nb + 1 && /220,00 €/.test(mails[nb].subject) && data.virements.vus.po_loin === 'vu', 'la veille de l\'arrivée, après 19 h : l\'e-mail part', [r.corps, mails.map(x => x.subject).slice(-1)]);
+    heure = 3; now = Date.parse('2026-11-16T03:00:00+01:00'); liste.unshift(P('po_jourj', 33000)); r = await appel();
+    ok(mails.length === nb + 2 && /330,00 €/.test(mails[nb + 1].subject), 'jour d\'arrivée, virement pas encore arrivé (veille manquée) : prévenu tout de suite, même à 3 h', [r.corps, mails.map(x => x.subject).slice(-1)]);
+    now = Date.parse('2026-11-15T19:30:00+01:00'); heure = 20; }
   autorise = false; r = await appel(); ok(r.code === 401, 'sans signature du serveur du site : refusé');
   const src = require('fs').readFileSync(require('path').join(__dirname, '../virements.js'), 'utf8').replace(/\/\/.*$/gm, '');
   ok(!/payouts\.(create|update|cancel|reverse)|transfers\.|refunds\./.test(src), 'lecture seule : aucun virement créé, modifié ou annulé');
