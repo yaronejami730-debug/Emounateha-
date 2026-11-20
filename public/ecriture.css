@@ -26,6 +26,13 @@ html body h1,html body h2,html body h3,html body h4,html body .title h2,html bod
   html body .sec-nav .links{justify-content:space-between!important;gap:0!important}
   html body .sec-nav .links a{font-size:clamp(11px,1.02vw,15.5px)!important;padding-left:3px!important;padding-right:3px!important;letter-spacing:0!important}
 }
+/* la date ne touche plus le menu : son bloc prend la largeur de son texte (« Vendredi 20 novembre 2026 » dépassait des 160 px et passait sous « Qui sommes-nous »),
+   un espace fixe la sépare des liens, et les liens sont un tout petit peu plus petits (demande de Yarone, 20 nov 2026) */
+@media(min-width:1101px){
+  html body .sec-nav .ndate{flex:0 0 auto!important;min-width:160px!important;margin-right:24px!important}
+  html body .sec-nav .ndate small{white-space:nowrap!important}
+  html body .sec-nav .links a{font-size:clamp(10.5px,.97vw,15px)!important}
+}
 @media(min-width:801px) and (max-width:1365px){html body .sec-nav .links a .lang-short{display:none!important}}
 }
 /* tout ce qui était dans l'ancienne écriture de titre (grasse) reste en gras */
