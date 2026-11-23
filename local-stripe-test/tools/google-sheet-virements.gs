@@ -11,8 +11,9 @@
  *  - « Paiements »    (écrit par le site) : une ligne par paiement (type de don ou cagnotte, donateur, e-mail, ID Stripe, n° de reçu, montants, statut du virement,
  *                     moyen de paiement, ponctuel ou mensuel avec n° d'échéance, particulier ou entreprise) ;
  *  - « Détail par type » (écrit par le site) : par virement, une ligne par type de don et par cagnotte (le résumé du PDF) ;
- *  - « Reversements » (REMPLI PAR LA TRÉSORIÈRE) : chaque sortie d'argent d'une cagnotte : reversé à la personne, ou utilisé autrement par l'association ;
- *  - « Cagnottes »    (calculé tout seul) : par cagnotte, net dû, en cours de virement, arrivé en banque, reversé, utilisé autrement, prévu, reste, STATUT.
+ *  - « Cagnottes »    : par cagnotte, net dû, en cours de virement, arrivé en banque, reversé, date, reste, historique, STATUT (K) ;
+ *                     la trésorière choisit en L « Tout reversé / La moitié / Autre montant » : reversé, date, reste et historique se remplissent seuls
+ *                     (déclencheur quandModifie, installé une fois par la fonction installer()).
  * Un même virement n'est jamais écrit deux fois (repéré par sa référence Stripe po_…).
  */
 
@@ -23,11 +24,9 @@ const ONGLETS = {
   Virements: ['Date du virement', 'Référence Stripe', 'Paiements', 'Brut', 'Frais Stripe', 'Virement reçu en banque', 'Frais 7 %', 'Net pour l\'association', 'dont dons généraux', 'dont besoins (cagnottes)', 'Écart à vérifier', 'Écrit le', 'Statut du virement', 'Statut mis à jour le'],
   Paiements: ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Nature', 'Date du paiement', 'Prénom', 'Nom', 'E-mail', 'ID de paiement Stripe', 'N° de reçu', 'Brut', 'Frais Stripe', 'Frais 7 %', 'Net', 'Statut du virement', 'Moyen de paiement', 'Fréquence', 'Particulier / entreprise'],
   'Détail par type': ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Paiements', 'Brut', 'Frais Stripe', 'Frais 7 %', 'Net', 'Statut du virement'],
-  Reversements: ['Date', 'Cagnotte', 'Nature', 'Montant', 'Moyen (virement, chèque…)', 'Statut', 'Motif / commentaire'],
-  Cagnottes: ['Cagnotte', 'Paiements', 'Brut', 'Net dû à la cagnotte', 'dont en cours de virement', 'dont arrivé en banque', 'Reversé à la personne', 'Utilisé autrement par l\'association', 'Prévu (pas encore envoyé)', 'Reste à reverser', 'Statut']
+  Cagnottes: ['Cagnotte', 'Paiements', 'Brut', 'Net dû à la cagnotte', 'dont en cours de virement', 'dont arrivé en banque', 'Reversé (total)', 'Date du dernier reversement', 'Reste à reverser', 'Historique des reversements', 'Statut', 'Reversement (à choisir)']
 };
-const NATURES = ['Reversé à la personne', 'Utilisé autrement par l\'association'];
-const STATUTS_REV = ['Prévu', 'Envoyé', 'Reçu par la personne'];
+const CHOIX = ['Tout reversé', 'La moitié', 'Autre montant'];   // colonne L de « Cagnottes »
 const STATUT_VIR = { pending: 'En cours de virement', in_transit: 'En cours de virement', paid: 'Arrivé en banque', failed: 'Refusé par la banque', canceled: 'Annulé' };
 
 function doPost(e) {
@@ -37,10 +36,11 @@ function doPost(e) {
     const d = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     const secret = PropertiesService.getScriptProperties().getProperty('SECRET');
     if (!secret || d.secret !== secret) return repondre({ ok: false, error: 'secret invalide' });
+    if (d.action === 'installer') return repondre({ ok: true, resultat: installer() });   // mise au format de « Cagnottes » + déclencheur (une fois)
     const v = d.virement || {}, P = Array.isArray(d.paiements) ? d.paiements : [];
     if (!/^po_[A-Za-z0-9]+$/.test(String(v.id || ''))) return repondre({ ok: false, error: 'virement sans référence' });
     const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SHEET_ID);
-    const wv = onglet(ss, 'Virements'), wp = onglet(ss, 'Paiements'), wr = onglet(ss, 'Reversements'), wc = onglet(ss, 'Cagnottes');
+    const wv = onglet(ss, 'Virements'), wp = onglet(ss, 'Paiements'), wc = onglet(ss, 'Cagnottes');
     const statut = STATUT_VIR[v.statut] || (v.statut ? String(v.statut) : 'En cours de virement');
     const ligneVir = wv.getLastRow() > 1 ? wv.getRange(2, 2, wv.getLastRow() - 1, 1).getValues().findIndex(r => r[0] === v.id) : -1;
     // mise à jour du statut d'un virement déjà écrit (et de ses paiements)
@@ -63,25 +63,9 @@ function doPost(e) {
     if (T.length) wt.getRange(wt.getLastRow() + 1, 1, T.length, ONGLETS['Détail par type'].length).setValues(T.map(g => [v.date, v.id, g.cat, txt(g.type), g.n, e2(g.brut), -e2(g.frais), -e2(g.com), e2(g.net), statut]));
     // nouvelles cagnottes : une ligne chacune, avec ses formules (tout se recalcule tout seul : paiements, statut des virements, reversements)
     const connues = wc.getLastRow() > 1 ? wc.getRange(2, 1, wc.getLastRow() - 1, 1).getValues().map(r => r[0]) : [];
-    [...new Set(bes.map(p => txt(p.type)))].filter(n => n && connues.indexOf(n) < 0).forEach(n => {
-      const r = wc.getLastRow() + 1, c = 'A' + r;
-      const pay = (col, extra) => `SUMIFS(Paiements!${col}:${col},Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c}${extra || ''})`;
-      const rev = (nature, statuts) => statuts.map(s => `SUMIFS(Reversements!$D:$D,Reversements!$B:$B,${c},Reversements!$C:$C,"${nature}",Reversements!$F:$F,"${s}")`).join('+');
-      wc.getRange(r, 1).setValue(n);
-      // formules écrites avec « , » puis adaptées à la langue du Sheet (un Sheet en français veut « ; », sinon #ERROR!, constaté le 23 nov 2026)
-      wc.getRange(r, 2, 1, 10).setFormulas([[
-        `=COUNTIFS(Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c},Paiements!$E:$E,"Don")`,
-        '=' + pay('L'), '=' + pay('O'),
-        '=' + pay('O', ',Paiements!$P:$P,"En cours de virement"'),
-        '=' + pay('O', ',Paiements!$P:$P,"Arrivé en banque"'),
-        '=' + rev(NATURES[0], ['Envoyé', 'Reçu par la personne']),
-        '=' + rev(NATURES[1], ['Envoyé', 'Reçu par la personne']),
-        `=SUMIFS(Reversements!$D:$D,Reversements!$B:$B,${c},Reversements!$F:$F,"Prévu")`,
-        `=ROUND(D${r}-G${r}-H${r},2)`,
-        `=IF(D${r}=0,"Aucun don",IF(J${r}<=0,"Soldé",IF(G${r}+H${r}>0,"Reversé en partie",IF(F${r}=0,"En attente de Stripe","À reverser"))))`].map(f => local(ss, f))]);
-    });
-    listes(wr, wc);
-    mettreEnForme(wv, [4, 5, 6, 7, 8, 9, 10, 11]); mettreEnForme(wp, [12, 13, 14, 15]); mettreEnForme(wc, [3, 4, 5, 6, 7, 8, 9, 10]); mettreEnForme(onglet(ss, 'Détail par type'), [6, 7, 8, 9]);
+    [...new Set(bes.map(p => txt(p.type)))].filter(n => n && connues.indexOf(n) < 0).forEach(n => { const r = wc.getLastRow() + 1; wc.getRange(r, 1).setValue(n); formulesCagnotte(ss, wc, r); });
+    choix(wc);
+    mettreEnForme(wv, [4, 5, 6, 7, 8, 9, 10, 11]); mettreEnForme(wp, [12, 13, 14, 15]); mettreEnForme(wc, [3, 4, 5, 6, 7, 9]); mettreEnForme(onglet(ss, 'Détail par type'), [6, 7, 8, 9]);
     return repondre({ ok: true, lignes: P.length });
   } catch (err) {
     return repondre({ ok: false, error: String(err && err.message || err) });
@@ -92,18 +76,13 @@ function onglet(ss, nom) {
   let w = ss.getSheetByName(nom);
   if (!w) {
     w = ss.insertSheet(nom);
-    w.getRange(1, 1, 1, ONGLETS[nom].length).setValues([ONGLETS[nom]]).setFontWeight('bold').setFontColor('#ffffff').setBackground(nom === 'Reversements' ? '#a8842a' : '#1f6a72').setWrap(true);
+    w.getRange(1, 1, 1, ONGLETS[nom].length).setValues([ONGLETS[nom]]).setFontWeight('bold').setFontColor('#ffffff').setBackground('#1f6a72').setWrap(true);
     w.setFrozenRows(1);
-    if (nom === 'Reversements') {
-      w.getRange(2, 1, 999, 1).setNumberFormat('dd/mm/yyyy');
-      w.getRange(2, 4, 999, 1).setNumberFormat('#,##0.00 €').setDataValidation(SpreadsheetApp.newDataValidation().requireNumberGreaterThan(0).setAllowInvalid(false).build());
-      w.getRange(2, 3, 999, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(NATURES, true).setAllowInvalid(false).build());
-      w.getRange(2, 6, 999, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(STATUTS_REV, true).setAllowInvalid(false).build());
-      w.setColumnWidths(1, 7, 170);
-    }
     if (nom === 'Cagnottes') {   // statut en couleur
       const st = w.getRange('K2:K1000');
       w.setConditionalFormatRules([['Soldé', '#d9ead3'], ['Reversé en partie', '#fff2cc'], ['À reverser', '#f4cccc'], ['En attente de Stripe', '#e3f1f0']].map(([t, c]) => SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(t).setBackground(c).setRanges([st]).build()));
+      w.getRange(1, 12).setBackground('#a8842a');   // la seule colonne à remplir
+      w.getRange('H2:H1000').setNumberFormat('dd/mm/yyyy hh:mm');
     }
   }
   return w;
@@ -116,9 +95,66 @@ function local(ss, f) {
   return f.split('"').map((morceau, i) => i % 2 ? morceau : morceau.replace(/,/g, ';')).join('"');
 }
 
-// Liste déroulante des cagnottes dans « Reversements » (toujours à jour)
-function listes(wr, wc) {
-  wr.getRange(2, 2, 999, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInRange(wc.getRange('A2:A1000'), true).setAllowInvalid(false).build());
+// Colonne L de « Cagnottes » : menu « Tout reversé / La moitié / Autre montant »
+function choix(wc) {
+  wc.getRange(2, 12, 999, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(CHOIX, true).setAllowInvalid(false).build());
+}
+
+// Formules d'une ligne de « Cagnottes » (G = reversé et H = date sont remplis par quandModifie, pas par formule)
+function formulesCagnotte(ss, wc, r) {
+  const c = 'A' + r, pay = (col, extra) => `SUMIFS(Paiements!${col}:${col},Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c}${extra || ''})`;
+  wc.getRange(r, 2, 1, 5).setFormulas([[
+    `=COUNTIFS(Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c},Paiements!$E:$E,"Don")`,
+    '=' + pay('L'), '=' + pay('O'),
+    '=' + pay('O', ',Paiements!$P:$P,"En cours de virement"'),
+    '=' + pay('O', ',Paiements!$P:$P,"Arrivé en banque"')].map(f => local(ss, f))]);
+  if (wc.getRange(r, 7).getValue() === '') wc.getRange(r, 7).setValue(0);
+  wc.getRange(r, 9).setFormula(local(ss, `=ROUND(D${r}-G${r},2)`));
+  wc.getRange(r, 11).setFormula(local(ss, `=IF(D${r}=0,"Aucun don",IF(I${r}<=0,"Soldé",IF(G${r}>0,"Reversé en partie",IF(F${r}=0,"En attente de Stripe","À reverser"))))`));
+}
+
+// Déclencheur « à chaque modification » du Sheet (installé par installer()) :
+//  - choix en colonne L → ajoute au « Reversé » (G) : tout le reste, ou la moitié du reste ; date (H) et historique (J) ; puis L est vidée ;
+//  - « Autre montant » → on tape le total reversé dans G ; la date et l'historique suivent ;
+//  - G modifié à la main → date et historique.
+function quandModifie(e) {
+  if (!e || !e.range) return;
+  const w = e.range.getSheet(); if (w.getName() !== 'Cagnottes') return;
+  const r = e.range.getRow(), col = e.range.getColumn(); if (r < 2 || e.range.getNumRows() > 1) return;
+  const eur = x => (Math.round(x * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  const quand = new Date(), jour = Utilities.formatDate(quand, 'Europe/Paris', 'dd/MM/yyyy');
+  const noter = (texte) => { const h = String(w.getRange(r, 10).getValue() || ''); w.getRange(r, 8).setValue(quand); w.getRange(r, 10).setValue((h ? h + '\n' : '') + jour + ' : ' + texte); };
+  if (col === 12) {
+    const v = String(e.value || ''), du = Number(w.getRange(r, 4).getValue()) || 0, deja = Number(w.getRange(r, 7).getValue()) || 0, reste = Math.round((du - deja) * 100) / 100;
+    if (v === 'Autre montant') { w.getRange(r, 12).setNote('Tapez le TOTAL reversé à ce jour dans la colonne G « Reversé (total) ».'); return; }
+    if (!v || reste <= 0) { w.getRange(r, 12).clearContent(); return; }
+    const ajout = v === 'Tout reversé' ? reste : Math.round(reste / 2 * 100) / 100;
+    w.getRange(r, 7).setValue(Math.round((deja + ajout) * 100) / 100);
+    noter('+ ' + eur(ajout) + ' (' + v.toLowerCase() + ')');
+    w.getRange(r, 12).clearContent().clearNote();
+  } else if (col === 7) {
+    const avant = Number(e.oldValue) || 0, apres = Number(w.getRange(r, 7).getValue()) || 0;
+    if (apres !== avant) { noter((apres > avant ? '+ ' : '− ') + eur(Math.abs(apres - avant)) + ' (montant tapé, total ' + eur(apres) + ')'); w.getRange(r, 12).clearContent().clearNote(); }
+  }
+}
+
+// À lancer UNE fois depuis l'éditeur (Exécuter → installer) : installe le déclencheur, met « Cagnottes » au nouveau format, supprime « Reversements ».
+function installer() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'quandModifie').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('quandModifie').forSpreadsheet(ss).onEdit().create();
+  const rev = ss.getSheetByName('Reversements'); if (rev) ss.deleteSheet(rev);
+  const wc = ss.getSheetByName('Cagnottes');
+  if (wc) {
+    const n = wc.getLastRow();
+    if (n > 1) { wc.getRange(2, 7, n - 1, 6).clearContent().clearDataValidations(); for (let r = 2; r <= n; r++) formulesCagnotte(ss, wc, r); }
+    wc.getRange(1, 1, 1, ONGLETS.Cagnottes.length).setValues([ONGLETS.Cagnottes]).setFontWeight('bold').setFontColor('#ffffff').setBackground('#1f6a72').setWrap(true);
+    wc.getRange(1, 12).setBackground('#a8842a'); wc.getRange('H2:H1000').setNumberFormat('dd/mm/yyyy hh:mm');
+    const st = wc.getRange('K2:K1000');
+    wc.setConditionalFormatRules([['Soldé', '#d9ead3'], ['Reversé en partie', '#fff2cc'], ['À reverser', '#f4cccc'], ['En attente de Stripe', '#e3f1f0']].map(([t, c]) => SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(t).setBackground(c).setRanges([st]).build()));
+    choix(wc); mettreEnForme(wc, [3, 4, 5, 6, 7, 9]); wc.setColumnWidth(10, 320);
+  }
+  return 'installé';
 }
 
 function mettreEnForme(w, colonnes) {
