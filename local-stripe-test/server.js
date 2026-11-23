@@ -762,7 +762,7 @@ function pageBesoin(b, res, next, chemin) {
     .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + q(b.titre) + (b.campagne ? ' — ' + q(b.campagne.etiquette) + ' · Émounatéha$2' : ' — Cagnotte Émounatéha$2'))
     .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + q((b.description || 'Participez à cette cagnotte : chaque don compte.').slice(0, 180)) + '$2');
   if (b.campagne && b.campagne.apercu) {   // aperçu du lien partagé (WhatsApp, SMS, réseaux) : l'image propre à la campagne, au format paysage
-    const img = 'https://don.emounateha.fr' + b.campagne.apercu + '?v=5';
+    const img = 'https://don.emounateha.fr' + b.campagne.apercu + '?v=6';
     html = html.replace(/(<meta property="og:image" content=")[^"]*(")/, '$1' + img + '$2').replace(/(<meta name="twitter:image" content=")[^"]*(")/, '$1' + img + '$2')
       .replace(/(<meta property="og:image:width" content=")[^"]*(")/, '$11200$2').replace(/(<meta property="og:image:height" content=")[^"]*(")/, '$1630$2')
       .replace(/(<meta property="og:image:alt" content=")[^"]*(")/, '$1' + q(b.campagne.apercuTitre || b.campagne.etiquette + ' — ' + b.titre) + '$2');
