@@ -88,6 +88,12 @@ const P = (id, amount) => ({ id, amount, currency: 'eur', status: 'paid', create
   sheetKo = false; r = await appel(); ok(posts.length === 9 && mails.length === 4, 'rattrapage : 5 anciens virements écrits, sans e-mail', [posts.length, mails.length]);
   r = await appel(); ok(posts.length === 11 && anciens.every(p => data.virements.sheet[p.id]), 'rattrapage : les anciens restants à la vérification suivante, tous écrits', posts.length);
   r = await appel(); ok(posts.length === 11, 'tout est à jour : plus rien n\'est envoyé', posts.length);
+  // statut : un virement écrit « en cours » est mis à jour quand il arrive en banque, une seule fois
+  const enCours = { ...P('po_route', somme), status: 'in_transit' }; liste.unshift(enCours);
+  r = await appel(); const ecrit = posts.filter(p => p.virement && p.virement.id === 'po_route');
+  ok(ecrit.length === 1 && ecrit[0].virement.statut === 'in_transit' && !ecrit[0].action && data.virements.sheet.po_route === 'in_transit', 'virement en cours : écrit avec le statut « en cours »', ecrit);
+  enCours.status = 'paid'; r = await appel(); r = await appel(); const maj = posts.filter(p => p.action === 'statut');
+  ok(maj.length === 1 && maj[0].virement.id === 'po_route' && maj[0].virement.statut === 'paid' && !maj[0].paiements && data.virements.sheet.po_route === 'paid', 'arrivé en banque : statut mis à jour une seule fois, sans réécrire les paiements', maj);
   process.env.STRIPE_SECRET_KEY = 'sk_test_essai'; ok(!V.sheetActif(true) && V.sheetActif(false), 'compte Stripe de test : rien vers le Google Sheet de l\'association');
   delete process.env.GOOGLE_SHEET_URL; ok(!V.sheetActif(false), 'sans adresse de Sheet : inactif');
 

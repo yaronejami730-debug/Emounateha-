@@ -193,7 +193,7 @@ function tableur(M, { avert = '' } = {}) {
 
 // ───────── Google Sheet de l'association ─────────
 function pourSheet(M) {
-  return { virement: { id: M.virement.id, date: M.virement.date, montant: M.virement.montant, ecart: M.totaux.ecart },
+  return { virement: { id: M.virement.id, date: M.virement.date, montant: M.virement.montant, ecart: M.totaux.ecart, statut: M.virement.statut || '' },
     paiements: M.lignes.map(l => ({ categorie: l.categorie, type: l.type, nature: l.genre, date: l.date + ' ' + l.heure, prenom: l.prenom, nom: l.nom, email: l.email, id: l.paiement, recu: l.recu, brut: l.brut, frais: l.frais, com: l.com, net: l.net })) };
 }
 

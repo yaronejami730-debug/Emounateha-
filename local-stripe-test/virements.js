@@ -299,11 +299,21 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, sheetPost
       if (sheetActif(test)) {
         let n = 0, tous = liste;
         try { const L = stripe.payouts.list({ limit: 100 }); if (L && L[Symbol.asyncIterator]) { tous = []; for await (const p of L) { tous.push(p); if (tous.length >= 500) break; } } } catch (e) { erreurs.push('liste complète des virements : ' + e.message); }
+        // sheet[id] = dernier statut Stripe écrit dans le Sheet ; quand le virement arrive en banque (ou est refusé), le statut y est mis à jour
         for (const p of tous.slice().reverse()) {
           if (n >= 5) break;
-          if (sheet[p.id] || ECHEC.has(p.status) || !(vus[p.id] === 'vu' || p.status === 'paid') || !(p.amount > 0) || (p.currency && String(p.currency).toLowerCase() !== 'eur')) continue;
+          if (p.currency && String(p.currency).toLowerCase() !== 'eur') continue;
+          const ecrit = sheet[p.id];
+          if (ecrit) {
+            if (ecrit === p.status || !['paid', 'failed', 'canceled'].includes(p.status)) continue;
+            n++;
+            try { await sheetPost({ action: 'statut', virement: { id: p.id, statut: p.status } }); sheet[p.id] = p.status; envoyes.push({ id: p.id, sheet: 'statut ' + p.status }); }
+            catch (e) { erreurs.push(p.id + ' (Google Sheet, statut) : ' + e.message); }
+            continue;
+          }
+          if (ECHEC.has(p.status) || !(vus[p.id] === 'vu' || p.status === 'paid') || !(p.amount > 0)) continue;
           n++;
-          try { const M = modeleDe(p, await mouvements(p.id), load().receipts || {}), j = await sheetPost(releve.pourSheet(M)); sheet[p.id] = j.deja ? 'deja' : 'ok'; envoyes.push({ id: p.id, sheet: sheet[p.id], lignes: M.lignes.length }); }
+          try { const M = modeleDe(p, await mouvements(p.id), load().receipts || {}); await sheetPost(releve.pourSheet(M)); sheet[p.id] = p.status || 'ecrit'; envoyes.push({ id: p.id, sheet: 'écrit', lignes: M.lignes.length }); }
           catch (e) { erreurs.push(p.id + ' (Google Sheet) : ' + e.message); }
         }
       }
