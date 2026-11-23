@@ -39,6 +39,21 @@ function typeDon(affectation) {
 const affDuLibelle = d => { const s = String(d || ''), i = s.lastIndexOf('— '); return i >= 0 ? s.slice(i + 2) : ''; };
 const LIB_AUTRE = { stripe_fee: 'Frais Stripe divers', tax_fee: 'Taxe sur les frais Stripe', network_cost: 'Frais de réseau', application_fee: 'Frais d\'application', contribution: 'Contribution Stripe Climate', reserve_transaction: 'Réserve Stripe', reserved_funds: 'Fonds réservés par Stripe', topup: 'Rechargement du solde', transfer: 'Transfert', advance: 'Avance', advance_funding: 'Avance' };
 
+// Moyen de paiement, lu chez Stripe (le paiement lui-même), sinon dans le reçu
+function moyenDe(src, r) {
+  const d = src && src.payment_method_details, t = d && d.type;
+  if (t === 'card') { const c = d.card || {}, w = c.wallet && c.wallet.type; return w === 'apple_pay' ? 'Apple Pay' : w === 'google_pay' ? 'Google Pay' : 'Carte' + (c.brand ? ' ' + String(c.brand).replace(/^./, x => x.toUpperCase()) : '') + (c.last4 ? ' ···· ' + c.last4 : ''); }
+  const N = { paypal: 'PayPal', klarna: 'Klarna', sepa_debit: 'Prélèvement SEPA', link: 'Link', bancontact: 'Bancontact', ideal: 'iDEAL' };
+  if (t) return N[t] || t;
+  const m = String((r && r.mode) || '');
+  return /paypal/i.test(m) ? 'PayPal' : /klarna/i.test(m) ? 'Klarna' : /sepa|prélèvement/i.test(m) ? 'Prélèvement SEPA' : /carte/i.test(m) ? 'Carte' : m.replace(/\s+/g, ' ').slice(0, 40);
+}
+function frequenceDe(r, src, genre) {
+  if (genre !== 'Don') return '';
+  if (r && r.mensuel) return 'Mensuel' + (r.echeance ? ' (échéance n°' + r.echeance + (r.nb ? ' sur ' + r.nb : '') + ')' : '');
+  return src && src.invoice ? 'Mensuel' : 'Ponctuel';
+}
+
 // Le modèle commun aux trois fichiers et au Google Sheet. commission = frais 7 % réels de ce virement (centimes), répartis sur les lignes.
 function modele(p, mouvements, recus = {}, { taux = 7, commission = null } = {}) {
   const lignes = [];
@@ -60,6 +75,7 @@ function modele(p, mouvements, recus = {}, { taux = 7, commission = null } = {})
     lignes.push({ categorie, type, genre, typeStripe: t, t: m.created || 0, date: jourCourt(m.created || 0), heure: heure(m.created || 0),
       prenom: prenom.slice(0, 60), nom: nom.slice(0, 80), email: String((r && r.donorEmail) || bd.email || (src && src.receipt_email) || '').slice(0, 120),
       paiement: pi || (src && src.id) || m.id || '', mouvement: m.id || '', recu: r ? String(r.numero || '') : '',
+      moyen: genre === 'Autre' ? '' : moyenDe(src, r), frequence: frequenceDe(r, src, genre), donateurType: r ? (r.type === 'entreprise' ? 'Entreprise' : 'Particulier') : '',
       brut: a, frais: f, netStripe: net, com: 0, net });
   }
   lignes.sort((x, y) => x.t - y.t || String(x.mouvement).localeCompare(String(y.mouvement)));
@@ -128,7 +144,7 @@ function detailCorps(M, { avert = '' } = {}) {
   const bloc = (g, cat) => `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 14px"><colgroup><col style="width:11%"><col style="width:17%"><col style="width:22%"><col style="width:22%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"></colgroup>` +
     `<thead><tr><td colspan="8" style="padding:8px 6px;background:${FOND};font-size:13.5px;font-weight:bold;color:${TEAL}">${cat === 'besoin' ? 'Besoin · cagnotte « ' + esc(g.type) + ' »' : esc(g.type)} <span style="font-weight:normal;color:${GRIS};font-size:12px">· ${[g.paiements ? nbP(g.paiements) : '', g.L.length - g.paiements ? (g.L.length - g.paiements) + ' autre' + (g.L.length - g.paiements > 1 ? 's' : '') + ' mouvement' + (g.L.length - g.paiements > 1 ? 's' : '') : ''].filter(Boolean).join(' + ')} · net ${signe(S(g.L, 'net'))}${cat === 'besoin' ? ' à reverser' : ''}</span></td></tr>` +
     `<tr><th style="${thd};text-align:left">Date</th><th style="${thd};text-align:left">Donateur</th><th style="${thd};text-align:left">E-mail</th><th style="${thd};text-align:left">ID de paiement Stripe</th><th style="${thd}">Brut</th><th style="${thd}">Frais Stripe</th><th style="${thd}">Frais ${M.taux} %</th><th style="${thd}">Net</th></tr></thead><tbody>` +
-    g.L.map(l => `<tr><td style="${tdd};text-align:left">${esc(l.date)} ${esc(l.heure)}</td><td style="${tdd};text-align:left;white-space:normal">${l.genre !== 'Don' ? `<b style="color:#b45309">${esc(l.genre === 'Autre' ? 'Mouvement Stripe' : l.genre)}</b><br>` : ''}<b>${esc([l.prenom, l.nom].filter(Boolean).join(' ') || '—')}</b>${l.recu ? `<br><span style="color:${GRIS};font-size:10px">Reçu ${esc(l.recu)}</span>` : ''}</td><td style="${tdd};text-align:left;white-space:normal;overflow-wrap:anywhere">${esc(l.email || '—')}</td><td style="${tdd};text-align:left;white-space:normal;overflow-wrap:anywhere;font-family:Menlo,Consolas,monospace;font-size:10px">${esc(l.paiement)}</td><td style="${tdd}">${signe(l.brut)}</td><td style="${tdd};color:#b45309">${moins(l.frais)}</td><td style="${tdd};color:#b45309">${moins(l.com)}</td><td style="${tdd};font-weight:bold;color:${TEAL}">${signe(l.net)}</td></tr>`).join('') +
+    g.L.map(l => `<tr><td style="${tdd};text-align:left">${esc(l.date)} ${esc(l.heure)}</td><td style="${tdd};text-align:left;white-space:normal">${l.genre !== 'Don' ? `<b style="color:#b45309">${esc(l.genre === 'Autre' ? 'Mouvement Stripe' : l.genre)}</b><br>` : ''}<b>${esc([l.prenom, l.nom].filter(Boolean).join(' ') || '—')}</b>${[l.moyen, l.frequence, l.donateurType, l.recu ? 'Reçu ' + l.recu : ''].filter(Boolean).length ? `<br><span style="color:${GRIS};font-size:10px">${esc([l.moyen, l.frequence, l.donateurType, l.recu ? 'Reçu ' + l.recu : ''].filter(Boolean).join(' · '))}</span>` : ''}</td><td style="${tdd};text-align:left;white-space:normal;overflow-wrap:anywhere">${esc(l.email || '—')}</td><td style="${tdd};text-align:left;white-space:normal;overflow-wrap:anywhere;font-family:Menlo,Consolas,monospace;font-size:10px">${esc(l.paiement)}</td><td style="${tdd}">${signe(l.brut)}</td><td style="${tdd};color:#b45309">${moins(l.frais)}</td><td style="${tdd};color:#b45309">${moins(l.com)}</td><td style="${tdd};font-weight:bold;color:${TEAL}">${signe(l.net)}</td></tr>`).join('') +
     `<tr><td colspan="4" style="padding:7px 5px;border-top:2px solid ${TEAL};font-weight:bold;font-size:12px">Sous-total ${esc(g.type)}</td>${[signe(S(g.L, 'brut')), moins(S(g.L, 'frais')), moins(S(g.L, 'com')), signe(S(g.L, 'net'))].map((v, j) => `<td style="padding:7px 5px;border-top:2px solid ${TEAL};font-weight:bold;font-size:12px;text-align:right;white-space:nowrap${j === 3 ? ';color:' + TEAL : ''}">${v}</td>`).join('')}</tr></tbody></table>`;
   let n = 0;
   return G.bandeau({ titre: 'Relevé détaillé du virement', sous: 'Virement du ' + M.virement.dateLongue + ' · ' + eur(M.virement.montant) + ' · réf. ' + M.virement.id, pourPdf: true }) + G.avertissement(avert) +
@@ -176,25 +192,25 @@ function tableur(M, { avert = '' } = {}) {
   R.push(['', 'Frais ' + M.taux + ' % prélevés à part, par carte', '', '', '', '', { f: `F${rt}`, v: -e(T.com), s: 'eur' }]);
   R.push(['', { v: 'Net pour l\'association', s: 'gras' }, '', '', '', '', { f: `G${R.length - 1}+G${R.length}`, v: e(M.virement.montant - T.com), s: 'eurGras' }]);
   // Détail
-  const D = [['Catégorie', 'Type de don / cagnotte', 'Nature', 'Date', 'Heure', 'Prénom', 'Nom', 'E-mail', 'ID de paiement Stripe', 'N° de reçu', 'Brut', 'Frais Stripe', 'Frais ' + M.taux + ' %', 'Net', 'Référence du mouvement Stripe'].map(v => ({ v, s: 'entete' }))];
+  const D = [['Catégorie', 'Type de don / cagnotte', 'Nature', 'Date', 'Heure', 'Prénom', 'Nom', 'E-mail', 'ID de paiement Stripe', 'N° de reçu', 'Brut', 'Frais Stripe', 'Frais ' + M.taux + ' %', 'Net', 'Référence du mouvement Stripe', 'Moyen de paiement', 'Fréquence', 'Particulier / entreprise'].map(v => ({ v, s: 'entete' }))];
   for (const [k, groupes] of [['general', M.general], ['besoin', M.besoins], ['autre', M.autres]]) for (const g of groupes) {
     const d0 = D.length + 1;
-    g.L.forEach(l => D.push([cat[k], g.type, l.genre === 'Autre' ? 'Mouvement Stripe' : l.genre, l.date, l.heure, l.prenom, l.nom, l.email, l.paiement, l.recu, { v: e(l.brut), s: 'eur' }, { v: -e(l.frais), s: 'eur' }, { v: -e(l.com), s: 'eur' }, { v: e(l.net), s: 'eur' }, l.mouvement]));
+    g.L.forEach(l => D.push([cat[k], g.type, l.genre === 'Autre' ? 'Mouvement Stripe' : l.genre, l.date, l.heure, l.prenom, l.nom, l.email, l.paiement, l.recu, { v: e(l.brut), s: 'eur' }, { v: -e(l.frais), s: 'eur' }, { v: -e(l.com), s: 'eur' }, { v: e(l.net), s: 'eur' }, l.mouvement, l.moyen, l.frequence, l.donateurType]));
     const r = D.length + 1;
-    D.push([{ v: '', s: 'gras' }, { v: 'Sous-total ' + g.type, s: 'gras' }, { v: g.L.length + ' ligne' + (g.L.length > 1 ? 's' : ''), s: 'gras' }, ...Array(7).fill({ v: '', s: 'gras' }), ...[['K', S(g.L, 'brut')], ['L', -S(g.L, 'frais')], ['M', -S(g.L, 'com')], ['N', S(g.L, 'net')]].map(([c, v]) => ({ f: `SUM(${c}${d0}:${c}${r - 1})`, v: e(v), s: 'eurGras' })), { v: '', s: 'gras' }]);
+    D.push([{ v: '', s: 'gras' }, { v: 'Sous-total ' + g.type, s: 'gras' }, { v: g.L.length + ' ligne' + (g.L.length > 1 ? 's' : ''), s: 'gras' }, ...Array(7).fill({ v: '', s: 'gras' }), ...[['K', S(g.L, 'brut')], ['L', -S(g.L, 'frais')], ['M', -S(g.L, 'com')], ['N', S(g.L, 'net')]].map(([c, v]) => ({ f: `SUM(${c}${d0}:${c}${r - 1})`, v: e(v), s: 'eurGras' })), { v: '', s: 'gras' }, { v: '', s: 'gras' }, { v: '', s: 'gras' }, { v: '', s: 'gras' }]);
   }
   const fin = D.length;
-  D.push([{ v: '', s: 'total' }, { v: 'TOTAL DU VIREMENT', s: 'total' }, ...Array(8).fill({ v: '', s: 'total' }), ...[['K', T.brut], ['L', -T.frais], ['M', -T.com], ['N', T.net]].map(([c, v]) => ({ f: `SUMIF(B2:B${fin},"Sous-total*",${c}2:${c}${fin})`, v: e(v), s: 'eurTotal' })), { v: '', s: 'total' }]);
+  D.push([{ v: '', s: 'total' }, { v: 'TOTAL DU VIREMENT', s: 'total' }, ...Array(8).fill({ v: '', s: 'total' }), ...[['K', T.brut], ['L', -T.frais], ['M', -T.com], ['N', T.net]].map(([c, v]) => ({ f: `SUMIF(B2:B${fin},"Sous-total*",${c}2:${c}${fin})`, v: e(v), s: 'eurTotal' })), { v: '', s: 'total' }, { v: '', s: 'total' }, { v: '', s: 'total' }, { v: '', s: 'total' }]);
   return X.classeur([
     { nom: 'Résumé', colonnes: [22, 44, 11, 14, 14, 13, 14], lignes: R, figer: enTete },
-    { nom: 'Détail des paiements', colonnes: [20, 34, 15, 11, 7, 14, 18, 32, 30, 13, 12, 12, 12, 12, 30], lignes: D, figer: 1, filtre: true, filtreFin: fin }
+    { nom: 'Détail des paiements', colonnes: [20, 34, 15, 11, 7, 14, 18, 32, 30, 13, 12, 12, 12, 12, 30, 22, 26, 16], lignes: D, figer: 1, filtre: true, filtreFin: fin }
   ]);
 }
 
 // ───────── Google Sheet de l'association ─────────
 function pourSheet(M) {
   return { virement: { id: M.virement.id, date: M.virement.date, montant: M.virement.montant, ecart: M.totaux.ecart, statut: M.virement.statut || '' },
-    paiements: M.lignes.map(l => ({ categorie: l.categorie, type: l.type, nature: l.genre, date: l.date + ' ' + l.heure, prenom: l.prenom, nom: l.nom, email: l.email, id: l.paiement, recu: l.recu, brut: l.brut, frais: l.frais, com: l.com, net: l.net })) };
+    paiements: M.lignes.map(l => ({ categorie: l.categorie, type: l.type, nature: l.genre, date: l.date + ' ' + l.heure, prenom: l.prenom, nom: l.nom, email: l.email, id: l.paiement, recu: l.recu, brut: l.brut, frais: l.frais, com: l.com, net: l.net, moyen: l.moyen, frequence: l.frequence, donateurType: l.donateurType })) };
 }
 
 function fichierBase(M) { return 'virement_' + new Date((M.virement.arrivee || M.virement.cree || 0) * 1000).toLocaleDateString('sv-SE', P) + '_' + (M.virement.montant / 100).toFixed(2).replace('.', '-') + 'EUR'; }
