@@ -9,10 +9,14 @@ const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Conte
 const PORT = '3194', B = 'http://127.0.0.1:' + PORT, wait = ms => new Promise(r => setTimeout(r, ms));
 let pass = 0, fail = 0; const ok = (c, m, x) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  ECHEC', m, c ? '' : JSON.stringify(x === undefined ? null : x).slice(0, 500)); }; const T = t => console.log('\n— ' + t);
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boutons-'));
+// Faux site (port 3188) qui sert le calendrier des fêtes : Hanouka toujours dans 11 jours, comme en ligne quand la fête approche
+// (règle de Yarone : Hanouka s'affiche sur les dons quand elle arrive). Avant, rien ne servait ce port et le relevé changeait selon ce qui y traînait (23 nov 2026).
+const jourDans = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+const site = require('http').createServer((q, r) => { if (q.url.startsWith('/holidays.json')) { r.writeHead(200, { 'content-type': 'application/json' }); return r.end(JSON.stringify([{ date: jourDans(11), title: 'Hanoukah', hebrew: 'חנוכה' }])); } r.writeHead(404, { 'content-type': 'application/json' }); r.end('{}'); }).listen(3188, '127.0.0.1');
 const srv = spawn('node', ['server.js'], { cwd: ROOT, env: { ...process.env, PORT, SITE_URL: 'http://127.0.0.1:3188', DATA_DIR: dir, MAIL_SIMULATE: '1', CERFA_SECRET: 'essai-' + Date.now() }, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
 let browser;
 const MAJ = process.argv.includes('--maj'), REF = path.join(__dirname, 'boutons-reference.json');   // --maj : réécrit le relevé de référence (à ne faire qu'après accord de Yarone, voir DEPLOIEMENT.md)
-const fin = async () => { try { await browser.close(); } catch (e) {} try { process.kill(-srv.pid); } catch (e) { srv.kill(); } try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {} console.log('\n' + pass + ' ok, ' + fail + ' échec'); process.exit(fail ? 1 : 0); };
+const fin = async () => { try { site.close(); } catch (e) {} try { await browser.close(); } catch (e) {} try { process.kill(-srv.pid); } catch (e) { srv.kill(); } try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {} console.log('\n' + pass + ' ok, ' + fail + ' échec'); process.exit(fail ? 1 : 0); };
 
 // état de la page : le formulaire de don est-il ouvert, que dit son bouton, quel montant porte-t-il ?
 const etat = p => p.evaluate(() => { const g = document.getElementById('go'), r = g && g.getBoundingClientRect(); return { accueil: document.body.classList.contains('camp-accueil'), goVisible: !!(r && r.height > 0 && getComputedStyle(g).visibility !== 'hidden'), go: g ? g.textContent.trim() : '', montant: (document.getElementById('montant') || {}).value }; });
