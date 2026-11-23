@@ -28,6 +28,28 @@ function contenu(mouvements) {
   return { dons, brut, frais, rembourse, autres, net: brut - frais + rembourse + autres };
 }
 
+// Mini-cagnotte nominative (« besoin ») d'où vient un don : le reçu la garde (besoin = adresse, affectation « Besoin : <titre> ») ;
+// à défaut de reçu, le libellé Stripe du paiement (« … — Besoin : <titre> (<adresse>) »). Dons généraux, actions, fêtes et campagnes : aucune.
+function cagnotteDe(r, description) {
+  if (r && r.besoin && /^Besoin : /.test(String(r.affectation || ''))) return String(r.affectation).slice(9).replace(/\s+/g, ' ').trim().slice(0, 80);
+  const m = String(description || '').match(/(?:^|— )Besoin : (.+?)(?: \([a-z0-9-]{1,40}\))?\s*$/);
+  return m ? m[1].replace(/\s+/g, ' ').trim().slice(0, 80) : '';
+}
+
+// Ce que le virement contient pour chaque cagnotte (net = dons − frais Stripe − remboursements, comme la « somme à reverser » du CRM),
+// et le reste du virement (dons généraux). Les deux additionnés font exactement le montant viré.
+function parCagnotte(L, montantVire) {
+  const M = new Map();
+  for (const l of L || []) {
+    if (!l.cagnotte) continue;
+    const x = M.get(l.cagnotte) || { titre: l.cagnotte, dons: 0, brut: 0, frais: 0, net: 0 };
+    if (l.genre === 'Don') x.dons++;
+    x.brut += l.brut; x.frais += l.frais; x.net += l.net; M.set(l.cagnotte, x);
+  }
+  const cagnottes = [...M.values()].sort((a, b) => b.net - a.net || a.titre.localeCompare(b.titre)), total = cagnottes.reduce((a, x) => a + x.net, 0);
+  return { cagnottes, total, general: Math.round(Number(montantVire) || 0) - total };
+}
+
 // Une ligne par mouvement, pour le tableau, le CSV et le PDF. recus = reçus fiscaux déjà émis (pour retrouver le donateur et le numéro de reçu).
 function lignes(mouvements, recus) {
   const out = [];
@@ -37,14 +59,16 @@ function lignes(mouvements, recus) {
     const cle = src ? [src.payment_intent, src.invoice, src.id].map(x => x && typeof x === 'object' ? x.id : x).find(k => k && recus && recus[k]) : null, r = cle ? recus[cle] : null;
     const genre = m.type === 'charge' || m.type === 'payment' ? 'Don' : /refund|reversal/.test(String(m.type)) ? 'Remboursement' : m.type === 'adjustment' ? 'Litige' : /fee/.test(String(m.type)) ? 'Frais Stripe' : 'Autre';
     const a = Math.round(Number(m.amount) || 0), f = Math.round(Number(m.fee) || 0);
-    out.push({ t: m.created || 0, genre, libelle: String((r && r.affectation) || m.description || '').replace(/\s+/g, ' ').trim().slice(0, 90), donateur: r ? String(r.nom || '').slice(0, 60) : '', recu: r ? String(r.numero || '') : '', brut: a, frais: f, net: m.net != null ? Math.round(Number(m.net)) : a - f, ref: m.id || '' });
+    out.push({ t: m.created || 0, genre, libelle: String((r && r.affectation) || m.description || '').replace(/\s+/g, ' ').trim().slice(0, 90), donateur: r ? String(r.nom || '').slice(0, 60) : '', recu: r ? String(r.numero || '') : '', cagnotte: cagnotteDe(r, m.description), brut: a, frais: f, net: m.net != null ? Math.round(Number(m.net)) : a - f, ref: m.id || '' });
   }
   return out.sort((x, y) => x.t - y.t);
 }
 
 function csvVirement(p, c, L, prestataire = 0) {
   const q = s => { let t = String(s == null ? '' : s); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; }, n = v => (v / 100).toFixed(2).replace('.', ',');   // un texte qui commence par = + - @ serait lu comme une formule par le tableur : on le neutralise
-  const rows = ['Date;Heure;Type;Libellé;Donateur;N° de reçu;Montant;Frais Stripe;Net;Référence Stripe'].concat(L.map(l => [jourCourt(l.t), heure(l.t), l.genre, q(l.libelle), q(l.donateur), q(l.recu), n(l.brut), n(l.frais), n(l.net), l.ref].join(';')));
+  const rows = ['Date;Heure;Type;Libellé;Donateur;N° de reçu;Montant;Frais Stripe;Net;Référence Stripe;Cagnotte'].concat(L.map(l => [jourCourt(l.t), heure(l.t), l.genre, q(l.libelle), q(l.donateur), q(l.recu), n(l.brut), n(l.frais), n(l.net), l.ref, q(l.cagnotte || '')].join(';')));
+  const pc = parCagnotte(L, p.amount);
+  if (pc.cagnottes.length) { rows.push('', ';;;' + q('CAGNOTTES : SOMMES DUES DANS CE VIREMENT')); pc.cagnottes.forEach(x => rows.push(';;;' + q('Cagnotte « ' + x.titre + ' » (' + x.dons + ' don' + (x.dons > 1 ? 's' : '') + ')') + ';;;' + n(x.brut) + ';' + n(x.frais) + ';' + n(x.net))); rows.push(';;;' + q('Dons généraux (reste du virement)') + ';;;;;' + n(pc.general)); }
   rows.push('', ';;;' + q('Total des dons') + ';;;' + n(c.brut), ';;;' + q('Frais Stripe') + ';;;;' + n(c.frais));
   if (c.rembourse) rows.push(';;;' + q('Dons remboursés') + ';;;' + n(c.rembourse));
   if (c.autres) rows.push(';;;' + q('Autres mouvements') + ';;;;;' + n(c.autres));
@@ -64,7 +88,7 @@ function calcul(p, c) {
   return R;
 }
 
-const G = require('./gabarit.js'), { TEAL, GRIS, TRAIT } = G;
+const G = require('./gabarit.js'), { TEAL, GRIS, TRAIT } = G, releve = require('./releve.js');
 function tableauDons(L, max) {
   const vus = max ? L.slice(0, max) : L, th = 'padding:7px 4px;border-bottom:2px solid ' + TEAL + ';font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:' + GRIS + ';text-align:left', td = 'padding:7px 4px;border-bottom:1px solid ' + TRAIT + ';font-size:13px;vertical-align:top';
   return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse"><thead><tr><th style="${th}">Date</th><th style="${th}">Donateur · objet</th><th style="${th};text-align:right">Don</th><th style="${th};text-align:right">Frais</th><th style="${th};text-align:right">Net</th></tr></thead><tbody>` +
@@ -80,7 +104,15 @@ function mailVirement(p, c, { echec = false, test = false, exemple = false, lign
   const banque = b ? [b.bank_name, b.last4 ? '···· ' + b.last4 : ''].filter(Boolean).join(' ') : '';
   const marque = exemple ? '[EXEMPLE] ' : test ? '[TEST] ' : '';
   const arr = new Date(p.arrival_date * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', ...P });
-  const subject = marque + (echec ? 'Virement Stripe REFUSÉ : ' + eur(p.amount) : 'Virement Stripe vers la banque : ' + eur(p.amount) + ', arrivée ' + arr);
+  const pc = echec ? { cagnottes: [] } : parCagnotte(L, p.amount), cag = pc.cagnottes.length > 0;   // cagnottes nominatives : ce que l'association leur doit
+  const subject = marque + (echec ? 'Virement Stripe REFUSÉ : ' + eur(p.amount) : 'Virement Stripe vers la banque : ' + eur(p.amount) + ', arrivée ' + arr + (cag ? ' (dont ' + (pc.cagnottes.length === 1 ? 'cagnotte « ' + pc.cagnottes[0].titre + ' »' : pc.cagnottes.length + ' cagnottes') + ' : ' + eur(pc.total) + ')' : ''));
+  const cagTexte = cag ? ['CAGNOTTES : CE QUE L\'ASSOCIATION LEUR DOIT', ...pc.cagnottes.map(x => `Cagnotte « ${x.titre} » : ${x.dons} don${x.dons > 1 ? 's' : ''}, ${signe(x.brut)} − frais Stripe ${eur(x.frais)} = ${signe(x.net)} dus`), `Dons généraux (reste du virement) : ${signe(pc.general)}`, '= Total du virement : ' + eur(p.amount), ''] : [];
+  const tableauCag = () => { const td = 'padding:9px 4px;border-bottom:1px solid ' + TRAIT + ';font-size:14px', th = 'padding:7px 4px;border-bottom:2px solid ' + TEAL + ';font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:' + GRIS + ';text-align:right', tot = 'padding:9px 4px;border-top:2px solid ' + TEAL + ';font-weight:bold;font-size:15px';
+    return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse"><thead><tr><th style="${th};text-align:left">Cagnotte</th><th style="${th}">Dons</th><th style="${th}">Frais Stripe</th><th style="${th}">Dû à la cagnotte</th></tr></thead><tbody>` +
+      pc.cagnottes.map(x => `<tr><td style="${td};overflow-wrap:anywhere"><b>${esc(x.titre)}</b><br><span style="color:${GRIS};font-size:12px">${x.dons} don${x.dons > 1 ? 's' : ''}</span></td><td style="${td};text-align:right;white-space:nowrap">${esc(signe(x.brut))}</td><td style="${td};text-align:right;white-space:nowrap;color:${GRIS}">${x.frais ? '− ' + esc(eur(x.frais)) : '—'}</td><td style="${td};text-align:right;white-space:nowrap;font-weight:bold;color:${TEAL}">${esc(signe(x.net))}</td></tr>`).join('') +
+      `<tr><td colspan="3" style="${td}">Dons généraux (reste du virement)</td><td style="${td};text-align:right;white-space:nowrap;font-weight:bold">${esc(signe(pc.general))}</td></tr>` +
+      `<tr><td colspan="3" style="${tot}">= Total du virement</td><td style="${tot};text-align:right;white-space:nowrap">${esc(eur(p.amount))}</td></tr></tbody></table>` +
+      `<p style="margin:8px 0 0;font-size:12.5px;color:${GRIS}">Somme due à chaque cagnotte : ses dons, moins les frais bancaires de Stripe (même calcul que la « somme à reverser » du CRM).</p>`; };
   const avert = exemple ? "CECI EST UN EXEMPLE : aucun virement réel n'a eu lieu, les montants et les noms ci-dessous sont inventés. Vous recevrez un e-mail comme celui-ci à chaque virement de Stripe vers le compte bancaire de l'association." : test ? 'Compte Stripe de TEST : ce ne sont pas de vrais dons.' : '';
   const periode = L.length ? (jourCourt(L[0].t) === jourCourt(L[L.length - 1].t) ? 'du ' + jourCourt(L[0].t) : 'du ' + jourCourt(L[0].t) + ' au ' + jourCourt(L[L.length - 1].t)) : '';
   const R = !echec && c ? calcul(p, c) : [];
@@ -95,7 +127,7 @@ function mailVirement(p, c, { echec = false, test = false, exemple = false, lign
        'Stripe retient ses frais bancaires sur chaque don, puis verse le reste en une seule fois.',
        'Sur le relevé bancaire, la ligne porte le libellé « STRIPE » et le montant exact indiqué ici.'];
   // ---- texte brut
-  const text = [avert || null, avert ? '' : null, intro, '', ...(R.length ? ['POURQUOI CE MONTANT', ...R.map(x => (x[2] === 'total' ? '= ' : '') + x[0] + ' : ' + x[1]), ''] : []), ...explique, '',
+  const text = [avert || null, avert ? '' : null, intro, '', ...cagTexte, ...(R.length ? ['POURQUOI CE MONTANT', ...R.map(x => (x[2] === 'total' ? '= ' : '') + x[0] + ' : ' + x[1]), ''] : []), ...explique, '',
     ...(L.length && !echec ? ['DÉTAIL', ...L.map(l => `${jourCourt(l.t)} ${heure(l.t)} · ${l.genre}${l.donateur ? ' · ' + l.donateur : ''} · ${l.libelle || '—'}${l.recu ? ' · reçu ' + l.recu : ''} · ${signe(l.brut)} − frais ${eur(l.frais)} = ${signe(l.net)}`), ''] : []),
     banque ? 'Compte crédité : ' + banque : null, 'Lancé par Stripe le ' + jour(p.created), 'Référence du virement : ' + p.id, !echec ? 'Pièces jointes : le détail en CSV (tableur)' + (pdf ? ' et en PDF (à imprimer ou à classer).' : '.') : null].filter(x => x !== null).join('\n');
   // ---- corps commun (e-mail et PDF)
@@ -103,9 +135,10 @@ function mailVirement(p, c, { echec = false, test = false, exemple = false, lign
     G.montant({ etiquette: echec ? 'Virement refusé par la banque' : 'Virement vers la banque de l\'association', valeur: eur(p.amount), etat: echec ? 'Somme non versée : elle reste sur le compte Stripe' : 'En route vers la banque', alerte: echec }) +
     (echec ? '' : G.reperes([{ l: 'Arrivée prévue', v: jour(p.arrival_date).replace(/^./, x => x.toUpperCase()), sous: 'sur le relevé bancaire' }, c && c.dons ? { l: 'Ce virement regroupe', v: c.dons + ' don' + (c.dons > 1 ? 's' : ''), sous: periode } : null, banque ? { l: 'Compte crédité', v: banque, sous: 'libellé « STRIPE »' } : null])) +
     `<p style="margin:16px 0 0;font-size:15px;line-height:1.55;color:#1f2937">${esc(intro)}</p>` +
-    (R.length ? G.partie(1, 'Pourquoi ce montant ?') + tableauCalcul(R) : '') +
+    (cag ? G.partie(1, 'Cagnottes : ce que l\'association leur doit') + tableauCag() : '') +
+    (R.length ? G.partie(cag ? 2 : 1, 'Pourquoi ce montant ?') + tableauCalcul(R) : '') +
     G.note(explique, echec ? 'Que faire ?' : 'À savoir') +
-    (L.length && !echec ? G.partie(2, 'Ce que contient ce virement') + tableauDons(L, pourPdf ? 0 : 20) : '') +
+    (L.length && !echec ? G.partie(cag ? 3 : 2, 'Ce que contient ce virement') + tableauDons(L, pourPdf ? 0 : 20) : '') +
     G.references([banque ? ['Compte crédité', banque] : null, ['Lancé par Stripe le', jour(p.created)], [echec ? 'Date prévue à l\'origine' : 'Arrivée prévue', jour(p.arrival_date)], ['Référence du virement', p.id]]);
   const html = G.enMail(corps(false), (echec ? '' : 'En pièces jointes : le détail en CSV (à ouvrir dans un tableur)' + (pdf ? ' et le relevé en PDF (à imprimer ou à classer en comptabilité). ' : '. ')) + 'Tous les montants sont lus dans Stripe, sans estimation.');
   const pdfHtml = G.enPdf(corps(true));
@@ -116,10 +149,12 @@ function mailVirement(p, c, { echec = false, test = false, exemple = false, lign
 function exemples() {
   const n = Math.floor(Date.now() / 1000), J = 86400, b = { bank_name: 'BANQUE (exemple)', last4: '0000' };
   const m = (id, type, amount, fee, t, description) => ({ id, type, amount, fee, net: amount - fee, created: t, description, currency: 'eur' });
-  const A = [m('txn_ex1', 'charge', 5200, 103, n - 4 * J, 'Colis de Chabbat'), m('txn_ex2', 'charge', 12600, 214, n - 4 * J + 5400, 'Là où le besoin est le plus grand'), m('txn_ex3', 'charge', 2600, 64, n - 3 * J, 'Besoin : Loyer en retard'), m('txn_ex4', 'charge', 25200, 403, n - 3 * J + 9000, "Un toit sur la tête (nuits d'hôtel)"), m('txn_ex5', 'charge', 1800, 52, n - 2 * J, 'Colis de Chabbat (don mensuel)'), m('txn_ex6', 'charge', 52600, 814, n - 2 * J + 3600, 'Besoin : Loyer en retard')];
-  const B = [m('txn_ex7', 'charge', 10000, 175, n - 9 * J, "L'aide à la scolarité"), m('txn_ex8', 'charge', 3600, 79, n - 8 * J, 'Vêtements et soins'), m('txn_ex9', 'refund', -3600, 0, n - 8 * J + 7200, 'Remboursement : don saisi deux fois'), m('txn_ex10', 'charge', 7700, 141, n - 7 * J, 'Réinsertion sociale')];
+  const D = 'Don Émounatéha — ';
+  const A = [m('txn_ex1', 'charge', 5200, 103, n - 4 * J, D + 'Colis de Chabbat'), m('txn_ex2', 'charge', 12600, 214, n - 4 * J + 5400, D + 'Là où le besoin est le plus grand'), m('txn_ex3', 'charge', 2600, 64, n - 3 * J, D + 'Besoin : Loyer en retard (loyer-en-retard)'), m('txn_ex4', 'charge', 25200, 403, n - 3 * J + 9000, D + 'Hanouka : Diffusion de la lumière, Beignets et cadeaux'), m('txn_ex5', 'charge', 1800, 52, n - 2 * J, 'Don mensuel Émounatéha — Colis de Chabbat'), m('txn_ex6', 'charge', 52600, 814, n - 2 * J + 3600, D + 'Besoin : Loyer en retard (loyer-en-retard)')];
+  const B = [m('txn_ex7', 'charge', 10000, 175, n - 9 * J, D + "L'aide à la scolarité"), m('txn_ex8', 'charge', 3600, 79, n - 8 * J, D + 'Vêtements et soins'), m('txn_ex9', 'refund', -3600, 0, n - 8 * J + 7200, 'Remboursement : don saisi deux fois'), m('txn_ex10', 'charge', 7700, 141, n - 7 * J, D + 'Réinsertion sociale')];
   const R = { pi_1: { nom: 'Sarah L. (exemple)', numero: 'EX-0001' }, pi_2: { nom: 'David C. (exemple)', numero: 'EX-0002' }, pi_3: { nom: 'Anonyme (exemple)', numero: 'EX-0003' }, pi_4: { nom: 'Boulangerie B. SAS (exemple)', numero: 'EX-0004' }, pi_5: { nom: 'Myriam A. (exemple)', numero: 'EX-0005' }, pi_6: { nom: 'Yossef H. (exemple)', numero: 'EX-0006' }, pi_7: { nom: 'Rachel T. (exemple)', numero: 'EX-0007' }, pi_8: { nom: 'Moché Z. (exemple)', numero: 'EX-0008' }, pi_10: { nom: 'Esther K. (exemple)', numero: 'EX-0010' } };
   [...A, ...B].forEach(x => { const k = 'pi_' + x.id.replace('txn_ex', ''); if (R[k]) x.source = { id: 'ch_' + k, payment_intent: k }; });
+  B[2].source = { id: 're_ex9', payment_intent: 'pi_8' };   // le remboursement se rattache au don qu'il annule
   const somme = M => contenu(M).net;
   return [
     { p: { id: 'po_exemple_1', amount: somme(A), currency: 'eur', status: 'in_transit', created: n, arrival_date: n + 3 * J, destination: b }, mv: A, recus: R },
@@ -165,19 +200,42 @@ function mailPrevision(pv, { test = false } = {}) {
   return { subject, text, html, sms };
 }
 
-function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoyer = () => chabbat.pasChabbat(), heureVeille = () => chabbat.peutEnvoyer(), peutSms = (t = Date.now()) => { const h = chabbat.heureParis(t); return h >= 7 && h < 22; }, adminSms = () => process.env.ADMIN_SMS || '0669670770' }) {
+// Le relevé d'un virement, avec les frais 7 % réels du prestataire (même calcul que sa facture)
+function modeleDe(p, mv, recus) {
+  let commission = null, taux = 7; try { const C = require('./commission'); taux = C.TAUX; commission = C.ligneVirement(p, mv).commission || 0; } catch (e) { console.error('virements : frais prestataire non calculés', e.message); }
+  return releve.modele(p, mv, recus, { taux, commission });
+}
+
+// Google Sheet de l'association (script tools/google-sheet-virements.gs) : une écriture par virement, jamais deux (le script repère la référence po_…).
+// Inactif tant que GOOGLE_SHEET_URL et GOOGLE_SHEET_SECRET ne sont pas réglés ; compte Stripe de test : seulement si GOOGLE_SHEET_TEST=oui.
+const sheetActif = test => !!(process.env.GOOGLE_SHEET_URL && process.env.GOOGLE_SHEET_SECRET) && (!test || process.env.GOOGLE_SHEET_TEST === 'oui');
+async function posterSheet(corps) {
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(process.env.GOOGLE_SHEET_URL || '')) throw new Error('adresse du Google Sheet invalide');
+  const r = await fetch(process.env.GOOGLE_SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: process.env.GOOGLE_SHEET_SECRET, ...corps }), redirect: 'follow', signal: AbortSignal.timeout(25000) });
+  let j = null; try { j = await r.json(); } catch (e) {}
+  if (!j || j.ok !== true) throw new Error('Google Sheet : ' + ((j && j.error) || 'réponse HTTP ' + r.status));
+  return j;
+}
+
+function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, sheetPost = posterSheet, peutEnvoyer = () => chabbat.pasChabbat(), heureVeille = () => chabbat.peutEnvoyer(), peutSms = (t = Date.now()) => { const h = chabbat.heureParis(t); return h >= 7 && h < 22; }, adminSms = () => process.env.ADMIN_SMS || '0669670770' }) {
   const sms = async p => { try { const sm = await mailer.sendSms({ to: adminSms(), text: smsVirement(p), tag: 'virement' }); if (!(sm && sm.sent)) console.error('virements SMS non envoyé', (sm && sm.reason) || ''); return !!(sm && sm.sent === true); } catch (e) { console.error('virements SMS', e.message); return false; } };
-  // fabrique le message complet (corps + CSV + PDF) et l'envoie ; si le PDF ne peut pas être fabriqué, le mail part quand même avec le CSV
+  // fabrique le message complet et l'envoie. Virement reçu : relevé résumé (PDF), relevé détaillé paiement par paiement (PDF, paysage)
+  // et tableur Excel (format voulu par Yarone, 23 nov 2026 ; voir releve.js). Si un PDF ne peut pas être fabriqué, le mail part quand même.
+  // Virement refusé : simple alerte, sans pièce jointe.
   async function envoyer(p, mv, recus, opt) {
-    const echec = !!opt.echec, c = echec ? null : contenu(mv), L = echec ? [] : lignes(mv, recus);
-    let prestataire = 0; if (!echec) { try { prestataire = require('./commission').ligneVirement(p, mv).commission || 0; } catch (e) { console.error('virements : frais prestataire non calculés', e.message); } }
-    opt = { ...opt, prestataire };
-    let pdf = null; const brouillon = mailVirement(p, c, { ...opt, lignes: L, pdf: true });
-    if (!echec && pdfTampon) { try { pdf = await pdfTampon(brouillon.pdfHtml); } catch (e) { console.error('virements : PDF non fabriqué', e.message); } }
-    const m = pdf ? brouillon : mailVirement(p, c, { ...opt, lignes: L, pdf: false }), pj = [];
-    if (!echec) { pj.push({ name: m.fichier + '.csv', content: Buffer.from(csvVirement(p, c, L, prestataire), 'utf8').toString('base64') }); if (pdf) pj.push({ name: m.fichier + '.pdf', content: Buffer.from(pdf).toString('base64') }); }
-    const env = await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text, attachments: pj });
-    return { mail: !!(env && env.sent === true), pdf: !!pdf, lignes: L.length };
+    const echec = !!opt.echec;
+    if (echec) { const m = mailVirement(p, null, { ...opt, pdf: false }); const env = await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: m.subject, html: m.html, text: m.text, attachments: [] }); return { mail: !!(env && env.sent === true), pdf: false, lignes: 0 }; }
+    const M = modeleDe(p, mv, recus), commission = M.totaux.com, marque = opt.exemple ? '[EXEMPLE] ' : opt.test ? '[TEST] ' : '';
+    const avert = opt.exemple ? "EXEMPLE : aucun virement réel n'a eu lieu, les montants et les noms sont inventés." : opt.test ? 'Compte Stripe de TEST : ce ne sont pas de vrais dons.' : '';
+    const base = releve.fichierBase(M), pj = [];
+    const fabriquer = async (nom, html, o) => { if (!pdfTampon) return false; try { pj.push({ name: base + nom + '.pdf', content: Buffer.from(await pdfTampon(html, o)).toString('base64') }); return true; } catch (e) { console.error('virements : PDF ' + nom + ' non fabriqué', e.message); return false; } };
+    const pdf1 = await fabriquer('_1-resume', G.enPdf(releve.resumeCorps(M, { pourPdf: true, avert })));
+    const pdf2 = await fabriquer('_2-detail', G.enPdf(releve.detailCorps(M, { avert })).replace('size:A4', 'size:A4 landscape'), { landscape: true });
+    try { pj.push({ name: base + '_3-tableur.xlsx', content: releve.tableur(M, { avert }).toString('base64') }); } catch (e) { console.error('virements : tableur non fabriqué', e.message); pj.push({ name: base + '.csv', content: Buffer.from(csvVirement(p, contenu(mv), lignes(mv, recus), commission || 0), 'utf8').toString('base64') }); }
+    const pied = 'En pièces jointes : le relevé résumé (PDF), le relevé détaillé avec chaque paiement et son ID Stripe (PDF) et le tableur Excel. Tous les montants sont lus dans Stripe, sans estimation.';
+    const env = await mailer.send({ to: mailer.ADMIN_EMAIL(), toName: 'Administrateur', subject: releve.sujet(M, marque), html: G.enMail(releve.resumeCorps(M, { avert }), pied), text: releve.resumeTexte(M, avert), attachments: pj });
+    if (M.totaux.ecart) console.error('virements : écart entre les paiements et le montant viré', JSON.stringify({ id: p.id, montant: p.amount, lignes: M.totaux.sommeStripe, ecart: M.totaux.ecart }));
+    return { mail: !!(env && env.sent === true), pdf: pdf1 && pdf2, lignes: M.lignes.length, ecart: M.totaux.ecart, M };
   }
 
   app.post('/api/admin/virements/verifier', async (req, res) => {
@@ -194,7 +252,8 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoy
         const d2 = load(); d2.virements = { depuis: new Date().toISOString(), vus: Object.fromEntries(liste.map(p => [p.id, ECHEC.has(p.status) ? 'echec' : 'vu'])) }; save(d2);
         return res.json({ ok: true, miseEnService: true, dejaExistants: liste.length, envoyes: 0 });
       }
-      const vus = { ...(etat.vus || {}) }, envoyes = [], erreurs = [], ouvert = await peutEnvoyer();
+      const vus = { ...(etat.vus || {}) }, envoyes = [], erreurs = [], ouvert = await peutEnvoyer(), cacheMv = new Map();
+      const mouvements = async id => { if (!cacheMv.has(id)) { const mv = []; for await (const m of stripe.balanceTransactions.list({ payout: id, limit: 100, expand: ['data.source'] })) { mv.push(m); if (mv.length > 5000) break; } cacheMv.set(id, mv); } return cacheMv.get(id); };
       let smsAttente = { ...(etat.smsAttente || {}) }, previsions = { ...(etat.previsions || {}) };
       // annonce de la veille : une fois par jour d'arrivée, seulement si Stripe a quelque chose à virer ; une panne ici ne bloque jamais le relevé
       try {
@@ -221,8 +280,8 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoy
         if (!avant && p.amount <= 0 && !echec) { vus[p.id] = 'vu'; continue; }   // régularisation négative : pas un virement reçu
         if (!echec && !ouvert) continue;   // Chabbat ou fête : on attend, pas noté comme vu, repris à une vérification suivante (2 h après la sortie)
         try {
-          const mv = []; if (!echec) for await (const m of stripe.balanceTransactions.list({ payout: p.id, limit: 100, expand: ['data.source'] })) { mv.push(m); if (mv.length > 5000) break; }
-          const r = await envoyer(p, mv, load().receipts || {}, { echec, test });
+          const mv = echec ? [] : await mouvements(p.id);
+          const { M, ...r } = await envoyer(p, mv, load().receipts || {}, { echec, test });
           if (r.mail !== true) throw new Error('e-mail non envoyé');   // pas noté comme vu : nouvel essai à la prochaine vérification
           vus[p.id] = echec ? 'echec' : 'vu'; envoyes.push({ id: p.id, montant: p.amount, echec, ...r });
           const jr = chabbat.jourParis(p.arrival_date * 1000), dejaAnnonce = !!(previsions[jr] && previsions[jr].annonce);   // SMS déjà reçu la veille : pas de second SMS
@@ -233,15 +292,31 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, peutEnvoy
           }
         } catch (e) { erreurs.push(p.id + ' : ' + e.message); }   // pas noté comme vu : nouvel essai à la prochaine vérification
       }
+      // Google Sheet : chaque virement reçu y est écrit une fois ; 5 au plus par vérification (toutes les heures), les plus anciens d'abord.
+      // Une panne n'empêche rien d'autre : nouvel essai à la vérification suivante.
+      let sheet = { ...(etat.sheet || {}) };
+      // Rattrapage : TOUS les virements déjà arrivés à la banque (pas seulement les 30 derniers), demande de Yarone du 23 nov 2026.
+      if (sheetActif(test)) {
+        let n = 0, tous = liste;
+        try { const L = stripe.payouts.list({ limit: 100 }); if (L && L[Symbol.asyncIterator]) { tous = []; for await (const p of L) { tous.push(p); if (tous.length >= 500) break; } } } catch (e) { erreurs.push('liste complète des virements : ' + e.message); }
+        for (const p of tous.slice().reverse()) {
+          if (n >= 5) break;
+          if (sheet[p.id] || ECHEC.has(p.status) || !(vus[p.id] === 'vu' || p.status === 'paid') || !(p.amount > 0) || (p.currency && String(p.currency).toLowerCase() !== 'eur')) continue;
+          n++;
+          try { const M = modeleDe(p, await mouvements(p.id), load().receipts || {}), j = await sheetPost(releve.pourSheet(M)); sheet[p.id] = j.deja ? 'deja' : 'ok'; envoyes.push({ id: p.id, sheet: sheet[p.id], lignes: M.lignes.length }); }
+          catch (e) { erreurs.push(p.id + ' (Google Sheet) : ' + e.message); }
+        }
+      }
+      sheet = Object.fromEntries(Object.entries(sheet).slice(-1000));
       const garde = Object.fromEntries(Object.entries(vus).slice(-400));
       // enregistré seulement si la liste des virements vus a changé (sinon tout le fichier était réécrit en base chaque heure pour rien)
       previsions = Object.fromEntries(Object.entries(previsions).sort().slice(-40));
-      const d3 = load(), av = d3.virements || {}, cle = x => JSON.stringify([x.vus || null, x.smsAttente || {}, x.previsions || {}]);
-      if (cle(av) !== cle({ vus: garde, smsAttente, previsions })) { d3.virements = { ...(d3.virements || etat), vus: garde, smsAttente, previsions, verifieLe: new Date().toISOString() }; save(d3); }
+      const d3 = load(), av = d3.virements || {}, cle = x => JSON.stringify([x.vus || null, x.smsAttente || {}, x.previsions || {}, x.sheet || {}]);
+      if (cle(av) !== cle({ vus: garde, smsAttente, previsions, sheet })) { d3.virements = { ...(d3.virements || etat), vus: garde, smsAttente, previsions, sheet, verifieLe: new Date().toISOString() }; save(d3); }
       if (erreurs.length) console.error('virements', erreurs.join(' | '));
       res.json({ ok: true, envoyes: envoyes.length, detail: envoyes, erreurs });
     } catch (e) { console.error('virements', e.message); res.status(502).json({ error: 'Lecture Stripe impossible : ' + e.message }); }
   });
 }
 
-module.exports = { contenu, lignes, csvVirement, calcul, mailVirement, mailPrevision, exemples, prevision, monter };
+module.exports = { contenu, lignes, cagnotteDe, parCagnotte, modeleDe, sheetActif, csvVirement, calcul, mailVirement, mailPrevision, exemples, prevision, monter };

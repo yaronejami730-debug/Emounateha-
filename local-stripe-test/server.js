@@ -200,9 +200,9 @@ async function pdf1(html, file) {
 }
 
 // PDF en mémoire (relevé de virement joint à l'e-mail de l'administrateur) : même navigateur que les reçus, rien n'est écrit sur disque
-async function pdfTampon(html) {
+async function pdfTampon(html, { landscape = false } = {}) {   // landscape : relevé détaillé des virements (tableau large)
   await pdfPlace();
-  try { const b = await browser(), page = await b.newPage(); try { await page.setContent(html, { waitUntil: 'load', timeout: 20000 }); return Buffer.from(await page.pdf({ format: 'A4', printBackground: true })); } finally { await page.close(); } }
+  try { const b = await browser(), page = await b.newPage(); try { await page.setContent(html, { waitUntil: 'load', timeout: 20000 }); return Buffer.from(await page.pdf({ format: 'A4', printBackground: true, ...(landscape ? { landscape: true } : {}) })); } finally { await page.close(); } }
   catch (e) { const vieux = browserP; browserP = null; try { if (vieux) (await vieux).close().catch(() => {}); } catch (x) {} throw e; }
   finally { pdfLibere(); }
 }
