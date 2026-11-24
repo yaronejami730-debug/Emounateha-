@@ -92,6 +92,14 @@ async function don(body,carte='pm_card_visa'){const i=await call('POST','/api/in
   const pr=await fetch(B+'/api/admin/pdf?f='+encodeURIComponent(n.j.file),{headers:sig('GET','/api/admin/pdf')});const fp=path.join(dir,'verif2.pdf');fs.writeFileSync(fp,Buffer.from(await pr.arrayBuffer()));const txt=require('child_process').execFileSync('pdftotext',['-layout',fp,'-']).toString().replace(/\s+/g,' ');
   const dh=new Date(hier+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});ok(txt.includes('Annule et remplace le reçu n° '+a.j.numero)&&txt.includes(dh),'PDF refait : « Annule et remplace le reçu n° '+a.j.numero+' » et date '+dh,txt.slice(0,500));
   const x=await call('POST','/api/admin/recu',{...E,mode:'Virement bancaire',dateDon:hier,montant:'2600',remplace:'m_inexistant'},sig('POST','/api/admin/recu'));ok(x.st===400,'refaire un reçu inexistant : refusé',x)}
+ /* APERÇU avant génération : même PDF avec la date choisie, mais aucun numéro pris et rien d'enregistré */
+ {const n0=(await admin()).j.recus.length;
+  let ap=await fetch(B+'/api/admin/recu/apercu',{method:'POST',headers:{'content-type':'application/json',origin:B,...sig('POST','/api/admin/recu/apercu')},body:JSON.stringify({...P,mode:'Espèces',dateDon:'2026-05-24',montant:'360'})});
+  const fp=path.join(dir,'apercu.pdf');fs.writeFileSync(fp,Buffer.from(await ap.arrayBuffer()));const txt=ap.ok?require('child_process').execFileSync('pdftotext',['-layout',fp,'-']).toString().replace(/\s+/g,' '):'';
+  ok(ap.ok&&/application\/pdf/.test(ap.headers.get('content-type')||'')&&txt.includes('24 mai 2026')&&/APERÇU/.test(txt)&&txt.includes('360,00'),'aperçu : PDF avec « 24 mai 2026 », 360 € et la mention APERÇU',[ap.status,txt.slice(0,300)]);
+  ok((await admin()).j.recus.length===n0,'aperçu : aucun reçu créé, aucun numéro consommé');
+  ap=await fetch(B+'/api/admin/recu/apercu',{method:'POST',headers:{'content-type':'application/json',origin:B},body:JSON.stringify({...P,mode:'Espèces',dateDon:'2026-05-24',montant:'360'})});ok(ap.status===401,'aperçu sans autorisation : refusé (401)',ap.status);
+  ap=await fetch(B+'/api/admin/recu/apercu',{method:'POST',headers:{'content-type':'application/json',origin:B,...sig('POST','/api/admin/recu/apercu')},body:JSON.stringify({...P,mode:'Espèces',dateDon:'2099-01-01',montant:'360'})});ok(ap.status===400,'aperçu avec une date dans le futur : refusé',ap.status)}
  z=await call('POST','/api/admin/recu',{...P,mode:'Chèque',dateDon:'2015-01-10'},sig('POST','/api/admin/recu'));ok(z.st===400,'date de plus de 6 ans : refusée',z);
  T('11. Provenance du don');
  d=await don({...P,amb:'yaron'});L=(await admin()).j.recus;rr=L.find(q=>q.numero===d.f.j.numero);ok(rr&&(rr.ambassadeur==='yaron'||d.pi.metadata.ambassadeur==='yaron'||d.pi.metadata.amb==='yaron'),'lien d\'ambassadeur : le don lui est rattaché',[rr&&rr.ambassadeur,d.pi.metadata]);

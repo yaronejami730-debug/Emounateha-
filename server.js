@@ -2441,6 +2441,13 @@ async function cerfaProxy(req, res, url) {
       const r = await fetch(DON_URL + '/api/admin/supprimer', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/supprimer'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(30000) });
       return send(res, r.status, await J(r));
     }
+    if (url.pathname === '/api/cerfa/apercu' && req.method === 'POST') {   // aperçu du PDF d'un reçu manuel avant de le générer (rien n'est créé)
+      const b = await readBody(req);
+      const r = await fetch(DON_URL + '/api/admin/recu/apercu', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/recu/apercu'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(90000) });
+      if (!r.ok) return send(res, r.status, await J(r));
+      res.writeHead(200, { 'content-type': 'application/pdf', 'content-disposition': 'inline; filename="apercu-recu.pdf"', 'cache-control': 'private, no-store' });
+      return res.end(Buffer.from(await r.arrayBuffer()));
+    }
     if (url.pathname === '/api/cerfa' && req.method === 'POST') {
       const b = await readBody(req);
       const r = await fetch(DON_URL + '/api/admin/recu', { method: 'POST', headers: { ...cerfaSig('POST', '/api/admin/recu'), 'content-type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(110000) });

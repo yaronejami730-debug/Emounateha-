@@ -1139,7 +1139,9 @@ function cfTexte(r) {
   return cfNorm([r.nom, r.prenom, r.nomFamille, r.email, r.tel, tel, tel.replace(/^0/, '33'), r.adresse, r.cp, r.ville, r.siren, num, num.replace(/\D/g, ''), r.mode, r.affectation, r.besoin, r.ambassadeur, r.source, r.montant != null ? (r.montant / 100).toFixed(2).replace('.', ',') : '', r.montant != null ? String(Math.round(r.montant / 100)) : '', new Date(r.dateDon).toLocaleDateString('fr-FR'), new Date(r.dateDon).getFullYear()].join(' | '));
 }
 function cfCherche(r, mots) { if (!mots.length) return true; const t = r._t || (r._t = cfTexte(r)), ch = t.replace(/[^0-9|]/g, ''); return mots.every(m => t.includes(m) || (/^\d[\d .-]*\d$/.test(m) && ch.includes(m.replace(/\D/g, '')))); }
-const cfCle = r => (r.type === 'entreprise' ? 'pro|' : 'part|') + (r.email ? 'm:' + cfNorm(r.email).trim() : 'n:' + cfNorm(r.nom).replace(/\s+/g, ' ').trim() + '|' + (r.cp || cfNorm(r.adresse).slice(0, 24)));   // une personne qui donne aussi au nom de sa société : deux fiches (particulier / professionnel)
+// une fiche = la personne (ou la société) nommée sur le reçu, jamais l'adresse e-mail : un même e-mail peut servir à plusieurs personnes (ex. reçu fait pour un proche),
+// et une personne qui donne aussi au nom de sa société a deux fiches (particulier / professionnel)
+const cfCle = r => r.type === 'entreprise' ? 'pro|' + (String(r.siren || '').replace(/\D/g, '') || cfNorm(r.nom).replace(/\s+/g, ' ').trim()) : 'part|' + cfNorm(r.nom).replace(/[^a-z0-9]+/g, ' ').trim();
 const cfInit = n => { const p = String(n || '?').trim().split(/\s+/).filter(Boolean); return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase(); };
 const cfIco = { mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.500"/><path d="m3.500 7 8.500 6 8.500-6"/></svg>', tel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.500" width="10" height="19" rx="2.500"/><path d="M11 18h2"/></svg>', lieu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.200-7-11.200A7 7 0 0 1 19 9.800C19 14.800 12 21 12 21z"/><circle cx="12" cy="10" r="2.500"/></svg>' };
 function cerfaVue(k) { CF.vue = k; document.querySelectorAll('#cfVue button').forEach((b, i) => b.classList.toggle('on', ['don', 'recus'][i] === k)); cerfaList(); }
@@ -1244,7 +1246,7 @@ function cerfaForm(ref) {
     <div class="row"><div class="grow"><label>Montant (€)</label><input id="cf_montant" inputmode="decimal" placeholder="ex. 180"></div><div class="grow"><label>Date du don</label><input id="cf_date" type="date" value="${today}" max="${today}"></div>
       <div class="grow"><label>Mode de versement</label><select id="cf_mode">${CF.modes.map(m => `<option>${esc(m)}</option>`).join('')}</select></div></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="cf_env" type="checkbox" checked style="width:auto"> Envoyer le reçu par e-mail au donateur</label>
-    <div class="row" style="margin-top:12px"><span class="grow hint" id="cfMsg"></span><button class="btn pri" id="cfGo" onclick="cerfaCreate()">${old ? 'Refaire le reçu (annule ' + esc(old.numero) + ')' : 'Générer le reçu (PDF)'}</button></div></div>`;
+    <div class="row" style="margin-top:12px"><span class="grow hint" id="cfMsg"></span><button class="btn pri" id="cfGo" onclick="cerfaApercu()">Voir l'aperçu du PDF</button></div></div>`;
   if (old) {
     const pro = old.type === 'entreprise', set = (id, v) => { const el = $('#' + id); if (el && v != null) el.value = v; };
     cfType(pro ? 'entreprise' : 'particulier');
@@ -1286,9 +1288,32 @@ async function cfSiret() {
   try { const j = await api('GET', '/cerfa/siret?q=' + q); if (n !== cfSeq) return; $('#cf_rs').value = j.nom || ''; $('#cf_siren').value = j.siren || ''; if (j.adresse) $('#cf_adr').value = j.adresse; if (j.cp) $('#cf_cp').value = j.cp; if (j.ville) $('#cf_ville').value = j.ville; m.textContent = '✓ ' + (j.nom || '') + ' — vérifiez et modifiez si besoin.'; }
   catch (e) { if (n === cfSeq) m.textContent = e.message + ' — remplissez à la main.'; }
 }
-async function cerfaCreate() {
+function cerfaBody() {
   const pro = cfT === 'entreprise', v = id => ($('#' + id).value || '').trim();
-  const b = { type: pro ? 'entreprise' : 'particulier', prenom: v('cf_prenom'), nom: v('cf_nom'), raisonSociale: v('cf_rs'), siren: v('cf_siren'), email: v('cf_email'), tel: v('cf_tel'), adresse: v('cf_adr'), cp: v('cf_cp'), ville: v('cf_ville'), montant: v('cf_montant'), dateDon: v('cf_date'), mode: v('cf_mode'), envoyerEmail: $('#cf_env').checked, ...(cfRemplace ? { remplace: cfRemplace } : {}) };
+  return { type: pro ? 'entreprise' : 'particulier', prenom: v('cf_prenom'), nom: v('cf_nom'), raisonSociale: v('cf_rs'), siren: v('cf_siren'), email: v('cf_email'), tel: v('cf_tel'), adresse: v('cf_adr'), cp: v('cf_cp'), ville: v('cf_ville'), montant: v('cf_montant'), dateDon: v('cf_date'), mode: v('cf_mode'), envoyerEmail: $('#cf_env').checked, ...(cfRemplace ? { remplace: cfRemplace } : {}) };
+}
+// aperçu du reçu AVANT de le générer : on vérifie la date, le nom, l'adresse, le montant ; rien n'est créé tant qu'on ne valide pas
+let cfApercuUrl = '';
+async function cerfaApercu() {
+  const b = cerfaBody(), g = $('#cfGo'); g.disabled = true; $('#cfMsg').textContent = 'Préparation de l\'aperçu… (quelques secondes)';
+  try {
+    const r = await fetch('/api/cerfa/apercu', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
+    if (r.status === 401) { location.href = '/login'; return; }
+    if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Aperçu impossible'); }
+    if (cfApercuUrl) URL.revokeObjectURL(cfApercuUrl); cfApercuUrl = URL.createObjectURL(await r.blob());
+    const old = cfRemplace ? CF.recus.find(x => x.ref === cfRemplace) : null, dd = new Date(b.dateDon + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    $('#cfMsg').textContent = '';
+    modal(`<h2>Aperçu du reçu — à vérifier avant de le générer</h2>
+      <p class="hint">Date du don et de signature : <b>${esc(dd)}</b> · ${esc(b.montant)} € · ${esc(b.mode)}${old ? ' · annulera et remplacera le reçu <b>' + esc(old.numero) + '</b>' : ''}. Le numéro définitif est attribué à la création.</p>
+      <iframe src="${cfApercuUrl}" title="Aperçu du reçu" style="width:100%;height:70vh;border:1px solid #d6dde0;border-radius:10px;background:#fff"></iframe>
+      <p class="hint"><a href="${cfApercuUrl}" target="_blank" rel="noopener">Ouvrir l'aperçu en grand</a></p>
+      <div class="row r" style="margin-top:12px"><button class="btn" onclick="closeModal()">Corriger</button><button class="btn pri" onclick="closeModal();cerfaCreate()">${old ? 'C\'est bon : refaire le reçu (annule ' + esc(old.numero) + ')' : 'C\'est bon : générer le reçu'}</button></div>`);
+    const bx = document.querySelector('#modal .box'); if (bx) bx.style.width = 'min(900px,96vw)';
+  } catch (e) { $('#cfMsg').textContent = e.message; toast(e.message, true); }
+  finally { g.disabled = false; }
+}
+async function cerfaCreate() {
+  const b = cerfaBody();
   $('#cfGo').disabled = true; $('#cfMsg').textContent = 'Fabrication du reçu… (quelques secondes)';
   try {
     const r = await api('POST', '/cerfa', b);

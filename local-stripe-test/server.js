@@ -677,18 +677,33 @@ app.post('/api/admin/supprimer', (req, res) => {
   if (supprimes.length) save(d);
   res.json({ ok: true, supprimes });
 });
+// reçu manuel : contrôles communs à l'aperçu et à la création
+async function donManuel(body) {
+  const don = validerDonateur(body);
+  const mode = MODES.slice(0, 3).includes(body.mode) ? body.mode : null; if (!mode) throw new Error('Mode de versement invalide (virement, chèque ou espèces)');
+  const dt = new Date(String(body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
+  if (dt.getFullYear() < new Date().getFullYear() - 6) throw new Error('Date trop ancienne (6 ans au plus)');
+  const aff = body.affectation ? affectation(body, await affectationsOk()) : '';   // reçu manuel : sans affectation
+  const refAncien = body.remplace ? String(body.remplace) : '';
+  const ancien0 = refAncien ? (load().manuels || {})[refAncien] : null;
+  if (refAncien && !ancien0) throw new Error('Reçu à remplacer introuvable (seuls les reçus manuels peuvent être refaits ici)');
+  return { don, mode, dt, aff, refAncien, ancien0 };
+}
+// APERÇU du reçu manuel avant de le générer : même PDF, mais aucun numéro pris, rien d'enregistré, aucun e-mail
+app.post('/api/admin/recu/apercu', async (req, res) => {
+  if (!adminOk(req, res)) return;
+  try {
+    const { don, mode, dt, ancien0 } = await donManuel(req.body);
+    const impr = { v: MODELE, signe: dt.toISOString(), type: don.type, nom: don.nom, adresse: don.adresse, siren: don.siren || '', montant: don.montant, mode, dateDon: dt.toISOString(), mensuel: false, echeance: 0, nb: 0, remplace: ancien0 ? ancien0.numero : '' };
+    const buf = await pdfTampon(remplir(impr, 'APERÇU — numéro attribué à la création', { signe: impr.signe, modele: MODELE }));
+    res.set('cache-control', 'no-store').type('application/pdf').send(buf);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
 app.post('/api/admin/recu', async (req, res) => {
   if (!adminOk(req, res)) return;
   try {
-    const don = validerDonateur(req.body);
-    const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide (virement, chèque ou espèces)');
-    const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(req.body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
-    if (dt.getFullYear() < new Date().getFullYear() - 6) throw new Error('Date trop ancienne (6 ans au plus)');
-    const aff = req.body.affectation ? affectation(req.body, await affectationsOk()) : '';   // reçu manuel : sans affectation
     // « Refaire le CERFA » : le nouveau reçu annule et remplace un reçu manuel existant (erreur de date, de nom, d'adresse, de montant…)
-    const refAncien = req.body.remplace ? String(req.body.remplace) : '';
-    const ancien0 = refAncien ? (load().manuels || {})[refAncien] : null;
-    if (refAncien && !ancien0) throw new Error('Reçu à remplacer introuvable (seuls les reçus manuels peuvent être refaits ici)');
+    const { don, mode, dt, aff, refAncien, ancien0 } = await donManuel(req.body);
     const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff, ...(ancien0 ? { remplace: ancien0.numero } : {}) }, { envoyerEmail: !!req.body.envoyerEmail, signeLe: dt.toISOString() });
     out.tel = clean(req.body.tel, 30); out.affectation = aff; out.manuel = true;
     const d = load(); d.manuels = d.manuels || {};
