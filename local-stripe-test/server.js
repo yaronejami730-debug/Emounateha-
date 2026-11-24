@@ -210,7 +210,7 @@ async function pdfTampon(html, { landscape = false } = {}) {   // landscape : re
 // --- email : vrai envoi si SMTP configuré, sinon fichier .eml (ouvrable dans Mail) ---
 async function envoyer({ to, numero, pdfFile, nom, affectation: aff, mensuel, don }) {
   if (don && !mailer.isFake(to)) {     // vraie adresse : email Brevo (modèle unique pour tous les dons), reçu en pièce jointe
-    const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance, remplace: don.remplace || '', club: clubDe(don.besoin),
+    const m = await mailer.donEmail({ prenom: don.type === 'entreprise' ? '' : (don.form && don.form.prenom) || '', montant: don.montant, dateDon: don.dateDon, affectation: don.affectation, mode: don.mode.replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero, mensuel: don.mensuel, echeance: don.echeance, remplace: don.remplace || '', excuses: !!don.excuses, club: clubDe(don.besoin),
       spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
     if (m) { const r = await mailer.send({ to, toName: nom, subject: m.subject, html: m.html, text: m.text, attachments: [{ name: `Recu-fiscal-${nomFichier(numero)}.pdf`, content: vault.readFile(pdfFile).toString('base64') }] }); if (r.sent) return { sent: true, messageId: r.messageId, brevo: true }; }
   }
@@ -628,7 +628,7 @@ const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.n
   mail: r.email && !r.email.skipped ? { sent: !!r.email.sent, messageId: r.email.messageId || '', at: r.email.at || null, to: r.email.to || r.donorEmail || '', error: r.email.error || '', note: r.email.note || '', brevo: !!r.email.brevo, par: r.email.par || 'auto' } : null, mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
 const ordreNum = n => { const m = String(n || '').match(/(\d{4})\D+(\d+)$/); return (/^TEST/i.test(String(n || '')) ? 0 : 1e12) + (m ? +m[1] * 1e6 + +m[2] : 0); };
 const trouverRecu = (d, ref) => { for (const coll of ['receipts', 'manuels']) if (d[coll] && Object.prototype.hasOwnProperty.call(d[coll], ref)) return d[coll][ref]; return null; };
-const mailDuRecu = r => mailer.donEmail({ prenom: r.type === 'entreprise' ? '' : (r.form && r.form.prenom) || '', montant: r.montant, dateDon: r.dateDon, affectation: r.affectation, mode: String(r.mode || '').replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero: r.numero, mensuel: r.mensuel, echeance: r.echeance, remplace: r.remplace || '', club: clubDe(r.besoin),
+const mailDuRecu = r => mailer.donEmail({ prenom: r.type === 'entreprise' ? '' : (r.form && r.form.prenom) || '', montant: r.montant, dateDon: r.dateDon, affectation: r.affectation, mode: String(r.mode || '').replace(/^Carte bancaire \(Stripe, test\)/, 'Paiement en ligne'), numero: r.numero, mensuel: r.mensuel, echeance: r.echeance, remplace: r.remplace || '', excuses: !!(r.manuel && r.remplace), club: clubDe(r.besoin),
   spaceUrl: process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') + '/espace/' : '', test: PREFIX === 'TEST' });
 // CRM : (r)envoyer le reçu par e-mail au donateur, avec trace de l'envoi
 app.post('/api/admin/renvoyer', async (req, res) => {
@@ -704,7 +704,7 @@ app.post('/api/admin/recu', async (req, res) => {
   try {
     // « Refaire le CERFA » : le nouveau reçu annule et remplace un reçu manuel existant (erreur de date, de nom, d'adresse, de montant…)
     const { don, mode, dt, aff, refAncien, ancien0 } = await donManuel(req.body);
-    const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff, ...(ancien0 ? { remplace: ancien0.numero } : {}) }, { envoyerEmail: !!req.body.envoyerEmail, signeLe: dt.toISOString() });
+    const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff, ...(ancien0 ? { remplace: ancien0.numero, excuses: true } : {}) }, { envoyerEmail: !!req.body.envoyerEmail, signeLe: dt.toISOString() });
     out.tel = clean(req.body.tel, 30); out.affectation = aff; out.manuel = true;
     const d = load(); d.manuels = d.manuels || {};
     if (refAncien) {
