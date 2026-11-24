@@ -266,7 +266,7 @@ async function fabriquer(don, { envoyerEmail, signeLe }) {
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
   out.creeLe = signeLe ? signe : fait;   // reçu manuel : la date choisie partout (CRM, PDF) ; le vrai moment de fabrication reste noté dans fabriqueLe
   out.fabriqueLe = fait;   // moment où le reçu (PDF) a été fabriqué : l'ordre de création suit la numérotation
-  if (envoyerEmail) { out.email = { ...out.email, at: out.creeLe, to: String(don.email || '').toLowerCase(), par: 'auto' }; out.mails = [out.email]; }   // trace de l'envoi
+  if (envoyerEmail) { out.email = { ...out.email, at: fait, to: String(don.email || '').toLowerCase(), par: 'auto' }; out.mails = [out.email]; }   // trace de l'envoi
   return out;
 }
 
@@ -624,7 +624,7 @@ function adminOk(req, res) {
   if (!ok) res.status(401).json({ error: 'non autorisé' });
   return !!ok;
 }
-const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, adresse: r.adresse || (r.form && r.form.adresse ? [r.form.adresse, [r.form.cp, r.form.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ') : ''), prenom: (r.form && r.form.prenom) || '', nomFamille: (r.form && r.form.nom) || '', cp: (r.form && r.form.cp) || '', ville: r.ville || (r.form && r.form.ville) || '', siren: r.siren || (r.form && r.form.siren) || '', montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', besoin: r.besoin || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), creeLe: r.creeLe || null, envois: (r.mails || []).length || (r.email && !r.email.skipped ? 1 : 0),
+const ligneRecu = (r, ref, source) => ({ ref, source, numero: r.numero, nom: r.nom, type: r.type, adresse: r.adresse || (r.form && r.form.adresse ? [r.form.adresse, [r.form.cp, r.form.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ') : ''), rue: (r.form && r.form.adresse) || '', raisonSociale: (r.form && r.form.raisonSociale) || '', prenom: (r.form && r.form.prenom) || '', nomFamille: (r.form && r.form.nom) || '', cp: (r.form && r.form.cp) || '', ville: r.ville || (r.form && r.form.ville) || '', siren: r.siren || (r.form && r.form.siren) || '', montant: r.montant, mode: r.mode, dateDon: r.dateDon, email: r.donorEmail, tel: r.tel || '', affectation: r.affectation || '', ambassadeur: r.ambassadeur || '', besoin: r.besoin || '', file: r.file, emailEnvoye: !!(r.email && r.email.sent), creeLe: r.creeLe || null, envois: (r.mails || []).length || (r.email && !r.email.skipped ? 1 : 0),
   mail: r.email && !r.email.skipped ? { sent: !!r.email.sent, messageId: r.email.messageId || '', at: r.email.at || null, to: r.email.to || r.donorEmail || '', error: r.email.error || '', note: r.email.note || '', brevo: !!r.email.brevo, par: r.email.par || 'auto' } : null, mensuel: !!r.mensuel, echeance: r.echeance || null, attr: r.attr || null, attrRepeat: !!r.attrRepeat, remplace: r.remplace || '', annules: (r.corrections || []).map(c => c.numero), pourProche: !!r.proche });
 const ordreNum = n => { const m = String(n || '').match(/(\d{4})\D+(\d+)$/); return (/^TEST/i.test(String(n || '')) ? 0 : 1e12) + (m ? +m[1] * 1e6 + +m[2] : 0); };
 const trouverRecu = (d, ref) => { for (const coll of ['receipts', 'manuels']) if (d[coll] && Object.prototype.hasOwnProperty.call(d[coll], ref)) return d[coll][ref]; return null; };
@@ -685,10 +685,20 @@ app.post('/api/admin/recu', async (req, res) => {
     const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(req.body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
     if (dt.getFullYear() < new Date().getFullYear() - 6) throw new Error('Date trop ancienne (6 ans au plus)');
     const aff = req.body.affectation ? affectation(req.body, await affectationsOk()) : '';   // reçu manuel : sans affectation
-    const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff }, { envoyerEmail: !!req.body.envoyerEmail, signeLe: dt.toISOString() });
+    // « Refaire le CERFA » : le nouveau reçu annule et remplace un reçu manuel existant (erreur de date, de nom, d'adresse, de montant…)
+    const refAncien = req.body.remplace ? String(req.body.remplace) : '';
+    const ancien0 = refAncien ? (load().manuels || {})[refAncien] : null;
+    if (refAncien && !ancien0) throw new Error('Reçu à remplacer introuvable (seuls les reçus manuels peuvent être refaits ici)');
+    const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff, ...(ancien0 ? { remplace: ancien0.numero } : {}) }, { envoyerEmail: !!req.body.envoyerEmail, signeLe: dt.toISOString() });
     out.tel = clean(req.body.tel, 30); out.affectation = aff; out.manuel = true;
-    const d = load(); d.manuels = d.manuels || {}; d.manuels['m_' + out.numero] = out; save(d);
-    res.json({ ok: true, numero: out.numero, file: out.file, email: out.email });
+    const d = load(); d.manuels = d.manuels || {};
+    if (refAncien) {
+      const cur = d.manuels[refAncien];
+      if (cur) { const { corrections, ...sans } = cur; out.remplace = cur.numero; out.corrections = [...(corrections || []), { ...sans, annuleLe: new Date().toISOString(), remplacePar: out.numero }]; delete d.manuels[refAncien]; }
+      console.log('[reçu manuel refait]', out.remplace, '->', out.numero);
+    }
+    d.manuels['m_' + out.numero] = out; save(d);
+    res.json({ ok: true, numero: out.numero, file: out.file, email: out.email, remplace: out.remplace || '' });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.get('/api/admin/pdf', async (req, res) => {
