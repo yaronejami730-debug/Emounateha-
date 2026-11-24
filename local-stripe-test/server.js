@@ -252,18 +252,20 @@ async function assurerPdf(f) {
 
 // alerte e-mail à l'administrateur à chaque don réussi (une seule fois par don : appelée juste après la création du reçu ; n'échoue jamais)
 const notifyAdmin = out => mailer.notifyAdminDon({ nom: out.nom, email: out.donorEmail, type: out.type, montant: out.montant, dateDon: out.dateDon, affectation: out.affectation, mode: out.mode, numero: out.numero, mensuel: out.mensuel, echeance: out.echeance, fin: out.fin, nb: out.nb, total: out.total, ambassadeur: out.ambassadeur, test: PREFIX === 'TEST' });
-async function fabriquer(don, { envoyerEmail }) {
+async function fabriquer(don, { envoyerEmail, signeLe }) {
   const annee = new Date(don.dateDon).getFullYear();
   const numero = nextNumero(annee);
   const file = path.join(RECUS, `recu_${nomFichier(numero)}_${crypto.randomBytes(3).toString('hex')}.pdf`);
-  const signe = new Date().toISOString();
+  const fait = new Date().toISOString();
+  const signe = signeLe || fait;   // reçu manuel : « Date et signature » = date choisie dans le formulaire (et non le jour où le reçu est fabriqué)
   // tout ce qui est imprimé sur le reçu et qui dépend du don : suffit à refabriquer le même reçu plus tard (le PDF lui-même n'est plus conservé en ligne)
   const impr = { v: MODELE, signe, type: don.type === 'entreprise' ? 'entreprise' : 'particulier', nom: don.nom, adresse: don.adresse, siren: don.siren || '', montant: don.montant, mode: don.mode, dateDon: don.dateDon, mensuel: !!don.mensuel, echeance: don.echeance || 0, nb: don.nb || 0, remplace: don.remplace || '' };
   await pdf(remplir(impr, numero, { signe, modele: MODELE }), file);
   const out = { impr, sha: crypto.createHash('sha256').update(vault.readFile(file)).digest('hex'), numero, pdf: (process.env.BASE_PATH || '') + '/recus/' + path.basename(file), file: path.basename(file), montant: don.montant, mode: don.mode, donorEmail: String(don.email || '').toLowerCase(), dateDon: don.dateDon, type: don.type, nom: don.nom, affectation: don.affectation, mensuel: !!don.mensuel, echeance: don.echeance, form: don.form };
   if (don.proche) { out.proche = don.proche; out.accordAt = don.accordAt || null; }
   out.email = envoyerEmail ? await envoyer({ to: don.email, numero, pdfFile: file, nom: don.nom, affectation: don.affectation, mensuel: don.mensuel, don }).catch(e => ({ error: e.message })) : { skipped: true };
-  out.creeLe = signe;   // moment où le reçu (PDF) a été fabriqué : l'ordre de création suit la numérotation
+  out.creeLe = signeLe ? signe : fait;   // reçu manuel : la date choisie partout (CRM, PDF) ; le vrai moment de fabrication reste noté dans fabriqueLe
+  out.fabriqueLe = fait;   // moment où le reçu (PDF) a été fabriqué : l'ordre de création suit la numérotation
   if (envoyerEmail) { out.email = { ...out.email, at: out.creeLe, to: String(don.email || '').toLowerCase(), par: 'auto' }; out.mails = [out.email]; }   // trace de l'envoi
   return out;
 }
@@ -681,9 +683,9 @@ app.post('/api/admin/recu', async (req, res) => {
     const don = validerDonateur(req.body);
     const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide (virement, chèque ou espèces)');
     const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(req.body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
-    if (dt.getFullYear() < new Date().getFullYear() - 1) throw new Error('Date trop ancienne (année en cours ou précédente)');
+    if (dt.getFullYear() < new Date().getFullYear() - 6) throw new Error('Date trop ancienne (6 ans au plus)');
     const aff = req.body.affectation ? affectation(req.body, await affectationsOk()) : '';   // reçu manuel : sans affectation
-    const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff }, { envoyerEmail: !!req.body.envoyerEmail });
+    const out = await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: aff }, { envoyerEmail: !!req.body.envoyerEmail, signeLe: dt.toISOString() });
     out.tel = clean(req.body.tel, 30); out.affectation = aff; out.manuel = true;
     const d = load(); d.manuels = d.manuels || {}; d.manuels['m_' + out.numero] = out; save(d);
     res.json({ ok: true, numero: out.numero, file: out.file, email: out.email });
@@ -702,7 +704,7 @@ app.post('/api/recu', async (req, res) => {
     const mode = MODES.slice(0, 3).includes(req.body.mode) ? req.body.mode : null; if (!mode) throw new Error('Mode de versement invalide');
     const dt = new Date(String(req.body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(req.body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
     if (dt.getFullYear() < new Date().getFullYear() - 1) throw new Error('Date trop ancienne pour cette page de test');
-    res.json(acc.publicReceipt(await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: affectation(req.body, await affectationsOk()) }, { envoyerEmail: !!req.body.envoyerEmail })));
+    res.json(acc.publicReceipt(await fabriquer({ ...don, mode, dateDon: dt.toISOString(), affectation: affectation(req.body, await affectationsOk()) }, { envoyerEmail: !!req.body.envoyerEmail, signeLe: dt.toISOString() })));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 // (les PDF ne sont plus servis publiquement : voir accounts.js, liens signés ou propriétaire connecté)
