@@ -57,6 +57,7 @@ function sirenValide(s) { s = String(s).replace(/\s/g, ''); if (!/^\d{9}$/.test(
 const mailer = require('./mailer');
 const acc = require('./accounts')({ load, save, RECUS, clean, sirenValide, mailer, assurerPdf: f => assurerPdf(f) });
 const MODES = ['Virement bancaire', 'Chèque', 'Espèces', 'Carte bancaire (Stripe, test)'];
+const MODES_MANUELS = ['Virement bancaire', 'Chèque', 'Espèces', 'Carte bancaire'];   // reçus manuels du CRM (CB = payé par carte en dehors du site, ex. terminal de paiement)
 // --- À quoi affecter le don ---
 // Les fêtes s'ouvrent AVANT leur date (« avant » = nombre de jours) et se ferment à la fête (Hanouka : à la fin des 8 jours).
 // Les dates viennent du calendrier du site (holidays.json). Pour régler un délai : changer « avant » ci-dessous.
@@ -662,7 +663,7 @@ app.get('/api/admin/recus', (req, res) => {
   const d = load();
   const recus = [...Object.entries(d.receipts || {}).map(([k, r]) => ligneRecu(r, k, 'en ligne')), ...Object.entries(d.manuels || {}).map(([k, r]) => ligneRecu(r, k, 'manuel'))]
     .sort((a, b) => ordreNum(b.numero) - ordreNum(a.numero) || String(b.creeLe || b.dateDon).localeCompare(String(a.creeLe || a.dateDon)));   // ordre de création = ordre des numéros (le plus récent en premier)
-  res.json({ recus, modes: MODES.slice(0, 3) });
+  res.json({ recus, modes: MODES_MANUELS });
 });
 // suppression de reçus (uniquement les reçus de TEST, ou une liste précise de numéros TEST-…) : CRM → Dons
 app.post('/api/admin/supprimer', (req, res) => {
@@ -680,7 +681,7 @@ app.post('/api/admin/supprimer', (req, res) => {
 // reçu manuel : contrôles communs à l'aperçu et à la création
 async function donManuel(body) {
   const don = validerDonateur(body);
-  const mode = MODES.slice(0, 3).includes(body.mode) ? body.mode : null; if (!mode) throw new Error('Mode de versement invalide (virement, chèque ou espèces)');
+  const mode = MODES_MANUELS.includes(body.mode) ? body.mode : null; if (!mode) throw new Error('Mode de versement invalide (virement, chèque, espèces ou carte bancaire)');
   const dt = new Date(String(body.dateDon) + 'T12:00:00'); if (isNaN(dt) || String(body.dateDon) > new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) throw new Error('Date du don invalide (pas dans le futur)');
   if (dt.getFullYear() < new Date().getFullYear() - 6) throw new Error('Date trop ancienne (6 ans au plus)');
   const aff = body.affectation ? affectation(body, await affectationsOk()) : '';   // reçu manuel : sans affectation

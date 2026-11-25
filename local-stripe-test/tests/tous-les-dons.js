@@ -70,8 +70,8 @@ async function don(body,carte='pm_card_visa'){const i=await call('POST','/api/in
  const C=require(ROOT+'/commission.js');const c1=C.calculer([bt]);ok(c1.controle&&c1.commission===Math.round(bt.net*0.07),'commission calculée sur ce net : '+(c1.commission/100).toFixed(2)+' €, contrôle au centime',c1);
  T('10. Reçus manuels (virement, chèque, espèces)');
  const jour=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Paris'});
- for(const mode of ['Virement bancaire','Chèque','Espèces']){const m=await call('POST','/api/admin/recu',{...P,mode,dateDon:jour,montant:'180',envoyerEmail:false},sig('POST','/api/admin/recu'));ok(m.st===200&&m.j.numero,mode+' : reçu '+(m.j&&m.j.numero)+' créé',m)}
- L=(await admin()).j.recus;const man=L.filter(q=>q.source==='manuel');ok(man.length===3&&man.every(q=>!q.mail),'3 reçus manuels, sans e-mail quand ce n\'est pas demandé',man.map(q=>[q.numero,q.mode,!!q.mail]));
+ for(const mode of ['Virement bancaire','Chèque','Espèces','Carte bancaire']){const m=await call('POST','/api/admin/recu',{...P,mode,dateDon:jour,montant:'180',envoyerEmail:false},sig('POST','/api/admin/recu'));ok(m.st===200&&m.j.numero,mode+' : reçu '+(m.j&&m.j.numero)+' créé',m)}
+ L=(await admin()).j.recus;const man=L.filter(q=>q.source==='manuel');ok(man.length===4&&man.every(q=>!q.mail),'4 reçus manuels (dont carte bancaire), sans e-mail quand ce n\'est pas demandé',man.map(q=>[q.numero,q.mode,!!q.mail]));
  const tousNum=L.map(q=>q.numero).filter(n=>!/^TEST-?$/.test(n));const seq=tousNum.map(n=>Number(n.match(/(\d+)$/)[1])).sort((a,b)=>a-b);ok(new Set(seq).size===seq.length&&seq[seq.length-1]-seq[0]===seq.length-1,'en ligne et manuels partagent la même numérotation, sans trou ('+seq.length+' reçus, n° '+seq[0]+' à '+seq[seq.length-1]+')',seq);
  let z=await call('POST','/api/admin/recu',{...P,mode:'Bitcoin',dateDon:jour},sig('POST','/api/admin/recu'));ok(z.st===400,'mode de versement inconnu : refusé',z);
  z=await call('POST','/api/admin/recu',{...P,mode:'Chèque',dateDon:'2099-01-01'},sig('POST','/api/admin/recu'));ok(z.st===400,'date dans le futur : refusée',z);
@@ -92,6 +92,10 @@ async function don(body,carte='pm_card_visa'){const i=await call('POST','/api/in
   const pr=await fetch(B+'/api/admin/pdf?f='+encodeURIComponent(n.j.file),{headers:sig('GET','/api/admin/pdf')});const fp=path.join(dir,'verif2.pdf');fs.writeFileSync(fp,Buffer.from(await pr.arrayBuffer()));const txt=require('child_process').execFileSync('pdftotext',['-layout',fp,'-']).toString().replace(/\s+/g,' ');
   const dh=new Date(hier+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});ok(txt.includes('Annule et remplace le reçu n° '+a.j.numero)&&txt.includes(dh),'PDF refait : « Annule et remplace le reçu n° '+a.j.numero+' » et date '+dh,txt.slice(0,500));
   const x=await call('POST','/api/admin/recu',{...E,mode:'Virement bancaire',dateDon:hier,montant:'2600',remplace:'m_inexistant'},sig('POST','/api/admin/recu'));ok(x.st===400,'refaire un reçu inexistant : refusé',x)}
+ /* reçu manuel payé par carte bancaire (hors site) : accepté, « Carte bancaire » sur le PDF */
+ {const cb=L.find(q=>q.source==='manuel'&&q.mode==='Carte bancaire');ok(cb,'reçu manuel « Carte bancaire » présent dans la liste',L.filter(q=>q.source==='manuel').map(q=>q.mode));
+  if(cb){const pr=await fetch(B+'/api/admin/pdf?f='+encodeURIComponent(cb.file),{headers:sig('GET','/api/admin/pdf')});const fp=path.join(dir,'cb.pdf');fs.writeFileSync(fp,Buffer.from(await pr.arrayBuffer()));const txt=require('child_process').execFileSync('pdftotext',['-layout',fp,'-']).toString().replace(/\s+/g,' ');ok(/Mode de versement : Carte bancaire/.test(txt),'PDF : « Mode de versement : Carte bancaire »',txt.slice(0,300))}
+  const lm=(await admin()).j.modes;ok(Array.isArray(lm)&&lm.includes('Carte bancaire')&&lm.length===4,'liste des modes du CRM : virement, chèque, espèces, carte bancaire',lm)}
  /* APERÇU avant génération : même PDF avec la date choisie, mais aucun numéro pris et rien d'enregistré */
  {const n0=(await admin()).j.recus.length;
   let ap=await fetch(B+'/api/admin/recu/apercu',{method:'POST',headers:{'content-type':'application/json',origin:B,...sig('POST','/api/admin/recu/apercu')},body:JSON.stringify({...P,mode:'Espèces',dateDon:'2026-05-24',montant:'360'})});

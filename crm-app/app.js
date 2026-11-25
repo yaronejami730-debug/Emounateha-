@@ -1104,7 +1104,7 @@ views.sms = () => `
 
 
 // ================= CERFA : liste + reçus manuels =================
-let CF = { recus: [], modes: ['Virement bancaire', 'Chèque', 'Espèces'], affs: [], vue: 'don', ouverts: {} };
+let CF = { recus: [], modes: ['Virement bancaire', 'Chèque', 'Espèces', 'Carte bancaire'], affs: [], vue: 'don', ouverts: {} };
 const eurC = c => (c / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 async function cerfaSupprTests() {
   const tests = CF.recus.filter(r => /^TEST-/i.test(r.numero || ''));
@@ -1173,6 +1173,7 @@ function cerfaList() {
           <span class="cfd-nb"><b>${eurC(d.total)}</b><small>${d.rs.length} reçu${d.rs.length > 1 ? 's' : ''}${d.tout > d.rs.length ? ' sur ' + d.tout : ''} · dernier don le ${esc(new Date(d.dernier).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }))}</small></span>
           <span class="cfd-ch" aria-hidden="true">▾</span>
         </button>
+        <div class="cfd-new"><button class="btn sm pri" onclick="cerfaForm('${esc(d.rs[0].ref)}', true)">＋ Nouveau reçu avec ces informations</button><span class="hint">nom, adresse, e-mail et téléphone déjà remplis : il reste la date, le montant et le mode de paiement</span></div>
         <div class="cfd-rs">${d.rs.map(r => { const e = mailEtat(r.mail, r.brevo), cree = r.creeLe || (r.source === 'en ligne' ? r.dateDon : null);
           return `<div class="cfd-r"><div class="cfd-r1"><b class="cfd-num">${esc(r.numero)}</b><span class="cfd-mt">${eurC(r.montant)}</span></div>
             <div class="cfd-r2"><span>Don du ${esc(new Date(r.dateDon).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))}</span><span>${esc(String(r.mode || '').split(' — ')[0])}</span>${r.affectation ? `<span>${esc(r.affectation)}</span>` : ''}${cree ? `<span class="hint">reçu créé le ${esc(cfHeure(cree))}</span>` : ''}</div>
@@ -1230,11 +1231,12 @@ async function cerfaMail(ref) {
   } catch (e) { $('#modal').innerHTML = `<div class="box"><h2>E-mail du reçu ${esc(r.numero)}</h2><p class="hint">Indisponible : ${esc(e.message)}</p><div class="row r"><button class="btn pri" onclick="closeModal()">Fermer</button></div></div>`; }
 }
 let cfRemplace = '';
-function cerfaForm(ref) {
-  const old = ref ? CF.recus.find(x => x.ref === ref && x.source === 'manuel') : null;
+function cerfaForm(ref, nouveau) {
+  const src = nouveau && ref ? CF.recus.find(x => x.ref === ref) : null;   // « Nouveau reçu avec ces informations » : seul le donateur est repris
+  const old = !nouveau && ref ? CF.recus.find(x => x.ref === ref && x.source === 'manuel') : null;
   cfRemplace = old ? old.ref : ''; cfT = 'particulier';
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
-  $('#cerfaNew').innerHTML = `<div class="card" style="margin-bottom:16px"><div class="row" style="align-items:center"><b class="grow">${old ? 'Refaire le reçu ' + esc(old.numero) : 'Nouveau reçu manuel'}</b><button class="btn" onclick="$('#cerfaNew').innerHTML='';cfRemplace=''">Fermer</button></div>
+  $('#cerfaNew').innerHTML = `<div class="card" style="margin-bottom:16px"><div class="row" style="align-items:center"><b class="grow">${old ? 'Refaire le reçu ' + esc(old.numero) : src ? 'Nouveau reçu pour ' + esc(src.nom) : 'Nouveau reçu manuel'}</b><button class="btn" onclick="$('#cerfaNew').innerHTML='';cfRemplace=''">Fermer</button></div>
     ${old ? `<p class="hint" style="margin:4px 0 10px">Corrigez ce qui est faux (date, nom, adresse, montant…). Un nouveau reçu sera créé avec un nouveau numéro, portant la mention « Annule et remplace le reçu n° ${esc(old.numero)} » ; l'ancien reçu ${esc(old.numero)} est annulé.</p>` : ''}
     <div class="cf-seg" role="group" aria-label="Type de donateur"><button type="button" class="on" data-t="particulier" onclick="cfType('particulier')">👤 Particulier</button><button type="button" data-t="entreprise" onclick="cfType('entreprise')">🏢 Professionnel</button></div>
     <div id="cfPro" style="display:none"><label>Numéro SIRET (ou SIREN) — tout se remplit tout seul</label><input id="cf_siret" inputmode="numeric" placeholder="14 chiffres" oninput="cfSiret()"><div class="hint" id="cfSiretMsg"></div>
@@ -1247,6 +1249,14 @@ function cerfaForm(ref) {
       <div class="grow"><label>Mode de versement</label><select id="cf_mode">${CF.modes.map(m => `<option>${esc(m)}</option>`).join('')}</select></div></div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="cf_env" type="checkbox" checked style="width:auto"> Envoyer le reçu par e-mail au donateur</label>
     <div class="row" style="margin-top:12px"><span class="grow hint" id="cfMsg"></span><button class="btn pri" id="cfGo" onclick="cerfaApercu()">Voir l'aperçu du PDF</button></div></div>`;
+  const base = old || src;
+  if (base) {
+    const set = (id, v) => { const el = $('#' + id); if (el && v != null) el.value = v; }, pro = base.type === 'entreprise';
+    cfType(pro ? 'entreprise' : 'particulier');
+    set('cf_prenom', base.prenom); set('cf_nom', base.nomFamille); set('cf_rs', base.raisonSociale || (pro ? base.nom : '')); set('cf_siren', base.siren);
+    set('cf_email', base.email); set('cf_tel', base.tel); set('cf_adr', base.rue || String(base.adresse || '').split(',')[0]); set('cf_cp', base.cp); set('cf_ville', base.ville);
+  }
+  if (src) setTimeout(() => { const m = $('#cf_montant'); if (m) m.focus(); }, 300);
   if (old) {
     const pro = old.type === 'entreprise', set = (id, v) => { const el = $('#' + id); if (el && v != null) el.value = v; };
     cfType(pro ? 'entreprise' : 'particulier');
