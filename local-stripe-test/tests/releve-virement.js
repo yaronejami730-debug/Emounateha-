@@ -43,10 +43,9 @@ const P = (id, amount) => ({ id, amount, currency: 'eur', status: 'paid', create
   ok(coh.paiements === 2 && coh.L.some(l => l.genre === 'Remboursement') && coh.L.reduce((a, l) => a + l.netStripe, 0) === 4895 + 2930 - 3000, 'Famille Cohen : 2 paiements + 1 remboursement, net Stripe exact', coh);
   const base = MV.filter(m => ['charge', 'refund', 'adjustment'].includes(m.type)).reduce((a, m) => a + m.net, 0);
   const C = require('../commission.js'), D = C.REGLE_BESOIN_DEPUIS;
-  // dons du jeu d'essai faits AVANT la nouvelle règle : besoins comptés à 7 %, rien pour l'association, le reste à la personne
-  ok(M.totaux.com === Math.round(base * 0.07) && M.lignes.filter(l => l.categorie === 'autre').every(l => l.com === 0), 'besoins d\'avant la règle 5/5/90 : frais du prestataire 7 % partout, comme avant', [M.totaux.com, Math.round(base * 0.07)]);
-  const LA = M.lignes.filter(l => l.categorie === 'besoin');
-  ok(LA.length && LA.every(l => !l.nouvelle && l.asso === 0 && l.reverser === l.netStripe - l.com), 'besoins d\'avant : rien pour l\'association, à reverser = net − 7 %', LA);
+  // décision du 27 nov 2026 : la règle 5 / 5 / 90 vaut pour TOUS les dons des cagnottes, même anciens (le trop-perçu de 2 % est rendu sur les factures de commission)
+  { const LA = M.lignes.filter(l => l.categorie === 'besoin'), nA = LA.reduce((a, l) => a + l.netStripe, 0), gA = M.lignes.filter(l => l.categorie === 'general').reduce((a, l) => a + l.netStripe, 0);
+    ok(LA.length && LA.every(l => l.nouvelle) && M.totaux.com === Math.round(gA * 0.07) + Math.round(nA * 0.05) && LA.reduce((a, l) => a + l.asso, 0) === Math.round(nA * 0.05), 'anciens dons des cagnottes (24 nov) : aussi 5 % prestataire, 5 % association, 90 % la personne', { com: M.totaux.com }); }
   ok(M.lignes.filter(l => l.categorie !== 'besoin').every(l => l.asso === 0 && l.reverser === 0), 'dons généraux : aucune part « à reverser »');
   // mêmes mouvements faits APRÈS la mise en ligne de la règle
   const MVn = MV.map(m => ({ ...m, created: D + 3600 + (m.created - t0) }));
@@ -58,13 +57,11 @@ const P = (id, amount) => ({ id, amount, currency: 'eur', status: 'paid', create
   const don = (k, desc) => ({ type: 'charge', amount: 10000, fee: 150, net: 9850, description: desc, created: k });
   const cal = C.calculer([don(D + 10, 'Don — Besoin : Famille Test (famille-test)'), don(D + 20, 'Don — Colis de Chabbat')]);
   ok(cal.netBesoin === 9850 && cal.commission === Math.round(9850 * 0.05) + Math.round(9850 * 0.07), 'commission : un don besoin d\'après la règle à 5 %, un don général à 7 %', cal);
-  const calA = C.calculer([don(D - 10, 'Don — Besoin : Famille Test (famille-test)')]);
-  ok(calA.netBesoin === 0 && calA.commission === Math.round(9850 * 0.07), 'commission : un don besoin d\'avant la règle reste à 7 %', calA);
-  const rem = { type: 'refund', amount: -10000, fee: 0, net: -10000, created: D + 100, source: { object: 'refund', charge: { id: 'ch_x', created: D - 100 } }, description: 'Don — Besoin : Famille Test (famille-test)' };
-  ok(!C.regleBesoin(rem), 'remboursement fait après la bascule d\'un don d\'avant : suit la règle du don (ancienne)');
+  const calA = C.calculer([don(Math.floor(Date.parse('2026-11-01T10:00:00Z') / 1000), 'Don — Besoin : Famille Test (famille-test)')]);
+  ok(calA.netBesoin === 9850 && calA.commission === Math.round(9850 * 0.05), 'commission : un ancien don de cagnotte (1er nov) est aussi à 5 %', calA);
   const CG = require('../cagnottes.js'), pi = (c, a) => ({ status: 'succeeded', amount_received: a, created: c, latest_charge: { amount_refunded: 0, balance_transaction: { fee: 150 } } });
-  const rs = CG.resumer([pi(D - 50, 10000), pi(D + 50, 10000)]);
-  ok(rs.net === 19700 && rs.netAvant === 9850, 'cagnotte : net des dons d\'avant la règle compté à part (pour l\'ancienne règle)', rs);
+  const rs = CG.resumer([pi(Math.floor(Date.parse('2026-11-01T10:00:00Z') / 1000), 10000), pi(D + 50, 10000)]);
+  ok(rs.net === 19700 && rs.netAvant === 0, 'cagnotte : aucun don traité à l\'ancienne règle, même les anciens', rs);
   const M2 = R.modele(P('po_1', somme), MV, recus, { taux: 7, commission: 1234 });
   ok(M2.totaux.com === 1234, 'frais 7 % : la commission réelle donnée est répartie exactement', M2.totaux.com);
   ok(M.totaux.ecart === 0 && M.complet && M.totaux.net === somme - M.totaux.com && M.totaux.brut - M.totaux.frais === somme, 'sommes : brut − frais Stripe = virement ; − 7 % = net ; aucun écart', M.totaux);

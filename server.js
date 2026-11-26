@@ -1440,8 +1440,8 @@ const BESOIN_PRESTATAIRE = 5, BESOIN_ASSOCIATION = 5, BESOIN_ANCIEN = 7;   // an
 function besoinCompte(total, st, versements) {
   const vs = (Array.isArray(versements) ? versements : []).filter(v => v && Number.isFinite(v.montant)), verse = vs.reduce((t, v) => t + v.montant, 0);
   if (!st || !st.dons) return { versements: vs, verse, compte: null };
-  // dons d'avant la règle 5 / 5 / 90 (st.netAvant, donné par le serveur des dons) : ancienne règle, 7 % au prestataire, le reste à la personne
-  const net = Math.max(0, st.net), avant = Math.min(net, Math.max(0, Number.isFinite(st.netAvant) ? st.netAvant : net)), apres = net - avant;
+  // depuis le 27 nov 2026, tous les dons des cagnottes suivent 5 / 5 / 90 (st.netAvant vaut 0 ; gardé au cas où une date de bascule reviendrait)
+  const net = Math.max(0, st.net), avant = Math.min(net, Math.max(0, Number.isFinite(st.netAvant) ? st.netAvant : 0)), apres = net - avant;
   const prestataire = Math.round(avant * BESOIN_ANCIEN / 100) + Math.round(apres * BESOIN_PRESTATAIRE / 100), association = Math.round(apres * BESOIN_ASSOCIATION / 100), aReverser = Math.max(0, net - prestataire - association);
   return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, net: st.net, prestataire, association, tauxPrestataire: BESOIN_PRESTATAIRE, tauxAssociation: BESOIN_ASSOCIATION, ancienneRegle: avant > 0, netAvant: avant, retenue: prestataire + association, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
 }

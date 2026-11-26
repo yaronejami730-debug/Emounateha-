@@ -97,6 +97,31 @@ function monde() {
   // ── deux passages au même moment : une seule facture
   W = monde(); W.virement('po_1', '2026-11-02', [don(10000, 175)]); await Promise.all([W.run(H('2026-11-13', '09:00')), C.encaisser({ stripe: W.asso, stripe2: W.moi, maintenant: H('2026-11-13', '09:00') + 500 })]);
   ok(W.factures.length === 1 && W.postes.length === 1 && W.encaisse() === 688, 'deux passages simultanés : une facture, une ligne, un paiement', [W.factures.length, W.postes.length]);
+  // ── trop-perçu (décision du 27 nov 2026) : les cagnottes facturées à 7 % avant la règle 5 % → 2 % rendus, déduits des factures suivantes
+  { const besoin = (amount, fee) => ({ ...don(amount, fee), description: 'Don — Besoin : Famille X (famille-x)' });
+    W = monde(); W.virement('po_old', '2026-11-12', [besoin(10000, 175)]); W.virement('po_gen', '2026-11-12', [don(5000, 100)]);
+    W.factures.push({ id: 'in_old', status: 'paid', created: J('2026-11-13'), metadata: { commission: '1', v0: 'po_old,po_gen' } });
+    W.virement('po_new', '2026-11-27', [don(10000, 175)]);
+    r = await W.run(H('2026-11-28', '09:00'));
+    const du = Math.round(9825 * 0.07) - Math.round(9825 * 0.05);
+    ok(r.facture && r.facture.paye && r.total === 688 && r.avoir && r.avoir.du === du && r.avoir.deduit === du && r.facture.montant === 688 - du, 'trop-perçu : 2 % de la cagnotte déjà facturée à 7 % (' + du / 100 + ' €) déduits de la facture suivante', r.avoir);
+    ok(W.postes.some(p => p.amount === -du && /trop-perçu/.test(p.description)) && W.factures.some(f => f.id !== 'in_old' && f.metadata && f.metadata.avoir === String(du)), 'ligne « Remboursement du trop-perçu » sur la facture', W.postes);
+    const m2 = C.mailEncaissement(r, true); ok(/Trop-perçu rendu/.test(m2.text) && /tout est rendu/.test(m2.text), 'e-mail : trop-perçu rendu, tout est rendu', m2.text);
+    W.virement('po_new2', '2026-11-28', [don(10000, 175)]);
+    r = await W.run(H('2026-11-29', '09:00'));
+    ok(r.facture && r.facture.montant === 688 && r.avoir.reste === 0 && r.avoir.deduit === 0, 'facture suivante : rien de plus à déduire (jamais rendu deux fois)', r.avoir);
+    W = monde(); W.virement('po_old', '2026-11-12', [besoin(1000000, 15000)]);
+    W.factures.push({ id: 'in_old', status: 'paid', created: J('2026-11-13'), metadata: { commission: '1', v0: 'po_old' } });
+    W.virement('po_new', '2026-11-27', [don(10000, 175)]);
+    r = await W.run(H('2026-11-28', '09:00'));
+    const du2 = Math.round(985000 * 0.07) - Math.round(985000 * 0.05);
+    ok(r.facture && r.facture.montant === 0 && r.avoir.deduit === 688 && r.avoir.resteApres === du2 - 688, 'gros trop-perçu : facture à 0 €, le reste sera déduit des suivantes', r.avoir);
+    W.factures.push({ id: 'in_vieux_nouvelle', status: 'paid', created: J('2026-11-28'), metadata: { commission: '1', v0: 'po_x' } });
+    const a2 = await C.tropPercu(W.asso, W.factures); ok(a2.du === du2 && a2.deja === 688 && a2.reste === du2 - 688, 'le déjà déduit est relu sur les factures (metadata avoir)', a2);
+    W = monde(); W.virement('po_rec', '2026-11-28', [{ ...don(10000, 175), created: J('2026-11-27'), description: 'Don — Besoin : Famille X (famille-x)' }]);
+    W.factures.push({ id: 'in_x', status: 'paid', created: J('2026-11-13'), metadata: { commission: '1', v0: 'po_rec' } });
+    ok((await C.tropPercu(W.asso, W.factures)).du === 0, 'don de cagnotte fait après le 26/11 21 h 53 : jamais compté dans le trop-perçu');
+  }
   // ── clés de modes différents : refus
   process.env.STRIPE_COMMISSION_KEY = 'rk_live_x'; W = monde(); W.virement('po_1', '2026-11-02', [don(10000, 175)]); r = await W.run(H('2026-11-13', '09:00')); ok(r.ok === false && /même mode/.test(r.error) && !W.factures.length, 'une clé de test et une clé réelle : refus, rien créé', r);
   console.log(pass + ' ok, ' + fail + ' échec'); process.exit(fail ? 1 : 0);
