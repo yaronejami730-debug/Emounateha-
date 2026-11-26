@@ -7,6 +7,16 @@
 // Les dons hors Stripe (chèque, virement, espèces) ne sont pas dans Stripe : ils ne comptent pas.
 
 const TAUX = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX || 7)));
+// Besoins (mini-cagnottes personnelles) : le prestataire ne prend que TAUX_BESOIN % (5) ; l'association garde PART_ASSO_BESOIN % (5) ; le reste (90 %) revient à la personne.
+const TAUX_BESOIN = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX_BESOIN || 5)));
+const PART_ASSO_BESOIN = 5;
+// le mouvement Stripe est-il un don (ou un remboursement) d'un besoin ? par le reçu, à défaut par le libellé « … Besoin : <titre> (slug) »
+function estBesoin(m, recus = {}) {
+  const R = require('./releve.js'), src = m && m.source && typeof m.source === 'object' ? m.source : null, id = v => (v && typeof v === 'object' ? v.id : v) || '';
+  const k = [id(src && src.payment_intent), id(src && src.invoice), id(src && src.charge), src && src.id].filter(Boolean).find(x => recus && recus[x]);
+  return !!(R.cagnotteDe(k ? recus[k] : null, m && m.description) || R.cagnotteDe(null, src && src.description));
+}
+const libTaux = (taux, netBesoin) => { const t = String(taux).replace('.', ',') + ' %'; return netBesoin ? t + ' (besoins : ' + String(TAUX_BESOIN).replace('.', ',') + ' %)' : t; };
 const CLIENT = process.env.STRIPE_COMMISSION_CLIENT || 'cus_VbtVLcPE714MbD';   // l'association, cliente sur le compte Stripe du prestataire (identifiant non secret) — servira à l'étape « facture »
 
 // types de mouvements Stripe qui entrent dans la base de calcul
@@ -33,9 +43,9 @@ function semaine(jour) {
 function semainePrecedente(p) { const d = new Date(p.du + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 7); return semaine(d.toISOString().slice(0, 10)); }
 
 // Calcul pur, à partir des mouvements de solde Stripe (montants en centimes). Aucune estimation : fee et net sont ceux de Stripe.
-function calculer(mouvements, taux = TAUX) {
+function calculer(mouvements, taux = TAUX, recus = {}) {
   const lignes = [], ignores = {}, inconnus = {};
-  let brut = 0, frais = 0, rembourse = 0, litiges = 0, net = 0, nbDons = 0;
+  let brut = 0, frais = 0, rembourse = 0, litiges = 0, net = 0, nbDons = 0, netBesoin = 0;
   for (const m of mouvements) {
     if (m.currency && String(m.currency).toLowerCase() !== 'eur') { inconnus['devise ' + m.currency] = (inconnus['devise ' + m.currency] || 0) + 1; continue; }
     const type = String(m.type || '');
@@ -43,15 +53,18 @@ function calculer(mouvements, taux = TAUX) {
     if (!genre) { if (HORS_BASE.has(type)) ignores[type] = (ignores[type] || 0) + 1; else inconnus[type] = (inconnus[type] || 0) + 1; continue; }
     const a = Math.round(Number(m.amount) || 0), f = Math.round(Number(m.fee) || 0), n = Math.round(Number(m.net) || 0);
     if (genre === 'don') { brut += a; nbDons++; } else if (genre === 'remboursement') rembourse += a; else litiges += a;
-    frais += f; net += n;
-    lignes.push({ id: m.id, at: new Date((m.created || 0) * 1000).toISOString(), jour: parisJour((m.created || 0) * 1000), genre, description: String(m.description || '').slice(0, 140), brut: a, frais: f, net: n });
+    frais += f; net += n; const b = estBesoin(m, recus); if (b) netBesoin += n;
+    lignes.push({ besoin: b, id: m.id, at: new Date((m.created || 0) * 1000).toISOString(), jour: parisJour((m.created || 0) * 1000), genre, description: String(m.description || '').slice(0, 140), brut: a, frais: f, net: n });
   }
   lignes.sort((x, y) => x.at.localeCompare(y.at));
-  const base = net, commission = base > 0 ? Math.round(base * taux / 100) : 0;
+  const base = net, commission = base > 0 ? commissionDe(net, netBesoin, taux) : 0;
   // contrôle : la somme des lignes doit redonner exactement le net (au centime)
   const controle = brut + rembourse + litiges - frais === net;
-  return { taux, nbDons, nbLignes: lignes.length, brut, frais, rembourse, litiges, net, base, commission, resteAssociation: net - commission, controle, ignores, inconnus, lignes };
+  return { taux, tauxBesoin: TAUX_BESOIN, netBesoin, netGeneral: net - netBesoin, nbDons, nbLignes: lignes.length, brut, frais, rembourse, litiges, net, base, commission, resteAssociation: net - commission, controle, ignores, inconnus, lignes };
 }
+
+// commission = net des dons généraux × TAUX % + net des besoins × TAUX_BESOIN % (chaque part arrondie au centime)
+function commissionDe(net, netBesoin = 0, taux = TAUX) { return Math.round((net - netBesoin) * taux / 100) + Math.round(netBesoin * TAUX_BESOIN / 100); }
 
 async function mouvementsStripe(stripe, du, au) {   // bornes incluses, jours de Paris
   const gte = Math.floor(minuitParis(du) / 1000), lt = Math.floor(minuitParis(lendemain(au)) / 1000), out = [];
@@ -68,7 +81,7 @@ function releveMail(p, r, live, rattrapage) {
   const L = [['Dons encaissés (' + r.nbDons + ')', eur(r.brut)], ['− Frais Stripe', '− ' + eur(r.frais)]];
   if (r.rembourse) L.push(['− Remboursements', '− ' + eur(-r.rembourse)]);
   if (r.litiges) L.push([r.litiges < 0 ? '− Litiges' : '+ Litiges regagnés', (r.litiges < 0 ? '− ' : '+ ') + eur(Math.abs(r.litiges))]);
-  L.push(['= Net encaissé par l\'association', eur(r.net)], ['× ' + tx + ' % = Commission', eur(r.commission)]);
+  L.push(['= Net encaissé par l\'association', eur(r.net)], [r.netBesoin ? 'Commission : ' + eur(r.netGeneral) + ' × ' + tx + ' % + besoins ' + eur(r.netBesoin) + ' × ' + String(r.tauxBesoin).replace('.', ',') + ' %' : '× ' + tx + ' % = Commission', eur(r.commission)]);
   const alertes = [];
   if (!r.controle) alertes.push('CONTRÔLE EN ÉCHEC : la somme des lignes ne redonne pas le net. Ne rien facturer sur cette base.');
   if (Object.keys(r.inconnus).length) alertes.push('Mouvements non reconnus, donc non comptés : ' + Object.entries(r.inconnus).map(([k, n]) => k + ' (' + n + ')').join(', '));
@@ -103,9 +116,9 @@ function echu(p, maintenant, heure = HEURE) {
 }
 // commission d'un virement : peut être négative (virement de régularisation : remboursements) — elle vient alors en déduction des autres
 function ligneVirement(p, mouvements, taux = TAUX, recus = {}) {
-  const r = calculer(mouvements, taux);
+  const r = calculer(mouvements, taux, recus);
   let detail = []; try { detail = require('./virements').lignes(mouvements, recus); } catch (e) {}   // un paiement par ligne : date, donateur, objet, don, frais, net
-  return { detail, id: p.id, arrivee: p.arrival_date, montantVire: p.amount, nbDons: r.nbDons, brut: r.brut, frais: r.frais, rembourse: r.rembourse, litiges: r.litiges, net: r.net, commission: Math.round(r.net * taux / 100), controle: r.controle, inconnus: Object.keys(r.inconnus) };
+  return { detail, id: p.id, arrivee: p.arrival_date, montantVire: p.amount, nbDons: r.nbDons, brut: r.brut, frais: r.frais, rembourse: r.rembourse, litiges: r.litiges, net: r.net, netBesoin: r.netBesoin, commission: commissionDe(r.net, r.netBesoin, taux), controle: r.controle, inconnus: Object.keys(r.inconnus) };
 }
 // virements déjà pris par une facture (brouillon, ouverte, payée ou abandonnée). Une facture ANNULÉE (void) libère ses virements.
 function dejaPris(factures) {
@@ -163,9 +176,10 @@ async function encaisser({ stripe, stripe2, simuler, recus = {}, maintenant = Da
   // facture sur le compte du prestataire, payée tout de suite par la carte enregistrée
   const ids = lignes.map(l => l.id), cle = 'commission-' + require('crypto').createHash('sha256').update(CLIENT + '|' + ids.join(',') + '|' + Math.floor(maintenant / 3600000)).digest('hex').slice(0, 32), tx = String(TAUX).replace('.', ',');   // clé : deux passages simultanés tombent sur la même facture ; un nouvel essai une heure plus tard repart de zéro
   const periode = lignes.length === 1 ? 'virement arrivé le ' + jourFr(lignes[0].arrivee) : lignes.length + ' virements arrivés du ' + jourFr(lignes[0].arrivee) + ' au ' + jourFr(lignes[lignes.length - 1].arrivee);
-  let inv = await stripe2.invoices.create({ customer: CLIENT, collection_method: 'charge_automatically', auto_advance: false, pending_invoice_items_behavior: 'exclude', currency: 'eur', ...(pmSeule ? { default_payment_method: pmSeule } : {}), description: `Commission de ${tx} % sur les dons nets reçus — ${periode}`, metadata: { commission: '1', lot: cle, ...metaVirements(ids) } }, { idempotencyKey: cle });
+  let inv = await stripe2.invoices.create({ customer: CLIENT, collection_method: 'charge_automatically', auto_advance: false, pending_invoice_items_behavior: 'exclude', currency: 'eur', ...(pmSeule ? { default_payment_method: pmSeule } : {}), description: `Commission de ${libTaux(TAUX, lignes.some(l => l.netBesoin))} sur les dons nets reçus — ${periode}`, metadata: { commission: '1', lot: cle, ...metaVirements(ids) } }, { idempotencyKey: cle });
   try {
-    const postes = lignes.length <= 12 ? lignes.map(l => ({ amount: l.commission, description: `Virement arrivé le ${jourFr(l.arrivee)} — net des dons ${eur(l.net)} × ${tx} %`, k: l.id })) : [{ amount: total, description: `${periode} — net des dons ${eur(net)} × ${tx} %`, k: 'tout' }];
+    const calc = (n, nb) => nb ? `dons ${eur(n - nb)} × ${tx} % + besoins ${eur(nb)} × ${String(TAUX_BESOIN).replace('.', ',')} %` : `net des dons ${eur(n)} × ${tx} %`, nbTot = lignes.reduce((a, l) => a + (l.netBesoin || 0), 0);
+    const postes = lignes.length <= 12 ? lignes.map(l => ({ amount: l.commission, description: `Virement arrivé le ${jourFr(l.arrivee)} — ${calc(l.net, l.netBesoin)}`, k: l.id })) : [{ amount: total, description: `${periode} — ${calc(net, nbTot)}`, k: 'tout' }];
     for (const x of postes) await stripe2.invoiceItems.create({ customer: CLIENT, invoice: inv.id, amount: x.amount, currency: 'eur', description: x.description }, { idempotencyKey: cle + '-' + x.k });
     inv = await stripe2.invoices.retrieve(inv.id);
     if (inv.status === 'draft') {
@@ -189,7 +203,7 @@ function tableauVirements(r, tx) {
   const td = 'padding:9px 6px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px';
   const T = k => (r.virements || []).reduce((a, l) => a + (Number(l[k]) || 0), 0);
   const lignes = (r.virements || []).map(l => `<tr><td style="${td};text-align:left">${escH(jourFr(l.arrivee))}</td><td style="${td}">${l.nbDons}</td><td style="${td}">${escH(eur(l.brut))}</td><td style="${td}">− ${escH(eur(l.frais + l.rembourse + l.litiges))}</td><td style="${td}">${escH(eur(l.net))}</td><td style="${td};font-weight:bold;color:${TEAL}">${escH(eur(l.commission))}</td></tr>`).join('');
-  return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:8px 0 0"><tr><th style="${th};text-align:left">Arrivée en banque</th><th style="${th}">Dons</th><th style="${th}">Encaissé</th><th style="${th}">Frais Stripe</th><th style="${th}">Net</th><th style="${th}">Commission ${escH(tx)} %</th></tr>${lignes}${(r.virements || []).length > 1 ? `<tr>` + ['Total', T('nbDons'), eur(T('brut')), '− ' + eur(T('frais') + T('rembourse') + T('litiges')), eur(T('net')), eur(T('commission'))].map((v, i) => `<td style="padding:10px 6px;border-top:2px solid ${TEAL};font-weight:bold;font-size:13.5px;text-align:${i ? 'right' : 'left'}${i === 5 ? ';color:' + TEAL : ''}">${escH(v)}</td>`).join('') + '</tr>' : ''}</table>`;
+  return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:8px 0 0"><tr><th style="${th};text-align:left">Arrivée en banque</th><th style="${th}">Dons</th><th style="${th}">Encaissé</th><th style="${th}">Frais Stripe</th><th style="${th}">Net</th><th style="${th}">Commission ${escH(libTaux(tx, (r.virements || []).some(v => v.netBesoin)))}</th></tr>${lignes}${(r.virements || []).length > 1 ? `<tr>` + ['Total', T('nbDons'), eur(T('brut')), '− ' + eur(T('frais') + T('rembourse') + T('litiges')), eur(T('net')), eur(T('commission'))].map((v, i) => `<td style="padding:10px 6px;border-top:2px solid ${TEAL};font-weight:bold;font-size:13.5px;text-align:${i ? 'right' : 'left'}${i === 5 ? ';color:' + TEAL : ''}">${escH(v)}</td>`).join('') + '</tr>' : ''}</table>`;
 }
 function tableauPaiements(r, pourPdf) {
   const th = 'padding:7px 5px;border-bottom:2px solid ' + TEAL + ';font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:' + GRIS + ';text-align:', td = 'padding:7px 5px;border-bottom:1px solid #e5e7eb;font-size:12.5px;vertical-align:top;';
@@ -211,10 +225,10 @@ function corpsCommission(r, f, tx, refuse, pourPdf) {
   const etabli = new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: 'long', year: 'numeric' });
   return G.bandeau({ titre: 'Relevé de commission', sous: (f && f.numero ? 'Facture ' + f.numero + ' · ' : '') + 'établi le ' + etabli, pourPdf }) +
     G.montant({ etiquette: refuse ? 'Commission : paiement refusé' : 'Commission encaissée', valeur: eur(montant || total), etat: refuse ? 'Carte refusée : la facture reste ouverte, nouvel essai au prochain passage' : 'Payée par carte' + (f && f.numero ? ' · facture ' + f.numero : ''), alerte: !!refuse }) +
-    G.reperes([{ l: 'Dons encaissés', v: eur(brut), sous: V.reduce((a, l) => a + l.nbDons, 0) + ' don(s)' }, { l: 'Net de l\'association', v: eur(net), sous: 'après frais Stripe' }, { l: 'Commission ' + tx + ' %', v: eur(total), sous: eur(net) + ' × ' + tx + ' %' }]) +
-    `<p style="margin:16px 0 0;font-size:15px;line-height:1.55;color:#1f2937">${refuse ? 'La carte enregistrée a été refusée : la facture reste ouverte, un nouvel essai a lieu au prochain passage.' : `Commission de ${escH(tx)} % sur les dons nets de l'association (${escH(eur(net))} au total), prélevée par carte le jour de l'arrivée en banque de ${V.length > 1 ? 'ces virements' : 'ce virement'} Stripe.`}</p>` +
+    G.reperes([{ l: 'Dons encaissés', v: eur(brut), sous: V.reduce((a, l) => a + l.nbDons, 0) + ' don(s)' }, { l: 'Net de l\'association', v: eur(net), sous: 'après frais Stripe' }, { l: 'Commission ' + libTaux(tx, V.some(v => v.netBesoin)), v: eur(total), sous: V.some(v => v.netBesoin) ? 'besoins à ' + String(TAUX_BESOIN).replace('.', ',') + ' %' : eur(net) + ' × ' + tx + ' %' }]) +
+    `<p style="margin:16px 0 0;font-size:15px;line-height:1.55;color:#1f2937">${refuse ? 'La carte enregistrée a été refusée : la facture reste ouverte, un nouvel essai a lieu au prochain passage.' : `Commission de ${escH(libTaux(tx, V.some(v => v.netBesoin)))} sur les dons nets de l'association (${escH(eur(net))} au total), prélevée par carte le jour de l'arrivée en banque de ${V.length > 1 ? 'ces virements' : 'ce virement'} Stripe.`}</p>` +
     G.partie(1, 'À quoi correspond cette commission') + tableauVirements(r, tx) +
-    G.note(['Net = dons encaissés − frais Stripe − remboursements − litiges.', 'Commission = net × ' + tx + ' %.', 'Aucun don n\'est compté avant l\'arrivée du virement Stripe en banque.', 'Aucun virement n\'est compté deux fois.'], 'Comment c\'est calculé') +
+    G.note(['Net = dons encaissés − frais Stripe − remboursements − litiges.', 'Commission = net × ' + tx + ' %' + (V.some(v => v.netBesoin) ? ' ; pour les besoins (cagnottes personnelles) : net × ' + String(TAUX_BESOIN).replace('.', ',') + ' %' : '') + '.', 'Aucun don n\'est compté avant l\'arrivée du virement Stripe en banque.', 'Aucun virement n\'est compté deux fois.'], 'Comment c\'est calculé') +
     (V.some(v => (v.detail || []).length) ? G.partie(2, 'Le détail, paiement par paiement') + tableauPaiements(r, pourPdf) : '');
 }
 function pdfCommission(r, f, tx, refuse) { return G.enPdf(corpsCommission(r, f, tx, refuse, true)); }
@@ -233,7 +247,7 @@ function mailEncaissement(r, live) {
   for (const x of reussis) L.push(`Commission : ${eur(x.montant)} — payée au nouvel essai.`);
   for (const x of rates) L.push(`Commission : ${eur(x.montant)} — carte refusée (${x.raison || 'raison inconnue'}). Nouvel essai demain.${x.lien ? ' Lien de paiement : ' + x.lien : ''}`);
   if (f) L.push(`Commission : ${eur(f.montant)} — ${f.paye ? 'payée par carte' : 'carte refusée (' + (f.raison || 'raison inconnue') + '). Nouvel essai demain.' + (f.lien ? ' Lien de paiement : ' + f.lien : '')}`);
-  if (f) for (const l of r.virements || []) L.push(`  • virement arrivé le ${jourFr(l.arrivee)} (${eur(l.montantVire)} viré) : ${l.nbDons} don(s), net ${eur(l.net)} × ${tx} % = ${eur(l.commission)}`);
+  if (f) for (const l of r.virements || []) L.push(`  • virement arrivé le ${jourFr(l.arrivee)} (${eur(l.montantVire)} viré) : ${l.nbDons} don(s), ${l.netBesoin ? 'dons ' + eur(l.net - l.netBesoin) + ' × ' + tx + ' % + besoins ' + eur(l.netBesoin) + ' × ' + String(TAUX_BESOIN).replace('.', ',') + ' %' : 'net ' + eur(l.net) + ' × ' + tx + ' %'} = ${eur(l.commission)}`);
   for (const e of r.ecartes || []) L.push(`⚠ Virement ${e.id} non facturé : ${e.raison}.`);
   if (r.reste) L.push(`Il reste ${r.reste} virement(s) plus récents à traiter au prochain passage.`);
   const text = L.join('\n'), e = s => String(s).replace(/[&<>]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]));
@@ -392,4 +406,4 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, stripe2 =
   });
 }
 
-module.exports = { virer, jourUrssaf, couvert, mailVirements, encaisser, echu, ligneVirement, dejaPris, metaVirements, mailEncaissement, releveMail, calculer, semaine, semainePrecedente, minuitParis, mouvementsStripe, monter, TAUX, CLIENT };
+module.exports = { TAUX_BESOIN, PART_ASSO_BESOIN, estBesoin, commissionDe, libTaux, virer, jourUrssaf, couvert, mailVirements, encaisser, echu, ligneVirement, dejaPris, metaVirements, mailEncaissement, releveMail, calculer, semaine, semainePrecedente, minuitParis, mouvementsStripe, monter, TAUX, CLIENT };

@@ -13,7 +13,10 @@
  *  - « Détail par type » (écrit par le site) : par virement, une ligne par type de don et par cagnotte (le résumé du PDF) ;
  *  - « Cagnottes »    : par cagnotte, net dû, en cours de virement, arrivé en banque, reversé, date, reste, historique, STATUT (K) ;
  *                     la trésorière choisit en L « Tout reversé / La moitié / Autre montant » : reversé, date, reste et historique se remplissent seuls
- *                     (déclencheur quandModifie, installé une fois par la fonction installer()).
+ *                     (déclencheur quandModifie, installé une fois par la fonction installer()) ;
+ *  - « Répartition »  : par cagnotte, comment se partage l'argent : net après frais Stripe → 5 % prestataire, 5 % association, 90 % la personne ; reversé, reste.
+ * Règle (26 nov 2026) : besoins = 5 % prestataire + 5 % association + 90 % la personne, sur le net après frais Stripe ; autres dons = 7 % prestataire.
+ * Après la mise à jour du 26 nov 2026 : lancer UNE fois installerRepartition() (Exécuter) — ne touche pas aux reversements déjà notés.
  * Un même virement n'est jamais écrit deux fois (repéré par sa référence Stripe po_…).
  */
 
@@ -21,10 +24,11 @@
 const SHEET_ID = '1_4U4WtC2x2FjRoQu2-TsSkVDipUtKsc26u_LpMc0qpc';
 
 const ONGLETS = {
-  Virements: ['Date du virement', 'Référence Stripe', 'Paiements', 'Brut', 'Frais Stripe', 'Virement reçu en banque', 'Frais 7 %', 'Net pour l\'association', 'dont dons généraux', 'dont besoins (cagnottes)', 'Écart à vérifier', 'Écrit le', 'Statut du virement', 'Statut mis à jour le'],
-  Paiements: ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Nature', 'Date du paiement', 'Prénom', 'Nom', 'E-mail', 'ID de paiement Stripe', 'N° de reçu', 'Brut', 'Frais Stripe', 'Frais 7 %', 'Net', 'Statut du virement', 'Moyen de paiement', 'Fréquence', 'Particulier / entreprise'],
-  'Détail par type': ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Paiements', 'Brut', 'Frais Stripe', 'Frais 7 %', 'Net', 'Statut du virement'],
-  Cagnottes: ['Cagnotte', 'Paiements', 'Brut', 'Net dû à la cagnotte', 'dont en cours de virement', 'dont arrivé en banque', 'Reversé (total)', 'Date du dernier reversement', 'Reste à reverser', 'Historique des reversements', 'Statut', 'Reversement (à choisir)']
+  Virements: ['Date du virement', 'Référence Stripe', 'Paiements', 'Brut', 'Frais Stripe', 'Virement reçu en banque', 'Frais du prestataire', 'Net pour l\'association', 'dont dons généraux', 'dont à reverser aux besoins (90 %)', 'Écart à vérifier', 'Écrit le', 'Statut du virement', 'Statut mis à jour le'],
+  Paiements: ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Nature', 'Date du paiement', 'Prénom', 'Nom', 'E-mail', 'ID de paiement Stripe', 'N° de reçu', 'Brut', 'Frais Stripe', 'Frais du prestataire (7 % ; besoins 5 %)', 'Net', 'Statut du virement', 'Moyen de paiement', 'Fréquence', 'Particulier / entreprise', 'Part association (besoins 5 %)', 'À reverser à la personne (besoins 90 %)'],
+  'Détail par type': ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Paiements', 'Brut', 'Frais Stripe', 'Frais du prestataire', 'Net', 'Statut du virement'],
+  Cagnottes: ['Cagnotte', 'Paiements', 'Brut', 'Dû à la personne (90 % du net)', 'dont en cours de virement', 'dont arrivé en banque', 'Reversé (total)', 'Date du dernier reversement', 'Reste à reverser', 'Historique des reversements', 'Statut', 'Reversement (à choisir)'],
+  'Répartition': ['Cagnotte', 'Paiements', 'Collecté (brut)', 'Frais Stripe', 'Net après frais Stripe', 'Prestataire 5 %', 'Association 5 %', 'Personne 90 %', 'Déjà reversé', 'Reste à reverser']
 };
 const CHOIX = ['Tout reversé', 'La moitié', 'Autre montant'];   // colonne L de « Cagnottes »
 const STATUT_VIR = { pending: 'En cours de virement', in_transit: 'En cours de virement', paid: 'Arrivé en banque', failed: 'Refusé par la banque', canceled: 'Annulé' };
@@ -36,6 +40,7 @@ function doPost(e) {
     const d = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     const secret = PropertiesService.getScriptProperties().getProperty('SECRET');
     if (!secret || d.secret !== secret) return repondre({ ok: false, error: 'secret invalide' });
+    if (d.action === 'repartition') return repondre({ ok: true, resultat: installerRepartition() });
     if (d.action === 'installer') return repondre({ ok: true, resultat: installer() });   // mise au format de « Cagnottes » + déclencheur (une fois)
     const v = d.virement || {}, P = Array.isArray(d.paiements) ? d.paiements : [];
     if (!/^po_[A-Za-z0-9]+$/.test(String(v.id || ''))) return repondre({ ok: false, error: 'virement sans référence' });
@@ -54,8 +59,8 @@ function doPost(e) {
     if (ligneVir >= 0) return repondre({ ok: true, deja: true });
     const e2 = c => Math.round(Number(c) || 0) / 100, S = (L, k) => L.reduce((a, x) => a + (Number(x[k]) || 0), 0), txt = s => String(s == null ? '' : s).replace(/^[=+\-@]/, "'$&");
     const gen = P.filter(p => p.categorie === 'general'), bes = P.filter(p => p.categorie === 'besoin'), CAT = { general: 'Dons généraux', besoin: 'Besoin (cagnotte)', autre: 'Autre mouvement Stripe' };
-    wv.appendRow([v.date, v.id, P.filter(p => p.nature === 'Don').length, e2(S(P, 'brut')), -e2(S(P, 'frais')), e2(v.montant), -e2(S(P, 'com')), e2(v.montant) - e2(S(P, 'com')), e2(S(gen, 'net')), e2(S(bes, 'net')), e2(v.ecart), new Date(), statut, new Date()]);
-    if (P.length) wp.getRange(wp.getLastRow() + 1, 1, P.length, ONGLETS.Paiements.length).setValues(P.map(p => [v.date, v.id, CAT[p.categorie] || txt(p.categorie), txt(p.type), txt(p.nature === 'Autre' ? 'Mouvement Stripe' : p.nature), p.date, txt(p.prenom), txt(p.nom), txt(p.email), txt(p.id), txt(p.recu), e2(p.brut), -e2(p.frais), -e2(p.com), e2(p.net), statut, txt(p.moyen), txt(p.frequence), txt(p.donateurType)]));
+    wv.appendRow([v.date, v.id, P.filter(p => p.nature === 'Don').length, e2(S(P, 'brut')), -e2(S(P, 'frais')), e2(v.montant), -e2(S(P, 'com')), e2(v.montant) - e2(S(P, 'com')), e2(S(gen, 'net')), e2(S(bes, 'reverser')), e2(v.ecart), new Date(), statut, new Date()]);
+    if (P.length) wp.getRange(wp.getLastRow() + 1, 1, P.length, ONGLETS.Paiements.length).setValues(P.map(p => [v.date, v.id, CAT[p.categorie] || txt(p.categorie), txt(p.type), txt(p.nature === 'Autre' ? 'Mouvement Stripe' : p.nature), p.date, txt(p.prenom), txt(p.nom), txt(p.email), txt(p.id), txt(p.recu), e2(p.brut), -e2(p.frais), -e2(p.com), e2(p.net), statut, txt(p.moyen), txt(p.frequence), txt(p.donateurType), -e2(p.asso), e2(p.reverser)]));
     // « Détail par type » : le résumé du PDF (une ligne par type de don et par cagnotte de ce virement)
     const wt = onglet(ss, 'Détail par type'), G = {};
     P.forEach(p => { const k = p.categorie + '|' + p.type; const g = G[k] || (G[k] = { cat: CAT[p.categorie] || p.categorie, type: p.type, n: 0, brut: 0, frais: 0, com: 0, net: 0 }); if (p.nature === 'Don') g.n++; ['brut', 'frais', 'com', 'net'].forEach(x => g[x] += Number(p[x]) || 0); });
@@ -65,7 +70,10 @@ function doPost(e) {
     const connues = wc.getLastRow() > 1 ? wc.getRange(2, 1, wc.getLastRow() - 1, 1).getValues().map(r => r[0]) : [];
     [...new Set(bes.map(p => txt(p.type)))].filter(n => n && connues.indexOf(n) < 0).forEach(n => { const r = wc.getLastRow() + 1; wc.getRange(r, 1).setValue(n); formulesCagnotte(ss, wc, r); });
     choix(wc);
-    mettreEnForme(wv, [4, 5, 6, 7, 8, 9, 10, 11]); mettreEnForme(wp, [12, 13, 14, 15]); mettreEnForme(wc, [3, 4, 5, 6, 7, 9]); mettreEnForme(onglet(ss, 'Détail par type'), [6, 7, 8, 9]);
+    const wr = onglet(ss, 'Répartition'), dansRep = wr.getLastRow() > 1 ? wr.getRange(2, 1, wr.getLastRow() - 1, 1).getValues().map(r => r[0]) : [];
+    [...new Set(bes.map(p => txt(p.type)))].filter(n => n && dansRep.indexOf(n) < 0).forEach(n => { const r = wr.getLastRow() + 1; wr.getRange(r, 1).setValue(n); formulesRepartition(ss, wr, r); });
+    mettreEnForme(wr, [3, 4, 5, 6, 7, 8, 9, 10]);
+    mettreEnForme(wv, [4, 5, 6, 7, 8, 9, 10, 11]); mettreEnForme(wp, [12, 13, 14, 15, 20, 21]); mettreEnForme(wc, [3, 4, 5, 6, 7, 9]); mettreEnForme(onglet(ss, 'Détail par type'), [6, 7, 8, 9]);
     return repondre({ ok: true, lignes: P.length });
   } catch (err) {
     return repondre({ ok: false, error: String(err && err.message || err) });
@@ -105,12 +113,46 @@ function formulesCagnotte(ss, wc, r) {
   const c = 'A' + r, pay = (col, extra) => `SUMIFS(Paiements!${col}:${col},Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c}${extra || ''})`;
   wc.getRange(r, 2, 1, 5).setFormulas([[
     `=COUNTIFS(Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c},Paiements!$E:$E,"Don")`,
-    '=' + pay('L'), '=' + pay('O'),
-    '=' + pay('O', ',Paiements!$P:$P,"En cours de virement"'),
-    '=' + pay('O', ',Paiements!$P:$P,"Arrivé en banque"')].map(f => local(ss, f))]);
+    '=' + pay('L'), '=' + pay('U'),
+    '=' + pay('U', ',Paiements!$P:$P,"En cours de virement"'),
+    '=' + pay('U', ',Paiements!$P:$P,"Arrivé en banque"')].map(f => local(ss, f))]);
   if (wc.getRange(r, 7).getValue() === '') wc.getRange(r, 7).setValue(0);
   wc.getRange(r, 9).setFormula(local(ss, `=ROUND(D${r}-G${r},2)`));
   wc.getRange(r, 11).setFormula(local(ss, `=IF(D${r}=0,"Aucun don",IF(I${r}<=0,"Soldé",IF(G${r}>0,"Reversé en partie",IF(F${r}=0,"En attente de Stripe","À reverser"))))`));
+}
+
+// Formules d'une ligne de « Répartition » (tout vient de « Paiements » ; le déjà reversé vient de « Cagnottes », colonne G)
+function formulesRepartition(ss, w, r) {
+  const c = '$A' + r, pay = col => `SUMIFS(Paiements!${col}:${col},Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c})`;
+  w.getRange(r, 2, 1, 9).setFormulas([[
+    `=COUNTIFS(Paiements!$C:$C,"Besoin (cagnotte)",Paiements!$D:$D,${c},Paiements!$E:$E,"Don")`,
+    '=' + pay('L'), '=' + pay('M'), `=C${r}+D${r}`,
+    `=ROUND(E${r}-G${r}-H${r},2)`, '=-' + pay('T'), '=' + pay('U'),
+    `=SUMIF(Cagnottes!$A:$A,${c},Cagnottes!$G:$G)`, `=ROUND(H${r}-I${r},2)`].map(f => local(ss, f))]);
+}
+
+// À lancer UNE fois après la mise à jour du 26 nov 2026 (Exécuter → installerRepartition) :
+// titres des colonnes à jour, part association et somme à reverser calculées pour les anciens paiements des besoins (90 / 5 / 5 du net après frais Stripe),
+// « Cagnottes » recalculée sur 90 %, onglet « Répartition » créé. Ne touche JAMAIS aux reversements déjà notés (colonnes G, H, J de « Cagnottes »).
+function installerRepartition() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  ['Virements', 'Paiements', 'Détail par type', 'Cagnottes'].forEach(nom => { const w = ss.getSheetByName(nom); if (w) w.getRange(1, 1, 1, ONGLETS[nom].length).setValues([ONGLETS[nom]]).setFontWeight('bold').setFontColor('#ffffff').setBackground('#1f6a72').setWrap(true); });
+  const wp = ss.getSheetByName('Paiements'); let n = 0;
+  if (wp && wp.getLastRow() > 1) {
+    const L = wp.getRange(2, 1, wp.getLastRow() - 1, 21).getValues();
+    const out = L.map(x => { if (x[2] !== 'Besoin (cagnotte)' || (x[19] !== '' && x[20] !== '')) return [x[19], x[20]]; n++;
+      const net = Math.round(((Number(x[11]) || 0) + (Number(x[12]) || 0)) * 100), presta = Math.round(net * 5 / 100), asso = Math.round(net * 5 / 100);
+      return [-asso / 100, (net - presta - asso) / 100]; });
+    wp.getRange(2, 20, out.length, 2).setValues(out);
+    mettreEnForme(wp, [12, 13, 14, 15, 20, 21]);
+  }
+  const wc = ss.getSheetByName('Cagnottes'), noms = [];
+  if (wc && wc.getLastRow() > 1) for (let r = 2; r <= wc.getLastRow(); r++) { const nm = wc.getRange(r, 1).getValue(); if (nm) { formulesCagnotte(ss, wc, r); noms.push(nm); } }
+  const wr = onglet(ss, 'Répartition'), deja = wr.getLastRow() > 1 ? wr.getRange(2, 1, wr.getLastRow() - 1, 1).getValues().map(r => r[0]) : [];
+  noms.filter(nm => deja.indexOf(nm) < 0).forEach(nm => { const r = wr.getLastRow() + 1; wr.getRange(r, 1).setValue(nm); });
+  for (let r = 2; r <= wr.getLastRow(); r++) formulesRepartition(ss, wr, r);
+  mettreEnForme(wr, [3, 4, 5, 6, 7, 8, 9, 10]);
+  return 'répartition installée : ' + n + ' ancien(s) paiement(s) de besoin complété(s), ' + noms.length + ' cagnotte(s)';
 }
 
 // Déclencheur « à chaque modification » du Sheet (installé par installer()) :

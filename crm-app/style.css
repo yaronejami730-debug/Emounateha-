@@ -554,3 +554,4 @@ table{border-radius:16px;overflow:hidden}
   main table.tc td:first-child,main table.tc th:first-child{position:static!important;box-shadow:none!important;background:none!important;left:auto}
   main table.tc td .hint{text-align:inherit}
 }
+.tc th.num,.tc td.num{text-align:right;white-space:nowrap}

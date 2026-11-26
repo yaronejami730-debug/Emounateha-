@@ -1434,13 +1434,14 @@ const ensureBesoins = () => besoinsReady || (besoinsReady = pool.query(`
   alter table public.besoins enable row level security;`).catch(e => { besoinsReady = null; throw e; }));
 const besoinSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
 // Compte d'une cagnotte : ce qui est dû au bénéficiaire. total = dons d'après les reçus ; st = chiffres Stripe (brut, frais, remboursements, net).
-// À reverser = net Stripe (dons − frais bancaires réels − remboursements) − frais de collecte (CAGNOTTE_RETENUE, en % du net, 7 par défaut ; annoncés sur la page de la cagnotte). Jamais d'estimation des frais bancaires.
-const CAGNOTTE_RETENUE = (v => Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 7)(process.env.CAGNOTTE_RETENUE == null || process.env.CAGNOTTE_RETENUE === '' ? 7 : Number(process.env.CAGNOTTE_RETENUE));
+// Répartition d'un besoin, sur le net Stripe (dons − frais bancaires réels − remboursements) : 5 % au prestataire, 5 % à l'association, le reste (90 %) à la personne.
+// Même règle que les frais du prestataire facturés sur les besoins (local-stripe-test/commission.js) et que le relevé de chaque virement. Jamais d'estimation des frais bancaires.
+const BESOIN_PRESTATAIRE = 5, BESOIN_ASSOCIATION = 5;
 function besoinCompte(total, st, versements) {
   const vs = (Array.isArray(versements) ? versements : []).filter(v => v && Number.isFinite(v.montant)), verse = vs.reduce((t, v) => t + v.montant, 0);
   if (!st || !st.dons) return { versements: vs, verse, compte: null };
-  const retenue = Math.round(Math.max(0, st.net) * CAGNOTTE_RETENUE / 100), aReverser = Math.max(0, st.net - retenue);
-  return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, retenue, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
+  const net = Math.max(0, st.net), prestataire = Math.round(net * BESOIN_PRESTATAIRE / 100), association = Math.round(net * BESOIN_ASSOCIATION / 100), aReverser = Math.max(0, net - prestataire - association);
+  return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, net: st.net, prestataire, association, tauxPrestataire: BESOIN_PRESTATAIRE, tauxAssociation: BESOIN_ASSOCIATION, retenue: prestataire + association, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
 }
 // public : les cagnottes mises en avant sur la page d'accueil (ouvertes, choisies dans le CRM). Le nom du bénéficiaire n'en sort que s'il a été saisi pour être affiché (nom_public).
 // Trois au plus à la fois : s'il y en a davantage, elles alternent toutes les 20 minutes (les trois affichées avancent d'un cran à chaque tranche).

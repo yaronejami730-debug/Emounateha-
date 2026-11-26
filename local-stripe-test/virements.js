@@ -202,7 +202,7 @@ function mailPrevision(pv, { test = false } = {}) {
 
 // Le relevé d'un virement, avec les frais 7 % réels du prestataire (même calcul que sa facture)
 function modeleDe(p, mv, recus) {
-  let commission = null, taux = 7; try { const C = require('./commission'); taux = C.TAUX; commission = C.ligneVirement(p, mv).commission || 0; } catch (e) { console.error('virements : frais prestataire non calculés', e.message); }
+  let commission = null, taux = 7; try { const C = require('./commission'); taux = C.TAUX; commission = C.ligneVirement(p, mv, C.TAUX, recus).commission || 0; } catch (e) { console.error('virements : frais prestataire non calculés', e.message); }
   return releve.modele(p, mv, recus, { taux, commission });
 }
 

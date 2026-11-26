@@ -265,9 +265,10 @@ const views = {
     const lien = x => 'https://don.emounateha.fr/besoin/' + x.slug;
     return `<div class="head"><div><h1>Besoins</h1><p class="sub">Mini-cagnottes : un besoin précis, une personne, un lien. Chaque don fait par ce lien est compté ici et marqué dans Stripe.</p></div>
       <div class="row"><button class="btn pri" onclick="besoinModal()">+ Nouveau besoin</button></div></div>
+    <div class="cf-seg" id="bsVue" style="margin-bottom:16px">${[['liens', 'Besoins et liens'], ['repartition', 'Répartition']].map(([k, l]) => `<button type="button" class="${(window.BS_VUE || 'liens') === k ? 'on' : ''}" onclick="window.BS_VUE='${k}';render(true)">${l}</button>`).join('')}</div>
     ${B.erreur ? `<div class="card" style="border-color:#f3c9c9;color:#9b1c1c;margin-bottom:16px">${esc(B.erreur)}</div>` : ''}
     ${B.erreurFrais ? `<div class="card" style="border-color:#f5d48a;color:#7a5a10;margin-bottom:16px">${esc(B.erreurFrais)} La somme à reverser s'affichera dès que Stripe répondra.</div>` : ''}
-    <div class="grid g4" style="margin-bottom:16px">
+    ${window.BS_VUE === 'repartition' ? bsRepartition(list) : `<div class="grid g4" style="margin-bottom:16px">
       <div class="card stat"><small>Besoins ouverts</small><b>${ouverts}</b></div>
       <div class="card stat"><small>Besoins au total</small><b>${list.length}</b></div>
       <div class="card stat"><small>Dons reçus</small><b>${nd}</b></div>
@@ -289,7 +290,7 @@ const views = {
           ${x.dons || (x.versements || []).length ? `<button class="btn sm" onclick="besoinVerse('${x.id}')">Noter un versement</button>` : ''}
           <button class="btn sm" onclick="besoinActif('${x.id}',${x.actif ? 'false' : 'true'})">${x.actif ? 'Clôturer' : 'Rouvrir'}</button>
           ${x.dons ? '' : `<button class="btn sm bad" onclick="besoinDel('${x.id}')">Supprimer</button>`}</div>
-      </div>`; }).join('')}</div>` : '<div class="card empty"><big>♥</big>Aucun besoin pour l\'instant. Créez-en un : un retard de loyer, une armoire, des repas…</div>'}`;
+      </div>`; }).join('')}</div>` : '<div class="card empty"><big>♥</big>Aucun besoin pour l\'instant. Créez-en un : un retard de loyer, une armoire, des repas…</div>'}`}`;
   },
 
   ambassadeurs: () => {
@@ -407,6 +408,27 @@ async function doImport() {
 }
 
 // ---- Besoins (mini-cagnottes)
+// onglet « Répartition » : pour chaque cagnotte, comment se partage l'argent reçu (net après frais Stripe : 5 % prestataire, 5 % association, 90 % la personne)
+function bsRepartition(list) {
+  const L = list.filter(x => x.compte || x.dons || (x.verse || 0)), T = k => L.reduce((t, x) => t + ((x.compte || {})[k] || 0), 0), verse = L.reduce((t, x) => t + (x.verse || 0), 0);
+  const tp = (L.find(x => x.compte) || {}).compte || { tauxPrestataire: 5, tauxAssociation: 5 }, tPers = 100 - tp.tauxPrestataire - tp.tauxAssociation;
+  const n = c => c == null ? '—' : bsEur(c), neg = c => c ? '− ' + bsEur(c) : '—';
+  const ligne = x => { const c = x.compte; return `<tr><td><b>${esc(x.titre)}</b>${x.beneficiaire ? '<br><span class="hint" style="margin:0">' + esc(x.beneficiaire) + '</span>' : ''}${x.actif ? '' : ' <span class="pill">Clôturé</span>'}</td>
+    <td class="num">${x.dons || 0}</td><td class="num">${c ? n(c.brut) : '—'}</td><td class="num">${c ? neg(c.frais + (c.rembourse || 0)) : '—'}</td><td class="num">${c ? n(c.net) : '—'}</td>
+    <td class="num">${c ? n(c.prestataire) : '—'}</td><td class="num">${c ? n(c.association) : '—'}</td><td class="num"><b>${c ? n(c.aReverser) : '—'}</b></td>
+    <td class="num">${n(x.verse || 0)}</td><td class="num"><b style="color:${c && c.reste > 0 ? '#b45309' : 'inherit'}">${c ? (c.reste < 0 ? 'trop versé ' + bsEur(-c.reste) : n(c.reste)) : '—'}</b></td></tr>`; };
+  return `<div class="card" style="margin-bottom:16px"><b>Comment l'argent d'un besoin est réparti</b>
+    <p class="hint" style="margin:6px 0 0">Don reçu − frais Stripe = <b>net</b>. Sur ce net : <b>${tp.tauxPrestataire} %</b> pour le prestataire, <b>${tp.tauxAssociation} %</b> pour l'association, <b>${tPers} %</b> reversés à la personne. Exemple : 100 € donnés, 1,50 € de frais Stripe → 98,50 € net → 4,93 € prestataire, 4,93 € association, 88,64 € pour la personne. Les autres dons (généraux, fêtes, colis…) : 7 % pour le prestataire, le reste à l'association.</p></div>
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card stat"><small>Net reçu (après Stripe)</small><b>${bsEur(T('net'))}</b></div>
+      <div class="card stat"><small>Prestataire ${tp.tauxPrestataire} %</small><b>${bsEur(T('prestataire'))}</b></div>
+      <div class="card stat"><small>Association ${tp.tauxAssociation} %</small><b>${bsEur(T('association'))}</b></div>
+      <div class="card stat"><small>Pour les personnes ${tPers} %</small><b>${bsEur(T('aReverser'))}</b></div>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto">${L.length ? `<table class="tc"><thead><tr><th>Besoin · pour</th><th class="num">Dons</th><th class="num">Collecté</th><th class="num">Frais Stripe</th><th class="num">Net</th><th class="num">Prestataire ${tp.tauxPrestataire} %</th><th class="num">Association ${tp.tauxAssociation} %</th><th class="num">Personne ${tPers} %</th><th class="num">Déjà versé</th><th class="num">Reste à verser</th></tr></thead><tbody>${L.map(ligne).join('')}
+      <tr style="border-top:2px solid #1f6a72"><td><b>Total</b></td><td class="num"><b>${L.reduce((t, x) => t + (x.dons || 0), 0)}</b></td><td class="num"><b>${bsEur(T('brut'))}</b></td><td class="num"><b>${neg(T('frais') + T('rembourse'))}</b></td><td class="num"><b>${bsEur(T('net'))}</b></td><td class="num"><b>${bsEur(T('prestataire'))}</b></td><td class="num"><b>${bsEur(T('association'))}</b></td><td class="num"><b>${bsEur(T('aReverser'))}</b></td><td class="num"><b>${bsEur(verse)}</b></td><td class="num"><b>${bsEur(Math.max(0, T('reste')))}</b></td></tr></tbody></table>` : '<div class="empty" style="padding:24px">Aucun don reçu sur un besoin pour l\'instant.</div>'}</div>
+    <p class="hint">Chiffres lus dans Stripe (frais réels, remboursements déduits). « Noter un versement » se fait dans l'onglet « Besoins et liens ». Le même détail est dans le Google Sheet « Virements Émounatéha », onglet « Répartition ».</p>`;
+}
 const bsEur = c => ((c || 0) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 // compte de la cagnotte : ce que l'association doit au bénéficiaire (collecté − frais bancaires réels), ce qui est déjà versé, ce qui reste dû
 function bsCompte(x) {
@@ -415,7 +437,8 @@ function bsCompte(x) {
   if (!c) return `<div class="bs-cpt"><p class="bs-cn">Somme à reverser : calcul indisponible pour l'instant (frais bancaires non lus).${verse ? ' Déjà versé : <b>' + bsEur(verse) + '</b>.' : ''}</p></div>`;
   const solde = verse > 0 && c.reste <= 0, L = [['Collecté', bsEur(c.brut)], ['− Frais bancaires', '− ' + bsEur(c.frais)]];
   if (c.rembourse) L.push(['− Dons remboursés', '− ' + bsEur(c.rembourse)]);
-  if (c.retenue) L.push(['− Frais de collecte', '− ' + bsEur(c.retenue)]);
+  if (c.prestataire != null) { L.push(['− Prestataire (' + c.tauxPrestataire + ' %)', '− ' + bsEur(c.prestataire)]); L.push(['− Association (' + c.tauxAssociation + ' %)', '− ' + bsEur(c.association)]); }
+  else if (c.retenue) L.push(['− Frais de collecte', '− ' + bsEur(c.retenue)]);
   return `<div class="bs-cpt">
     ${L.map(l => `<div class="bs-cl"><span>${l[0]}</span><span>${l[1]}</span></div>`).join('')}
     <div class="bs-cl tot"><span>À reverser${x.beneficiaire ? ' à ' + esc(x.beneficiaire) : ''}</span><b>${bsEur(c.aReverser)}</b></div>

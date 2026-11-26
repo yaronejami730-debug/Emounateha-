@@ -42,7 +42,15 @@ const P = (id, amount) => ({ id, amount, currency: 'eur', status: 'paid', create
   const coh = M.besoins.find(g => g.type === 'Famille Cohen');
   ok(coh.paiements === 2 && coh.L.some(l => l.genre === 'Remboursement') && coh.L.reduce((a, l) => a + l.netStripe, 0) === 4895 + 2930 - 3000, 'Famille Cohen : 2 paiements + 1 remboursement, net Stripe exact', coh);
   const base = MV.filter(m => ['charge', 'refund', 'adjustment'].includes(m.type)).reduce((a, m) => a + m.net, 0);
-  ok(M.totaux.com === Math.round(base * 0.07) && M.lignes.filter(l => l.categorie === 'autre').every(l => l.com === 0), 'frais 7 % : même base que la commission (dons, remboursements, litiges), répartis sans perdre un centime', [M.totaux.com, Math.round(base * 0.07)]);
+  const netB = M.lignes.filter(l => l.categorie === 'besoin').reduce((a, l) => a + l.netStripe, 0), attendu = Math.round((base - netB) * 0.07) + Math.round(netB * 0.05);
+  ok(netB > 0 && M.totaux.com === attendu && M.lignes.filter(l => l.categorie === 'autre').every(l => l.com === 0), 'frais du prestataire : 7 % des dons généraux + 5 % des besoins, même base que la commission, sans perdre un centime', [M.totaux.com, attendu]);
+  const LB = M.lignes.filter(l => l.categorie === 'besoin'), sB = k => LB.reduce((a, l) => a + l[k], 0);
+  ok(sB('com') === Math.round(netB * 0.05) && sB('asso') === Math.round(netB * 0.05) && sB('reverser') === netB - sB('com') - sB('asso') && LB.every(l => l.reverser === l.netStripe - l.com - l.asso), 'besoins : 5 % prestataire, 5 % association, le reste (90 %) à reverser à la personne', { netB, com: sB('com'), asso: sB('asso'), rev: sB('reverser') });
+  ok(M.lignes.filter(l => l.categorie !== 'besoin').every(l => l.asso === 0 && l.reverser === 0), 'dons généraux : aucune part « à reverser »');
+  const C = require('../commission.js');
+  ok(C.commissionDe(10000, 0) === 700 && C.commissionDe(10000, 10000) === 500 && C.commissionDe(30000, 10000) === 1900, 'commission : 100 € de dons généraux → 7 € ; 100 € de besoin → 5 €');
+  const cal = C.calculer([{ type: 'charge', amount: 10000, fee: 150, net: 9850, description: 'Don — Besoin : Famille Test (famille-test)', created: 1 }, { type: 'charge', amount: 10000, fee: 150, net: 9850, description: 'Don — Colis de Chabbat', created: 2 }]);
+  ok(cal.netBesoin === 9850 && cal.commission === Math.round(9850 * 0.05) + Math.round(9850 * 0.07), 'commission : un don besoin (libellé Stripe) à 5 %, un don général à 7 %', cal);
   const M2 = R.modele(P('po_1', somme), MV, recus, { taux: 7, commission: 1234 });
   ok(M2.totaux.com === 1234, 'frais 7 % : la commission réelle donnée est répartie exactement', M2.totaux.com);
   ok(M.totaux.ecart === 0 && M.complet && M.totaux.net === somme - M.totaux.com && M.totaux.brut - M.totaux.frais === somme, 'sommes : brut − frais Stripe = virement ; − 7 % = net ; aucun écart', M.totaux);
