@@ -8,7 +8,8 @@ const SLUG = /^[a-z0-9-]{1,40}$/;
 
 // Calcul pur, à partir des paiements Stripe d'une cagnotte (montants en centimes)
 function resumer(paiements) {
-  let dons = 0, brut = 0, frais = 0, rembourse = 0, incomplets = 0, litiges = 0;
+  let dons = 0, brut = 0, frais = 0, rembourse = 0, incomplets = 0, litiges = 0, netAvant = 0;
+  const depuis = require('./commission.js').REGLE_BESOIN_DEPUIS;   // dons d'avant la règle 5 / 5 / 90 : ancienne règle (7 %)
   for (const pi of paiements || []) {
     if (!pi || pi.status !== 'succeeded') continue;
     if (pi.currency && String(pi.currency).toLowerCase() !== 'eur') { incomplets++; continue; }
@@ -17,8 +18,9 @@ function resumer(paiements) {
     dons++; brut += Math.round(Number(pi.amount_received != null ? pi.amount_received : pi.amount) || 0);
     if (bt) frais += Math.round(Number(bt.fee) || 0); else incomplets++;   // frais pas encore connus de Stripe : signalé, jamais inventé
     if (ch) { rembourse += Math.round(Number(ch.amount_refunded) || 0); if (ch.disputed) litiges++; }
+    if (Number(pi.created || 0) < depuis) netAvant += Math.round(Number(pi.amount_received != null ? pi.amount_received : pi.amount) || 0) - (bt ? Math.round(Number(bt.fee) || 0) : 0) - (ch ? Math.round(Number(ch.amount_refunded) || 0) : 0);
   }
-  return { dons, brut, frais, rembourse, net: brut - frais - rembourse, incomplets, litiges };
+  return { dons, brut, frais, rembourse, net: brut - frais - rembourse, netAvant, incomplets, litiges };
 }
 
 async function paiementsDe(stripe, slug) {

@@ -10,6 +10,11 @@ const TAUX = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX || 7))
 // Besoins (mini-cagnottes personnelles) : le prestataire ne prend que TAUX_BESOIN % (5) ; l'association garde PART_ASSO_BESOIN % (5) ; le reste (90 %) revient à la personne.
 const TAUX_BESOIN = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX_BESOIN || 5)));
 const PART_ASSO_BESOIN = 5;
+// La règle des besoins (5 / 5 / 90) s'applique aux dons faits à partir de sa mise en ligne. Les dons d'avant gardent la règle d'avant : 7 % pour le prestataire, le reste à la personne.
+const REGLE_BESOIN_DEPUIS = Math.floor(Date.parse('2026-11-26T21:53:00Z') / 1000);   // secondes, comme les dates Stripe
+// date du don à l'origine d'un mouvement (un remboursement suit la règle du don remboursé)
+const dateDon = m => { const s = m && m.source && typeof m.source === 'object' ? m.source : null, c = s && s.charge && typeof s.charge === 'object' ? s.charge : null, pi = s && s.payment_intent && typeof s.payment_intent === 'object' ? s.payment_intent : null; return Number((c && c.created) || (pi && pi.created) || (s && s.object === 'charge' && s.created) || (m && m.created) || 0); };
+const regleBesoin = m => dateDon(m) >= REGLE_BESOIN_DEPUIS;
 // le mouvement Stripe est-il un don (ou un remboursement) d'un besoin ? par le reçu, à défaut par le libellé « … Besoin : <titre> (slug) »
 function estBesoin(m, recus = {}) {
   const R = require('./releve.js'), src = m && m.source && typeof m.source === 'object' ? m.source : null, id = v => (v && typeof v === 'object' ? v.id : v) || '';
@@ -53,7 +58,7 @@ function calculer(mouvements, taux = TAUX, recus = {}) {
     if (!genre) { if (HORS_BASE.has(type)) ignores[type] = (ignores[type] || 0) + 1; else inconnus[type] = (inconnus[type] || 0) + 1; continue; }
     const a = Math.round(Number(m.amount) || 0), f = Math.round(Number(m.fee) || 0), n = Math.round(Number(m.net) || 0);
     if (genre === 'don') { brut += a; nbDons++; } else if (genre === 'remboursement') rembourse += a; else litiges += a;
-    frais += f; net += n; const b = estBesoin(m, recus); if (b) netBesoin += n;
+    frais += f; net += n; const b = estBesoin(m, recus) && regleBesoin(m); if (b) netBesoin += n;   // besoin d'avant la nouvelle règle : compté à TAUX comme un don général
     lignes.push({ besoin: b, id: m.id, at: new Date((m.created || 0) * 1000).toISOString(), jour: parisJour((m.created || 0) * 1000), genre, description: String(m.description || '').slice(0, 140), brut: a, frais: f, net: n });
   }
   lignes.sort((x, y) => x.at.localeCompare(y.at));
@@ -406,4 +411,4 @@ function monter(app, { stripe, adminOk, mailer, load, save, pdfTampon, stripe2 =
   });
 }
 
-module.exports = { TAUX_BESOIN, PART_ASSO_BESOIN, estBesoin, commissionDe, libTaux, virer, jourUrssaf, couvert, mailVirements, encaisser, echu, ligneVirement, dejaPris, metaVirements, mailEncaissement, releveMail, calculer, semaine, semainePrecedente, minuitParis, mouvementsStripe, monter, TAUX, CLIENT };
+module.exports = { REGLE_BESOIN_DEPUIS, regleBesoin, TAUX_BESOIN, PART_ASSO_BESOIN, estBesoin, commissionDe, libTaux, virer, jourUrssaf, couvert, mailVirements, encaisser, echu, ligneVirement, dejaPris, metaVirements, mailEncaissement, releveMail, calculer, semaine, semainePrecedente, minuitParis, mouvementsStripe, monter, TAUX, CLIENT };

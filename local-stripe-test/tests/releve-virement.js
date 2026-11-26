@@ -42,15 +42,29 @@ const P = (id, amount) => ({ id, amount, currency: 'eur', status: 'paid', create
   const coh = M.besoins.find(g => g.type === 'Famille Cohen');
   ok(coh.paiements === 2 && coh.L.some(l => l.genre === 'Remboursement') && coh.L.reduce((a, l) => a + l.netStripe, 0) === 4895 + 2930 - 3000, 'Famille Cohen : 2 paiements + 1 remboursement, net Stripe exact', coh);
   const base = MV.filter(m => ['charge', 'refund', 'adjustment'].includes(m.type)).reduce((a, m) => a + m.net, 0);
-  const netB = M.lignes.filter(l => l.categorie === 'besoin').reduce((a, l) => a + l.netStripe, 0), attendu = Math.round((base - netB) * 0.07) + Math.round(netB * 0.05);
-  ok(netB > 0 && M.totaux.com === attendu && M.lignes.filter(l => l.categorie === 'autre').every(l => l.com === 0), 'frais du prestataire : 7 % des dons généraux + 5 % des besoins, même base que la commission, sans perdre un centime', [M.totaux.com, attendu]);
-  const LB = M.lignes.filter(l => l.categorie === 'besoin'), sB = k => LB.reduce((a, l) => a + l[k], 0);
-  ok(sB('com') === Math.round(netB * 0.05) && sB('asso') === Math.round(netB * 0.05) && sB('reverser') === netB - sB('com') - sB('asso') && LB.every(l => l.reverser === l.netStripe - l.com - l.asso), 'besoins : 5 % prestataire, 5 % association, le reste (90 %) à reverser à la personne', { netB, com: sB('com'), asso: sB('asso'), rev: sB('reverser') });
+  const C = require('../commission.js'), D = C.REGLE_BESOIN_DEPUIS;
+  // dons du jeu d'essai faits AVANT la nouvelle règle : besoins comptés à 7 %, rien pour l'association, le reste à la personne
+  ok(M.totaux.com === Math.round(base * 0.07) && M.lignes.filter(l => l.categorie === 'autre').every(l => l.com === 0), 'besoins d\'avant la règle 5/5/90 : frais du prestataire 7 % partout, comme avant', [M.totaux.com, Math.round(base * 0.07)]);
+  const LA = M.lignes.filter(l => l.categorie === 'besoin');
+  ok(LA.length && LA.every(l => !l.nouvelle && l.asso === 0 && l.reverser === l.netStripe - l.com), 'besoins d\'avant : rien pour l\'association, à reverser = net − 7 %', LA);
   ok(M.lignes.filter(l => l.categorie !== 'besoin').every(l => l.asso === 0 && l.reverser === 0), 'dons généraux : aucune part « à reverser »');
-  const C = require('../commission.js');
+  // mêmes mouvements faits APRÈS la mise en ligne de la règle
+  const MVn = MV.map(m => ({ ...m, created: D + 3600 + (m.created - t0) }));
+  const Mn = R.modele(P('po_n', 0), MVn, recus), LB = Mn.lignes.filter(l => l.categorie === 'besoin'), sB = k => LB.reduce((a, l) => a + l[k], 0), netB = sB('netStripe');
+  const netGn = Mn.lignes.filter(l => l.categorie === 'general').reduce((a, l) => a + l.netStripe, 0);
+  ok(netB > 0 && Mn.totaux.com === Math.round(netGn * 0.07) + Math.round(netB * 0.05), 'besoins d\'après : frais du prestataire 7 % des dons généraux + 5 % des besoins, sans perdre un centime', [Mn.totaux.com]);
+  ok(LB.every(l => l.nouvelle) && sB('com') === Math.round(netB * 0.05) && sB('asso') === Math.round(netB * 0.05) && sB('reverser') === netB - sB('com') - sB('asso') && LB.every(l => l.reverser === l.netStripe - l.com - l.asso), 'besoins d\'après : 5 % prestataire, 5 % association, le reste (90 %) à la personne', { netB, com: sB('com'), asso: sB('asso'), rev: sB('reverser') });
   ok(C.commissionDe(10000, 0) === 700 && C.commissionDe(10000, 10000) === 500 && C.commissionDe(30000, 10000) === 1900, 'commission : 100 € de dons généraux → 7 € ; 100 € de besoin → 5 €');
-  const cal = C.calculer([{ type: 'charge', amount: 10000, fee: 150, net: 9850, description: 'Don — Besoin : Famille Test (famille-test)', created: 1 }, { type: 'charge', amount: 10000, fee: 150, net: 9850, description: 'Don — Colis de Chabbat', created: 2 }]);
-  ok(cal.netBesoin === 9850 && cal.commission === Math.round(9850 * 0.05) + Math.round(9850 * 0.07), 'commission : un don besoin (libellé Stripe) à 5 %, un don général à 7 %', cal);
+  const don = (k, desc) => ({ type: 'charge', amount: 10000, fee: 150, net: 9850, description: desc, created: k });
+  const cal = C.calculer([don(D + 10, 'Don — Besoin : Famille Test (famille-test)'), don(D + 20, 'Don — Colis de Chabbat')]);
+  ok(cal.netBesoin === 9850 && cal.commission === Math.round(9850 * 0.05) + Math.round(9850 * 0.07), 'commission : un don besoin d\'après la règle à 5 %, un don général à 7 %', cal);
+  const calA = C.calculer([don(D - 10, 'Don — Besoin : Famille Test (famille-test)')]);
+  ok(calA.netBesoin === 0 && calA.commission === Math.round(9850 * 0.07), 'commission : un don besoin d\'avant la règle reste à 7 %', calA);
+  const rem = { type: 'refund', amount: -10000, fee: 0, net: -10000, created: D + 100, source: { object: 'refund', charge: { id: 'ch_x', created: D - 100 } }, description: 'Don — Besoin : Famille Test (famille-test)' };
+  ok(!C.regleBesoin(rem), 'remboursement fait après la bascule d\'un don d\'avant : suit la règle du don (ancienne)');
+  const CG = require('../cagnottes.js'), pi = (c, a) => ({ status: 'succeeded', amount_received: a, created: c, latest_charge: { amount_refunded: 0, balance_transaction: { fee: 150 } } });
+  const rs = CG.resumer([pi(D - 50, 10000), pi(D + 50, 10000)]);
+  ok(rs.net === 19700 && rs.netAvant === 9850, 'cagnotte : net des dons d\'avant la règle compté à part (pour l\'ancienne règle)', rs);
   const M2 = R.modele(P('po_1', somme), MV, recus, { taux: 7, commission: 1234 });
   ok(M2.totaux.com === 1234, 'frais 7 % : la commission réelle donnée est répartie exactement', M2.totaux.com);
   ok(M.totaux.ecart === 0 && M.complet && M.totaux.net === somme - M.totaux.com && M.totaux.brut - M.totaux.frais === somme, 'sommes : brut − frais Stripe = virement ; − 7 % = net ; aucun écart', M.totaux);

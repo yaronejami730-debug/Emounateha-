@@ -89,12 +89,13 @@ function modele(p, mouvements, recus = {}, { taux = 7, commission = null } = {})
       prenom: prenom.slice(0, 60), nom: nom.slice(0, 80), email: String((r && r.donorEmail) || bd.email || (src && src.receipt_email) || '').slice(0, 120),
       paiement: pi || (src && src.id) || m.id || '', mouvement: m.id || '', recu: r ? String(r.numero || '') : '',
       moyen: genre === 'Autre' ? '' : moyenDe(src, r), frequence: frequenceDe(r, src, genre), donateurType: r ? (r.type === 'entreprise' ? 'Entreprise' : 'Particulier') : '',
-      brut: a, frais: f, netStripe: net, com: 0, asso: 0, net, reverser: 0 });
+      brut: a, frais: f, netStripe: net, com: 0, asso: 0, net, reverser: 0, nouvelle: cag ? require('./commission.js').regleBesoin(m) : false });
   }
   lignes.sort((x, y) => x.t - y.t || String(x.mouvement).localeCompare(String(y.mouvement)));
   // frais du prestataire : même base que la commission (dons, remboursements, litiges ; pas les autres mouvements) ;
   // dons généraux : taux (7 %) ; besoins : TAUX_BESOIN (5 %) ; chaque part répartie au prorata, au centime près
-  const gen = lignes.filter(l => l.categorie === 'general'), bes = lignes.filter(l => l.categorie === 'besoin'), netG = S(gen, 'netStripe'), netB = S(bes, 'netStripe');
+  // besoins d'avant la nouvelle règle (l.nouvelle faux) : 7 % comme les dons généraux, pas de part association, le reste à la personne
+  const gen = lignes.filter(l => l.categorie === 'general' || (l.categorie === 'besoin' && !l.nouvelle)), bes = lignes.filter(l => l.categorie === 'besoin' && l.nouvelle), netG = S(gen, 'netStripe'), netB = S(bes, 'netStripe');
   const auto = netG + netB > 0 ? Math.round(netG * taux / 100) + Math.round(netB * TAUX_BESOIN / 100) : 0;
   const total = commission != null ? Math.round(commission) : auto, totB = netG + netB > 0 ? Math.round(netB * TAUX_BESOIN / 100) : 0;
   repartir(bes, totB, 'com'); repartir(gen, total - totB, 'com');   // si la commission facturée diffère du calcul (arrondi), l'écart va aux dons généraux
@@ -104,7 +105,7 @@ function modele(p, mouvements, recus = {}, { taux = 7, commission = null } = {})
   const sommeStripe = S(lignes, 'netStripe'), ecart = Math.round(Number(p.amount) || 0) - sommeStripe;
   return {
     virement: { id: p.id, montant: Math.round(Number(p.amount) || 0), arrivee: p.arrival_date, cree: p.created, date: jourCourt(p.arrival_date || p.created || 0), dateLongue: jourLong(p.arrival_date || p.created || 0), statut: p.status },
-    taux, tauxBesoin: TAUX_BESOIN, partAsso: PART_ASSO, lignes, general: grouper('general'), besoins: grouper('besoin'), autres: grouper('autre'),
+    taux, tauxBesoin: TAUX_BESOIN, partAsso: PART_ASSO, besoinsAnciens: lignes.some(l => l.categorie === 'besoin' && !l.nouvelle), lignes, general: grouper('general'), besoins: grouper('besoin'), autres: grouper('autre'),
     totaux: { paiements: lignes.filter(l => l.genre === 'Don').length, dons: S(lignes.filter(l => l.genre === 'Don'), 'brut'), retours: S(lignes.filter(l => l.genre === 'Remboursement' || l.genre === 'Litige'), 'brut'), autres: S(lignes.filter(l => l.categorie === 'autre'), 'brut'),
       brut: S(lignes, 'brut'), frais: S(lignes, 'frais'), com: S(lignes, 'com'), net: S(lignes, 'net'), asso: S(lignes, 'asso'), reverser: S(lignes, 'reverser'), sommeStripe, ecart },
     complet: ecart === 0
@@ -117,7 +118,7 @@ const td = `padding:8px 5px;border-bottom:1px solid ${TRAIT};font-size:13px;text
 const titre = (n, t, s) => G.partie(n, t).replace(/<\/td><\/tr><\/table>$/, s ? ` <span style="font-weight:normal;color:${GRIS}">${esc(s)}</span></td></tr></table>` : '</td></tr></table>');
 function tableauResume(groupes, libTotal, M, besoin) {
   // besoins : Brut, Frais Stripe, Frais 5 % (prestataire), Association 5 %, À reverser 90 % ; sinon : Brut, Frais Stripe, Frais 7 %, Net
-  const cols = besoin ? [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], ['Frais ' + pc(M.tauxBesoin), 'com', moins], ['Association ' + pc(M.partAsso), 'asso', moins], ['À reverser ' + pc(100 - M.tauxBesoin - M.partAsso), 'reverser', signe]]
+  const cols = besoin ? [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], [fraisB(M), 'com', moins], ['Association ' + pc(M.partAsso), 'asso', moins], [revB(M), 'reverser', signe]]
     : [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], ['Frais ' + pc(M.taux), 'com', moins], ['Net', 'net', signe]];
   const larg = besoin ? [32, 13, 13, 13, 13, 16] : [40, 14, 16, 13, 17], der = cols.length - 1;
   const ent = `<colgroup>${larg.map(w => `<col style="width:${w}%">`).join('')}</colgroup><thead><tr><th style="${th};text-align:left">&nbsp;</th>${cols.map(c => `<th style="${th}">${esc(c[0])}</th>`).join('')}</tr></thead>`;
@@ -127,6 +128,8 @@ function tableauResume(groupes, libTotal, M, besoin) {
   const tot = `<tr>${[libTotal + ' (' + nbP(n) + ')', ...cols.map(c => c[2](S(L, c[1])))].map((v, i) => `<td style="padding:10px 5px;border-top:2px solid ${TEAL};font-weight:bold;font-size:13.5px;text-align:${i ? 'right' : 'left'};white-space:${i ? 'nowrap' : 'normal'}${i === der + 1 ? ';color:' + TEAL : ''}">${esc(v)}</td>`).join('')}</tr>`;
   return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed">${ent}<tbody>${groupes.map(lig).join('')}${tot}</tbody></table>`;
 }
+// besoins d'avant la nouvelle règle dans le même virement : colonnes sans pourcentage fixe
+const fraisB = M => M.besoinsAnciens ? 'Frais prestataire' : 'Frais ' + pc(M.tauxBesoin), revB = M => M.besoinsAnciens ? 'À reverser' : 'À reverser ' + pc(100 - M.tauxBesoin - M.partAsso);
 const libFrais = M => 'Frais du prestataire (' + pc(M.taux) + (M.besoins.length ? ' ; besoins : ' + pc(M.tauxBesoin) : '') + ')';
 function recap(M) {
   const T = M.totaux, R = [['Dons reçus (brut, ' + nbP(T.paiements) + ')', eur(T.dons)]];
@@ -152,13 +155,13 @@ function resumeCorps(M, { pourPdf = false, avert = '' } = {}) {
     (M.besoins.length ? titre(++n, 'Besoins', '(cagnottes personnelles)') + tableauResume(M.besoins, 'Total besoins', M, true) : '') +
     (M.autres.length ? titre(++n, 'Autres mouvements Stripe', '(ni dons ni cagnottes)') + tableauResume(M.autres, 'Total autres mouvements', M) : '') +
     recap(M) + alerteEcart(M) +
-    `<p style="margin:14px 0 0;font-size:11.5px;line-height:1.5;color:${GRIS}">Frais Stripe : retenus par Stripe sur chaque paiement. Frais ${pc(M.taux)} : frais du prestataire, calculés sur le montant après frais Stripe, prélevés à part par carte. Besoins (cagnottes personnelles) : sur le montant après frais Stripe, ${pc(M.tauxBesoin)} au prestataire, ${pc(M.partAsso)} à l'association, ${pc(100 - M.tauxBesoin - M.partAsso)} reversés à la personne. Seules les lignes qui ont reçu des paiements apparaissent. Le détail de chaque paiement (donateur, e-mail, ID de paiement Stripe) est dans le relevé détaillé et le tableur joints. Référence du virement : ${esc(M.virement.id)}.</p>`;
+    `<p style="margin:14px 0 0;font-size:11.5px;line-height:1.5;color:${GRIS}">Frais Stripe : retenus par Stripe sur chaque paiement. Frais ${pc(M.taux)} : frais du prestataire, calculés sur le montant après frais Stripe, prélevés à part par carte. Besoins (cagnottes personnelles) : sur le montant après frais Stripe, ${pc(M.tauxBesoin)} au prestataire, ${pc(M.partAsso)} à l'association, ${pc(100 - M.tauxBesoin - M.partAsso)} reversés à la personne${M.besoinsAnciens ? ' (dons faits avant cette règle : ' + pc(M.taux) + ' au prestataire, le reste à la personne)' : ''}. Seules les lignes qui ont reçu des paiements apparaissent. Le détail de chaque paiement (donateur, e-mail, ID de paiement Stripe) est dans le relevé détaillé et le tableur joints. Référence du virement : ${esc(M.virement.id)}.</p>`;
 }
 
 function detailCorps(M, { avert = '' } = {}) {
   const thd = th.replace('font-size:10.5px', 'font-size:9.5px'), tdd = td.replace('font-size:13px', 'font-size:11.5px').replace('padding:8px 5px', 'padding:6px 5px');
   const bloc = (g, cat) => {
-    const b = cat === 'besoin', cols = b ? [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], ['Frais ' + pc(M.tauxBesoin), 'com', moins], ['Asso. ' + pc(M.partAsso), 'asso', moins], ['À reverser', 'reverser', signe]] : [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], ['Frais ' + pc(M.taux), 'com', moins], ['Net', 'net', signe]];
+    const b = cat === 'besoin', cols = b ? [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], [fraisB(M), 'com', moins], ['Asso. ' + pc(M.partAsso), 'asso', moins], ['À reverser', 'reverser', signe]] : [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], ['Frais ' + pc(M.taux), 'com', moins], ['Net', 'net', signe]];
     const larg = b ? [10, 13, 16, 16, 9, 8, 8, 9, 11] : [11, 17, 22, 22, 7, 7, 7, 7], nc = larg.length, der = cols.length - 1;
     const val = (v, c, i, st) => `<td style="${st}${i === der ? ';font-weight:bold;color:' + TEAL : c[2] === moins ? ';color:#b45309' : ''}">${c[2](v)}</td>`;
     return `<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 14px"><colgroup>${larg.map(w => `<col style="width:${w}%">`).join('')}</colgroup>` +
@@ -178,10 +181,10 @@ function detailCorps(M, { avert = '' } = {}) {
 
 function resumeTexte(M, avert = '') {
   const T = M.totaux, lig = g => `  ${g.type} (${nbP(g.paiements)}) : ${signe(S(g.L, 'brut'))} brut ${moins(S(g.L, 'frais'))} frais Stripe ${moins(S(g.L, 'com'))} frais ${pc(M.taux)} = ${signe(S(g.L, 'net'))} net`;
-  const ligB = g => `  ${g.type} (${nbP(g.paiements)}) : ${signe(S(g.L, 'brut'))} brut ${moins(S(g.L, 'frais'))} frais Stripe ${moins(S(g.L, 'com'))} frais ${pc(M.tauxBesoin)} ${moins(S(g.L, 'asso'))} association ${pc(M.partAsso)} = ${signe(S(g.L, 'reverser'))} à reverser`;
+  const ligB = g => `  ${g.type} (${nbP(g.paiements)}) : ${signe(S(g.L, 'brut'))} brut ${moins(S(g.L, 'frais'))} frais Stripe ${moins(S(g.L, 'com'))} ${M.besoinsAnciens ? 'frais prestataire' : 'frais ' + pc(M.tauxBesoin)} ${moins(S(g.L, 'asso'))} association ${pc(M.partAsso)} = ${signe(S(g.L, 'reverser'))} à reverser`;
   return [avert || null, `Virement de ${eur(M.virement.montant)}, arrivée le ${M.virement.dateLongue} (réf. ${M.virement.id}).`, `Net pour l'association : ${eur(M.virement.montant - T.com)}.`, '',
     ...(M.general.length ? ['DONS GÉNÉRAUX (par type de don)', ...M.general.map(lig), ''] : []),
-    ...(M.besoins.length ? ['BESOINS (cagnottes personnelles) : ' + pc(M.tauxBesoin) + ' prestataire, ' + pc(M.partAsso) + ' association, ' + pc(100 - M.tauxBesoin - M.partAsso) + ' à reverser', ...M.besoins.map(ligB), ''] : []),
+    ...(M.besoins.length ? ['BESOINS (cagnottes personnelles) : ' + pc(M.tauxBesoin) + ' prestataire, ' + pc(M.partAsso) + ' association, ' + pc(100 - M.tauxBesoin - M.partAsso) + ' à reverser' + (M.besoinsAnciens ? ' (dons d\'avant cette règle : ' + pc(M.taux) + ' prestataire)' : ''), ...M.besoins.map(ligB), ''] : []),
     ...(M.autres.length ? ['AUTRES MOUVEMENTS STRIPE', ...M.autres.map(lig), ''] : []),
     `Dons reçus : ${eur(T.dons)}${T.retours ? ' ; remboursements et litiges : ' + signe(T.retours) : ''} ; frais Stripe : ${moins(T.frais)}${T.autres ? ' ; autres mouvements : ' + signe(T.autres) : ''}${T.ecart ? ' ; ÉCART NON RATTACHÉ : ' + signe(T.ecart) : ''}`,
     `= Virement reçu à la banque : ${eur(M.virement.montant)} ; ${libFrais(M).toLowerCase()} (à part, par carte) : ${moins(T.com)} ; = net : ${eur(M.virement.montant - T.com)}`, '',
