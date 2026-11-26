@@ -23,7 +23,16 @@ const etat = p => p.evaluate(() => { const g = document.getElementById('go'), r 
 // relevé de TOUS les boutons, liens d'action et champs de la page : un bouton ajouté, retiré, renommé ou déplacé change le relevé
 const releve = p => p.evaluate(() => [...document.querySelectorAll('button, input, select, textarea, a.cp-retour, a.dn-btn, a[data-go]')].filter(x => !x.closest('script') && x.type !== 'hidden').map(x => x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + (x.name ? '[' + x.name + (x.type === 'radio' || x.type === 'checkbox' ? '=' + x.value : '') + ']' : '') + (x.hasAttribute('data-go') ? '{data-go}' : '') + '|' + (x.tagName === 'INPUT' ? x.type : (x.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60))).sort());
 const RELEVES = {};
-async function page(url, w, h) { const p = await browser.newPage(); const err = []; p.on('pageerror', e => err.push(e.message)); await p.setViewport({ width: w, height: h, isMobile: w < 600, hasTouch: w < 600 }); await p.goto(url, { waitUntil: 'networkidle2' }); p._err = err; return p; }
+// Horloge du navigateur. Le jeudi dès 18 h et le vendredi (heure de Paris), le site choisit exprès « Colis de Chabbat » au lieu de la fête qui approche :
+// les boutons de Hanouka ne s'affichent pas et le relevé changeait selon le jour du test (porte fermée à tort le jeudi 26 nov 2026 au soir).
+// Le relevé est donc fait avec une horloge hors de ce créneau (recul de 2 jours si on y est) ; le créneau Chabbat est vérifié à part, plus bas.
+const parisJH = t => { const q = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(new Date(t)); return { j: (q.find(x => x.type === 'weekday') || {}).value || '', h: +((q.find(x => x.type === 'hour') || {}).value || 0) % 24 }; };
+const creneauChabbat = t => { const { j, h } = parisJH(t); return (/^jeu/i.test(j) && h >= 18) || /^ven/i.test(j); };
+const RECUL_RELEVE = creneauChabbat(Date.now()) ? 2 * 86400000 : 0;
+const RECUL_JEUDI = (() => { for (let k = 1; k <= 8 * 24; k++) { const t = Date.now() - k * 3600000, { j, h } = parisJH(t); if (/^jeu/i.test(j) && h === 19) return k * 3600000; } return 0; })();   // jeudi 19 h le plus proche, en arrière
+async function page(url, w, h, recul = RECUL_RELEVE) { const p = await browser.newPage(); const err = []; p.on('pageerror', e => err.push(e.message)); await p.setViewport({ width: w, height: h, isMobile: w < 600, hasTouch: w < 600 });
+  if (recul) await p.evaluateOnNewDocument(r => { const D = Date; class H extends D { constructor(...a) { if (a.length) super(...a); else super(D.now() - r); } static now() { return D.now() - r; } } globalThis.Date = H; }, recul);
+  await p.goto(url, { waitUntil: 'networkidle2' }); p._err = err; return p; }
 
 (async () => {
   for (let k = 0; k < 60; k++) { try { if ((await fetch(B + '/api/config')).ok) break; } catch (e) {} await wait(250); }
@@ -85,6 +94,14 @@ async function page(url, w, h) { const p = await browser.newPage(); const err = 
   T('Lien « Là où il y en a le plus besoin » (page des colis)');
   { const p = await page(B + '/?aff=besoin', 390, 780); let r = null; for (let k = 0; k < 20 && !(r && /besoin est le plus grand/i.test(r)); k++) { r = await p.evaluate(() => { const c = document.querySelector('input[name=affr]:checked'); return c ? c.value : null; }); if (!(r && /besoin est le plus grand/i.test(r))) await wait(500); }   // la page coche le choix un instant après son chargement
     ok(r && /besoin est le plus grand/i.test(r), 'le don s\'ouvre avec « là où le besoin est le plus grand » déjà choisi', r); ok(!p._err.length, 'aucune erreur JavaScript', p._err); await p.close(); }
+
+  T('Jeudi soir et vendredi : « Colis de Chabbat » choisi d\'office (voulu)');
+  { const p = await page(B + '/', 390, 780, RECUL_JEUDI); await wait(800);
+    const r = await p.evaluate(() => { const c = document.querySelector('input[name=affr]:checked'); return c ? c.value : null; });
+    ok(RECUL_JEUDI > 0 && r && /^Colis de Chabbat/.test(r), 'jeudi 19 h : le don s\'ouvre sur « Colis de Chabbat »', r); ok(!p._err.length, 'aucune erreur JavaScript', p._err); await p.close(); }
+  { const p = await page(B + '/', 390, 780, RECUL_JEUDI + 2 * 86400000); await wait(800);
+    const r = await p.evaluate(() => { const c = document.querySelector('input[name=affr]:checked'); return c ? c.value : null; });
+    ok(r && !/^Colis de Chabbat/.test(r), 'mardi 19 h : pas de « Colis de Chabbat » imposé (la fête qui approche reste choisie)', r); await p.close(); }
 
   T('Relevé de référence des boutons et champs (un changement ferme la porte)');
   if (MAJ) { fs.writeFileSync(REF, JSON.stringify(RELEVES, null, 1) + '\n'); console.log('  relevé de référence réécrit : ' + Object.keys(RELEVES).length + ' pages'); }
