@@ -44,23 +44,23 @@ const P = (id, amount) => ({ id, amount, currency: 'eur', status: 'paid', create
   const base = MV.filter(m => ['charge', 'refund', 'adjustment'].includes(m.type)).reduce((a, m) => a + m.net, 0);
   const C = require('../commission.js'), D = C.REGLE_BESOIN_DEPUIS;
   // règle du 27 nov 2026, pour TOUS les dons des cagnottes : 90 % du don à la personne ; ce qui reste après les frais Stripe, moitié prestataire, moitié association
-  ok(JSON.stringify(C.partsBesoin(10000, 9850)) === JSON.stringify({ personne: 9000, prestataire: 425, association: 425 }), 'exemple : 100 € donnés, 1,50 € de frais Stripe → personne 90 €, Yarone 4,25 €, Émounatéha 4,25 €', C.partsBesoin(10000, 9850));
-  ok(JSON.stringify(C.partsBesoin(5000, 4899)) === JSON.stringify({ personne: 4500, prestataire: 199, association: 200 }), 'centime impair : à l\'association', C.partsBesoin(5000, 4899));
+  ok(JSON.stringify(C.partsBesoin(10000, 9850)) === JSON.stringify({ personne: 8800, prestataire: 525, association: 525 }), 'exemple : 100 € donnés, 1,50 € de frais Stripe → personne 88 €, Yarone 5,25 €, Émounatéha 5,25 €', C.partsBesoin(10000, 9850));
+  ok(JSON.stringify(C.partsBesoin(5000, 4899)) === JSON.stringify({ personne: 4400, prestataire: 249, association: 250 }), 'centime impair : à l\'association', C.partsBesoin(5000, 4899));
   for (const [nom, MM] of [['anciens dons (24 nov)', M], ['dons d\'après la mise en ligne', R.modele(P('po_n', 0), MV.map(m => ({ ...m, created: D + 3600 + (m.created - t0) })), recus)]]) {
     const LB = MM.lignes.filter(l => l.categorie === 'besoin'), gN = MM.lignes.filter(l => l.categorie === 'general').reduce((a, l) => a + l.netStripe, 0);
     const okL = LB.length && LB.every(l => { const q = C.partsBesoin(l.brut, l.netStripe); return l.reverser === q.personne && l.com === q.prestataire && l.asso === q.association && l.com + l.asso + l.reverser === l.netStripe; });
-    ok(okL, nom + ' : chaque paiement de cagnotte, 90 % du don à la personne, le reste après Stripe moitié-moitié, sans perdre un centime', LB.map(l => [l.brut, l.netStripe, l.com, l.asso, l.reverser]));
+    ok(okL, nom + ' : chaque paiement de cagnotte, 88 % du don à la personne, le reste après Stripe moitié-moitié, sans perdre un centime', LB.map(l => [l.brut, l.netStripe, l.com, l.asso, l.reverser]));
     ok(MM.totaux.com === Math.round(gN * 0.07) + LB.reduce((a, l) => a + l.com, 0), nom + ' : frais du prestataire = 7 % des dons généraux + sa moitié sur les cagnottes', MM.totaux.com);
   }
   ok(M.lignes.filter(l => l.categorie !== 'besoin').every(l => l.asso === 0 && l.reverser === 0), 'dons généraux : aucune part « à reverser »');
   const don = (k, desc) => ({ type: 'charge', amount: 10000, fee: 150, net: 9850, description: desc, created: k });
   const cal = C.calculer([don(D + 10, 'Don — Besoin : Famille Test (famille-test)'), don(D + 20, 'Don — Colis de Chabbat')]);
-  ok(cal.netBesoin === 9850 && cal.commission === 425 + Math.round(9850 * 0.07), 'commission : un don de cagnotte → 4,25 €, un don général → 7 %', cal);
+  ok(cal.netBesoin === 9850 && cal.commission === 525 + Math.round(9850 * 0.07), 'commission : un don de cagnotte → 5,25 €, un don général → 7 %', cal);
   const calA = C.calculer([don(Math.floor(Date.parse('2026-11-01T10:00:00Z') / 1000), 'Don — Besoin : Famille Test (famille-test)')]);
-  ok(calA.netBesoin === 9850 && calA.commission === 425, 'commission : un ancien don de cagnotte (1er nov) suit aussi la nouvelle règle', calA);
+  ok(calA.netBesoin === 9850 && calA.commission === 525, 'commission : un ancien don de cagnotte (1er nov) suit aussi la nouvelle règle', calA);
   const CG = require('../cagnottes.js'), pi = (c, a) => ({ status: 'succeeded', amount_received: a, created: c, latest_charge: { amount_refunded: 0, balance_transaction: { fee: 150 } } });
   const rs = CG.resumer([pi(Math.floor(Date.parse('2026-11-01T10:00:00Z') / 1000), 10000), pi(D + 50, 10000)]);
-  ok(rs.net === 19700 && rs.netAvant === 0 && rs.personne === 18000 && rs.prestataire === 850 && rs.association === 850, 'cagnotte (CRM) : 2 dons de 100 € → 180 € pour la personne, 8,50 € Yarone, 8,50 € Émounatéha, même les anciens dons', rs);
+  ok(rs.net === 19700 && rs.netAvant === 0 && rs.personne === 17600 && rs.prestataire === 1050 && rs.association === 1050, 'cagnotte (CRM) : 2 dons de 100 € → 176 € pour la personne, 10,50 € Yarone, 10,50 € Émounatéha, même les anciens dons', rs);
   const M2 = R.modele(P('po_1', somme), MV, recus, { taux: 7, commission: 1234 });
   ok(M2.totaux.com === 1234, 'frais 7 % : la commission réelle donnée est répartie exactement', M2.totaux.com);
   ok(M.totaux.ecart === 0 && M.complet && M.totaux.net === somme - M.totaux.com && M.totaux.brut - M.totaux.frais === somme, 'sommes : brut − frais Stripe = virement ; − 7 % = net ; aucun écart', M.totaux);

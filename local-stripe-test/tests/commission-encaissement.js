@@ -104,7 +104,7 @@ function monde() {
     W.virement('po_new', '2026-11-27', [don(10000, 175)]);
     r = await W.run(H('2026-11-28', '09:00'));
     const du = Math.round(9825 * 0.07) - C.partsBesoin(10000, 9825).prestataire;
-    ok(r.facture && r.facture.paye && r.total === 688 && r.avoir && r.avoir.du === du && r.avoir.deduit === du && r.facture.montant === 688 - du, 'trop-perçu : cagnotte facturée 6,88 € (7 %) au lieu de 4,12 € → ' + du / 100 + ' € déduits de la facture suivante', r.avoir);
+    ok(r.facture && r.facture.paye && r.total === 688 && r.avoir && r.avoir.du === du && r.avoir.deduit === du && r.facture.montant === 688 - du, 'trop-perçu : cagnotte facturée 6,88 € (7 %) au lieu de la nouvelle part → ' + du / 100 + ' € déduits de la facture suivante', r.avoir);
     ok(W.postes.some(p => p.amount === -du && /trop-perçu/.test(p.description)) && W.factures.some(f => f.id !== 'in_old' && f.metadata && f.metadata.avoir === String(du)), 'ligne « Remboursement du trop-perçu » sur la facture', W.postes);
     const m2 = C.mailEncaissement(r, true); ok(/Trop-perçu rendu/.test(m2.text) && /tout est rendu/.test(m2.text), 'e-mail : trop-perçu rendu, tout est rendu', m2.text);
     W.virement('po_new2', '2026-11-28', [don(10000, 175)]);

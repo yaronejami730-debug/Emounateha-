@@ -408,17 +408,17 @@ async function doImport() {
 }
 
 // ---- Besoins (mini-cagnottes)
-// onglet « Répartition » : pour chaque cagnotte, comment se partage l'argent reçu (net après frais Stripe : 5 % prestataire, 5 % association, 90 % la personne)
+// onglet « Répartition » : pour chaque cagnotte, comment se partage l'argent reçu (88 % du don à la personne ; le reste après frais Stripe, moitié Yarone, moitié Émounatéha)
 function bsRepartition(list) {
   const L = list.filter(x => x.compte || x.dons || (x.verse || 0)), T = k => L.reduce((t, x) => t + ((x.compte || {})[k] || 0), 0), verse = L.reduce((t, x) => t + (x.verse || 0), 0);
-  const tp = (L.find(x => x.compte) || {}).compte || { tauxPrestataire: 5, tauxAssociation: 5 }, tPers = 100 - tp.tauxPrestataire - tp.tauxAssociation;
+  const tp = (L.find(x => x.compte) || {}).compte || { tauxPrestataire: 6, tauxAssociation: 6 }, tPers = 100 - tp.tauxPrestataire - tp.tauxAssociation;
   const n = c => c == null ? '—' : bsEur(c), neg = c => c ? '− ' + bsEur(c) : '—';
   const ligne = x => { const c = x.compte; return `<tr><td><b>${esc(x.titre)}</b>${x.beneficiaire ? '<br><span class="hint" style="margin:0">' + esc(x.beneficiaire) + '</span>' : ''}${x.actif ? '' : ' <span class="pill">Clôturé</span>'}</td>
     <td class="num">${x.dons || 0}</td><td class="num">${c ? n(c.brut) : '—'}</td><td class="num">${c ? neg(c.frais + (c.rembourse || 0)) : '—'}</td><td class="num">${c ? n(c.net) : '—'}</td>
     <td class="num">${c ? n(c.prestataire) : '—'}</td><td class="num">${c ? n(c.association) : '—'}</td><td class="num"><b>${c ? n(c.aReverser) : '—'}</b></td>
     <td class="num">${n(x.verse || 0)}</td><td class="num"><b style="color:${c && c.reste > 0 ? '#b45309' : 'inherit'}">${c ? (c.reste < 0 ? 'trop versé ' + bsEur(-c.reste) : n(c.reste)) : '—'}</b></td></tr>`; };
   return `<div class="card" style="margin-bottom:16px"><b>Comment l'argent d'un besoin est réparti</b>
-    <p class="hint" style="margin:6px 0 0">La personne reçoit <b>${tPers} % du don</b>. Ce qui reste, une fois les frais Stripe payés, est partagé <b>moitié-moitié</b> entre le prestataire (Yarone) et l'association. Exemple : 100 € donnés, Stripe prend 1,50 € → <b>90 € pour la personne</b>, il reste 8,50 € → <b>4,25 € pour Yarone</b>, <b>4,25 € pour Émounatéha</b>. Les autres dons (généraux, fêtes, colis…) : 7 % pour le prestataire, le reste à l'association.<br>Cette règle vaut pour tous les dons des cagnottes, depuis l'ouverture de leur lien. Ce que le prestataire avait pris en trop (7 % jusqu'au 26/11) est rendu à l'association : déduit de ses prochaines commissions.</p></div>
+    <p class="hint" style="margin:6px 0 0">La personne reçoit <b>${tPers} % du don</b>. Ce qui reste, une fois les frais Stripe payés, est partagé <b>moitié-moitié</b> entre le prestataire (Yarone) et l'association. Exemple : 100 € donnés, Stripe prend 1,50 € → <b>88 € pour la personne</b>, il reste 10,50 € → <b>5,25 € pour Yarone</b>, <b>5,25 € pour Émounatéha</b>. Les autres dons (généraux, fêtes, colis…) : 7 % pour le prestataire, le reste à l'association.<br>Cette règle vaut pour tous les dons des cagnottes, depuis l'ouverture de leur lien. Ce que le prestataire avait pris en trop (7 % jusqu'au 26/11) est rendu à l'association : déduit de ses prochaines commissions.</p></div>
     <div class="grid g4" style="margin-bottom:16px">
       <div class="card stat"><small>Net reçu (après Stripe)</small><b>${bsEur(T('net'))}</b></div>
       <div class="card stat"><small>Yarone (prestataire)</small><b>${bsEur(T('prestataire'))}</b></div>

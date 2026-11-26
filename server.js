@@ -1436,13 +1436,13 @@ const besoinSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
 // Compte d'une cagnotte : ce qui est dû au bénéficiaire. total = dons d'après les reçus ; st = chiffres Stripe (brut, frais, remboursements, net).
 // Répartition d'un besoin, sur le net Stripe (dons − frais bancaires réels − remboursements) : 5 % au prestataire, 5 % à l'association, le reste (90 %) à la personne.
 // Même règle que les frais du prestataire facturés sur les besoins (local-stripe-test/commission.js) et que le relevé de chaque virement. Jamais d'estimation des frais bancaires.
-const BESOIN_PRESTATAIRE = 5, BESOIN_ASSOCIATION = 5, BESOIN_ANCIEN = 7;   // ancienne règle, pour les dons faits avant sa mise en ligne
+const BESOIN_PRESTATAIRE = 6, BESOIN_ASSOCIATION = 6, BESOIN_ANCIEN = 7;   // 6 + 6 : la personne reçoit 88 % du don ;   // ancienne règle, pour les dons faits avant sa mise en ligne
 function besoinCompte(total, st, versements) {
   const vs = (Array.isArray(versements) ? versements : []).filter(v => v && Number.isFinite(v.montant)), verse = vs.reduce((t, v) => t + v.montant, 0);
   if (!st || !st.dons) return { versements: vs, verse, compte: null };
   // depuis le 27 nov 2026, tous les dons des cagnottes suivent 5 / 5 / 90 (st.netAvant vaut 0 ; gardé au cas où une date de bascule reviendrait)
   const net = Math.max(0, st.net), avant = Math.min(net, Math.max(0, Number.isFinite(st.netAvant) ? st.netAvant : 0)), apres = net - avant;
-  // règle du 27 nov 2026 : 90 % du don à la personne, ce qui reste après les frais Stripe moitié prestataire, moitié association (calculé don par don par le serveur des dons)
+  // règle du 27 nov 2026 : 88 % du don à la personne, ce qui reste après les frais Stripe moitié prestataire, moitié association (calculé don par don par le serveur des dons)
   const parts = Number.isFinite(st.personne) && Number.isFinite(st.prestataire) && Number.isFinite(st.association);
   const prestataire = parts ? st.prestataire : Math.round(avant * BESOIN_ANCIEN / 100) + Math.round(apres * BESOIN_PRESTATAIRE / 100), association = parts ? st.association : Math.round(apres * BESOIN_ASSOCIATION / 100), aReverser = parts ? Math.max(0, st.personne) : Math.max(0, net - prestataire - association);
   return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, net: st.net, prestataire, association, tauxPrestataire: BESOIN_PRESTATAIRE, tauxAssociation: BESOIN_ASSOCIATION, ancienneRegle: avant > 0, netAvant: avant, retenue: prestataire + association, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };

@@ -9,7 +9,7 @@ const SLUG = /^[a-z0-9-]{1,40}$/;
 // Calcul pur, à partir des paiements Stripe d'une cagnotte (montants en centimes)
 function resumer(paiements) {
   let dons = 0, brut = 0, frais = 0, rembourse = 0, incomplets = 0, litiges = 0, netAvant = 0, personne = 0, prestataire = 0, association = 0;
-  const PB = require('./commission.js').partsBesoin;   // 90 % du don à la personne, le reste après frais Stripe moitié prestataire, moitié association
+  const PB = require('./commission.js').partsBesoin;   // 88 % du don à la personne, le reste après frais Stripe moitié prestataire, moitié association
   const depuis = require('./commission.js').REGLE_BESOIN_DEPUIS;   // dons d'avant la règle 5 / 5 / 90 : ancienne règle (7 %)
   for (const pi of paiements || []) {
     if (!pi || pi.status !== 'succeeded') continue;

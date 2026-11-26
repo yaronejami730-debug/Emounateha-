@@ -8,10 +8,10 @@
 
 const TAUX = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX || 7)));
 // Besoins (mini-cagnottes personnelles) : le prestataire ne prend que TAUX_BESOIN % (5) ; l'association garde PART_ASSO_BESOIN % (5) ; le reste (90 %) revient à la personne.
-const TAUX_BESOIN = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX_BESOIN || 5)));
-const PART_ASSO_BESOIN = 5;
-// Règle des cagnottes (Yarone, 27 nov 2026) : la personne reçoit 90 % du don entier ; ce qui reste après les frais Stripe est partagé moitié-moitié
-// entre le prestataire et l'association. Ex. : 100 € donnés, 1,50 € de frais Stripe → personne 90 €, prestataire 4,25 €, association 4,25 €.
+const TAUX_BESOIN = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX_BESOIN || 6)));
+const PART_ASSO_BESOIN = 6;   // 6 + 6 : la personne reçoit 88 % du don (décision de Yarone, 27 nov 2026)
+// Règle des cagnottes (Yarone, 27 nov 2026) : la personne reçoit 88 % du don entier ; ce qui reste après les frais Stripe est partagé moitié-moitié
+// entre le prestataire et l'association. Ex. : 100 € donnés, 1,50 € de frais Stripe → personne 88 €, prestataire 5,25 €, association 5,25 €.
 // brut et net en centimes (un remboursement : montants négatifs). Le centime impair va à l'association.
 const PART_PERSONNE = 100 - TAUX_BESOIN - PART_ASSO_BESOIN;
 function partsBesoin(brut, net) { const personne = Math.round(brut * PART_PERSONNE / 100), reste = net - personne, prestataire = Math.floor(reste / 2); return { personne, prestataire, association: reste - prestataire }; }
@@ -30,7 +30,7 @@ function estBesoin(m, recus = {}) {
   const k = [id(src && src.payment_intent), id(src && src.invoice), id(src && src.charge), src && src.id].filter(Boolean).find(x => recus && recus[x]);
   return !!(R.cagnotteDe(k ? recus[k] : null, m && m.description) || R.cagnotteDe(null, src && src.description));
 }
-const libTaux = (taux, netBesoin) => { const t = String(taux).replace('.', ',') + ' %'; return netBesoin ? t + ' (cagnottes : moitié de ce qui reste après les 90 % de la personne et les frais Stripe)' : t; };
+const libTaux = (taux, netBesoin) => { const t = String(taux).replace('.', ',') + ' %'; return netBesoin ? t + ' (cagnottes : moitié de ce qui reste après les 88 % de la personne et les frais Stripe)' : t; };
 const CLIENT = process.env.STRIPE_COMMISSION_CLIENT || 'cus_VbtVLcPE714MbD';   // l'association, cliente sur le compte Stripe du prestataire (identifiant non secret) — servira à l'étape « facture »
 
 // types de mouvements Stripe qui entrent dans la base de calcul
@@ -95,7 +95,7 @@ async function tropPercu(stripe, factures, recus = {}) {
   return { du, deja, reste: Math.max(0, du - deja) };
 }
 
-// commission = net des dons généraux × TAUX % + pour les cagnottes, la moitié de ce qui reste après les 90 % de la personne et les frais Stripe
+// commission = net des dons généraux × TAUX % + pour les cagnottes, la moitié de ce qui reste après les 88 % de la personne et les frais Stripe
 
 async function mouvementsStripe(stripe, du, au) {   // bornes incluses, jours de Paris
   const gte = Math.floor(minuitParis(du) / 1000), lt = Math.floor(minuitParis(lendemain(au)) / 1000), out = [];
@@ -216,9 +216,9 @@ async function encaisser({ stripe, stripe2, simuler, recus = {}, maintenant = Da
   const periode = lignes.length === 1 ? 'virement arrivé le ' + jourFr(lignes[0].arrivee) : lignes.length + ' virements arrivés du ' + jourFr(lignes[0].arrivee) + ' au ' + jourFr(lignes[lignes.length - 1].arrivee);
   let inv = await stripe2.invoices.create({ customer: CLIENT, collection_method: 'charge_automatically', auto_advance: false, pending_invoice_items_behavior: 'exclude', currency: 'eur', ...(pmSeule ? { default_payment_method: pmSeule } : {}), description: `Commission de ${libTaux(TAUX, lignes.some(l => l.netBesoin))} sur les dons nets reçus — ${periode}`, metadata: { commission: '1', lot: cle, ...(deduit ? { avoir: String(deduit) } : {}), ...metaVirements(ids) } }, { idempotencyKey: cle });
   try {
-    const calc = (n, nb, cb) => nb ? `dons ${eur(n - nb)} × ${tx} % + cagnottes ${eur(cb)} (moitié de ce qui reste après 90 % à la personne et frais Stripe)` : `net des dons ${eur(n)} × ${tx} %`, nbTot = lignes.reduce((a, l) => a + (l.netBesoin || 0), 0), cbTot = lignes.reduce((a, l) => a + (l.comBesoin || 0), 0);
+    const calc = (n, nb, cb) => nb ? `dons ${eur(n - nb)} × ${tx} % + cagnottes ${eur(cb)} (moitié de ce qui reste après 88 % à la personne et frais Stripe)` : `net des dons ${eur(n)} × ${tx} %`, nbTot = lignes.reduce((a, l) => a + (l.netBesoin || 0), 0), cbTot = lignes.reduce((a, l) => a + (l.comBesoin || 0), 0);
     const postes = lignes.length <= 12 ? lignes.map(l => ({ amount: l.commission, description: `Virement arrivé le ${jourFr(l.arrivee)} — ${calc(l.net, l.netBesoin, l.comBesoin)}`, k: l.id })) : [{ amount: total, description: `${periode} — ${calc(net, nbTot, cbTot)}`, k: 'tout' }];
-    if (deduit) postes.push({ amount: -deduit, description: `Remboursement du trop-perçu : dons des cagnottes facturés à ${tx} % jusqu'au 26/11/2026 (nouvelle règle : moitié de ce qui reste après 90 % à la personne et frais Stripe)`, k: 'avoir' });
+    if (deduit) postes.push({ amount: -deduit, description: `Remboursement du trop-perçu : dons des cagnottes facturés à ${tx} % jusqu'au 26/11/2026 (nouvelle règle : moitié de ce qui reste après 88 % à la personne et frais Stripe)`, k: 'avoir' });
     for (const x of postes) await stripe2.invoiceItems.create({ customer: CLIENT, invoice: inv.id, amount: x.amount, currency: 'eur', description: x.description }, { idempotencyKey: cle + '-' + x.k });
     inv = await stripe2.invoices.retrieve(inv.id);
     if (inv.status === 'draft') {
@@ -268,7 +268,7 @@ function corpsCommission(r, f, tx, refuse, pourPdf) {
     `<p style="margin:16px 0 0;font-size:15px;line-height:1.55;color:#1f2937">${refuse ? 'La carte enregistrée a été refusée : la facture reste ouverte, un nouvel essai a lieu au prochain passage.' : `Commission de ${escH(libTaux(tx, V.some(v => v.netBesoin)))} sur les dons nets de l'association (${escH(eur(net))} au total), prélevée par carte le jour de l'arrivée en banque de ${V.length > 1 ? 'ces virements' : 'ce virement'} Stripe.`}</p>` +
     (r.avoir && r.avoir.deduit ? `<p style="margin:12px 0 0;font-size:14px;line-height:1.55;color:#1f2937">Commission calculée : ${escH(eur(total))}. <b>Trop-perçu rendu à l'association : − ${escH(eur(r.avoir.deduit))}</b> (dons des cagnottes facturés à ${escH(tx)} % jusqu'au 26/11/2026, nouvelle règle plus basse)${r.avoir.resteApres > 0 ? ', reste à déduire sur les prochaines factures : ' + escH(eur(r.avoir.resteApres)) : ', tout est rendu'}.</p>` : '') +
     G.partie(1, 'À quoi correspond cette commission') + tableauVirements(r, tx) +
-    G.note(['Net = dons encaissés − frais Stripe − remboursements − litiges.', 'Commission = net × ' + tx + ' %' + (V.some(v => v.netBesoin) ? ' ; pour les cagnottes : la personne reçoit 90 % du don, ce qui reste après les frais Stripe est partagé moitié-moitié entre le prestataire et l\'association' : '') + '.', 'Aucun don n\'est compté avant l\'arrivée du virement Stripe en banque.', 'Aucun virement n\'est compté deux fois.'], 'Comment c\'est calculé') +
+    G.note(['Net = dons encaissés − frais Stripe − remboursements − litiges.', 'Commission = net × ' + tx + ' %' + (V.some(v => v.netBesoin) ? ' ; pour les cagnottes : la personne reçoit 88 % du don, ce qui reste après les frais Stripe est partagé moitié-moitié entre le prestataire et l\'association' : '') + '.', 'Aucun don n\'est compté avant l\'arrivée du virement Stripe en banque.', 'Aucun virement n\'est compté deux fois.'], 'Comment c\'est calculé') +
     (V.some(v => (v.detail || []).length) ? G.partie(2, 'Le détail, paiement par paiement') + tableauPaiements(r, pourPdf) : '');
 }
 function pdfCommission(r, f, tx, refuse) { return G.enPdf(corpsCommission(r, f, tx, refuse, true)); }

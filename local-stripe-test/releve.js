@@ -22,7 +22,7 @@ const idDe = v => (v && typeof v === 'object' ? v.id : v) || '';
 const S = (A, k) => A.reduce((a, l) => a + (l[k] || 0), 0);
 const nbP = n => n + ' paiement' + (n > 1 ? 's' : '');
 // Besoins (mini-cagnottes personnelles) : sur le net après frais Stripe, 5 % au prestataire, 5 % à l'association, 90 % à la personne
-const TAUX_BESOIN = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX_BESOIN || 5))), PART_ASSO = 5;
+const TAUX_BESOIN = Math.max(0, Math.min(100, Number(process.env.COMMISSION_TAUX_BESOIN || 6))), PART_ASSO = 6;   // la personne : 88 % du don
 const pc = n => String(n).replace('.', ',') + ' %';
 // répartit un total (centimes) entre des lignes au prorata de leur net Stripe, au centime près
 function repartir(L, total, cle) {
@@ -96,7 +96,7 @@ function modele(p, mouvements, recus = {}, { taux = 7, commission = null } = {})
   // dons généraux : taux (7 %) ; besoins : TAUX_BESOIN (5 %) ; chaque part répartie au prorata, au centime près
   // besoins d'avant la nouvelle règle (l.nouvelle faux) : 7 % comme les dons généraux, pas de part association, le reste à la personne
   const gen = lignes.filter(l => l.categorie === 'general' || (l.categorie === 'besoin' && !l.nouvelle)), bes = lignes.filter(l => l.categorie === 'besoin' && l.nouvelle), netG = S(gen, 'netStripe'), netB = S(bes, 'netStripe');
-  // cagnottes : par paiement, 90 % du don à la personne ; le reste après frais Stripe, moitié prestataire, moitié association (même calcul que la facture)
+  // cagnottes : par paiement, 88 % du don à la personne ; le reste après frais Stripe, moitié prestataire, moitié association (même calcul que la facture)
   const PB = require('./commission.js').partsBesoin;
   bes.forEach(l => { const q = PB(l.brut, l.netStripe); l.com = q.prestataire; l.asso = q.association; l.personne = q.personne; });
   const totB = netG + netB > 0 ? S(bes, 'com') : 0;
@@ -120,7 +120,7 @@ const th = `padding:7px 5px;border-bottom:2px solid ${TEAL};font-size:10.5px;tex
 const td = `padding:8px 5px;border-bottom:1px solid ${TRAIT};font-size:13px;text-align:right;white-space:nowrap`;
 const titre = (n, t, s) => G.partie(n, t).replace(/<\/td><\/tr><\/table>$/, s ? ` <span style="font-weight:normal;color:${GRIS}">${esc(s)}</span></td></tr></table>` : '</td></tr></table>');
 function tableauResume(groupes, libTotal, M, besoin) {
-  // besoins : Brut, Frais Stripe, Frais 5 % (prestataire), Association 5 %, À reverser 90 % ; sinon : Brut, Frais Stripe, Frais 7 %, Net
+  // besoins : Brut, Frais Stripe, Prestataire, Association, À reverser (88 % du don) ; sinon : Brut, Frais Stripe, Frais 7 %, Net
   const cols = besoin ? [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], [fraisB(M), 'com', moins], ['Association', 'asso', moins], [revB(M), 'reverser', signe]]
     : [['Brut', 'brut', signe], ['Frais Stripe', 'frais', moins], ['Frais ' + pc(M.taux), 'com', moins], ['Net', 'net', signe]];
   const larg = besoin ? [32, 13, 13, 13, 13, 16] : [40, 14, 16, 13, 17], der = cols.length - 1;
