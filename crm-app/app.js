@@ -418,14 +418,14 @@ function bsRepartition(list) {
     <td class="num">${c ? n(c.prestataire) : '—'}</td><td class="num">${c ? n(c.association) : '—'}</td><td class="num"><b>${c ? n(c.aReverser) : '—'}</b></td>
     <td class="num">${n(x.verse || 0)}</td><td class="num"><b style="color:${c && c.reste > 0 ? '#b45309' : 'inherit'}">${c ? (c.reste < 0 ? 'trop versé ' + bsEur(-c.reste) : n(c.reste)) : '—'}</b></td></tr>`; };
   return `<div class="card" style="margin-bottom:16px"><b>Comment l'argent d'un besoin est réparti</b>
-    <p class="hint" style="margin:6px 0 0">Don reçu − frais Stripe = <b>net</b>. Sur ce net : <b>${tp.tauxPrestataire} %</b> pour le prestataire, <b>${tp.tauxAssociation} %</b> pour l'association, <b>${tPers} %</b> reversés à la personne. Exemple : 100 € donnés, 1,50 € de frais Stripe → 98,50 € net → 4,93 € prestataire, 4,93 € association, 88,64 € pour la personne. Les autres dons (généraux, fêtes, colis…) : 7 % pour le prestataire, le reste à l'association.<br>Cette règle vaut pour tous les dons des cagnottes, depuis l'ouverture de leur lien. Ce que le prestataire avait pris en trop (7 % au lieu de 5 % jusqu'au 26/11) est rendu à l'association : déduit de ses prochaines commissions.</p></div>
+    <p class="hint" style="margin:6px 0 0">La personne reçoit <b>${tPers} % du don</b>. Ce qui reste, une fois les frais Stripe payés, est partagé <b>moitié-moitié</b> entre le prestataire (Yarone) et l'association. Exemple : 100 € donnés, Stripe prend 1,50 € → <b>90 € pour la personne</b>, il reste 8,50 € → <b>4,25 € pour Yarone</b>, <b>4,25 € pour Émounatéha</b>. Les autres dons (généraux, fêtes, colis…) : 7 % pour le prestataire, le reste à l'association.<br>Cette règle vaut pour tous les dons des cagnottes, depuis l'ouverture de leur lien. Ce que le prestataire avait pris en trop (7 % jusqu'au 26/11) est rendu à l'association : déduit de ses prochaines commissions.</p></div>
     <div class="grid g4" style="margin-bottom:16px">
       <div class="card stat"><small>Net reçu (après Stripe)</small><b>${bsEur(T('net'))}</b></div>
-      <div class="card stat"><small>Prestataire ${tp.tauxPrestataire} %</small><b>${bsEur(T('prestataire'))}</b></div>
-      <div class="card stat"><small>Association ${tp.tauxAssociation} %</small><b>${bsEur(T('association'))}</b></div>
-      <div class="card stat"><small>Pour les personnes ${tPers} %</small><b>${bsEur(T('aReverser'))}</b></div>
+      <div class="card stat"><small>Yarone (prestataire)</small><b>${bsEur(T('prestataire'))}</b></div>
+      <div class="card stat"><small>Émounatéha</small><b>${bsEur(T('association'))}</b></div>
+      <div class="card stat"><small>Pour les personnes (${tPers} % des dons)</small><b>${bsEur(T('aReverser'))}</b></div>
     </div>
-    <div class="card" style="padding:0;overflow-x:auto">${L.length ? `<table class="tc"><thead><tr><th>Besoin · pour</th><th class="num">Dons</th><th class="num">Collecté</th><th class="num">Frais Stripe</th><th class="num">Net</th><th class="num">Prestataire</th><th class="num">Association</th><th class="num">Pour la personne</th><th class="num">Déjà versé</th><th class="num">Reste à verser</th></tr></thead><tbody>${L.map(ligne).join('')}
+    <div class="card" style="padding:0;overflow-x:auto">${L.length ? `<table class="tc"><thead><tr><th>Besoin · pour</th><th class="num">Dons</th><th class="num">Collecté</th><th class="num">Frais de carte (Stripe)</th><th class="num">Net</th><th class="num">Yarone</th><th class="num">Émounatéha</th><th class="num">Pour la personne</th><th class="num">Déjà versé</th><th class="num">Reste à verser</th></tr></thead><tbody>${L.map(ligne).join('')}
       <tr style="border-top:2px solid #1f6a72"><td><b>Total</b></td><td class="num"><b>${L.reduce((t, x) => t + (x.dons || 0), 0)}</b></td><td class="num"><b>${bsEur(T('brut'))}</b></td><td class="num"><b>${neg(T('frais') + T('rembourse'))}</b></td><td class="num"><b>${bsEur(T('net'))}</b></td><td class="num"><b>${bsEur(T('prestataire'))}</b></td><td class="num"><b>${bsEur(T('association'))}</b></td><td class="num"><b>${bsEur(T('aReverser'))}</b></td><td class="num"><b>${bsEur(verse)}</b></td><td class="num"><b>${bsEur(Math.max(0, T('reste')))}</b></td></tr></tbody></table>` : '<div class="empty" style="padding:24px">Aucun don reçu sur un besoin pour l\'instant.</div>'}</div>
     <p class="hint">Chiffres lus dans Stripe (frais réels, remboursements déduits). « Noter un versement » se fait dans l'onglet « Besoins et liens ». Le même détail est dans le Google Sheet « Virements Émounatéha », onglet « Répartition ».</p>`;
 }
@@ -435,9 +435,9 @@ function bsCompte(x) {
   const c = x.compte, verse = x.verse || 0;
   if (!x.dons && !verse) return '';
   if (!c) return `<div class="bs-cpt"><p class="bs-cn">Somme à reverser : calcul indisponible pour l'instant (frais bancaires non lus).${verse ? ' Déjà versé : <b>' + bsEur(verse) + '</b>.' : ''}</p></div>`;
-  const solde = verse > 0 && c.reste <= 0, L = [['Collecté', bsEur(c.brut)], ['− Frais bancaires', '− ' + bsEur(c.frais)]];
+  const solde = verse > 0 && c.reste <= 0, L = [['Collecté', bsEur(c.brut)], ['− Frais de carte (Stripe)', '− ' + bsEur(c.frais)]];
   if (c.rembourse) L.push(['− Dons remboursés', '− ' + bsEur(c.rembourse)]);
-  if (c.prestataire != null) { L.push(['− Prestataire (' + (c.ancienneRegle ? (c.netAvant >= c.net ? '7 %, ancienne règle' : '7 % avant le 26/11, puis ' + c.tauxPrestataire + ' %') : c.tauxPrestataire + ' %') + ')', '− ' + bsEur(c.prestataire)]); L.push(['− Association (' + c.tauxAssociation + ' %)', '− ' + bsEur(c.association)]); }
+  if (c.prestataire != null) { L.push(['− Yarone (prestataire)', '− ' + bsEur(c.prestataire)]); L.push(['− Émounatéha', '− ' + bsEur(c.association)]); }
   else if (c.retenue) L.push(['− Frais de collecte', '− ' + bsEur(c.retenue)]);
   return `<div class="bs-cpt">
     ${L.map(l => `<div class="bs-cl"><span>${l[0]}</span><span>${l[1]}</span></div>`).join('')}

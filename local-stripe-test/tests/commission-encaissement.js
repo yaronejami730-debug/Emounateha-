@@ -103,8 +103,8 @@ function monde() {
     W.factures.push({ id: 'in_old', status: 'paid', created: J('2026-11-13'), metadata: { commission: '1', v0: 'po_old,po_gen' } });
     W.virement('po_new', '2026-11-27', [don(10000, 175)]);
     r = await W.run(H('2026-11-28', '09:00'));
-    const du = Math.round(9825 * 0.07) - Math.round(9825 * 0.05);
-    ok(r.facture && r.facture.paye && r.total === 688 && r.avoir && r.avoir.du === du && r.avoir.deduit === du && r.facture.montant === 688 - du, 'trop-perçu : 2 % de la cagnotte déjà facturée à 7 % (' + du / 100 + ' €) déduits de la facture suivante', r.avoir);
+    const du = Math.round(9825 * 0.07) - C.partsBesoin(10000, 9825).prestataire;
+    ok(r.facture && r.facture.paye && r.total === 688 && r.avoir && r.avoir.du === du && r.avoir.deduit === du && r.facture.montant === 688 - du, 'trop-perçu : cagnotte facturée 6,88 € (7 %) au lieu de 4,12 € → ' + du / 100 + ' € déduits de la facture suivante', r.avoir);
     ok(W.postes.some(p => p.amount === -du && /trop-perçu/.test(p.description)) && W.factures.some(f => f.id !== 'in_old' && f.metadata && f.metadata.avoir === String(du)), 'ligne « Remboursement du trop-perçu » sur la facture', W.postes);
     const m2 = C.mailEncaissement(r, true); ok(/Trop-perçu rendu/.test(m2.text) && /tout est rendu/.test(m2.text), 'e-mail : trop-perçu rendu, tout est rendu', m2.text);
     W.virement('po_new2', '2026-11-28', [don(10000, 175)]);
@@ -114,7 +114,7 @@ function monde() {
     W.factures.push({ id: 'in_old', status: 'paid', created: J('2026-11-13'), metadata: { commission: '1', v0: 'po_old' } });
     W.virement('po_new', '2026-11-27', [don(10000, 175)]);
     r = await W.run(H('2026-11-28', '09:00'));
-    const du2 = Math.round(985000 * 0.07) - Math.round(985000 * 0.05);
+    const du2 = Math.round(985000 * 0.07) - C.partsBesoin(1000000, 985000).prestataire;
     ok(r.facture && r.facture.montant === 0 && r.avoir.deduit === 688 && r.avoir.resteApres === du2 - 688, 'gros trop-perçu : facture à 0 €, le reste sera déduit des suivantes', r.avoir);
     W.factures.push({ id: 'in_vieux_nouvelle', status: 'paid', created: J('2026-11-28'), metadata: { commission: '1', v0: 'po_x' } });
     const a2 = await C.tropPercu(W.asso, W.factures); ok(a2.du === du2 && a2.deja === 688 && a2.reste === du2 - 688, 'le déjà déduit est relu sur les factures (metadata avoir)', a2);

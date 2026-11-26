@@ -15,7 +15,7 @@
  *                     la trésorière choisit en L « Tout reversé / La moitié / Autre montant » : reversé, date, reste et historique se remplissent seuls
  *                     (déclencheur quandModifie, installé une fois par la fonction installer()) ;
  *  - « Répartition »  : par cagnotte, comment se partage l'argent : net après frais Stripe → 5 % prestataire, 5 % association, 90 % la personne ; reversé, reste.
- * Règle (27 nov 2026, tous les dons des cagnottes) : 5 % prestataire + 5 % association + 90 % la personne, sur le net après frais Stripe ; autres dons = 7 % prestataire.
+ * Règle (27 nov 2026, tous les dons des cagnottes) : 90 % du don à la personne ; ce qui reste après les frais Stripe, moitié prestataire, moitié association ; autres dons = 7 % prestataire.
  * Le trop-perçu (cagnottes facturées 7 % jusqu'au 26/11) est déduit des factures de commission suivantes. Colonne « Frais du prestataire » des anciens paiements : ce qui a été facturé à l'époque.
  * Après la mise à jour du 26 nov 2026 : lancer UNE fois installerRepartition() (Exécuter) — ne touche pas aux reversements déjà notés.
  * Un même virement n'est jamais écrit deux fois (repéré par sa référence Stripe po_…).
@@ -26,10 +26,10 @@ const SHEET_ID = '1_4U4WtC2x2FjRoQu2-TsSkVDipUtKsc26u_LpMc0qpc';
 
 const ONGLETS = {
   Virements: ['Date du virement', 'Référence Stripe', 'Paiements', 'Brut', 'Frais Stripe', 'Virement reçu en banque', 'Frais du prestataire', 'Net pour l\'association', 'dont dons généraux', 'dont à reverser aux besoins (90 %)', 'Écart à vérifier', 'Écrit le', 'Statut du virement', 'Statut mis à jour le'],
-  Paiements: ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Nature', 'Date du paiement', 'Prénom', 'Nom', 'E-mail', 'ID de paiement Stripe', 'N° de reçu', 'Brut', 'Frais Stripe', 'Frais du prestataire (7 % ; besoins 5 %)', 'Net', 'Statut du virement', 'Moyen de paiement', 'Fréquence', 'Particulier / entreprise', 'Part association (besoins 5 %)', 'À reverser à la personne (besoins 90 %)'],
+  Paiements: ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Nature', 'Date du paiement', 'Prénom', 'Nom', 'E-mail', 'ID de paiement Stripe', 'N° de reçu', 'Brut', 'Frais Stripe', 'Frais du prestataire (7 % ; besoins 5 %)', 'Net', 'Statut du virement', 'Moyen de paiement', 'Fréquence', 'Particulier / entreprise', 'Part association (besoins)', 'À reverser à la personne (besoins, 90 % du don)'],
   'Détail par type': ['Date du virement', 'Référence du virement', 'Catégorie', 'Type de don / cagnotte', 'Paiements', 'Brut', 'Frais Stripe', 'Frais du prestataire', 'Net', 'Statut du virement'],
   Cagnottes: ['Cagnotte', 'Paiements', 'Brut', 'Dû à la personne', 'dont en cours de virement', 'dont arrivé en banque', 'Reversé (total)', 'Date du dernier reversement', 'Reste à reverser', 'Historique des reversements', 'Statut', 'Reversement (à choisir)'],
-  'Répartition': ['Cagnotte', 'Paiements', 'Collecté (brut)', 'Frais Stripe', 'Net après frais Stripe', 'Prestataire 5 %', 'Association 5 %', 'Personne 90 %', 'Déjà reversé', 'Reste à reverser']
+  'Répartition': ['Cagnotte', 'Paiements', 'Collecté (brut)', 'Frais Stripe', 'Net après frais Stripe', 'Prestataire (moitié du reste)', 'Association (moitié du reste)', 'Personne (90 % du don)', 'Déjà reversé', 'Reste à reverser']
 };
 const CHOIX = ['Tout reversé', 'La moitié', 'Autre montant'];   // colonne L de « Cagnottes »
 const STATUT_VIR = { pending: 'En cours de virement', in_transit: 'En cours de virement', paid: 'Arrivé en banque', failed: 'Refusé par la banque', canceled: 'Annulé' };
@@ -133,7 +133,7 @@ function formulesRepartition(ss, w, r) {
 }
 
 // À lancer UNE fois après la mise à jour du 26 nov 2026 (Exécuter → installerRepartition) :
-// titres des colonnes à jour, part association et somme à reverser des anciens paiements des besoins (5 / 5 / 90 du net après frais Stripe),
+// titres des colonnes à jour, part association et somme à reverser des anciens paiements des besoins (90 % du don ; reste moitié-moitié),
 // « Cagnottes » recalculée sur 90 %, onglet « Répartition » créé. Ne touche JAMAIS aux reversements déjà notés (colonnes G, H, J de « Cagnottes »).
 function installerRepartition() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
@@ -142,9 +142,9 @@ function installerRepartition() {
   if (wp && wp.getLastRow() > 1) {
     const L = wp.getRange(2, 1, wp.getLastRow() - 1, 21).getValues();
     const out = L.map(x => { if (x[2] !== 'Besoin (cagnotte)' || (x[19] !== '' && x[20] !== '')) return [x[19], x[20]]; n++;
-      // tous les dons des cagnottes suivent 5 / 5 / 90 du net après frais Stripe (décision du 27 nov 2026), même anciens
-      const net = Math.round(((Number(x[11]) || 0) + (Number(x[12]) || 0)) * 100), presta = Math.round(net * 5 / 100), asso = Math.round(net * 5 / 100);
-      return [-asso / 100, (net - presta - asso) / 100]; });
+      // tous les dons des cagnottes (décision du 27 nov 2026), même anciens : 90 % du don à la personne, le reste après frais Stripe moitié prestataire, moitié association
+      const brut = Math.round((Number(x[11]) || 0) * 100), net = Math.round(((Number(x[11]) || 0) + (Number(x[12]) || 0)) * 100), pers = Math.round(brut * 90 / 100), reste = net - pers, presta = Math.floor(reste / 2);
+      return [-(reste - presta) / 100, pers / 100]; });
     wp.getRange(2, 20, out.length, 2).setValues(out);
     mettreEnForme(wp, [12, 13, 14, 15, 20, 21]);
   }

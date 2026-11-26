@@ -1442,7 +1442,9 @@ function besoinCompte(total, st, versements) {
   if (!st || !st.dons) return { versements: vs, verse, compte: null };
   // depuis le 27 nov 2026, tous les dons des cagnottes suivent 5 / 5 / 90 (st.netAvant vaut 0 ; gardé au cas où une date de bascule reviendrait)
   const net = Math.max(0, st.net), avant = Math.min(net, Math.max(0, Number.isFinite(st.netAvant) ? st.netAvant : 0)), apres = net - avant;
-  const prestataire = Math.round(avant * BESOIN_ANCIEN / 100) + Math.round(apres * BESOIN_PRESTATAIRE / 100), association = Math.round(apres * BESOIN_ASSOCIATION / 100), aReverser = Math.max(0, net - prestataire - association);
+  // règle du 27 nov 2026 : 90 % du don à la personne, ce qui reste après les frais Stripe moitié prestataire, moitié association (calculé don par don par le serveur des dons)
+  const parts = Number.isFinite(st.personne) && Number.isFinite(st.prestataire) && Number.isFinite(st.association);
+  const prestataire = parts ? st.prestataire : Math.round(avant * BESOIN_ANCIEN / 100) + Math.round(apres * BESOIN_PRESTATAIRE / 100), association = parts ? st.association : Math.round(apres * BESOIN_ASSOCIATION / 100), aReverser = parts ? Math.max(0, st.personne) : Math.max(0, net - prestataire - association);
   return { versements: vs, verse, compte: { brut: st.brut, frais: st.frais, rembourse: st.rembourse, net: st.net, prestataire, association, tauxPrestataire: BESOIN_PRESTATAIRE, tauxAssociation: BESOIN_ASSOCIATION, ancienneRegle: avant > 0, netAvant: avant, retenue: prestataire + association, aReverser, reste: aReverser - verse, enCours: st.brut !== total || st.incomplets > 0, litiges: st.litiges || 0 } };
 }
 // public : les cagnottes mises en avant sur la page d'accueil (ouvertes, choisies dans le CRM). Le nom du bénéficiaire n'en sort que s'il a été saisi pour être affiché (nom_public).
