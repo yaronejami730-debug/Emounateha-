@@ -96,6 +96,8 @@
   .plein:not(.joue) .pochette{transform:scale(.9)}
   .titre{font-size:22px;font-weight:700}
   .artiste{opacity:.7;margin-top:2px}
+  .partager{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;margin-top:12px;padding:9px 16px;border-radius:999px;border:1px solid rgba(240,200,112,.55);background:rgba(240,200,112,.12);color:var(--creme);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  .partager svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   input[type=range]{width:100%;margin:22px 0 4px;accent-color:var(--or)}
   .temps{display:flex;justify-content:space-between;font-size:12px;opacity:.7}
   .ctrl{display:flex;justify-content:center;align-items:center;gap:22px;margin-top:22px}
@@ -159,6 +161,7 @@
   <div class="pochette"><img id="pImg" src="/musique/yud-tet-kislev.jpg" alt=""></div>
   <div class="titre" id="pT">Yud-Tet Kislev · י״ט-כ׳ כסלו</div>
   <div class="artiste">Émounatéha</div>
+  <button class="partager" id="partTitre" type="button" aria-label="Partager ce titre"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg><span id="partTxt">Partager ce titre</span></button>
   <div id="msg" style="min-height:18px;margin-top:8px;font-size:13px;color:#f0c870"></div>
   <input type="range" id="pos" min="0" max="1000" value="0">
   <div class="temps"><span id="tc">0:00</span><span id="td">0:00</span></div>
@@ -218,8 +221,15 @@ a.onloadedmetadata=()=>$('td').textContent=fmt(a.duration);
 a.ontimeupdate=()=>{if(!compte&&a.currentTime>=10&&!a.paused){compte=true;compter(0)}if(!a.duration)return;const p=a.currentTime/a.duration;$('pos').value=p*1000;$('tc').textContent=fmt(a.currentTime);$('barreMini').style.width=p*100+'%'};
 $('pos').oninput=e=>{a.currentTime=e.target.value/1000*a.duration};
 $('part').onclick=()=>{const d={title:'Musique · Émounatéha',url:location.href};navigator.share?navigator.share(d).catch(()=>{}):navigator.clipboard&&navigator.clipboard.writeText(d.url)};
+// « Partager ce titre » (fenêtre de lecture) : lien direct vers CE titre, qui s'ouvre sur lui (www.emounateha.fr/musique/?t=<titre>)
+$('partTitre').onclick=async()=>{
+  const p=PISTES[cur], url=location.origin+'/musique/?t='+p.id, d={title:p.court+' · Émounatéha',text:'Écoute « '+p.t+' » d’Émounatéha',url};
+  try{if(navigator.share){await navigator.share(d);return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{await navigator.clipboard.writeText(url);$('partTxt').textContent='Lien copié';setTimeout(()=>$('partTxt').textContent='Partager ce titre',2500)}catch(e){location.href='https://wa.me/?text='+encodeURIComponent(d.text+' : '+url)}
+};
 if('mediaSession' in navigator){navigator.mediaSession.setActionHandler('previoustrack',()=>charger(cur-1,true));navigator.mediaSession.setActionHandler('nexttrack',()=>charger(cur+1,true))}
 a.src=PISTES[0].src; dessiner();
+{ const t=new URLSearchParams(location.search).get('t'), i=PISTES.findIndex(p=>p.id===t); if(i>=0){charger(i,false);plein.classList.add('on')} }   // lien partagé : ouvre ce titre (lecture au toucher : les navigateurs bloquent le son automatique)
 // le badge « NOUVEAU » reste dix jours (jusqu'au 29 novembre 2026 inclus)
 if(Date.now()>=Date.parse('2026-11-30T00:00:00+01:00')){const n=$('nouveau');if(n)n.remove()}
 </script>
