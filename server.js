@@ -640,6 +640,21 @@ async function alerteQuota(q) {   // un seul e-mail par seuil et par période de
   catch (e) { console.error('alerte forfait', e.message); return null; }
 }
 
+// Le 1er du mois (et les jours suivants si besoin) à partir de 8 h (Paris) : bilan mensuel des commissions du mois écoulé, en PDF, au prestataire (URSSAF).
+// Le serveur des dons ne l'envoie qu'une fois par mois ; un échec est retenté à l'heure suivante.
+async function bilanCommission() {
+  const s = db.settings, auj = parisDay(Date.now()), mois = auj.slice(0, 7);
+  if (parisHour() < 8 || s.bilanCommission === mois || s.bilanCommissionEssai === auj + ' ' + parisHour()) return null;
+  s.bilanCommissionEssai = auj + ' ' + parisHour(); save();
+  try {
+    const r = await fetch(DON_URL + '/api/admin/commission/bilan-mensuel', { method: 'POST', headers: { 'content-type': 'application/json', ...cerfaSig('POST', '/api/admin/commission/bilan-mensuel') }, body: '{}', signal: AbortSignal.timeout(120000) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && (j.envoye === true || /déjà envoyé/.test(String(j.raison || '')))) { s.bilanCommission = mois; save(); if (j.envoye) console.log('bilan mensuel des commissions', JSON.stringify(j).slice(0, 300)); }
+    else console.error('bilan mensuel des commissions non envoyé', r.status, JSON.stringify(j).slice(0, 300));
+    return j;
+  } catch (e) { console.error('bilan mensuel des commissions', e.message); return null; }
+}
+
 // Chaque lundi à partir de 8 h (Paris) : demande au serveur des dons d'envoyer le relevé de commission de la semaine écoulée. Une fois par semaine.
 async function releveCommission() {
   const s = db.settings, auj = parisDay(Date.now()), d = new Date(auj + 'T12:00:00Z');
@@ -703,6 +718,7 @@ async function tick(force = false) {
     let yt = null; try { yt = await syncYoutube(force); } catch (e) { yt = { error: e.message }; console.error('YouTube', e.message); }
     ensureForfait(); ensureAccords(); nettoyerContactsTest();
     await releveCommission();
+    await bilanCommission();
     await encaisserCommission();
     await verifierVirements();
     await verifierEchecs();

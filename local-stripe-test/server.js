@@ -654,7 +654,8 @@ app.get('/api/admin/mail', async (req, res) => {
     res.json({ numero: r.numero, sujet: m ? m.subject : '', html: m ? m.html : '', piece: `Recu-fiscal-${nomFichier(r.numero)}.pdf`, envois: (r.mails || (r.email && !r.email.skipped ? [r.email] : [])).map(x => ({ at: x.at || null, to: x.to || r.donorEmail || '', sent: !!x.sent, messageId: x.messageId || '', error: x.error || '', note: x.note || '', par: x.par || 'auto' })) });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
-require('./commission').monter(app, { stripe, adminOk, mailer, load, save, pdfTampon });   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
+require('./commission').monter(app, { stripe, adminOk, mailer, load, save, pdfTampon });
+require('./bilan-mensuel').monter(app, { stripe, adminOk, mailer, load, save, pdfTampon });   // le 1er du mois : bilan des commissions du mois écoulé (PDF) au prestataire, pour l'URSSAF   // commission du prestataire : relevé à blanc (lecture seule), CRM → Dons → Commission
 require('./cagnottes').monter(app, { stripe, adminOk });   // mini-cagnottes : net réellement encaissé par cagnotte (lecture seule), pour la somme à reverser affichée dans le CRM
 require('./virements').monter(app, { stripe, adminOk, mailer, load, save, pdfTampon });   // e-mail à l'administrateur à chaque virement de Stripe vers la banque (lecture seule)
 require('./echecs').monter(app, { stripe, adminOk, mailer, load, save });   // dons mensuels dont le prélèvement échoue : rappels au donateur (4 au plus), alerte à l'administrateur (lecture seule, c'est Stripe qui retente)
