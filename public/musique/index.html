@@ -31,6 +31,9 @@
   .haut{display:flex;align-items:center;justify-content:space-between}
   .haut a{color:var(--creme);text-decoration:none;font-size:14px;opacity:.85}
   .haut .bsd{color:var(--or);font-size:15px}
+  .haut .dr{display:flex;align-items:center;gap:12px}
+  .haut .hp{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;border:1px solid rgba(240,200,112,.55);background:rgba(240,200,112,.12);color:var(--creme);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .haut .hp svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .marque{display:flex;flex-direction:column;align-items:center;text-align:center;margin:10px 0 8px}
   .marque img{width:104px;height:auto;display:block;margin-bottom:8px}
   .marque b{font-size:30px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
@@ -114,7 +117,7 @@
 </head>
 <body>
 <div class="tel">
-  <div class="haut"><a href="/">‹ Retour au site</a><span class="bsd">ב״ה</span></div>
+  <div class="haut"><a href="/">‹ Retour au site</a><div class="dr"><button class="hp" id="part" type="button" aria-label="Partager toutes les musiques"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg><span>Partager</span></button><span class="bsd">ב״ה</span></div></div>
   <div class="marque"><img src="/logo-complet-accueil.png?v=1" alt="Émounatéha — אמונתך"><b>Musique</b></div>
   <div class="sous">Émounatéha · à écouter où tu veux</div>
 
@@ -141,7 +144,6 @@
 
     <h2>Agir avec nous</h2>
     <a class="btn or" href="https://clubhai.emounateha.fr/">Rejoindre le Club ’Haï</a>
-    <button class="btn ligne" id="part">Partager toutes les musiques</button>
   </div>
   </div>
 
