@@ -1578,7 +1578,7 @@ function besoinInit() {
       '<div class="bs-n"><strong>' + (connu ? e2(b.collecte) : '…') + '</strong><span>' + (b.objectif ? 'collectés sur ' + e2(b.objectif) : 'collectés') + (b.dons ? ' · ' + b.dons + ' don' + (b.dons > 1 ? 's' : '') : '') + '</span></div>' +
       (b.objectif ? '<div class="bs-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' : '') +
       ((b.donateurs || []).length ? '<div class="bs-dons"><span class="bs-k">Ils ont participé</span><ul>' + b.donateurs.map(d => '<li' + (d.nom === 'Anonyme' ? ' class="an"' : '') + '><span>' + esc(d.nom) + '</span><b>' + e2(d.montant) + '</b></li>').join('') + '</ul></div>' : '') +
-      '<p class="bs-frais">88 % de chaque don est reversé au bénéficiaire. Frais de collecte : 12 %, frais bancaires compris.</p>'; };
+      '<p class="bs-frais">Frais de collecte : voir les <a href="https://www.emounateha.fr/cgv/#annexe-frais" target="_blank" rel="noopener" style="color:inherit">conditions générales</a>.</p>'; };
   dessine(b);
   if (b.collecte == null) fetch('/api/besoin/' + b.slug).then(r => r.ok ? r.json() : null).then(j => { if (j) { BESOIN = j; dessine(j); } }).catch(() => {});   // total des dons reçus par ce lien
   $('fs').after(box); $('h1').textContent = 'Votre don pour cette cagnotte';
