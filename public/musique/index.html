@@ -11,14 +11,14 @@
 <meta property="og:locale" content="fr_FR">
 <meta property="og:url" content="https://www.emounateha.fr/musique/">
 <meta property="og:title" content="Musique · Émounatéha">
-<meta property="og:description" content="Oufaratsta ופרצת : le nouveau titre d'Émounatéha, à écouter en ligne.">
+<meta property="og:description" content="Yud-Tet Kislev י״ט-כ׳ כסלו – חג הגאולה : le nouveau titre d'Émounatéha, à écouter en ligne.">
 <meta property="og:image" content="https://www.emounateha.fr/apercus/musique.jpg?v=1">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="1200">
 <meta property="og:image:alt" content="Pochette de Oufaratsta ופרצת, Émounatéha">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Musique · Émounatéha">
-<meta name="twitter:description" content="Oufaratsta ופרצת : le nouveau titre d'Émounatéha, à écouter en ligne.">
+<meta name="twitter:description" content="Yud-Tet Kislev י״ט-כ׳ כסלו – חג הגאולה : le nouveau titre d'Émounatéha, à écouter en ligne.">
 <meta name="twitter:image" content="https://www.emounateha.fr/apercus/musique.jpg?v=1">
 <link rel="preload" href="/polices/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/ecriture.css?v=20">
@@ -119,8 +119,8 @@
     <h2>À la une</h2>
     <div class="une" data-i="0">
       <span class="badge" id="nouveau">NOUVEAU</span>
-      <img src="/musique/oufaratsta.jpg" alt="Oufaratsta">
-      <div class="vo"><div><b>Oufaratsta · ופרצת</b><span>Émounatéha</span></div>
+      <img src="/musique/yud-tet-kislev.jpg" alt="Yud-Tet Kislev">
+      <div class="vo"><div><b>Yud-Tet Kislev · י״ט-כ׳ כסלו</b><span>Émounatéha</span></div>
         <div class="rond"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
     </div>
   </div>
@@ -146,8 +146,8 @@
 
 <div class="mini" id="mini">
   <div class="barre" id="barreMini"></div>
-  <img id="miniImg" src="/musique/oufaratsta.jpg" alt="">
-  <div class="t"><b id="miniT">Oufaratsta</b><span>Émounatéha</span></div>
+  <img id="miniImg" src="/musique/yud-tet-kislev.jpg" alt="">
+  <div class="t"><b id="miniT">Yud-Tet Kislev</b><span>Émounatéha</span></div>
   <button id="miniBtn" aria-label="Lecture/Pause">
     <svg class="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
     <svg class="pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
@@ -156,8 +156,8 @@
 
 <section class="plein" id="plein">
   <button class="bas" id="fermer" aria-label="Réduire">⌄</button>
-  <div class="pochette"><img id="pImg" src="/musique/oufaratsta.jpg" alt=""></div>
-  <div class="titre" id="pT">Oufaratsta · ופרצת</div>
+  <div class="pochette"><img id="pImg" src="/musique/yud-tet-kislev.jpg" alt=""></div>
+  <div class="titre" id="pT">Yud-Tet Kislev · י״ט-כ׳ כסלו</div>
   <div class="artiste">Émounatéha</div>
   <div id="msg" style="min-height:18px;margin-top:8px;font-size:13px;color:#f0c870"></div>
   <input type="range" id="pos" min="0" max="1000" value="0">
@@ -177,6 +177,7 @@
 <audio id="a" preload="metadata"></audio>
 <script>
 const PISTES=[
+  {id:'yud-tet-kislev',t:'Yud-Tet Kislev · י״ט-כ׳ כסלו',court:'Yud-Tet Kislev',src:'/musique/yud-tet-kislev.mp3',img:'/musique/yud-tet-kislev.jpg'},
   {id:'oufaratsta',t:'Oufaratsta · ופרצת',court:'Oufaratsta',src:'/musique/oufaratsta.m4a',img:'/musique/oufaratsta.jpg'}
 ];
 const $=i=>document.getElementById(i), a=$('a'), plein=$('plein'), mini=$('mini');
