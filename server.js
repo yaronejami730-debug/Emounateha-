@@ -1884,7 +1884,7 @@ async function api(req, res, url) {
   if (parts[0] === 'besoins') {   // mini-cagnottes : création, suivi du montant collecté par lien
     if (!pool) return send(res, 400, { error: 'Base de données requise' });
     await ensureBesoins();
-    const propre = b => ({ titre: String(b.titre || '').trim().slice(0, 70), beneficiaire: String(b.beneficiaire || '').trim().slice(0, 120), description: String(b.description || '').trim().slice(0, 600),
+    const propre = b => ({ titre: String(b.titre || '').trim().slice(0, 70), beneficiaire: String(b.beneficiaire || '').trim().slice(0, 120), description: String(b.description || '').trim().slice(0, 50000),   // texte de la page de don : sans limite pratique (Yarone, 27 nov 2026)
       objectif: (() => { const n = Math.round(Number(String(b.objectif == null ? '' : b.objectif).replace(',', '.')) * 100); return Number.isFinite(n) && n >= 100 && n <= 100000000 ? n : null; })() });
     if (m === 'GET') {
       const r = await pool.query('select id, slug, titre, beneficiaire, nom_public, description, objectif, actif, accueil, created_at, versements from public.besoins order by actif desc, created_at desc');
@@ -1917,10 +1917,10 @@ async function api(req, res, url) {
     }
     if (m === 'POST' && !parts[1]) {
       const v = propre(body); if (!v.titre) return send(res, 400, { error: 'Indiquez le besoin (ex. Loyer en retard)' });
-      const base = besoinSlug(body.slug || v.titre); if (!base) return send(res, 400, { error: "Adresse invalide : utilisez des lettres ou des chiffres" });
-      const pris = new Set((await pool.query("select slug from public.besoins where slug = $1 or slug like $1 || '-%'", [base])).rows.map(r => r.slug));
-      if (body.slug && pris.has(base)) return send(res, 400, { error: 'Cette adresse est déjà prise par un autre besoin' });
-      let slug = base; for (let n = 2; pris.has(slug); n++) slug = base.slice(0, 36) + '-' + n;
+      // adresse : identifiant créé automatiquement (don.emounateha.fr/besoin/k7m2x9), sans rapport avec le titre ni le nom de la personne
+      let slug = '';
+      for (let k = 0; k < 20 && !slug; k++) { const c = Array.from(crypto.randomBytes(6), x => 'abcdefghjkmnpqrstuvwxyz23456789'[x % 31]).join(''); if (!/^[0-9]/.test(c) && !(await pool.query('select 1 from public.besoins where slug = $1', [c])).rows.length) slug = c; }
+      if (!slug) return send(res, 500, { error: 'Identifiant du lien impossible à créer, réessayez' });
       const id = uid(); await pool.query('insert into public.besoins (id, slug, titre, beneficiaire, description, objectif, nom_public) values ($1,$2,$3,$4,$5,$6,true)', [id, slug, v.titre, v.beneficiaire, v.description, v.objectif]);   // le nom saisi dans « Pour qui » est affiché sur la cagnotte (laisser vide pour rester anonyme)
       return send(res, 200, { id, slug, lien: DON_URL + '/besoin/' + slug });
     }

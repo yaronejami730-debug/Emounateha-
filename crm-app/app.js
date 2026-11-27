@@ -483,22 +483,21 @@ const bsSlug = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 function besoinModal(id) {
   const b = besoinOf(id) || { titre: '', beneficiaire: '', description: '', objectif: null, slug: '', actif: true };
   modal(`<h2>${id ? 'Modifier le' : 'Nouveau'} besoin</h2>
-    <label>Le besoin</label><input id="b_titre" maxlength="70" value="${esc(b.titre)}" placeholder="ex. Loyer en retard, Une armoire, Repas de Chabbat" ${id ? '' : 'oninput="bsLien()"'}>
+    <label>Le besoin</label><input id="b_titre" maxlength="70" value="${esc(b.titre)}" placeholder="ex. Loyer en retard, Une armoire, Repas de Chabbat">
     <label>Pour qui <span class="opt">facultatif</span></label><input id="b_ben" maxlength="120" value="${esc(b.beneficiaire)}" placeholder="Prénom et nom, ou laissez vide">
     <div class="hint" style="color:#b45309"><b>Ce nom est affiché sur la cagnotte</b> (page de don et accueil du site), visible par tout le monde. Laissez vide pour une cagnotte anonyme. N'écrivez un nom qu'avec l'accord de la personne.</div>
     <label>Objectif en euros <span class="opt">facultatif</span></label><input id="b_obj" inputmode="decimal" value="${b.objectif ? String(b.objectif / 100).replace('.', ',') : ''}" placeholder="ex. 850">
-    <label>Texte affiché sur la page de don <span class="opt">facultatif</span></label><textarea id="b_desc" rows="3" maxlength="600" placeholder="Quelques mots pour expliquer le besoin aux donateurs.">${esc(b.description)}</textarea>
+    <label>Texte affiché sur la page de don <span class="opt">facultatif</span></label><textarea id="b_desc" rows="8" style="resize:vertical;min-height:140px" placeholder="Expliquez le besoin aux donateurs : sans limite de longueur, les retours à la ligne sont gardés.">${esc(b.description)}</textarea>
     <label>Adresse du lien</label>
     ${id ? `<div class="bs-url"><span>don.emounateha.fr/besoin/</span><b>${esc(b.slug)}</b></div><div class="hint">L'adresse ne change plus une fois créée : les liens déjà partagés continuent de marcher.</div>`
-      : `<div class="bs-url"><span>don.emounateha.fr/besoin/</span><input id="b_slug" maxlength="40" placeholder="loyer-en-retard" oninput="this.dataset.main='1';this.value=bsSlug(this.value)||this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"></div><div class="hint">Remplie toute seule à partir du besoin. Vous pouvez mettre autre chose (un prénom, un mot). Tout ce qui est dans l'adresse est public.</div>`}
+      : `<div class="bs-url"><span>don.emounateha.fr/besoin/</span><b style="opacity:.6">identifiant automatique</b></div><div class="hint">Le lien reçoit un identifiant créé tout seul (ex. don.emounateha.fr/besoin/k7m2x9). Il est copié dès la création et ne change plus.</div>`}
     <div class="row r" style="margin-top:22px"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn pri" id="b_go" onclick="besoinSave('${id || ''}')">${id ? 'Enregistrer' : 'Créer le besoin'}</button></div>`);
 }
-function bsLien() { const s = $('#b_slug'); if (s && !s.dataset.main) s.value = bsSlug($('#b_titre').value); }
 async function besoinSave(id) {
   const body = { titre: $('#b_titre').value.trim(), beneficiaire: $('#b_ben').value.trim(), description: $('#b_desc').value.trim(), objectif: $('#b_obj').value.trim(), nomPublic: true };
   if (!body.titre) return toast('Indiquez le besoin', true);
   if (body.objectif && !(Number(body.objectif.replace(',', '.')) >= 1)) return toast("L'objectif doit être un montant en euros", true);
-  if (id) body.actif = besoinOf(id).actif; else body.slug = $('#b_slug').value.trim();
+  if (id) body.actif = besoinOf(id).actif;
   const go = $('#b_go'); go.disabled = true;
   try { const r = await api(id ? 'PUT' : 'POST', '/besoins' + (id ? '/' + id : ''), body); closeModal(); await load(); await render();
     if (!id && r.lien) { try { await navigator.clipboard.writeText(r.lien); toast('Besoin créé · lien copié'); } catch { toast('Besoin créé'); } } else toast('Besoin enregistré'); }
