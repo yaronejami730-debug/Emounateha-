@@ -7,6 +7,10 @@ const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Conte
 let pass = 0, fail = 0; const ok = (c, m, x) => { c ? pass++ : fail++; console.log(c ? '  ok  ' : '  ECHEC', m, c ? '' : JSON.stringify(x === undefined ? null : x).slice(0, 400)); }; const T = t => console.log('\n— ' + t);
 (async () => {
   const home = fs.readFileSync(path.join(SITE, 'index.html'), 'utf8'), colis = fs.readFileSync(path.join(SITE, 'colis', 'index.html'), 'utf8');
+  T('Musique : une page de partage par titre, avec sa pochette');
+  { const PM = require(path.join(__dirname, '..', '..', 'scripts', 'pages-musique.js')), L = PM.attendues();
+    ok(L.length >= 2 && L.every(x => fs.existsSync(x.fichier) && fs.readFileSync(x.fichier, 'utf8') === x.contenu), 'chaque titre a sa page /musique/<titre>/ à jour (sinon : node scripts/pages-musique.js)', L.map(x => x.p.id));
+    ok(L.every(x => fs.existsSync(x.apercu) && x.contenu.includes('og:image" content="https://www.emounateha.fr/apercus/musique-' + x.p.id + '.jpg')), 'aperçu WhatsApp de chaque titre = sa pochette', L.map(x => x.p.id)); }
   T('Accueil');
   ok(/<a class="pillgold" href="https:\/\/clubhai\.emounateha\.fr\/"[^>]*>[^]*?Club ’Haï<\/span><\/a>/.test(home), 'bouton « Club ’Haï » vers clubhai.emounateha.fr');
   ok(!/api\/besoins-accueil/.test(home) && !/class="urgc"/.test(home.replace(/<style[^]*?<\/style>/g, '')), 'plus aucun bouton de cagnotte (loyer, urgence, retard) sur l\'accueil');
