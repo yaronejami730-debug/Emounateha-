@@ -54,6 +54,8 @@
   .piste b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .piste span{font-size:13px;opacity:.7}
   .piste.cur b{color:var(--or2)}
+  .piste .ps{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid rgba(240,200,112,.4);background:none;color:var(--creme);display:grid;place-items:center;cursor:pointer}
+  .piste .ps svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   /* cartes */
   .carte{background:rgba(255,255,255,.06);border-radius:16px;padding:18px;line-height:1.5;font-size:15px}
   .carte p+p{margin-top:10px}
@@ -139,7 +141,7 @@
 
     <h2>Agir avec nous</h2>
     <a class="btn or" href="https://clubhai.emounateha.fr/">Rejoindre le Club ’Haï</a>
-    <button class="btn ligne" id="part">Partager cette page</button>
+    <button class="btn ligne" id="part">Partager toutes les musiques</button>
   </div>
   </div>
 
@@ -183,11 +185,12 @@ const PISTES=[
   {id:'yud-tet-kislev',t:'Yud-Tet Kislev · י״ט-כ׳ כסלו',court:'Yud-Tet Kislev',src:'/musique/yud-tet-kislev.mp3',img:'/musique/yud-tet-kislev.jpg'},
   {id:'oufaratsta',t:'Oufaratsta · ופרצת',court:'Oufaratsta',src:'/musique/oufaratsta.m4a',img:'/musique/oufaratsta.jpg'}
 ];
+const ICO_PART='<svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>';
 const $=i=>document.getElementById(i), a=$('a'), plein=$('plein'), mini=$('mini');
 let cur=0;
 const fmt=s=>isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
 function dessiner(){
-  $('liste').innerHTML=PISTES.map((p,i)=>`<div class="piste${i===cur?' cur':''}" data-i="${i}"><div class="n">${i+1}</div><img src="${p.img}" alt=""><div class="t"><b>${p.t}</b><span>Émounatéha</span></div></div>`).join('');
+  $('liste').innerHTML=PISTES.map((p,i)=>`<div class="piste${i===cur?' cur':''}" data-i="${i}"><div class="n">${i+1}</div><img src="${p.img}" alt=""><div class="t"><b>${p.t}</b><span>Émounatéha</span></div><button class="ps" type="button" data-part="${i}" aria-label="Partager ${p.court}">${ICO_PART}</button></div>`).join('');
 }
 function charger(i,jouer){
   cur=(i+PISTES.length)%PISTES.length; const p=PISTES[cur];
@@ -204,6 +207,7 @@ function lire(){const pr=a.play();if(pr&&pr.catch)pr.catch(e=>msg('Lecture impos
 function etat(){[plein,mini].forEach(e=>e.classList.toggle('joue',!a.paused))}
 function bascule(){a.paused?lire():a.pause()}
 document.addEventListener('click',e=>{
+  const sp=e.target.closest('[data-part]'); if(sp){partager(+sp.dataset.part,sp);return}   // icône de partage d'un titre de la liste : partage sans lancer la lecture
   const el=e.target.closest('[data-i]'); if(!el)return;
   charger(+el.dataset.i,true); plein.classList.add('on');
 });
@@ -220,13 +224,15 @@ a.onended=()=>{compter(1);compte=false;if(PISTES.length>1)charger(cur+1,true);el
 a.onloadedmetadata=()=>$('td').textContent=fmt(a.duration);
 a.ontimeupdate=()=>{if(!compte&&a.currentTime>=10&&!a.paused){compte=true;compter(0)}if(!a.duration)return;const p=a.currentTime/a.duration;$('pos').value=p*1000;$('tc').textContent=fmt(a.currentTime);$('barreMini').style.width=p*100+'%'};
 $('pos').oninput=e=>{a.currentTime=e.target.value/1000*a.duration};
-$('part').onclick=()=>{const d={title:'Musique · Émounatéha',url:location.href};navigator.share?navigator.share(d).catch(()=>{}):navigator.clipboard&&navigator.clipboard.writeText(d.url)};
+$('part').onclick=()=>partager(-1,$('part'));
 // « Partager ce titre » (fenêtre de lecture) : lien direct vers CE titre, qui s'ouvre sur lui (www.emounateha.fr/musique/?t=<titre>)
-$('partTitre').onclick=async()=>{
-  const p=PISTES[cur], url=location.origin+'/musique/?t='+p.id, d={title:p.court+' · Émounatéha',text:'Écoute « '+p.t+' » d’Émounatéha',url};
+// partage : i = un titre (lien direct vers lui), i = -1 = toute la page Musique ; sans menu de partage (ordinateur) : lien copié, sinon WhatsApp
+async function partager(i,btn){
+  const p=i>=0?PISTES[i]:null, url=location.origin+'/musique/'+(p?'?t='+p.id:''), d=p?{title:p.court+' · Émounatéha',text:'Écoute « '+p.t+' » d’Émounatéha',url}:{title:'Musique · Émounatéha',text:'Les musiques d’Émounatéha',url};
   try{if(navigator.share){await navigator.share(d);return}}catch(e){if(e&&e.name==='AbortError')return}
-  try{await navigator.clipboard.writeText(url);$('partTxt').textContent='Lien copié';setTimeout(()=>$('partTxt').textContent='Partager ce titre',2500)}catch(e){location.href='https://wa.me/?text='+encodeURIComponent(d.text+' : '+url)}
-};
+  try{await navigator.clipboard.writeText(url);if(btn){const l=btn.querySelector('span')||btn,av=l.innerHTML;l.textContent='Lien copié';setTimeout(()=>l.innerHTML=av,2500)}}catch(e){location.href='https://wa.me/?text='+encodeURIComponent(d.text+' : '+url)}
+}
+$('partTitre').onclick=()=>partager(cur,$('partTitre'));
 if('mediaSession' in navigator){navigator.mediaSession.setActionHandler('previoustrack',()=>charger(cur-1,true));navigator.mediaSession.setActionHandler('nexttrack',()=>charger(cur+1,true))}
 a.src=PISTES[0].src; dessiner();
 { const t=new URLSearchParams(location.search).get('t'), i=PISTES.findIndex(p=>p.id===t); if(i>=0){charger(i,false);plein.classList.add('on')} }   // lien partagé : ouvre ce titre (lecture au toucher : les navigateurs bloquent le son automatique)
